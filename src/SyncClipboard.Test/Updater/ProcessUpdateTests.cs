@@ -67,7 +67,7 @@ public class ProcessUpdateTests : UpdaterTestBase
         {
             if (!process.HasExited)
                 process.Kill();
-            await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
+            await process.WaitForExitAsync(CancellationToken.None);
         }
     }
 
@@ -79,13 +79,13 @@ public class ProcessUpdateTests : UpdaterTestBase
         try
         {
             await UpdateWorker.WaitForProcessAsync(process.Id, process.StartTime.ToUniversalTime().Ticks,
-                TestContext.CancellationTokenSource.Token, async token =>
+                TestContext.CancellationTokenSource.Token, async _ =>
                 {
                     Assert.IsFalse(process.HasExited);
                     if (++prompts == 1)
                         return ForceExitAction.Retry;
                     process.Kill();
-                    await process.WaitForExitAsync(token);
+                    await process.WaitForExitAsync(CancellationToken.None);
                     return ForceExitAction.Retry;
                 }, TimeSpan.FromMilliseconds(50));
             Assert.AreEqual(2, prompts);
@@ -94,7 +94,7 @@ public class ProcessUpdateTests : UpdaterTestBase
         {
             if (!process.HasExited)
                 process.Kill();
-            await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
+            await process.WaitForExitAsync(CancellationToken.None);
         }
     }
 
@@ -113,7 +113,7 @@ public class ProcessUpdateTests : UpdaterTestBase
         {
             if (!process.HasExited)
                 process.Kill();
-            await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
+            await process.WaitForExitAsync(CancellationToken.None);
         }
     }
 
@@ -132,7 +132,7 @@ public class ProcessUpdateTests : UpdaterTestBase
         {
             if (!process.HasExited)
                 process.Kill();
-            await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
+            await process.WaitForExitAsync(CancellationToken.None);
         }
     }
 }

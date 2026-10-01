@@ -50,7 +50,7 @@ public class WindowsUpdaterSmokeTests : UpdaterTestBase
                 if (!process.HasExited)
                 {
                     process.Kill(entireProcessTree: true);
-                    await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
+                    await process.WaitForExitAsync(CancellationToken.None);
                 }
             }
         }

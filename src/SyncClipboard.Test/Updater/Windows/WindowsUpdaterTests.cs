@@ -223,7 +223,7 @@ public class WindowsUpdaterTests : UpdaterTestBase
             locked.Dispose();
             Assert.IsFalse(process.HasExited);
             owner.Kill();
-            await owner.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
+            await owner.WaitForExitAsync(CancellationToken.None);
             // Allow the cleanup script's 30 one-second retries plus PowerShell startup on busy runners.
             await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token)
                 .WaitAsync(TimeSpan.FromMinutes(1), TestContext.CancellationTokenSource.Token);
@@ -235,10 +235,11 @@ public class WindowsUpdaterTests : UpdaterTestBase
         {
             if (!owner.HasExited)
                 owner.Kill();
+            await owner.WaitForExitAsync(CancellationToken.None);
             if (!process.HasExited)
             {
                 process.Kill(entireProcessTree: true);
-                await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
+                await process.WaitForExitAsync(CancellationToken.None);
             }
         }
     }
