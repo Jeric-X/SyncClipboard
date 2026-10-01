@@ -10,6 +10,7 @@ internal delegate Task<UpdateFailureAction> UpdateFailureHandler(string path, Ex
 internal interface IUpdateInteraction
 {
     void Report(string phase, int percent);
+    void SetRollbackAvailable(bool available) { }
     Task<ForceExitAction> ConfirmForceExitAsync(CancellationToken token);
     Task<UpdateFailureAction> AskFailureActionAsync(string path, Exception error, bool canRollback, CancellationToken token);
     Task ShowResultAsync(UpdateResult result);

@@ -10,9 +10,13 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
     public async Task StartAsync(UpdateInstallRequest request, CancellationToken token)
     {
         var bundle = OperatingSystem.IsMacOS() ? MacUpdaterFiles.FindBundle(Env.ProgramDirectory) : null;
-        var workspace = bundle is null
-            ? await PrepareUpdaterAsync(Path.Combine(Env.ProgramDirectory, "SyncClipboard.Updater.exe"), token)
-            : await PrepareMacUpdaterAsync(bundle, token);
+        string workspace;
+        if (OperatingSystem.IsLinux())
+            workspace = await PrepareUnixUpdaterAsync(LinuxUpdaterFiles.GetFiles(Env.ProgramDirectory), token);
+        else if (bundle is not null)
+            workspace = await PrepareMacUpdaterAsync(bundle, token);
+        else
+            workspace = await PrepareUpdaterAsync(Path.Combine(Env.ProgramDirectory, "SyncClipboard.Updater.exe"), token);
         var started = false;
         try
         {
@@ -31,7 +35,9 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
     internal static async Task<string> PrepareUpdaterAsync(string updaterPath, CancellationToken token,
         string fileName = "SyncClipboard.Updater.exe")
     {
-        var workspace = Path.Combine(Path.GetTempPath(), "SyncClipboard-updates", Guid.NewGuid().ToString("N"));
+        var workspace = OperatingSystem.IsLinux()
+            ? Directory.CreateTempSubdirectory("SyncClipboard-update-").FullName
+            : Path.Combine(Path.GetTempPath(), "SyncClipboard-updates", Guid.NewGuid().ToString("N"));
         try
         {
             Directory.CreateDirectory(workspace);
@@ -50,11 +56,13 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
         }
     }
 
-    internal static async Task<string> PrepareMacUpdaterAsync(string bundle, CancellationToken token)
+    internal static Task<string> PrepareMacUpdaterAsync(string bundle, CancellationToken token)
+        => PrepareUnixUpdaterAsync(MacUpdaterFiles.GetFiles(bundle), token);
+
+    internal static async Task<string> PrepareUnixUpdaterAsync(string[] files, CancellationToken token)
     {
-        var files = MacUpdaterFiles.GetFiles(bundle);
         if (files.Length == 0)
-            throw new FileNotFoundException("The macOS updater or its native libraries are missing.");
+            throw new FileNotFoundException("The updater or its native libraries are missing.");
         var workspace = await PrepareUpdaterAsync(files[0], token, "SyncClipboard.Updater");
         try
         {
@@ -76,16 +84,22 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
         }
     }
 
-    internal static ProcessStartInfo CreateStartInfo(UpdateInstallRequest request, string workspace, string? programDirectory = null)
+    internal static ProcessStartInfo CreateStartInfo(UpdateInstallRequest request, string workspace,
+        string? programDirectory = null, string? appImagePath = null)
     {
         programDirectory ??= Env.ProgramDirectory;
-        var targetPath = OperatingSystem.IsMacOS()
-            ? MacUpdaterFiles.FindBundle(programDirectory) ?? Path.GetFullPath(programDirectory)
-            : Path.GetFullPath(programDirectory);
-        var updaterPath = Path.Combine(workspace, OperatingSystem.IsMacOS() ? "SyncClipboard.Updater" : "SyncClipboard.Updater.exe");
+        var targetPath = Path.GetFullPath(programDirectory);
+        if (OperatingSystem.IsMacOS())
+            targetPath = MacUpdaterFiles.FindBundle(programDirectory) ?? targetPath;
+        else if (OperatingSystem.IsLinux())
+            targetPath = appImagePath ?? Env.GetAppImageExecPath()
+                ?? throw new InvalidOperationException("The running AppImage could not be located.");
+        var updaterPath = Path.Combine(workspace, OperatingSystem.IsWindows() ? "SyncClipboard.Updater.exe" : "SyncClipboard.Updater");
         var appElevated = OperatingSystem.IsWindows() && Env.IsRunningAsAdministrator;
         using var currentProcess = Process.GetCurrentProcess();
-        var start = new ProcessStartInfo(updaterPath) { UseShellExecute = false };
+        var start = new ProcessStartInfo(updaterPath) { UseShellExecute = false, WorkingDirectory = workspace };
+        if (OperatingSystem.IsLinux())
+            LinuxUpdaterFiles.ConfigureEnvironment(start);
         // The updater waits for this process to exit, then owns staging, verification, replacement, and cleanup.
         string[] arguments =
         [

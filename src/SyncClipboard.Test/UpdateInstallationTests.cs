@@ -192,13 +192,17 @@ public class UpdateInstallationTests
             Directory.CreateDirectory(programDirectory);
             File.WriteAllText(Path.Combine(target, "Contents", "Info.plist"), "bundle");
         }
+        else if (OperatingSystem.IsLinux())
+        {
+            target = Path.Combine(directory, "SyncClipboard.AppImage");
+        }
         var workspace = Path.Combine(directory, "workspace");
-        var updater = Path.Combine(workspace, OperatingSystem.IsMacOS() ? "SyncClipboard.Updater" : "SyncClipboard.Updater.exe");
+        var updater = Path.Combine(workspace, OperatingSystem.IsWindows() ? "SyncClipboard.Updater.exe" : "SyncClipboard.Updater");
         var package = Path.Combine(directory, "package with spaces 中文.zip");
         var digest = "sha256:" + new string('B', 64);
         var request = new UpdateInstallRequest(package, digest);
 
-        var start = FileReplacementPackageInstaller.CreateStartInfo(request, workspace, programDirectory);
+        var start = FileReplacementPackageInstaller.CreateStartInfo(request, workspace, programDirectory, target);
         var arguments = start.ArgumentList.ToArray();
 
         Assert.AreEqual(updater, start.FileName);
@@ -208,7 +212,7 @@ public class UpdateInstallationTests
         Assert.AreEqual(package, arguments[Array.IndexOf(arguments, "--package-path") + 1]);
         Assert.AreEqual(digest, arguments[Array.IndexOf(arguments, "--digest") + 1]);
         Assert.AreEqual(target, arguments[Array.IndexOf(arguments, "--target") + 1]);
-        if (OperatingSystem.IsMacOS() || OperatingSystem.IsWindows())
+        if (OperatingSystem.IsMacOS() || OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
         {
             var parsed = SyncClipboard.Updater.UpdateArguments.Parse(arguments);
             Assert.AreEqual(Path.TrimEndingDirectorySeparator(target), parsed.Target);
@@ -228,9 +232,30 @@ public class UpdateInstallationTests
         var installer = new FileReplacementPackageInstaller();
         var request = new UpdateInstallRequest(Path.Combine(directory, "package"), "sha256:unused");
 
-        await Assert.ThrowsAsync<OperationCanceledException>(() => installer.StartAsync(request, new CancellationToken(true)));
-
-        Assert.IsEmpty(Directory.GetFileSystemEntries(directory));
+        string[] names = OperatingSystem.IsLinux()
+            ? ["SyncClipboard.Updater", .. LinuxUpdaterFiles.Libraries]
+            : ["SyncClipboard.Updater.exe"];
+        var created = new List<string>();
+        try
+        {
+            foreach (var name in names)
+            {
+                var path = Path.Combine(Env.ProgramDirectory, name);
+                if (File.Exists(path))
+                    continue;
+                File.WriteAllText(path, "test updater file");
+                created.Add(path);
+            }
+            await Assert.ThrowsAsync<OperationCanceledException>(() => installer.StartAsync(request, new CancellationToken(true)));
+            Assert.IsEmpty(Directory.GetFileSystemEntries(directory));
+        }
+        finally
+        {
+            foreach (var path in created)
+            {
+                File.Delete(path);
+            }
+        }
     }
 
     private UpdateChecker CreateChecker(IUpdateInstaller? installer, IHttp? http = null, Mock<IUpdateInstallerFactory>? factory = null)
@@ -278,6 +303,44 @@ public class UpdateInstallationTests
             UpdateSrc = source,
             PackageName = packageName
         }, isWindows, directory);
+
+        Assert.AreEqual(supported, installer is FileReplacementPackageInstaller);
+        if (!supported)
+            Assert.IsNull(installer);
+    }
+
+    [TestMethod]
+    [DataRow("update.dmg", true, null, true)]
+    [DataRow("update.DMG", true, null, true)]
+    [DataRow("update.dmg", false, null, false)]
+    [DataRow("update.zip", true, null, false)]
+    [DataRow("update.dmg", true, "Info.plist", false)]
+    [DataRow("update.dmg", true, "SyncClipboard.Updater", false)]
+    [DataRow("update.dmg", true, "libSkiaSharp.dylib", false)]
+    [DataRow("update.dmg", true, "libHarfBuzzSharp.dylib", false)]
+    [DataRow("update.dmg", true, "libAvaloniaNative.dylib", false)]
+    public void Factory_SelectsMacDmgInstaller(string packageName, bool isMacOS, string? missing, bool supported)
+    {
+        var contents = Path.Combine(directory, "SyncClipboard.app", "Contents");
+        var program = Directory.CreateDirectory(Path.Combine(contents, "MonoBundle")).FullName;
+        var resources = Directory.CreateDirectory(Path.Combine(contents, "Resources", "Updater")).FullName;
+        string[] files =
+        [
+            Path.Combine(contents, "Info.plist"),
+            Path.Combine(resources, "SyncClipboard.Updater"),
+            .. MacUpdaterFiles.Libraries.Select(name => Path.Combine(program, name))
+        ];
+        foreach (var file in files)
+        {
+            if (Path.GetFileName(file) != missing)
+                File.WriteAllText(file, "test");
+        }
+        var installer = UpdateInstallerFactory.Create(new UpdateInfoConfig
+        {
+            ManageType = UpdateInfoConfig.TypeManual,
+            UpdateSrc = "github",
+            PackageName = packageName
+        }, false, program, isMacOS: isMacOS);
 
         Assert.AreEqual(supported, installer is FileReplacementPackageInstaller);
         if (!supported)

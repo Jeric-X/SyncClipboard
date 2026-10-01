@@ -16,10 +16,10 @@ internal sealed class UpdateRecoveryException(string backupPath, Exception origi
 
 internal sealed class UpdateRollbackException(Exception inner) : IOException(UpdaterText.Current.RollbackRequested, inner);
 
-internal static class UpdateIo
+internal static class InteractiveOperation
 {
     internal static async Task RunAsync(string path, Func<Task> operation, UpdateFailureHandler? onFailure,
-        CancellationToken token, string? backupPath = null, bool canRollback = false)
+        CancellationToken token, string? backupPath = null, Func<bool>? canRollback = null)
     {
         while (true)
         {
@@ -27,6 +27,7 @@ internal static class UpdateIo
             try
             {
                 await operation();
+                token.ThrowIfCancellationRequested();
                 return;
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException
@@ -34,11 +35,12 @@ internal static class UpdateIo
             {
                 if (onFailure is null)
                     throw;
-                var action = await onFailure(path, error, canRollback, token);
+                var rollbackAvailable = canRollback?.Invoke() ?? false;
+                var action = await onFailure(path, error, rollbackAvailable, token);
                 token.ThrowIfCancellationRequested();
                 if (action == UpdateFailureAction.Retry)
                     continue;
-                if (canRollback && action == UpdateFailureAction.Rollback)
+                if (rollbackAvailable && action == UpdateFailureAction.Rollback)
                     throw new UpdateRollbackException(error);
                 throw new UpdateAbortedException(backupPath, error);
             }

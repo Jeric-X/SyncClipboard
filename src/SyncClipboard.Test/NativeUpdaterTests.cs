@@ -473,7 +473,7 @@ public class NativeUpdaterTests
                     prompts++;
                     Assert.Contains(path, failedPath);
                     Assert.IsInstanceOfType<UnauthorizedAccessException>(error);
-                    Assert.IsTrue(canRollback);
+                    Assert.IsFalse(canRollback);
                     Assert.AreEqual("old", File.ReadAllText(path));
                     if (readOnly)
                         Assert.AreNotEqual((FileAttributes)0, File.GetAttributes(path) & FileAttributes.ReadOnly);
@@ -516,7 +516,7 @@ public class NativeUpdaterTests
     [TestMethod]
     public void InstallationLock_RejectsSameTargetAndAllowsDifferentTargetsAndReacquisition()
     {
-        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
         {
             Assert.Inconclusive("Requires a supported updater platform.");
             return;

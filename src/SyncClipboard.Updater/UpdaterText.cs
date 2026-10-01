@@ -31,9 +31,9 @@ internal sealed class UpdaterText
     public string Help => $"""
         {Title}
         SyncClipboard.Updater [--smoke-test]
-        --package-path <zip|dmg>
+        --package-path <zip|dmg|AppImage>
         --digest sha256:<hash>
-        --target <directory>
+        --target <installation path>
         --process-id <pid>
         --work-dir <workspace>
         [--language <language>]
@@ -55,6 +55,8 @@ internal sealed class UpdaterText
 
     public string DetachImage => isChinese ? "卸载磁盘映像: " : "Detach disk image: ";
     public string CommandFailed => isChinese ? "命令执行失败: " : "Command failed: ";
+    public string InvalidAppImage => isChinese ? "无效或架构不匹配的 AppImage。" : "Invalid AppImage or incompatible architecture.";
+    public string MissingAppImage => isChinese ? "待更新的 AppImage 文件不存在。" : "The installed AppImage is missing.";
     public string InvalidAppBundle => isChinese ? "无效的 SyncClipboard 应用包。" : "Invalid SyncClipboard app bundle.";
     public string DataInsideBundle => isChinese
         ? "请先将用户数据移出应用包，再安装更新: "

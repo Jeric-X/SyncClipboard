@@ -17,7 +17,7 @@ internal static class FileReplacement
         Entry[] entries = [];
         long growth = 0;
         long largestFile = 0;
-        await UpdateIo.RunAsync(UpdaterText.Current.PrepareBackup + backup, () =>
+        await InteractiveOperation.RunAsync(UpdaterText.Current.PrepareBackup + backup, () =>
         {
             entries = Directory.EnumerateFiles(stage, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal)
                 .Select(path =>
@@ -43,7 +43,7 @@ internal static class FileReplacement
             {
                 token.ThrowIfCancellationRequested();
                 var entry = entries[i];
-                await UpdateIo.RunAsync(UpdaterText.Current.BackUp + entry.Destination, async () =>
+                await InteractiveOperation.RunAsync(UpdaterText.Current.BackUp + entry.Destination, async () =>
                 {
                     ValidateDestination(entry.Destination, target, protectedPaths);
                     if (entry.Existed)
@@ -56,7 +56,7 @@ internal static class FileReplacement
                 Report(progress, "backup", (i + 1) * 100 / entries.Length);
             }
             // Backups may occupy the same drive as the installation.
-            await UpdateIo.RunAsync(UpdaterText.Current.CheckFreeSpace + target, () =>
+            await InteractiveOperation.RunAsync(UpdaterText.Current.CheckFreeSpace + target, () =>
             {
                 PackageFiles.CheckSpace(target, checked(growth + largestFile));
                 return Task.CompletedTask;
@@ -65,13 +65,13 @@ internal static class FileReplacement
             {
                 token.ThrowIfCancellationRequested();
                 var entry = entries[i];
-                await UpdateIo.RunAsync(UpdaterText.Current.Replace + entry.Destination, async () =>
+                await InteractiveOperation.RunAsync(UpdaterText.Current.Replace + entry.Destination, async () =>
                 {
                     ValidateDestination(entry.Destination, target, protectedPaths);
                     CreateParents(Path.GetDirectoryName(entry.Destination)!, createdDirectories);
                     await ReplaceAsync(entry.Source, entry.Destination, onFailure, backup, token,
                         () => entry.Modified = true);
-                }, onFailure, token, backup, canRollback: true);
+                }, onFailure, token, backup, canRollback: () => entries.Any(e => e.Modified));
                 Report(progress, "installing", (i + 1) * 100 / entries.Length);
                 token.ThrowIfCancellationRequested();
             }
@@ -84,7 +84,7 @@ internal static class FileReplacement
                 try
                 {
                     Report(progress, "restoring", -1);
-                    await UpdateIo.RunAsync(UpdaterText.Current.Restore + entry.Destination, async () =>
+                    await InteractiveOperation.RunAsync(UpdaterText.Current.Restore + entry.Destination, async () =>
                     {
                         ValidateDestination(entry.Destination, target, protectedPaths);
                         if (entry.Existed)
@@ -107,7 +107,7 @@ internal static class FileReplacement
             {
                 try
                 {
-                    await UpdateIo.RunAsync(UpdaterText.Current.RemoveDirectory + directory, () =>
+                    await InteractiveOperation.RunAsync(UpdaterText.Current.RemoveDirectory + directory, () =>
                     {
                         if (!Directory.EnumerateFileSystemEntries(directory).Any())
                             Directory.Delete(directory);
@@ -162,7 +162,7 @@ internal static class FileReplacement
         }
         finally
         {
-            await UpdateIo.RunAsync(UpdaterText.Current.RemoveTemporaryFile + temporary, () =>
+            await InteractiveOperation.RunAsync(UpdaterText.Current.RemoveTemporaryFile + temporary, () =>
             {
                 File.Delete(temporary);
                 return Task.CompletedTask;

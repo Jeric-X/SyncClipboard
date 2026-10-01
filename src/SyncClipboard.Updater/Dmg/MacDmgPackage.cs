@@ -51,7 +51,7 @@ internal sealed class MacDmgPackage(string bundlePath, string mountPath)
     }
 
     public Task DetachAsync(UpdateFailureHandler? onFailure)
-        => UpdateIo.RunAsync(UpdaterText.Current.DetachImage + mountPath,
+        => InteractiveOperation.RunAsync(UpdaterText.Current.DetachImage + mountPath,
             () => MacCommand.RunAsync("/usr/bin/hdiutil", ["detach", mountPath], CancellationToken.None),
             onFailure, CancellationToken.None);
 
