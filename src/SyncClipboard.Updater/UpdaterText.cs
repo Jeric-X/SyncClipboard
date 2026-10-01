@@ -95,8 +95,8 @@ internal sealed class UpdaterText
     public string Cancel => isChinese ? "取消" : "Cancel";
 
     public string ConfirmClose => isChinese
-        ? "更新正在进行。请选择终止更新、回滚到旧版本，或取消关闭。"
-        : "An update is in progress. Abort, roll back to the previous version, or cancel closing?";
+        ? "更新正在进行，强行终止可能导致安装异常"
+        : "An update is in progress. Forcing it to stop may leave the installation incomplete.";
 
     public string Retry => isChinese
         ? "重试"
