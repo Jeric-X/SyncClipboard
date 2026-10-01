@@ -55,6 +55,24 @@ public class UpdateInstallationTests
     }
 
     [TestMethod]
+    public async Task PrepareUpdater_CopiesHelperAndCreatesWorkspaceMarker()
+    {
+        var source = Path.Combine(directory, "helper.exe");
+        await File.WriteAllTextAsync(source, "updater", TestContext.CancellationTokenSource.Token);
+        var workspace = await FileReplacementPackageInstaller.PrepareUpdaterAsync(source, TestContext.CancellationTokenSource.Token);
+        try
+        {
+            SyncClipboard.Updater.UpdateWorker.ValidateWorkspace(workspace);
+            Assert.AreEqual("updater", File.ReadAllText(Path.Combine(workspace, "SyncClipboard.Updater.exe")));
+            Assert.AreEqual("updater", File.ReadAllText(source));
+        }
+        finally
+        {
+            Directory.Delete(workspace, true);
+        }
+    }
+
+    [TestMethod]
     public async Task CanceledLaunch_RestoresInstallButton()
     {
         var installer = new Mock<IUpdateInstaller>();
@@ -166,15 +184,18 @@ public class UpdateInstallationTests
     public void WorkerArguments_PreservePathsAndDigestWithoutReadingPackage()
     {
         var target = Path.GetFullPath(Env.ProgramDirectory);
-        var updater = Path.Combine(target, "SyncClipboard.Updater.exe");
+        var workspace = Path.Combine(directory, "workspace");
+        var updater = Path.Combine(workspace, "SyncClipboard.Updater.exe");
         var package = Path.Combine(directory, "package with spaces 中文.zip");
         var digest = "sha256:" + new string('B', 64);
         var request = new UpdateInstallRequest(package, digest);
 
-        var start = FileReplacementPackageInstaller.CreateStartInfo(request);
+        var start = FileReplacementPackageInstaller.CreateStartInfo(request, workspace);
         var arguments = start.ArgumentList.ToArray();
 
         Assert.AreEqual(updater, start.FileName);
+        Assert.AreEqual(workspace, arguments[Array.IndexOf(arguments, "--work-dir") + 1]);
+        Assert.DoesNotContain("--launcher-id", arguments);
         Assert.IsFalse(start.UseShellExecute);
         Assert.AreEqual(string.Empty, start.Arguments);
         Assert.AreEqual(package, arguments[Array.IndexOf(arguments, "--package-path") + 1]);

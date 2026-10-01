@@ -2,10 +2,14 @@ namespace SyncClipboard.Updater;
 
 internal sealed record UpdateResult(int ExitCode, string? Error = null, string? WorkDirectory = null, string? BackupPath = null);
 
+internal enum ForceExitAction { Yes, No, Retry }
+
+internal delegate Task<UpdateFailureAction> UpdateFailureHandler(string path, Exception error, bool canRollback, CancellationToken token);
+
 internal interface IUpdateInteraction
 {
     void Report(string phase, int percent);
-    Task<bool> ConfirmForceExitAsync(CancellationToken token);
-    Task<UpdateFailureAction> AskFailureActionAsync(string path, Exception error, CancellationToken token);
+    Task<ForceExitAction> ConfirmForceExitAsync(CancellationToken token);
+    Task<UpdateFailureAction> AskFailureActionAsync(string path, Exception error, bool canRollback, CancellationToken token);
     Task ShowResultAsync(UpdateResult result);
 }

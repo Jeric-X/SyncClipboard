@@ -4,7 +4,7 @@ namespace SyncClipboard.Updater;
 
 internal sealed record UpdateArguments(string PackagePath, string Digest, string Target, string Executable,
     int ProcessId, string Language, string[] ProtectedPaths, string? WorkDirectory = null,
-    bool Elevated = false, int LauncherId = 0, long ProcessStartTime = 0, long LauncherStartTime = 0)
+    bool Elevated = false, long ProcessStartTime = 0)
 {
     public static UpdateArguments Parse(string[] args)
     {
@@ -20,8 +20,8 @@ internal sealed record UpdateArguments(string PackagePath, string Digest, string
                 continue;
             }
             if (key is not ("--package-path" or "--digest" or "--target" or "--executable"
-                or "--process-id" or "--language" or "--protect-path" or "--work-dir" or "--launcher-id"
-                or "--process-start-time" or "--launcher-start-time") || ++i >= args.Length)
+                or "--process-id" or "--language" or "--protect-path" or "--work-dir"
+                or "--process-start-time") || ++i >= args.Length)
                 throw new ArgumentException("Unknown or incomplete updater argument: " + key);
             if (key == "--protect-path")
                 protectedPaths.Add(Path.GetFullPath(args[i]));
@@ -44,9 +44,7 @@ internal sealed record UpdateArguments(string PackagePath, string Digest, string
         return new(Path.GetFullPath(Required("--package-path")), digest, target, executable, pid,
             values.GetValueOrDefault("--language", "en"), [.. protectedPaths],
             values.TryGetValue("--work-dir", out var work) ? Path.GetFullPath(work) : null, elevated,
-            int.Parse(values.GetValueOrDefault("--launcher-id", "0"), CultureInfo.InvariantCulture),
-            long.Parse(values.GetValueOrDefault("--process-start-time", "0"), CultureInfo.InvariantCulture),
-            long.Parse(values.GetValueOrDefault("--launcher-start-time", "0"), CultureInfo.InvariantCulture));
+            long.Parse(values.GetValueOrDefault("--process-start-time", "0"), CultureInfo.InvariantCulture));
     }
 
     public IEnumerable<string> ToCommandLine()
@@ -68,10 +66,6 @@ internal sealed record UpdateArguments(string PackagePath, string Digest, string
         }
         if (Elevated)
             yield return "--elevated";
-        yield return "--launcher-id";
-        yield return LauncherId.ToString(CultureInfo.InvariantCulture);
-        yield return "--launcher-start-time";
-        yield return LauncherStartTime.ToString(CultureInfo.InvariantCulture);
         yield return "--process-start-time";
         yield return ProcessStartTime.ToString(CultureInfo.InvariantCulture);
     }

@@ -1,4 +1,5 @@
 using SyncClipboard.Updater;
+using SyncClipboard.Core.Utilities.Updater;
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Security.AccessControl;
@@ -61,8 +62,6 @@ public class NativeUpdaterTests
         {
             WorkDirectory = Path.Combine(directory, "work"),
             Elevated = true,
-            LauncherId = 1234,
-            LauncherStartTime = DateTime.UtcNow.AddSeconds(-1).Ticks,
             ProcessStartTime = DateTime.UtcNow.Ticks
         };
         var actual = UpdateArguments.Parse(expected.ToCommandLine().ToArray());
@@ -253,10 +252,11 @@ public class NativeUpdaterTests
         {
             if (phase == "installing" && percent == 50)
                 File.Delete(Path.Combine(stage, "z.txt"));
-        }, TestContext.CancellationTokenSource.Token, (path, error, _) =>
+        }, TestContext.CancellationTokenSource.Token, (path, error, canRollback, _) =>
         {
             prompted++;
-            Assert.AreEqual(Path.Combine(target, "z.txt"), path);
+            Assert.Contains(Path.Combine(target, "z.txt"), path);
+            Assert.IsTrue(canRollback);
             Assert.IsInstanceOfType<IOException>(error);
             Assert.AreEqual("new", File.ReadAllText(Path.Combine(target, "a.txt")));
             Assert.AreEqual("old", File.ReadAllText(Path.Combine(backup, "a.txt")));
@@ -296,7 +296,7 @@ public class NativeUpdaterTests
         {
             if (phase == "backup" && percent == 50)
                 Directory.CreateDirectory(Path.Combine(backup, "z.txt"));
-        }, TestContext.CancellationTokenSource.Token, (_, _, _) =>
+        }, TestContext.CancellationTokenSource.Token, (_, _, _, _) =>
         {
             prompted++;
             Assert.AreEqual("old", File.ReadAllText(Path.Combine(target, "a.txt")));
@@ -327,7 +327,7 @@ public class NativeUpdaterTests
             {
                 if (phase == "installing" && percent == 50)
                     File.Delete(Path.Combine(stage, "z.txt"));
-            }, TestContext.CancellationTokenSource.Token, (_, _, _) =>
+            }, TestContext.CancellationTokenSource.Token, (_, _, _, _) =>
                 Task.FromResult(++prompted == 1 ? UpdateFailureAction.Retry : UpdateFailureAction.Rollback)));
         Assert.AreEqual(2, prompted);
         Assert.AreEqual("old", File.ReadAllText(Path.Combine(target, "a.txt")));
@@ -349,7 +349,7 @@ public class NativeUpdaterTests
             {
                 if (phase == "installing" && percent == 50)
                     File.Delete(Path.Combine(stage, "z.txt"));
-            }, TestContext.CancellationTokenSource.Token, (_, _, _) =>
+            }, TestContext.CancellationTokenSource.Token, (_, _, _, _) =>
             {
                 File.Delete(Path.Combine(target, "a.txt"));
                 Directory.CreateDirectory(Path.Combine(target, "a.txt"));
@@ -373,7 +373,7 @@ public class NativeUpdaterTests
         using var input = new StringReader(answer);
         using var output = new StringWriter();
         var interaction = new ConsoleUpdateInteraction("zh-CN", input: input, output: output);
-        var action = await interaction.AskFailureActionAsync("locked.dll", new IOException("file is locked"),
+        var action = await interaction.AskFailureActionAsync("locked.dll", new IOException("file is locked"), true,
             TestContext.CancellationTokenSource.Token);
         Assert.AreEqual(expected, action);
         Assert.Contains("locked.dll", output.ToString());
@@ -399,40 +399,130 @@ public class NativeUpdaterTests
     }
 
     [TestMethod]
-    public async Task PermissionFailure_RestoresFilesBeforeRequestingElevation()
+    public async Task DirectoryPermissionFailure_RequestsElevationOnceThenUsesErrorMenu()
     {
         if (!OperatingSystem.IsWindows())
         {
-            Assert.Inconclusive("Windows file permissions test.");
+            Assert.Inconclusive("Windows directory permission test.");
             return;
         }
-        foreach (var name in new[] { "a.txt", "z.txt" })
-        {
-            File.WriteAllText(Path.Combine(target, name), "old");
-            File.WriteAllText(Path.Combine(stage, name), "new");
-        }
-        var protectedFile = new FileInfo(Path.Combine(target, "z.txt"));
-        var original = protectedFile.GetAccessControl();
-        var denied = protectedFile.GetAccessControl();
+        var info = new DirectoryInfo(target);
+        var original = info.GetAccessControl().GetSecurityDescriptorBinaryForm();
+        var denied = info.GetAccessControl();
         using var identity = WindowsIdentity.GetCurrent();
-        denied.AddAccessRule(new FileSystemAccessRule(identity.User!, FileSystemRights.WriteData, AccessControlType.Deny));
-        protectedFile.SetAccessControl(denied);
+        denied.AddAccessRule(new FileSystemAccessRule(identity.User!, FileSystemRights.CreateFiles, AccessControlType.Deny));
+        info.SetAccessControl(denied);
+        using var input = new StringReader("1\n");
+        using var output = new StringWriter();
+        var interaction = new ConsoleUpdateInteraction("en", input: input, output: output);
         try
         {
-            await Assert.ThrowsAsync<UnauthorizedAccessException>(() => ApplyAsync((_, _) => { }, TestContext.CancellationTokenSource.Token));
-            Assert.AreEqual("old", File.ReadAllText(Path.Combine(target, "a.txt")));
-            Assert.AreEqual("old", File.ReadAllText(protectedFile.FullName));
+            Assert.IsTrue(await UpdateWorker.RequiresElevationAsync(target, false, interaction, TestContext.CancellationTokenSource.Token));
+            Assert.AreEqual("", output.ToString());
+            await Assert.ThrowsAsync<UpdateAbortedException>(() => UpdateWorker.RequiresElevationAsync(target, true, interaction,
+                TestContext.CancellationTokenSource.Token));
+            Assert.Contains(target, output.ToString());
         }
         finally
         {
-            protectedFile.SetAccessControl(original);
+            var restored = new DirectorySecurity();
+            restored.SetSecurityDescriptorBinaryForm(original, AccessControlSections.Access);
+            info.SetAccessControl(restored);
+        }
+    }
+
+    [TestMethod]
+    public async Task RollbackFailure_CanRetryRestorationWithoutOverwritingBackup()
+    {
+        var path = Path.Combine(target, "a.txt");
+        File.WriteAllText(path, "old");
+        File.WriteAllText(Path.Combine(stage, "a.txt"), "new");
+        using var cancel = new CancellationTokenSource();
+        var prompts = 0;
+        await Assert.ThrowsAsync<OperationCanceledException>(() => FileReplacement.ApplyAsync(stage, target,
+            Path.Combine(directory, "backup"), [], (phase, _) =>
+            {
+                if (phase == "installing")
+                {
+                    File.Delete(path);
+                    Directory.CreateDirectory(path);
+                    cancel.Cancel();
+                }
+            }, cancel.Token, (failedPath, _, canRollback, token) =>
+            {
+                prompts++;
+                Assert.Contains(path, failedPath);
+                Assert.IsFalse(canRollback);
+                Assert.IsFalse(token.IsCancellationRequested);
+                Directory.Delete(path);
+                return Task.FromResult(UpdateFailureAction.Retry);
+            }));
+        Assert.AreEqual(1, prompts);
+        Assert.AreEqual("old", File.ReadAllText(path));
+        Assert.AreEqual("old", File.ReadAllText(Path.Combine(directory, "backup", "a.txt")));
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task FilePermissionFailure_PromptsAndRetriesWithoutChangingPermissions(bool readOnly)
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            Assert.Inconclusive("Windows permissions test.");
+            return;
+        }
+        var path = Path.Combine(target, "a.txt");
+        File.WriteAllText(path, "old");
+        File.WriteAllText(Path.Combine(stage, "a.txt"), "new");
+        var file = new FileInfo(path);
+        var original = file.GetAccessControl().GetSecurityDescriptorBinaryForm();
+        void RestorePermissions()
+        {
+            var security = new FileSecurity();
+            security.SetSecurityDescriptorBinaryForm(original, AccessControlSections.Access);
+            file.SetAccessControl(security);
+            File.SetAttributes(path, FileAttributes.Normal);
+        }
+        if (readOnly)
+            File.SetAttributes(path, FileAttributes.ReadOnly);
+        else
+        {
+            using var identity = WindowsIdentity.GetCurrent();
+            var security = file.GetAccessControl();
+            security.AddAccessRule(new FileSystemAccessRule(identity.User!, FileSystemRights.WriteData, AccessControlType.Deny));
+            file.SetAccessControl(security);
+        }
+        var prompts = 0;
+        try
+        {
+            UpdateWorker.ProbeDirectoryWriteAccess(target);
+            await FileReplacement.ApplyAsync(stage, target, Path.Combine(directory, "backup"), [], (_, _) => { },
+                TestContext.CancellationTokenSource.Token, (failedPath, error, canRollback, _) =>
+                {
+                    prompts++;
+                    Assert.Contains(path, failedPath);
+                    Assert.IsInstanceOfType<UnauthorizedAccessException>(error);
+                    Assert.IsTrue(canRollback);
+                    Assert.AreEqual("old", File.ReadAllText(path));
+                    if (readOnly)
+                        Assert.AreNotEqual((FileAttributes)0, File.GetAttributes(path) & FileAttributes.ReadOnly);
+                    RestorePermissions();
+                    return Task.FromResult(UpdateFailureAction.Retry);
+                });
+            Assert.AreEqual(1, prompts);
+            Assert.AreEqual("new", File.ReadAllText(path));
+        }
+        finally
+        {
+            RestorePermissions();
         }
     }
 
     [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task Replacement_PreservesWindowsAccessRulesAndRestoresAttributesOnRollback(bool rollback)
+    public async Task Replacement_UsesNewFilePermissionsAndRestoresAttributesOnRollback(bool rollback)
     {
         if (!OperatingSystem.IsWindows())
         {
@@ -464,7 +554,7 @@ public class NativeUpdaterTests
         Assert.AreEqual(rollback ? "old" : "new", File.ReadAllText(path));
         if (rollback)
             Assert.AreEqual(expectedAttributes, File.GetAttributes(path));
-        Assert.AreEqual(expectedSecurity, new FileInfo(path).GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.Access));
+        Assert.AreNotEqual(expectedSecurity, new FileInfo(path).GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.Access));
     }
 
     [TestMethod]
@@ -481,71 +571,6 @@ public class NativeUpdaterTests
             using var other = UpdateWorker.AcquireInstallationLock(stage);
         }
         using var reacquired = UpdateWorker.AcquireInstallationLock(target);
-    }
-
-    [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task ReadOnlyDestination_CanBeReplacedAndRestoredOnRollback(bool rollback)
-    {
-        if (!OperatingSystem.IsWindows())
-        {
-            Assert.Inconclusive("Windows read-only file test.");
-            return;
-        }
-        var path = Path.Combine(target, "a.txt");
-        File.WriteAllText(path, "old");
-        File.WriteAllText(Path.Combine(stage, "a.txt"), "new");
-        File.SetAttributes(path, FileAttributes.ReadOnly | FileAttributes.Archive);
-        using var cancel = new CancellationTokenSource();
-        try
-        {
-            var install = ApplyAsync((phase, _) =>
-            {
-                if (rollback && phase == "installing")
-                    cancel.Cancel();
-            }, cancel.Token);
-            if (rollback)
-                await Assert.ThrowsAsync<OperationCanceledException>(() => install);
-            else
-                await install;
-            Assert.AreEqual(rollback ? "old" : "new", File.ReadAllText(path));
-            Assert.AreEqual(rollback, (File.GetAttributes(path) & FileAttributes.ReadOnly) != 0);
-        }
-        finally
-        {
-            File.SetAttributes(path, FileAttributes.Normal);
-        }
-    }
-
-    [TestMethod]
-    public async Task ReadOnlyDestination_FailedReplacementRestoresAttributes()
-    {
-        if (!OperatingSystem.IsWindows())
-        {
-            Assert.Inconclusive("Windows read-only file test.");
-            return;
-        }
-        var path = Path.Combine(target, "a.txt");
-        var source = Path.Combine(stage, "a.txt");
-        File.WriteAllText(path, "old");
-        File.WriteAllText(source, "new");
-        File.SetAttributes(path, FileAttributes.ReadOnly | FileAttributes.Archive);
-        var attributes = File.GetAttributes(path);
-        try
-        {
-            await Assert.ThrowsAsync<FileNotFoundException>(() => ApplyAsync((phase, _) =>
-            {
-                if (phase == "backup")
-                    File.Delete(source);
-            }, TestContext.CancellationTokenSource.Token));
-            Assert.AreEqual("old", File.ReadAllText(path));
-            Assert.AreEqual(attributes, File.GetAttributes(path));
-        }
-        finally
-        {
-            File.SetAttributes(path, FileAttributes.Normal);
-        }
     }
 
     [TestMethod]
@@ -608,7 +633,7 @@ public class NativeUpdaterTests
                 {
                     prompted = true;
                     Assert.IsFalse(process.HasExited);
-                    return Task.FromResult(confirm);
+                    return Task.FromResult(confirm ? ForceExitAction.Yes : ForceExitAction.No);
                 }, TimeSpan.FromMilliseconds(50));
             if (confirm)
             {
@@ -631,7 +656,7 @@ public class NativeUpdaterTests
     }
 
     [TestMethod]
-    public async Task ParentWait_DeclinedPromptAllowsRestartWhenProcessExitedDuringPrompt()
+    public async Task ParentWait_DeclinedPromptNeverRestartsWhenProcessExitedDuringPrompt()
     {
         using var process = StartWaitingProcess();
         try
@@ -641,10 +666,38 @@ public class NativeUpdaterTests
                 {
                     process.Kill();
                     await process.WaitForExitAsync(token);
-                    return false;
+                    return ForceExitAction.No;
                 }, TimeSpan.FromMilliseconds(50)));
-            Assert.IsNotInstanceOfType<UpdateProcessExitException>(error);
+            Assert.IsInstanceOfType<UpdateProcessExitException>(error);
+            Assert.IsTrue(((UpdateProcessExitException)error).Declined);
             Assert.IsTrue(process.HasExited);
+        }
+        finally
+        {
+            if (!process.HasExited)
+                process.Kill();
+            await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
+        }
+    }
+
+    [TestMethod]
+    public async Task ParentWait_RetryWaitsAgainWithoutKillingProcess()
+    {
+        using var process = StartWaitingProcess();
+        var prompts = 0;
+        try
+        {
+            await UpdateWorker.WaitForProcessAsync(process.Id, process.StartTime.ToUniversalTime().Ticks,
+                TestContext.CancellationTokenSource.Token, async token =>
+                {
+                    Assert.IsFalse(process.HasExited);
+                    if (++prompts == 1)
+                        return ForceExitAction.Retry;
+                    process.Kill();
+                    await process.WaitForExitAsync(token);
+                    return ForceExitAction.Retry;
+                }, TimeSpan.FromMilliseconds(50));
+            Assert.AreEqual(2, prompts);
         }
         finally
         {
@@ -709,7 +762,7 @@ public class NativeUpdaterTests
     }
 
     [TestMethod]
-    public async Task NativeAotUpdater_RelocatesInstallsRestartsAndCleansWorkspace()
+    public async Task NativeAotUpdater_StartsFromPreparedWorkspaceInstallsRestartsAndCleansWorkspace()
     {
         if (!OperatingSystem.IsWindows())
             Assert.Inconclusive("Windows NativeAOT process integration test.");
@@ -730,12 +783,15 @@ public class NativeUpdaterTests
         File.WriteAllText(Path.Combine(stage, "installed.txt"), "new version");
         var zip = Path.Combine(directory, packageName);
         ZipFile.CreateFromDirectory(stage, zip);
+        var workspace = await FileReplacementPackageInstaller.PrepareUpdaterAsync(Path.Combine(target, "SyncClipboard.Updater.exe"),
+            TestContext.CancellationTokenSource.Token);
         var arguments = Arguments() with
         {
             PackagePath = zip,
-            Digest = Digest(zip)
+            Digest = Digest(zip),
+            WorkDirectory = workspace
         };
-        var start = UpdateWorker.CreateStartInfo(Path.Combine(target, "SyncClipboard.Updater.exe"), arguments);
+        var start = UpdateWorker.CreateStartInfo(Path.Combine(workspace, "SyncClipboard.Updater.exe"), arguments);
         start.Environment["TEMP"] = directory;
         start.Environment["TMP"] = directory;
         start.RedirectStandardInput = true;
@@ -744,14 +800,14 @@ public class NativeUpdaterTests
         start.CreateNoWindow = true;
         startedNativeUpdater = true;
         using var process = Process.Start(start)!;
+        process.StandardInput.Close();
         var output = process.StandardOutput.ReadToEndAsync(TestContext.CancellationTokenSource.Token);
         var errors = process.StandardError.ReadToEndAsync(TestContext.CancellationTokenSource.Token);
         await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
         Assert.AreEqual(0, process.ExitCode);
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.CancellationTokenSource.Token);
         timeout.CancelAfter(TimeSpan.FromSeconds(45));
-        var workRoot = Path.Combine(directory, "SyncClipboard-updates");
-        while (!File.Exists(Path.Combine(target, "installed.txt")) || Directory.GetDirectories(workRoot).Length != 0)
+        while (!File.Exists(Path.Combine(target, "installed.txt")) || Directory.Exists(workspace))
             await Task.Delay(100, timeout.Token);
         Assert.AreEqual("new version", File.ReadAllText(Path.Combine(target, "installed.txt")));
         Assert.AreEqual("keep config", File.ReadAllText(Path.Combine(target, "StaticConfig.json")));

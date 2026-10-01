@@ -42,44 +42,50 @@ internal sealed class ConsoleUpdateInteraction : IUpdateInteraction
         WriteLine(percent < 0 ? text : $"{text}: {percent}%");
     }
 
-    public async Task<bool> ConfirmForceExitAsync(CancellationToken token)
+    public async Task<ForceExitAction> ConfirmForceExitAsync(CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
         var message = chinese
             ? "主程序等待 10 秒仍未退出。是否强制退出并继续更新？未保存的内容可能丢失。"
             : "SyncClipboard has not exited after 10 seconds. Force it to exit and continue updating? Unsaved changes may be lost.";
-        if (TryPrompt(() => Prompt.Confirm(message, defaultValue: true), out var confirmed))
-            return confirmed;
-        WriteLine(message + " [Y/n]");
+        string[] choices = chinese ? ["是", "否", "重试"] : ["Yes", "No", "Retry"];
+        if (TryPrompt(() => Prompt.Select(message, choices, defaultValue: choices[0]), out var selected))
+            return selected == choices[0] ? ForceExitAction.Yes : selected == choices[1] ? ForceExitAction.No : ForceExitAction.Retry;
+        WriteLine(message + " [Y/n/r]");
         while (true)
         {
             var answer = (await input.ReadLineAsync(token))?.Trim();
             if (answer is null)
-                return false;
+                return ForceExitAction.No;
             if (answer.Length == 0 || answer.Equals("y", StringComparison.OrdinalIgnoreCase)
                 || answer.Equals("yes", StringComparison.OrdinalIgnoreCase) || answer == "是")
-                return true;
+                return ForceExitAction.Yes;
             if (answer.Equals("n", StringComparison.OrdinalIgnoreCase)
                 || answer.Equals("no", StringComparison.OrdinalIgnoreCase) || answer == "否")
-                return false;
-            WriteLine(chinese ? "请输入 y 或 n。" : "Enter y or n.");
+                return ForceExitAction.No;
+            if (answer.Equals("r", StringComparison.OrdinalIgnoreCase)
+                || answer.Equals("retry", StringComparison.OrdinalIgnoreCase) || answer == "重试")
+                return ForceExitAction.Retry;
+            WriteLine(chinese ? "请输入 y、n 或 r。" : "Enter y, n, or r.");
         }
     }
 
-    public async Task<UpdateFailureAction> AskFailureActionAsync(string path, Exception error, CancellationToken token)
+    public async Task<UpdateFailureAction> AskFailureActionAsync(string path, Exception error, bool canRollback, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
         WriteLine($"{path}: {error.Message}");
-        string[] choices = chinese
-            ? ["重试", "回滚，恢复旧版本", "终止，不回滚，保留备份"]
-            : ["Retry", "Roll back to the previous version", "Abort without rollback; keep backups"];
+        string[] choices = canRollback
+            ? chinese ? ["重试", "回滚，恢复旧版本", "终止，不回滚，保留备份"]
+                : ["Retry", "Roll back to the previous version", "Abort without rollback; keep backups"]
+            : chinese ? ["重试", "终止"] : ["Retry", "Abort"];
         var message = chinese ? "请选择操作" : "Choose an action";
         if (TryPrompt(() => Prompt.Select(message, choices, defaultValue: choices[0]), out var selected))
             return selected == choices[0] ? UpdateFailureAction.Retry
-                : selected == choices[1] ? UpdateFailureAction.Rollback : UpdateFailureAction.Abort;
-        WriteLine(chinese
-            ? "[1] 终止（不回滚，保留备份，不启动主程序） [2] 重试（默认） [3] 回滚"
-            : "[1] Abort (no rollback; keep backups; do not start the application) [2] Retry (default) [3] Roll back");
+                : canRollback && selected == choices[1] ? UpdateFailureAction.Rollback : UpdateFailureAction.Abort;
+        WriteLine(canRollback
+            ? chinese ? "[1] 终止（不回滚，保留备份，不启动主程序） [2] 重试（默认） [3] 回滚"
+                : "[1] Abort (no rollback; keep backups; do not start the application) [2] Retry (default) [3] Roll back"
+            : chinese ? "[1] 终止 [2] 重试（默认）" : "[1] Abort [2] Retry (default)");
         while (true)
         {
             switch ((await input.ReadLineAsync(token))?.Trim())
@@ -89,11 +95,13 @@ internal sealed class ConsoleUpdateInteraction : IUpdateInteraction
                 case "":
                 case "2":
                     return UpdateFailureAction.Retry;
-                case "3":
-                case null:
+                case "3" when canRollback:
                     return UpdateFailureAction.Rollback;
+                case null:
+                    return canRollback ? UpdateFailureAction.Rollback : UpdateFailureAction.Abort;
                 default:
-                    WriteLine(chinese ? "请输入 1、2 或 3。" : "Enter 1, 2, or 3.");
+                    WriteLine(canRollback ? (chinese ? "请输入 1、2 或 3。" : "Enter 1, 2, or 3.")
+                        : (chinese ? "请输入 1 或 2。" : "Enter 1 or 2."));
                     break;
             }
         }

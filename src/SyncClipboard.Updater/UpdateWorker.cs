@@ -6,7 +6,10 @@ using System.Text;
 
 namespace SyncClipboard.Updater;
 
-internal sealed class UpdateProcessExitException(string message, Exception? inner = null) : IOException(message, inner);
+internal sealed class UpdateProcessExitException(string message, Exception? inner = null, bool declined = false) : IOException(message, inner)
+{
+    public bool Declined { get; } = declined;
+}
 
 internal static class UpdateWorker
 {
@@ -15,44 +18,39 @@ internal static class UpdateWorker
 
     public static async Task<int> RunAsync(UpdateArguments update, IUpdateInteraction interaction, CancellationToken token)
     {
-        if (update.WorkDirectory is null)
-            return await RelocateAsync(update, interaction, token);
-        ValidateWorkspace(update.WorkDirectory);
-        if (!string.Equals(Path.GetFullPath(Environment.ProcessPath!),
-            Path.Combine(update.WorkDirectory, "SyncClipboard.Updater.exe"), StringComparison.OrdinalIgnoreCase))
-            throw new IOException("The update worker must run from its own workspace.");
-
         Semaphore? targetLock = null;
         var canRestart = true;
         try
         {
+            if (update.WorkDirectory is null)
+                throw new IOException("The main application must prepare the updater workspace.");
+            ValidateWorkspace(update.WorkDirectory);
+            if (!string.Equals(Path.GetFullPath(Environment.ProcessPath!),
+                Path.Combine(update.WorkDirectory, "SyncClipboard.Updater.exe"), StringComparison.OrdinalIgnoreCase))
+                throw new IOException("The update worker must run from its own workspace.");
             WindowsZipPackage.ValidateTarget(update);
             if (!update.Elevated)
             {
-                try
+                canRestart = false;
+                await UpdateIo.RunAsync("Lock installation / 锁定安装目录: " + update.Target, () =>
                 {
                     targetLock = AcquireInstallationLock(update.Target);
-                }
-                catch (IOException)
-                {
-                    canRestart = false;
-                    throw;
-                }
+                    return Task.CompletedTask;
+                }, interaction.AskFailureActionAsync, token);
+                canRestart = true;
             }
 
-            try
+            if (await RequiresElevationAsync(update.Target, update.Elevated, interaction, token))
             {
-                await InstallAsync(update, interaction, token);
-            }
-            catch (UnauthorizedAccessException) when (!update.Elevated && !token.IsCancellationRequested)
-            {
-                Log(update, "Retrying with administrator permission after restoring the original files.");
+                Log(update, "Requesting administrator permission for the installation directory.");
                 var start = CreateStartInfo(Environment.ProcessPath!, update with { Elevated = true });
                 start.UseShellExecute = true;
                 start.Verb = "runas";
                 using var elevated = Process.Start(start) ?? throw new IOException("Could not start the elevated updater.");
                 // Wait for the worker to finish before considering a restart.
                 await elevated.WaitForExitAsync(CancellationToken.None);
+                if (elevated.ExitCode == 3)
+                    return 3;
                 if (elevated.ExitCode != 0 && elevated.ExitCode != 1)
                 {
                     canRestart = false;
@@ -61,12 +59,14 @@ internal static class UpdateWorker
                 if (elevated.ExitCode != 0)
                     throw new IOException("The elevated update failed. See install.log for details.");
             }
+            else
+                await InstallAsync(update, interaction, token);
             if (update.Elevated)
                 return 0;
 
             Restart(update);
             Log(update, "Update completed. Removing staging files and old backups.");
-            ScheduleCleanup(update);
+            await ScheduleCleanupAsync(update, interaction, token);
             await interaction.ShowResultAsync(new UpdateResult(0));
             return 0;
         }
@@ -74,11 +74,13 @@ internal static class UpdateWorker
         {
             targetLock?.Dispose();
             targetLock = null;
+            if (error is UpdateProcessExitException { Declined: true })
+                return 3;
             Log(update, error.ToString());
             var recoveryRequired = error is UpdateRecoveryException or UpdateAbortedException || !canRestart;
             if (!update.Elevated && !recoveryRequired && error is not UpdateProcessExitException)
                 await RestartIfStoppedAsync(update);
-            var exitCode = recoveryRequired ? RecoveryRequired : 1;
+            var exitCode = error is UpdateProcessExitException ? 3 : recoveryRequired ? RecoveryRequired : 1;
             await interaction.ShowResultAsync(new UpdateResult(exitCode, error.Message, update.WorkDirectory, error switch
             {
                 UpdateRecoveryException recovery => recovery.BackupPath,
@@ -93,60 +95,50 @@ internal static class UpdateWorker
         }
     }
 
-    private static async Task<int> RelocateAsync(UpdateArguments update, IUpdateInteraction interaction, CancellationToken token)
+    internal static async Task<bool> RequiresElevationAsync(string target, bool elevated,
+        IUpdateInteraction interaction, CancellationToken token)
     {
-        string? workspace = null;
-        try
+        var needsElevation = false;
+        await UpdateIo.RunAsync("Check directory write access / 检查目录写入权限: " + target, () =>
         {
-            WindowsZipPackage.ValidateTarget(update);
-            var root = Path.Combine(Path.GetTempPath(), "SyncClipboard-updates");
-            Directory.CreateDirectory(root);
-            workspace = Path.Combine(root, Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(workspace);
-            File.WriteAllText(Path.Combine(workspace, WorkspaceMarker), "SyncClipboard updater workspace v1");
-            var worker = Path.Combine(workspace, "SyncClipboard.Updater.exe");
-            await WindowsZipPackage.CopyAsync(Environment.ProcessPath!, worker, token);
-            token.ThrowIfCancellationRequested();
-            using var launcher = Process.GetCurrentProcess();
-            using var process = Process.Start(CreateStartInfo(worker, update with
+            try
             {
-                WorkDirectory = workspace,
-                LauncherId = launcher.Id,
-                LauncherStartTime = launcher.StartTime.ToUniversalTime().Ticks
-            }))
-                ?? throw new IOException("Could not start the relocated updater.");
-            return 0;
-        }
-        catch (Exception error)
-        {
-            if (workspace is not null)
-                Log(update with { WorkDirectory = workspace }, error.ToString());
-            await RestartIfStoppedAsync(update);
-            await interaction.ShowResultAsync(new UpdateResult(1, error.Message, workspace));
-            return 1;
-        }
+                ProbeDirectoryWriteAccess(target);
+            }
+            catch (UnauthorizedAccessException) when (!elevated)
+            {
+                needsElevation = true;
+            }
+            return Task.CompletedTask;
+        }, interaction.AskFailureActionAsync, token);
+        return needsElevation;
+    }
+
+    internal static void ProbeDirectoryWriteAccess(string target)
+    {
+        var probe = Path.Combine(target, ".syncclipboard-write-test-" + Guid.NewGuid().ToString("N"));
+        using var file = new FileStream(probe, FileMode.CreateNew, FileAccess.Write, FileShare.None,
+            1, FileOptions.DeleteOnClose);
+        file.WriteByte(0);
+        file.Flush();
     }
 
     private static async Task InstallAsync(UpdateArguments update, IUpdateInteraction interaction, CancellationToken token)
     {
-        var attempt = Path.Combine(update.WorkDirectory!, "attempt-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(attempt);
+        string? stage = null;
+        string? attempt = null;
         interaction.Report("preparing", -1);
-        var stage = await WindowsZipPackage.PrepareAsync(update, attempt, token);
+        await UpdateIo.RunAsync("Prepare package / 准备更新包: " + update.PackagePath + " -> " + update.WorkDirectory, async () =>
+        {
+            // Each retry gets a fresh destination, so partial extraction never conflicts with CreateNew.
+            attempt = Path.Combine(update.WorkDirectory!, "attempt-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(attempt);
+            stage = await WindowsZipPackage.PrepareAsync(update, attempt, token);
+        }, interaction.AskFailureActionAsync, token);
         interaction.Report("waiting", -1);
-        await WaitForProcessAsync(update.ProcessId, update.ProcessStartTime, token,
-            interaction.ConfirmForceExitAsync);
-        await WaitForProcessAsync(update.LauncherId, update.LauncherStartTime, token);
-        await FileReplacement.ApplyAsync(stage, update.Target, Path.Combine(attempt, "backup"),
-            WindowsZipPackage.GetProtectedPaths(update), interaction.Report, token,
-            (path, error, cancellation) =>
-            {
-                Log(update, $"File operation failed: {path}: {error}");
-                // Preserve the automatic elevation attempt after restoring the original files.
-                if (error is UnauthorizedAccessException && !update.Elevated)
-                    return Task.FromException<UpdateFailureAction>(error);
-                return interaction.AskFailureActionAsync(path, error, cancellation);
-            });
+        await WaitForProcessAsync(update.ProcessId, update.ProcessStartTime, token, interaction.ConfirmForceExitAsync);
+        await FileReplacement.ApplyAsync(stage!, update.Target, Path.Combine(attempt!, "backup"),
+            WindowsZipPackage.GetProtectedPaths(update), interaction.Report, token, interaction.AskFailureActionAsync);
     }
 
     internal static Semaphore AcquireInstallationLock(string target)
@@ -172,7 +164,7 @@ internal static class UpdateWorker
     }
 
     internal static async Task WaitForProcessAsync(int pid, long startTime, CancellationToken token,
-        Func<CancellationToken, Task<bool>>? confirmForceExit = null, TimeSpan? gracefulWait = null)
+        Func<CancellationToken, Task<ForceExitAction>>? confirmForceExit = null, TimeSpan? gracefulWait = null)
     {
         if (pid <= 0)
             return;
@@ -198,26 +190,27 @@ internal static class UpdateWorker
                     await process.WaitForExitAsync(token);
                     return;
                 }
-                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
-                timeout.CancelAfter(gracefulWait ?? TimeSpan.FromSeconds(10));
-                try
+                while (true)
                 {
-                    await process.WaitForExitAsync(timeout.Token);
-                    return;
-                }
-                catch (OperationCanceledException) when (!token.IsCancellationRequested) { }
-                if (process.HasExited)
-                    return;
-                if (!await confirmForceExit(token))
-                {
-                    // A graceful exit during the prompt needs the normal failure/restart path.
+                    using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+                    timeout.CancelAfter(gracefulWait ?? TimeSpan.FromSeconds(10));
+                    try
+                    {
+                        await process.WaitForExitAsync(timeout.Token);
+                        return;
+                    }
+                    catch (OperationCanceledException) when (!token.IsCancellationRequested) { }
                     if (process.HasExited)
-                        throw new IOException("Update canceled. / 已取消更新。");
-                    throw new UpdateProcessExitException("Update canceled. / 已取消更新。");
+                        return;
+                    var action = await confirmForceExit(token);
+                    if (action == ForceExitAction.No)
+                        throw new UpdateProcessExitException("Update canceled. / 已取消更新。", declined: true);
+                    token.ThrowIfCancellationRequested();
+                    if (process.HasExited)
+                        return;
+                    if (action == ForceExitAction.Yes)
+                        break;
                 }
-                token.ThrowIfCancellationRequested();
-                if (process.HasExited)
-                    return;
                 try
                 {
                     process.Kill();
@@ -261,42 +254,33 @@ internal static class UpdateWorker
         return start;
     }
 
-    private static void ScheduleCleanup(UpdateArguments update)
+    private static async Task ScheduleCleanupAsync(UpdateArguments update, IUpdateInteraction interaction, CancellationToken token)
     {
-        try
+        await UpdateIo.RunAsync("Start cleanup / 启动清理: " + update.WorkDirectory, () =>
         {
             using var current = Process.GetCurrentProcess();
             var start = new ProcessStartInfo(Path.Combine(update.Target, "SyncClipboard.Updater.exe"))
-            { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = update.Target };
+            { UseShellExecute = false, WorkingDirectory = update.Target };
             foreach (var argument in new[] { "--cleanup-work", update.WorkDirectory!, "--wait-pid",
                 Environment.ProcessId.ToString(CultureInfo.InvariantCulture), "--wait-start",
-                current.StartTime.ToUniversalTime().Ticks.ToString(CultureInfo.InvariantCulture) })
+                current.StartTime.ToUniversalTime().Ticks.ToString(CultureInfo.InvariantCulture), "--language", update.Language })
                 start.ArgumentList.Add(argument);
             using var cleanup = Process.Start(start) ?? throw new IOException("Could not start updater cleanup.");
-        }
-        catch (Exception error)
-        {
-            Log(update, "Update succeeded, but workspace cleanup could not start: " + error);
-        }
+            return Task.CompletedTask;
+        }, interaction.AskFailureActionAsync, token);
     }
 
-    internal static async Task CleanupAsync(string workspace, int pid, long startTime)
+    internal static async Task CleanupAsync(string workspace, int pid, long startTime, UpdateFailureHandler? onFailure = null)
     {
         ValidateWorkspace(workspace);
         await WaitForProcessAsync(pid, startTime, CancellationToken.None);
         ValidateWorkspace(workspace);
-        for (var attempt = 0; ; attempt++)
+        await UpdateIo.RunAsync("Remove workspace / 删除工作目录: " + workspace, () =>
         {
-            try
-            {
+            if (Directory.Exists(workspace))
                 Directory.Delete(workspace, true);
-                return;
-            }
-            catch (Exception error) when (attempt < 9 && error is IOException or UnauthorizedAccessException)
-            {
-                await Task.Delay(500);
-            }
-        }
+            return Task.CompletedTask;
+        }, onFailure, CancellationToken.None);
     }
 
     internal static void ValidateWorkspace(string workspace)

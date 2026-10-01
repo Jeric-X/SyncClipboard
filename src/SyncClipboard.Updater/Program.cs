@@ -14,7 +14,7 @@ internal static class Program
             if (args is ["--help"])
             {
                 Console.WriteLine("SyncClipboard.Updater [--smoke-test]\nWindows portable ZIP: --package-path <zip> --digest sha256:<hash> "
-                    + "--target <directory> --executable <SyncClipboard.exe> --process-id <pid> "
+                    + "--target <directory> --executable <SyncClipboard.exe> --process-id <pid> --work-dir <workspace> "
                     + "[--language <language>] [--protect-path <path> ...]");
                 return 0;
             }
@@ -22,10 +22,20 @@ internal static class Program
             {
                 if (!OperatingSystem.IsWindows())
                     throw new PlatformNotSupportedException("ZIP installation is supported on Windows only.");
-                if (args is ["--cleanup-work", var workspace, "--wait-pid", var pid, "--wait-start", var start])
+                if (args is ["--cleanup-work", var workspace, "--wait-pid", var pid, "--wait-start", var start, "--language", var language])
                 {
-                    UpdateWorker.CleanupAsync(workspace, int.Parse(pid, System.Globalization.CultureInfo.InvariantCulture),
-                        long.Parse(start, System.Globalization.CultureInfo.InvariantCulture)).GetAwaiter().GetResult();
+                    var cleanupInteraction = new ConsoleUpdateInteraction(language);
+                    try
+                    {
+                        UpdateWorker.CleanupAsync(workspace, int.Parse(pid, System.Globalization.CultureInfo.InvariantCulture),
+                            long.Parse(start, System.Globalization.CultureInfo.InvariantCulture), cleanupInteraction.AskFailureActionAsync)
+                            .GetAwaiter().GetResult();
+                    }
+                    catch (Exception error)
+                    {
+                        cleanupInteraction.ShowResultAsync(new UpdateResult(1, error.Message, workspace)).GetAwaiter().GetResult();
+                        return 1;
+                    }
                     return 0;
                 }
                 var update = UpdateArguments.Parse(args);
