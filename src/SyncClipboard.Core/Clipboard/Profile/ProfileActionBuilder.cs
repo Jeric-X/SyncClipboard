@@ -11,11 +11,7 @@ public partial class ProfileActionBuilder(LocalClipboardSetter setter, IProfileE
     {
         List<MenuItem> actions =
         [
-            new MenuItem(Strings.Copy, () =>
-            {
-                DelegateExtention.SafeFireAndForget(
-                    () => setter.Set(profile, CancellationToken.None), nameof(ProfileActionBuilder));
-            }),
+            CreateCopyAction(profile),
         ];
 
         var localInfo = await profile.Localize(profileEnv.GetPersistentDir(), token);
@@ -47,9 +43,14 @@ public partial class ProfileActionBuilder(LocalClipboardSetter setter, IProfileE
     {
         var localInfo = await profile.Localize(profileEnv.GetPersistentDir(), token);
 
-        if (profile is TextProfile && HasUrl(localInfo.Text, out var url) && url is not null)
+        if (profile is TextProfile)
         {
-            return new MenuItem(Strings.OpenInBrowser, () => Sys.OpenWithDefaultApp(url));
+            if (HasUrl(localInfo.Text, out var url) && url is not null)
+            {
+                return new MenuItem(Strings.OpenInBrowser, () => Sys.OpenWithDefaultApp(url));
+            }
+
+            return CreateCopyAction(profile);
         }
 
         if (profile is FileProfile && localInfo.FilePaths.Length == 1)
@@ -68,6 +69,15 @@ public partial class ProfileActionBuilder(LocalClipboardSetter setter, IProfileE
         }
 
         return null;
+    }
+
+    private MenuItem CreateCopyAction(Profile profile)
+    {
+        return new MenuItem(Strings.Copy, () =>
+        {
+            DelegateExtention.SafeFireAndForget(
+                () => setter.Set(profile, CancellationToken.None), nameof(ProfileActionBuilder));
+        });
     }
 
     private static bool HasUrl(string str, out string? url)

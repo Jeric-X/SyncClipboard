@@ -11,11 +11,12 @@ public class ProfileActionBuilderTest
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
-    public async Task PlainTextHasNoContentAction()
+    public async Task PlainTextContentActionCopiesText()
     {
         var action = await _builder.GetPrimaryAction(new TextProfile("plain text"), CancellationToken.None);
 
-        Assert.IsNull(action);
+        Assert.AreEqual(Strings.Copy, action?.Text);
+        Assert.IsNotNull(action?.Action);
     }
 
     [TestMethod]
