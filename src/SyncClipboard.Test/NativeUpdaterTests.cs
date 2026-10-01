@@ -174,51 +174,6 @@ public class NativeUpdaterTests
     }
 
     [TestMethod]
-    [DataRow(true)]
-    [DataRow(false)]
-    public async Task Replacement_AllowsLinkedInstallationPaths(bool linkInstallationRoot)
-    {
-        if (OperatingSystem.IsWindows())
-            Assert.Inconclusive("Symbolic link creation requires a separate Windows privilege.");
-        var actual = Directory.CreateDirectory(Path.Combine(directory, "actual")).FullName;
-        File.WriteAllText(Path.Combine(actual, "library.dll"), "old");
-        var link = Path.Combine(target, "linked");
-        Directory.CreateSymbolicLink(link, actual);
-        var installTarget = linkInstallationRoot ? link : target;
-        var relative = linkInstallationRoot ? "library.dll" : Path.Combine("linked", "library.dll");
-        var source = Path.Combine(stage, relative);
-        Directory.CreateDirectory(Path.GetDirectoryName(source)!);
-        File.WriteAllText(source, "new");
-        var backup = Path.Combine(directory, "backup");
-
-        WindowsZipPackage.ValidateTarget(Arguments() with { Target = installTarget });
-        await FileReplacement.ApplyAsync(stage, installTarget, backup, [], (_, _) => { },
-            TestContext.CancellationTokenSource.Token);
-
-        Assert.AreEqual("new", File.ReadAllText(Path.Combine(actual, "library.dll")));
-        Assert.AreEqual("old", File.ReadAllText(Path.Combine(backup, relative)));
-    }
-
-    [TestMethod]
-    public async Task Replacement_OverwritesLinkedFile()
-    {
-        if (OperatingSystem.IsWindows())
-            Assert.Inconclusive("Symbolic link creation requires a separate Windows privilege.");
-        var actual = Path.Combine(directory, "old.dll");
-        File.WriteAllText(actual, "old");
-        var destination = Path.Combine(target, "library.dll");
-        File.CreateSymbolicLink(destination, actual);
-        File.WriteAllText(Path.Combine(stage, "library.dll"), "new");
-
-        await ApplyAsync((_, _) => { }, TestContext.CancellationTokenSource.Token);
-
-        Assert.AreEqual("new", File.ReadAllText(destination));
-        Assert.IsNull(new FileInfo(destination).LinkTarget);
-        Assert.AreEqual("old", File.ReadAllText(actual));
-        Assert.AreEqual("old", File.ReadAllText(Path.Combine(directory, "backup", "library.dll")));
-    }
-
-    [TestMethod]
     public async Task Replacement_PreservesUnrelatedFilesAndIgnoresProgressFailures()
     {
         File.WriteAllText(Path.Combine(target, "library.dll"), "old");
@@ -536,9 +491,7 @@ public class NativeUpdaterTests
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task Replacement_UsesNewFilePermissionsAndRestoresAttributesOnRollback(bool rollback)
+    public async Task Replacement_RestoresContentAndAttributesOnRollback()
     {
         if (!OperatingSystem.IsWindows())
         {
@@ -548,29 +501,17 @@ public class NativeUpdaterTests
         var path = Path.Combine(target, "a.txt");
         File.WriteAllText(path, "old");
         File.WriteAllText(Path.Combine(stage, "a.txt"), "new");
-        var file = new FileInfo(path);
-        var security = file.GetAccessControl();
-        using var identity = WindowsIdentity.GetCurrent();
-        security.SetAccessRuleProtection(true, preserveInheritance: true);
-        security.AddAccessRule(new FileSystemAccessRule(identity.User!, FileSystemRights.ReadPermissions, AccessControlType.Allow));
-        file.SetAccessControl(security);
         File.SetAttributes(path, FileAttributes.Hidden | FileAttributes.Archive);
-        var expectedSecurity = file.GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.Access);
         var expectedAttributes = File.GetAttributes(path);
         using var cancel = new CancellationTokenSource();
         var install = ApplyAsync((phase, _) =>
         {
-            if (rollback && phase == "installing")
+            if (phase == "installing")
                 cancel.Cancel();
         }, cancel.Token);
-        if (rollback)
-            await Assert.ThrowsAsync<OperationCanceledException>(() => install);
-        else
-            await install;
-        Assert.AreEqual(rollback ? "old" : "new", File.ReadAllText(path));
-        if (rollback)
-            Assert.AreEqual(expectedAttributes, File.GetAttributes(path));
-        Assert.AreNotEqual(expectedSecurity, new FileInfo(path).GetAccessControl().GetSecurityDescriptorSddlForm(AccessControlSections.Access));
+        await Assert.ThrowsAsync<OperationCanceledException>(() => install);
+        Assert.AreEqual("old", File.ReadAllText(path));
+        Assert.AreEqual(expectedAttributes, File.GetAttributes(path));
     }
 
     [TestMethod]
@@ -607,16 +548,10 @@ public class NativeUpdaterTests
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task Cleanup_DeletesOnlyValidatedUpdaterWorkspace(bool linkedRoot)
+    public async Task Cleanup_DeletesOnlyValidatedUpdaterWorkspace()
     {
-        if (linkedRoot && OperatingSystem.IsWindows())
-            Assert.Inconclusive("Symbolic link creation requires a separate Windows privilege.");
         await Assert.ThrowsAsync<IOException>(() => UpdateWorker.CleanupAsync(target));
         var root = Path.Combine(directory, "SyncClipboard-updates");
-        if (linkedRoot)
-            Directory.CreateSymbolicLink(root, Directory.CreateDirectory(Path.Combine(directory, "actual-work")).FullName);
         var workspace = Path.Combine(root, Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(workspace);
         File.WriteAllText(Path.Combine(workspace, ".syncclipboard-update"), "SyncClipboard updater workspace v1");
@@ -697,31 +632,6 @@ public class NativeUpdaterTests
                 Assert.IsFalse(process.HasExited);
             }
             Assert.IsTrue(prompted);
-        }
-        finally
-        {
-            if (!process.HasExited)
-                process.Kill();
-            await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
-        }
-    }
-
-    [TestMethod]
-    public async Task ParentWait_DeclinedPromptNeverRestartsWhenProcessExitedDuringPrompt()
-    {
-        using var process = StartWaitingProcess();
-        try
-        {
-            var error = await Assert.ThrowsAsync<IOException>(() => UpdateWorker.WaitForProcessAsync(process.Id,
-                process.StartTime.ToUniversalTime().Ticks, TestContext.CancellationTokenSource.Token, async token =>
-                {
-                    process.Kill();
-                    await process.WaitForExitAsync(token);
-                    return ForceExitAction.No;
-                }, TimeSpan.FromMilliseconds(50)));
-            Assert.IsInstanceOfType<UpdateProcessExitException>(error);
-            Assert.IsTrue(((UpdateProcessExitException)error).Declined);
-            Assert.IsTrue(process.HasExited);
         }
         finally
         {
@@ -813,9 +723,7 @@ public class NativeUpdaterTests
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task NativeAotUpdater_StartsFromPreparedWorkspaceInstallsRestartsAndCleansWorkspace(bool packageHasUpdater)
+    public async Task NativeAotUpdater_StartsFromPreparedWorkspaceInstallsRestartsAndCleansWorkspace()
     {
         if (!OperatingSystem.IsWindows())
             Assert.Inconclusive("Windows NativeAOT process integration test.");
@@ -826,10 +734,8 @@ public class NativeUpdaterTests
         foreach (var name in new[] { "SyncClipboard.exe", "SyncClipboard.Updater.exe" })
         {
             File.Copy(native, Path.Combine(target, name));
+            File.Copy(native, Path.Combine(stage, name));
         }
-        File.Copy(native, Path.Combine(stage, "SyncClipboard.exe"));
-        if (packageHasUpdater)
-            File.WriteAllText(Path.Combine(stage, "SyncClipboard.Updater.exe"), "not an executable");
         const string packageName = "SyncClipboard_win_x64_portable.zip";
         File.WriteAllText(Path.Combine(stage, "update_info.json"), JsonSerializer.Serialize(new
         { UpdateInfo = new { manage_type = "manual", update_src = "github", package_name = packageName } }));

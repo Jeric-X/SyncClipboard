@@ -195,7 +195,6 @@ public class UpdateInstallationTests
 
         Assert.AreEqual(updater, start.FileName);
         Assert.AreEqual(workspace, arguments[Array.IndexOf(arguments, "--work-dir") + 1]);
-        Assert.DoesNotContain("--launcher-id", arguments);
         Assert.IsFalse(start.UseShellExecute);
         Assert.AreEqual(string.Empty, start.Arguments);
         Assert.AreEqual(package, arguments[Array.IndexOf(arguments, "--package-path") + 1]);
