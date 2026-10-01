@@ -38,6 +38,7 @@ internal sealed class UpdaterText
         --process-id <pid>
         --work-dir <workspace>
         [--language <language>]
+        [--app-elevated <true|false>]
         [--protect-path <path> ...]
         """;
 
@@ -248,6 +249,10 @@ internal sealed class UpdaterText
     public string InvalidProcessId => isChinese
         ? "主程序进程 ID 无效。"
         : "Invalid parent process ID.";
+
+    public string InvalidAppElevated => isChinese
+        ? "--app-elevated 必须为 true 或 false。"
+        : "--app-elevated must be true or false.";
 
     public string InvalidExecutable => isChinese
         ? "主程序必须为安装目录中的 SyncClipboard.exe。"

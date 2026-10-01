@@ -56,13 +56,16 @@ public class NativeUpdaterTests
     }
 
     [TestMethod]
-    public void Arguments_RoundTripPathsDigestAndProtection()
+    [DataRow(false)]
+    [DataRow(true)]
+    public void Arguments_RoundTripPathsDigestAndProtection(bool appElevated)
     {
         var expected = Arguments() with
         {
             WorkDirectory = Path.Combine(directory, "work"),
             Elevated = true,
-            ProcessStartTime = DateTime.UtcNow.Ticks
+            ProcessStartTime = DateTime.UtcNow.Ticks,
+            AppElevated = appElevated
         };
         var actual = UpdateArguments.Parse(expected.ToCommandLine().ToArray());
         Assert.AreEqual(expected with { ProtectedPaths = actual.ProtectedPaths }, actual);
@@ -75,9 +78,22 @@ public class NativeUpdaterTests
         var args = Arguments().ToCommandLine().ToArray();
         Assert.Throws<ArgumentException>(() => UpdateArguments.Parse([.. args, "--digest", "sha256:bad"]));
         Assert.Throws<ArgumentException>(() => UpdateArguments.Parse([.. args, "--unknown", "value"]));
+        Assert.Throws<ArgumentException>(() => UpdateArguments.Parse([.. args, "--app-elevated", "true"]));
         Assert.Throws<ArgumentException>(() => UpdateArguments.Parse((Arguments() with { Digest = "sha256:bad" }).ToCommandLine().ToArray()));
         Assert.Throws<ArgumentException>(() => UpdateArguments.Parse((Arguments() with { Executable = Path.Combine(directory, "other.exe") })
             .ToCommandLine().ToArray()));
+    }
+
+    [TestMethod]
+    public void Arguments_AppElevationDefaultsToFalseAndRejectsInvalidValues()
+    {
+        var args = Arguments().ToCommandLine().ToList();
+        var index = args.IndexOf("--app-elevated");
+        args.RemoveRange(index, 2);
+
+        Assert.IsFalse(UpdateArguments.Parse([.. args]).AppElevated);
+        Assert.Throws<ArgumentException>(() => UpdateArguments.Parse([.. args, "--app-elevated", "yes"]));
+        Assert.Throws<ArgumentException>(() => UpdateArguments.Parse([.. args, "--app-elevated"]));
     }
 
     [TestMethod]

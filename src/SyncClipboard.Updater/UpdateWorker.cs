@@ -243,8 +243,13 @@ internal static class UpdateWorker
 
     private static void Restart(UpdateArguments update)
     {
-        using var process = Process.Start(new ProcessStartInfo(update.Executable)
-        { UseShellExecute = true, WorkingDirectory = update.Target }) ?? throw new IOException(UpdaterText.Current.RestartFailed);
+        var start = new ProcessStartInfo(update.Executable)
+        {
+            UseShellExecute = true,
+            WorkingDirectory = update.Target,
+            Verb = update.AppElevated ? "runas" : string.Empty
+        };
+        using var process = Process.Start(start) ?? throw new IOException(UpdaterText.Current.RestartFailed);
     }
 
     internal static ProcessStartInfo CreateStartInfo(string executable, UpdateArguments update)

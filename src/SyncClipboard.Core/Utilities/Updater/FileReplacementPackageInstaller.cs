@@ -50,6 +50,7 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
     {
         var targetPath = Path.GetFullPath(Env.ProgramDirectory);
         var updaterPath = Path.Combine(workspace, "SyncClipboard.Updater.exe");
+        var appElevated = OperatingSystem.IsWindows() && Env.IsRunningAsAdministrator;
         using var currentProcess = Process.GetCurrentProcess();
         var start = new ProcessStartInfo(updaterPath) { UseShellExecute = false };
         // The updater waits for this process to exit, then owns staging, verification, replacement, and cleanup.
@@ -62,6 +63,7 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
             "--executable", OperatingSystem.IsWindows() ? Path.Combine(targetPath, "SyncClipboard.exe") : Env.ProgramPath,
             "--process-id", Environment.ProcessId.ToString(CultureInfo.InvariantCulture),
             "--process-start-time", currentProcess.StartTime.ToUniversalTime().Ticks.ToString(CultureInfo.InvariantCulture),
+            "--app-elevated", appElevated ? "true" : "false",
             "--language", CultureInfo.CurrentUICulture.Name
         ];
         foreach (var argument in arguments)

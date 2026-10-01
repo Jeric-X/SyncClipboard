@@ -205,6 +205,9 @@ public class UpdateInstallationTests
             arguments[Array.IndexOf(arguments, "--executable") + 1]);
         Assert.AreEqual(Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture),
             arguments[Array.IndexOf(arguments, "--process-id") + 1]);
+        var appElevated = OperatingSystem.IsWindows() && Env.IsRunningAsAdministrator;
+        Assert.AreEqual(appElevated ? "true" : "false",
+            arguments[Array.IndexOf(arguments, "--app-elevated") + 1]);
         Assert.IsEmpty(Directory.GetFileSystemEntries(directory));
     }
 

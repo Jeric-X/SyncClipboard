@@ -12,7 +12,8 @@ internal sealed record UpdateArguments(
     string[] ProtectedPaths,
     string? WorkDirectory = null,
     bool Elevated = false,
-    long ProcessStartTime = 0)
+    long ProcessStartTime = 0,
+    bool AppElevated = false)
 {
     public static UpdateArguments Parse(string[] args)
     {
@@ -34,6 +35,7 @@ internal sealed record UpdateArguments(
 
         var startTimeValue = values.GetValueOrDefault("--process-start-time", "0");
         var processStartTime = long.Parse(startTimeValue, CultureInfo.InvariantCulture);
+        var appElevated = ParseAppElevated(values.GetValueOrDefault("--app-elevated", "false"));
 
         return new UpdateArguments(
             PackagePath: packagePath,
@@ -45,7 +47,8 @@ internal sealed record UpdateArguments(
             ProtectedPaths: protectedPaths,
             WorkDirectory: workDirectory,
             Elevated: elevated,
-            ProcessStartTime: processStartTime);
+            ProcessStartTime: processStartTime,
+            AppElevated: appElevated);
     }
 
     private static (Dictionary<string, string> Values, string[] ProtectedPaths, bool Elevated) ReadOptions(string[] args)
@@ -70,6 +73,7 @@ internal sealed record UpdateArguments(
                 case "--protect-path":
                 case "--work-dir":
                 case "--process-start-time":
+                case "--app-elevated":
                     break;
                 default:
                     throw new ArgumentException(UpdaterText.Current.UnknownArgument + key);
@@ -140,6 +144,16 @@ internal sealed record UpdateArguments(
         return processId;
     }
 
+    private static bool ParseAppElevated(string value)
+    {
+        if (!bool.TryParse(value, out var appElevated))
+        {
+            throw new ArgumentException(UpdaterText.Current.InvalidAppElevated);
+        }
+
+        return appElevated;
+    }
+
     private static string ParseExecutable(string value, string target)
     {
         var executable = Path.GetFullPath(value);
@@ -161,6 +175,7 @@ internal sealed record UpdateArguments(
             "--target", Target,
             "--executable", Executable,
             "--process-id", ProcessId.ToString(CultureInfo.InvariantCulture),
+            "--app-elevated", AppElevated ? "true" : "false",
             "--language", Language
         ];
 
