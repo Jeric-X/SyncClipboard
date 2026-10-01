@@ -551,9 +551,11 @@ public class NativeUpdaterTests
         using var locked = new FileStream(updater, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
         using var owner = StartWaitingProcess();
         var start = UpdateWorker.CreateSelfCleanupStartInfo(workspace);
+        start.RedirectStandardError = true;
         start.Environment["SYNC_CLIPBOARD_CLEANUP_PID"] = owner.Id.ToString();
         start.Environment["SYNC_CLIPBOARD_CLEANUP_START"] = owner.StartTime.ToUniversalTime().Ticks.ToString();
         using var process = Process.Start(start)!;
+        var error = process.StandardError.ReadToEndAsync(TestContext.CancellationTokenSource.Token);
         try
         {
             await Task.Delay(300, TestContext.CancellationTokenSource.Token);
@@ -564,9 +566,10 @@ public class NativeUpdaterTests
             Assert.IsFalse(process.HasExited);
             owner.Kill();
             await owner.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
+            // Allow the cleanup script's 30 one-second retries plus PowerShell startup on busy runners.
             await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token)
-                .WaitAsync(TimeSpan.FromSeconds(10), TestContext.CancellationTokenSource.Token);
-            Assert.AreEqual(0, process.ExitCode);
+                .WaitAsync(TimeSpan.FromMinutes(1), TestContext.CancellationTokenSource.Token);
+            Assert.AreEqual(0, process.ExitCode, await error);
             Assert.IsFalse(Directory.Exists(workspace));
             Assert.IsTrue(Directory.Exists(target));
         }
