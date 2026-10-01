@@ -1,5 +1,3 @@
-using Moq;
-using Sharprompt.Drivers;
 using SyncClipboard.Updater;
 
 namespace SyncClipboard.Test;
@@ -8,50 +6,6 @@ namespace SyncClipboard.Test;
 public class UpdaterInteractionTests
 {
     public TestContext TestContext { get; set; } = null!;
-
-    [TestMethod]
-    [DataRow("\n", "Yes")]
-    [DataRow("y", "Yes")]
-    [DataRow("是", "Yes")]
-    [DataRow("n", "No")]
-    [DataRow("否", "No")]
-    [DataRow("", "No")]
-    [DataRow("invalid\nn", "No")]
-    [DataRow("r", "Retry")]
-    [DataRow("重试", "Retry")]
-    public async Task ForceExitConfirmation_DefaultsToYesButDoesNotConfirmOnEndOfInput(string answer, string expected)
-    {
-        using var input = new StringReader(answer);
-        using var output = new StringWriter();
-        var interaction = new ConsoleUpdateInteraction("zh-CN", input: input, output: output);
-        Assert.AreEqual(Enum.Parse<ForceExitAction>(expected), await interaction.ConfirmForceExitAsync(TestContext.CancellationTokenSource.Token));
-        Assert.Contains("[Y/n/r]", output.ToString());
-    }
-
-    [TestMethod]
-    public void PromptDriver_IgnoresEscapeAndPreservesOtherKeys()
-    {
-        var inner = new Mock<IConsoleDriver>();
-        inner.SetupSequence(driver => driver.ReadKey())
-            .Returns(new ConsoleKeyInfo('\u001b', ConsoleKey.Escape, false, false, false))
-            .Returns(new ConsoleKeyInfo('\u001b', ConsoleKey.Escape, false, false, false))
-            .Returns(new ConsoleKeyInfo('\r', ConsoleKey.Enter, false, false, false));
-        using var driver = new UpdaterConsoleDriver(inner.Object);
-        Assert.AreEqual(ConsoleKey.Enter, driver.ReadKey().Key);
-        inner.Verify(driver => driver.ReadKey(), Times.Exactly(3));
-    }
-
-    [TestMethod]
-    public async Task RecoveryFailure_ShowsExactBackupAndWorkspacePaths()
-    {
-        using var input = new StringReader("");
-        using var output = new StringWriter();
-        var interaction = new ConsoleUpdateInteraction("zh-CN", input: input, output: output);
-        await interaction.ShowResultAsync(new UpdateResult(2, "回滚失败", "workspace", "workspace/attempt/backup"));
-        Assert.Contains("回滚失败", output.ToString());
-        Assert.Contains("备份目录: workspace/attempt/backup", output.ToString());
-        Assert.Contains("日志及工作目录: workspace", output.ToString());
-    }
 
     [TestMethod]
     public async Task Worker_ReportsPreparationFailureThroughInteraction()
@@ -82,7 +36,7 @@ public class UpdaterInteractionTests
                 return acknowledged.Task;
             }
         };
-        var run = SyncClipboard.Updater.Program.RunUpdateAsync(["--digest", "invalid", "--language", "zh-CN"],
+        var run = UpdateRunner.RunAsync(["--digest", "invalid", "--language", "zh-CN"],
             interaction, TestContext.CancellationTokenSource.Token);
         try
         {
@@ -96,20 +50,6 @@ public class UpdaterInteractionTests
             acknowledged.TrySetResult();
         }
         Assert.AreEqual(1, await run);
-    }
-
-    [TestMethod]
-    public async Task FailureOutsideReplacement_ShowsCauseAndDoesNotOfferRollback()
-    {
-        using var input = new StringReader("3\n2\n");
-        using var output = new StringWriter();
-        var interaction = new ConsoleUpdateInteraction("zh-CN", input: input, output: output);
-        var choice = await interaction.AskFailureActionAsync("复制: package.zip", new UnauthorizedAccessException("Access denied"),
-            false, TestContext.CancellationTokenSource.Token);
-        Assert.AreEqual(UpdateFailureAction.Retry, choice);
-        Assert.Contains("package.zip", output.ToString());
-        Assert.Contains("Access denied", output.ToString());
-        Assert.DoesNotContain("回滚", output.ToString());
     }
 
     [TestMethod]

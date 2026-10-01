@@ -1,0 +1,17 @@
+<Project>
+  <PropertyGroup>
+    <AssemblyName>SyncClipboard.Updater</AssemblyName>
+    <RootNamespace>SyncClipboard.Updater</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PublishAot>true</PublishAot>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>full</TrimMode>
+    <IlcOptimizationPreference>Size</IlcOptimizationPreference>
+    <StripSymbols>true</StripSymbols>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)SyncClipboard.Updater.Core.csproj" />
+  </ItemGroup>
+</Project>

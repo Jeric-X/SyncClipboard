@@ -55,11 +55,46 @@ public class UpdateInstallationTests
     }
 
     [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task PrepareWindowsUpdater_ReusesAvailableRuntimeAndResourcesWithoutRequiringMissingLibraries(bool looseAppXbf)
+    {
+        string[] files = ["SyncClipboard.Updater.exe", "Microsoft.UI.Xaml.dll", "Microsoft.WindowsAppRuntime.Bootstrap.dll",
+            "SyncClipboard.pri", "SyncClipboard.Core.dll", "coreclr.dll"];
+        if (looseAppXbf)
+            files = [.. files, "App.xbf"];
+        foreach (var name in files)
+            await File.WriteAllTextAsync(Path.Combine(directory, name), "content of " + name, TestContext.CancellationTokenSource.Token);
+        var workspace = await FileReplacementPackageInstaller.PrepareWindowsUpdaterAsync(directory,
+            TestContext.CancellationTokenSource.Token);
+        try
+        {
+            // The copied files remain readable after their originals have been removed for replacement.
+            foreach (var name in files)
+                File.Delete(Path.Combine(directory, name));
+            Assert.AreEqual("content of SyncClipboard.Updater.exe", File.ReadAllText(Path.Combine(workspace, files[0])));
+            Assert.AreEqual("content of Microsoft.UI.Xaml.dll", File.ReadAllText(Path.Combine(workspace, files[1])));
+            Assert.AreEqual("content of Microsoft.WindowsAppRuntime.Bootstrap.dll", File.ReadAllText(Path.Combine(workspace, files[2])));
+            Assert.AreEqual("content of SyncClipboard.pri", File.ReadAllText(Path.Combine(workspace, "resources.pri")));
+            if (looseAppXbf)
+                Assert.AreEqual("content of App.xbf", File.ReadAllText(Path.Combine(workspace, "App.xbf")));
+            Assert.IsFalse(File.Exists(Path.Combine(workspace, "SyncClipboard.Core.dll")));
+            Assert.IsFalse(File.Exists(Path.Combine(workspace, "coreclr.dll")));
+            Assert.IsFalse(File.Exists(Path.Combine(workspace, "Microsoft.WindowsAppRuntime.dll")));
+        }
+        finally
+        {
+            Directory.Delete(workspace, true);
+        }
+    }
+
+    [TestMethod]
     public async Task PrepareUpdater_CopiesHelperAndCreatesWorkspaceMarker()
     {
         var source = Path.Combine(directory, "helper.exe");
         await File.WriteAllTextAsync(source, "updater", TestContext.CancellationTokenSource.Token);
-        var workspace = await FileReplacementPackageInstaller.PrepareUpdaterAsync(source, TestContext.CancellationTokenSource.Token);
+        var workspace = await FileReplacementPackageInstaller.PrepareUpdaterAsync([(source, "SyncClipboard.Updater.exe")],
+            TestContext.CancellationTokenSource.Token);
         try
         {
             SyncClipboard.Updater.UpdateWorker.ValidateWorkspace(workspace);
@@ -233,7 +268,7 @@ public class UpdateInstallationTests
         var request = new UpdateInstallRequest(Path.Combine(directory, "package"), "sha256:unused");
 
         string[] names = OperatingSystem.IsLinux()
-            ? ["SyncClipboard.Updater", .. LinuxUpdaterFiles.Libraries]
+            ? ["SyncClipboard.Updater", .. FileReplacementPackageInstaller.LinuxUpdaterFiles.Libraries]
             : ["SyncClipboard.Updater.exe"];
         var created = new List<string>();
         try

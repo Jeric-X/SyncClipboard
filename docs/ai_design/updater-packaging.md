@@ -1,35 +1,40 @@
-# 独立 NativeAOT 辅助程序的构建集成
+# NativeAOT 更新器的构建与依赖复用
 
-本 PR 只包含辅助程序及主程序构建集成：Windows 使用控制台，macOS、Linux 使用 Avalonia 窗口和软件渲染。当前输出或显示占位说明，不包含更新协议、安装、回滚和重启流程，主程序尚未调用辅助程序。
+## 项目职责
 
-## 构建与输出
+- `SyncClipboard.Updater.Core`：交互接口、参数、语言，以及 ZIP、DMG、AppImage 的校验、安装、回滚、重启和清理；不引用界面框架或主程序业务项目。
+- `SyncClipboard.Updater.WinUI`：WinUI 主程序对应的 Windows 更新界面。
+- `SyncClipboard.Updater.Avalonia`：Avalonia 桌面入口对应的更新界面，包括 macOS、Linux 和 Windows Avalonia。
 
-三个桌面入口项目导入 `build/Updater.targets`。普通 `dotnet build` 和 `dotnet publish` 都自动发布同架构的 NativeAOT 辅助程序，再将可执行文件加入主程序输出。无需独立辅助程序 workflow、artifact 下载或按包类型注入；Windows EXE/ZIP、Linux AppImage/deb/rpm 均随桌面输出携带它，Server 不引用该构建目标。解决方案只提供 x64、ARM64 两种平台，移除 x86、Any CPU 解决方案入口及项目中的 x86/RID 声明；托管项目内部仍可使用 AnyCPU 配置。
+两个界面项目引用 Core，导入 `src/SyncClipboard.Updater.Core/Updater.props` 共用 NativeAOT 发布配置。输出统一命名为 `SyncClipboard.Updater`，Core 被链接到可执行文件中，不向应用包添加 `SyncClipboard.Updater.Core.dll`。
 
-主程序指定 RID 时辅助程序使用同一 RID；未指定时，以当前 SDK 主机 RID 为基础，按所选 Platform（x64/ARM64）替换架构；AnyCPU 使用主机架构。例如 Windows x64 主机上的 ARM64 配置生成 win-arm64 辅助程序。支持 win/linux/osx 的 x64、arm64；显式指定不支持的架构会报错，不再为 x86 跳过辅助程序构建。NativeAOT 需要对应系统的原生编译工具链，Linux CI 改用对应架构的 Ubuntu runner，Windows CI 同样使用对应架构 runner，以便启动验证。
+## 构建与打包
 
-辅助程序在独立 dotnet 进程中发布，避免继承主程序的 `net10.0-macos`/WinUI 目标框架、`OutDir`、`SelfContained=false` 等配置。通过 `--artifacts-path` 将还原、编译和发布产物隔离到主项目 obj 下，按调用项目、配置、目标框架和 RID 分目录，避免多目标框架或多个入口项目并行构建竞争同一份 bin/obj；SDK 增量编译复用未变化的结果。设计时构建跳过发布，不影响 IDE 加载。主程序真实构建如果辅助程序发布失败会直接失败，不静默漏掉辅助文件。
+桌面入口导入 `src/SyncClipboard.Updater.Core/Updater.targets`，随主程序发布同架构更新器，只收集一个可执行文件。Windows/Linux 放在主输出目录，macOS 通过 BundleResource 放在 `.app/Contents/Resources/Updater/` 并随应用签名。Server 不参与。
 
-Windows/Linux 输出：
+所有 WinUI 组合都打包更新器，包括未附带 .NET 或 Windows App SDK 的组合。更新器始终为 NativeAOT；只有 `WindowsAppSDKSelfContained` 跟随主程序，使用 SDK 的标准自动初始化机制：
 
-```text
-主程序输出目录/
-  SyncClipboard.Updater[.exe]
-  主程序及其已有依赖
-```
+- 自包含 SDK：EXE 含本地 WinRT 激活清单，使用临时目录里的原生库。
+- 不包含 SDK：EXE 通过 bootstrap 使用系统安装的 SDK；原生 bootstrap DLL 来自主程序输出，托管 bootstrap 程序集被 AOT 链接进 EXE。
 
-macOS 使用 `BundleResource` 将可执行文件纳入 `.app/Contents/Resources/Updater/`，在 SDK 签名前复制。最终仍由 BundleTool 签名并制作 DMG，Homebrew 与直接下载共用产物。
+两种 SDK 模式分别编译 EXE。自包含构建的激活清单绑定本地 DLL，不能只在运行时调用 bootstrap 就切换成系统运行库。每个发布包仍只新增一个 EXE。
 
-## 依赖复用
+WinUI 更新器在 Debug 配置下也开启编译优化，避免 .NET 10 NativeAOT 在 WinUI 引用跟踪回调中触发 GC 死锁（[dotnet/runtime#121538](https://github.com/dotnet/runtime/issues/121538)）。界面冒烟测试在窗口和对话框存活时强制执行 GC，验证该路径能够完成。
 
-Windows 辅助程序不引用 Avalonia。macOS/Linux 辅助程序沿用 `Directory.Packages.props` 的 Avalonia 版本，但主程序只收集辅助可执行文件，不复制其 publish 目录里的图形原生库、调试符号或其他文件，因此没有第二套 Skia/HarfBuzz。
+发布在独立 dotnet 进程进行，`--artifacts-path` 按入口项目、配置、TFM、RID、WinUI SDK 模式隔离中间产物。主程序的 .NET `SelfContained` 等全局属性不会污染更新器。发布失败直接阻止主程序构建，设计时构建跳过。
 
-Linux 运行需要主程序的 `libSkiaSharp.so`、`libHarfBuzzSharp.so`；macOS 还需要 `libAvaloniaNative.dylib`，对应另外两个库的 dylib 版本。库依然由主程序正常构建/打包提供。更改 Avalonia 或底层依赖后需再次验证完整依赖集合。
+## 运行时依赖复用
 
-后续接入实际更新时，主程序应把当前版本的辅助可执行文件和所需原生库复制到独立工作目录，保留执行权限，再启动辅助程序。不得从新版本下载辅助程序却搭配旧版本的原生库，也不得在替换安装目录时持续依赖旧 `.app` 或 AppImage 挂载目录。本 PR 尚未实现该运行时复制流程。
+`FileReplacementPackageInstaller` 创建独立临时目录和标记，复制当前版本更新器及所需依赖，然后启动更新器。Windows 的依赖名单集中在 `WindowsUpdaterFiles`，只复制主程序输出中存在的 DLL，缺失时直接跳过，不据此禁止安装或漏打包更新器。无 SDK 的包使用系统运行库。
+
+WinUI 自包含输出的 `SyncClipboard.pri` 含合并后的主题资源，复制为临时目录的 `resources.pri`。Debug 构建的 PRI 引用外部 `App.xbf`，该文件存在时一并复制；Release 通常将其嵌入 PRI。只有 EXE 和 DLL 不足以绘制 WinUI 控件；PRI 和 XBF 同样复用主程序编译产物，不在发布包新增另一份。Windows Avalonia 复用 Skia/HarfBuzz，macOS/Linux 保留原有 dylib/so 复制及权限处理。
+
+更新器替换安装目录时，不加载原安装目录里的 DLL。WinUI 会持续映射临时目录的 DLL，因此成功更新后启动系统 PowerShell 清理进程，等待更新器退出，再验证目录命名和标记，以 LiteralPath 删除。路径、PID 和进程启动时间通过环境变量传递，不拼接进脚本。安装失败或主动终止仍保留工作目录和备份。
 
 ## 验证
 
-主程序 CI 在构建完成后做启动检查：Windows 只复制控制台 executable；macOS/Linux 从主程序输出复制辅助 executable 及上述原生库，到含中文和空格的临时目录，从其他工作目录运行 `--smoke-test`。macOS/Linux 显示真实 Avalonia 窗口后退出，Linux 使用 xvfb；Windows 验证控制台输出。检查直接验证主程序依赖复用，不使用辅助程序 publish 中的库。
+Core 测试通过交互接口验证更新逻辑，在 CI 中独立运行。更新器的界面启动可通过现有冒烟测试手动验证。
 
-不增加独立压缩包、产物报告或最终安装包解包检查。Windows portable ZIP 保持最高 Deflate 压缩级别。各平台仍使用已有格式检查和主程序打包 CI；实际安装能力由后续 PR 接入。
+更改 Windows App SDK、WinUI 控件或 Avalonia 版本后，应重新验证原生依赖集合。运行库初始化遵循 [Microsoft 官方文档](https://learn.microsoft.com/windows/apps/windows-app-sdk/use-windows-app-sdk-run-time)。
+
+待实现：在各平台实现集成冒烟测试。

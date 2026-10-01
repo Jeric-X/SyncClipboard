@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>SyncClipboard.Updater</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsAotCompatible>true</IsAotCompatible>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../SyncClipboard.Core/Utilities/FileSystem.cs" Link="Utilities/FileSystem.cs" />
+    <InternalsVisibleTo Include="SyncClipboard.Updater" />
+    <InternalsVisibleTo Include="SyncClipboard.Test" />
+  </ItemGroup>
+</Project>

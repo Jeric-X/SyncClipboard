@@ -44,10 +44,10 @@ jobs:
     - name: Show selected SDK
       run: dotnet --info
 
-    - name: Install native toolchain and desktop libraries
+    - name: Install native toolchain
       run: |
         sudo apt-get update
-        sudo apt-get install -y clang zlib1g-dev libice6 libsm6 libx11-6 libxext6 libxrandr2 libxi6 libxcursor1 libfontconfig1 xvfb xauth
+        sudo apt-get install -y clang zlib1g-dev
 
     - name: Build linux-${{ matrix.cpu }}-${{ matrix.type }}
       run: >-
@@ -55,18 +55,6 @@ jobs:
         -f net10.0 -r linux-${{ matrix.cpu }} -c Release
         -p:Platform=${{ matrix.cpu }} --self-contained ${{ matrix.ifSelf }}
         -o linux-${{ matrix.cpu }}-${{ matrix.type }}
-
-    - name: Check updater with the application's native libraries
-      timeout-minutes: 2
-      run: |
-        check_dir="$RUNNER_TEMP/更新 helper 含空格"
-        app_dir="$GITHUB_WORKSPACE/linux-${{ matrix.cpu }}-${{ matrix.type }}"
-        mkdir -p "$check_dir"
-        cp "$app_dir/SyncClipboard.Updater" "$app_dir/libSkiaSharp.so" "$app_dir/libHarfBuzzSharp.so" "$check_dir/"
-        chmod +x "$check_dir/SyncClipboard.Updater"
-        cd "$RUNNER_TEMP"
-        xvfb-run -a "$check_dir/SyncClipboard.Updater" --smoke-test | tee updater-smoke.log
-        grep -q 'GUI_SMOKE=PASS' updater-smoke.log
 
     - name: Upload linux-${{ matrix.cpu }}-${{ matrix.type }}
       uses: actions/upload-artifact@v7

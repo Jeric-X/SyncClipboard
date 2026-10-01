@@ -12,7 +12,7 @@ internal static class FileReplacement
 
     public static async Task ApplyAsync(string stage, string target, string backup, string[] protectedPaths,
         Action<string, int> progress, CancellationToken token,
-        UpdateFailureHandler? onFailure = null)
+        UpdateFailureHandler? onFailure = null, Action<bool>? setRollbackAvailable = null)
     {
         Entry[] entries = [];
         long growth = 0;
@@ -70,7 +70,11 @@ internal static class FileReplacement
                     ValidateDestination(entry.Destination, target, protectedPaths);
                     CreateParents(Path.GetDirectoryName(entry.Destination)!, createdDirectories);
                     await ReplaceAsync(entry.Source, entry.Destination, onFailure, backup, token,
-                        () => entry.Modified = true);
+                        () =>
+                        {
+                            entry.Modified = true;
+                            setRollbackAvailable?.Invoke(true);
+                        });
                 }, onFailure, token, backup, canRollback: () => entries.Any(e => e.Modified));
                 Report(progress, "installing", (i + 1) * 100 / entries.Length);
                 token.ThrowIfCancellationRequested();
@@ -78,6 +82,7 @@ internal static class FileReplacement
         }
         catch (Exception original) when (original is not UpdateAbortedException)
         {
+            setRollbackAvailable?.Invoke(false);
             var errors = new List<Exception>();
             foreach (var entry in entries.Reverse().Where(e => e.Modified))
             {
@@ -126,6 +131,10 @@ internal static class FileReplacement
             if (original is UpdateRollbackException)
                 throw new IOException(UpdaterText.Current.RolledBack, original);
             throw;
+        }
+        finally
+        {
+            setRollbackAvailable?.Invoke(false);
         }
     }
 
