@@ -332,7 +332,7 @@ internal static class UpdateWorker
         }
     }
 
-    private static async Task RestartAsync(UpdateArguments update)
+    internal static async Task RestartAsync(UpdateArguments update)
     {
         if (OperatingSystem.IsMacOS())
             await MacCommand.RunAsync("/usr/bin/open", ["-n", update.Target], CancellationToken.None);

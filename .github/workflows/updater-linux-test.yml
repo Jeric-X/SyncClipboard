@@ -1,0 +1,92 @@
+name: updater-linux-test
+
+on:
+  workflow_call:
+
+jobs:
+  business:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - cpu: x64
+            runner: ubuntu-24.04
+            appimage_arch: x86_64
+            tool_sha256: ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0
+          - cpu: arm64
+            runner: ubuntu-24.04-arm
+            appimage_arch: aarch64
+            tool_sha256: f0837e7448a0c1e4e650a93bb3e85802546e60654ef287576f46c71c126a9158
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.302
+      - name: Install appimagetool for real AppImage fixtures
+        run: |
+          tool="$RUNNER_TEMP/appimagetool.AppImage"
+          curl --fail --location --retry 3 \
+            "https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-${{ matrix.appimage_arch }}.AppImage" \
+            --output "$tool"
+          echo "${{ matrix.tool_sha256 }}  $tool" | sha256sum --check
+          chmod +x "$tool"
+          echo "SYNC_CLIPBOARD_APPIMAGE_TEST_TOOL=$tool" >> "$GITHUB_ENV"
+      - name: Run Linux business tests without a display server
+        run: >-
+          dotnet test src/SyncClipboard.Test --configuration Release --arch ${{ matrix.cpu }}
+          --filter 'TestCategory=PlatformLinux&TestCategory!=UpdaterSmoke'
+          --logger 'trx;LogFileName=business.trx' --results-directory TestResults
+          --blame-hang-timeout 2m
+      - name: Verify every selected test ran
+        run: python3 build/tests/check-results.py TestResults/business.trx
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: updater-linux-business-${{ matrix.cpu }}
+          path: TestResults/**/*.trx
+
+  smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        cpu: [x64, arm64]
+        type: [self-contained, no-self-contained]
+        include:
+          - cpu: x64
+            runner: ubuntu-24.04
+          - cpu: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.302
+      - name: Install Avalonia display dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y xvfb xauth libice6 libsm6 libx11-6 libfontconfig1 libgl1
+      - uses: actions/download-artifact@v8
+        with:
+          name: linux-${{ matrix.cpu }}-${{ matrix.type }}
+          path: application
+      - name: Restore executable permissions lost by artifact transport
+        run: chmod +x application/SyncClipboard.Updater
+      - name: Smoke test the packaged Avalonia updater
+        env:
+          SYNC_CLIPBOARD_UPDATER_TEST_SOURCE: ${{ github.workspace }}/application
+        run: >-
+          xvfb-run -a dotnet test src/SyncClipboard.Test --configuration Release --arch ${{ matrix.cpu }}
+          --filter 'TestCategory=PlatformLinux&TestCategory=UpdaterSmoke'
+          --logger 'trx;LogFileName=smoke.trx' --results-directory TestResults
+          --blame-hang-timeout 2m
+      - name: Verify smoke ran
+        run: python3 build/tests/check-results.py TestResults/smoke.trx
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: updater-linux-smoke-${{ matrix.cpu }}-${{ matrix.type }}
+          path: TestResults/**/*.trx

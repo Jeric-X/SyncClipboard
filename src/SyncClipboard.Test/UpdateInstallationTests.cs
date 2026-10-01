@@ -216,6 +216,9 @@ public class UpdateInstallationTests
     }
 
     [TestMethod]
+    [TestCategory("PlatformWindows")]
+    [TestCategory("PlatformMacOS")]
+    [TestCategory("PlatformLinux")]
     public void WorkerArguments_PreservePathsAndDigestWithoutReadingPackage()
     {
         var programDirectory = Path.GetFullPath(Env.ProgramDirectory);
@@ -262,6 +265,9 @@ public class UpdateInstallationTests
     }
 
     [TestMethod]
+    [TestCategory("PlatformWindows")]
+    [TestCategory("PlatformMacOS")]
+    [TestCategory("PlatformLinux")]
     public async Task CanceledLaunch_DoesNotStartUpdater()
     {
         var installer = new FileReplacementPackageInstaller();

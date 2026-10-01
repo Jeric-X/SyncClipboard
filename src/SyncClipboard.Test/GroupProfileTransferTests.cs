@@ -858,10 +858,13 @@ public class GroupProfileTransferTests
     }
 
     [TestMethod]
+    [TestCategory("PlatformMacOS")]
+    [TestCategory("PlatformLinux")]
     public async Task PrepareTransferData_OutputFailureIsNotReportedAsLocalDataUnavailable()
     {
         if (OperatingSystem.IsWindows() || Environment.UserName == "root")
         {
+            Assert.Inconclusive("Requires Unix file permissions without root privileges.");
             return;
         }
 

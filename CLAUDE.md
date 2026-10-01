@@ -92,6 +92,23 @@ dotnet test src/SyncClipboard.Test --filter "FullyQualifiedName~TestClassName"
 
 Tests use MSTest with Moq. `ServiceProviderDataSource` attributes drive DI validation tests that ensure all registered services can be resolved.
 
+#### Platform test categories
+
+- Keep business tests in `SyncClipboard.Test`. Updater tests that require an OS belong under `Updater/Windows`, `Updater/MacOS`, or `Updater/Linux`; shared OS integration tests belong directly under `Updater`.
+- Use MSTest `[TestCategory("PlatformWindows")]`, `[TestCategory("PlatformMacOS")]`, and `[TestCategory("PlatformLinux")]` for tests that depend on real OS behavior. Add multiple categories when the same test must run on several systems. Categories, not directory names, determine CI selection.
+- Keep platform-independent parsing, factory decisions, and mocked business tests uncategorized so the core workflow still covers all platform branches. Do not categorize a test only because its subject is a particular OS.
+- `core-test.yml` excludes all three platform categories. The separate `updater-windows-test.yml`, `updater-macos-test.yml`, and `updater-linux-test.yml` workflows run the matching category on native x64 and ARM64 runners, including OS-dependent core tests.
+- Add `UpdaterSmoke` as well as the platform category to published updater UI smoke tests. Business steps exclude `UpdaterSmoke`; smoke steps select it and use the main application's artifacts and production handoff helpers. Do not automate UI interactions for business tests.
+- Platform CI must fail on missing prerequisites, empty selections, or skipped selected tests. Runtime OS guards are still useful when running all tests locally on one system.
+
+```bash
+# Platform-independent core tests
+dotnet test src/SyncClipboard.Test --filter "TestCategory!=PlatformWindows&TestCategory!=PlatformMacOS&TestCategory!=PlatformLinux"
+
+# macOS business tests (use PlatformWindows or PlatformLinux on those systems)
+dotnet test src/SyncClipboard.Test --filter "TestCategory=PlatformMacOS&TestCategory!=UpdaterSmoke"
+```
+
 ### Code Style
 
 ```bash

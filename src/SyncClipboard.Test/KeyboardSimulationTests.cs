@@ -244,6 +244,9 @@ public class KeyboardSimulationTests
     }
 
     [TestMethod]
+    [TestCategory("PlatformWindows")]
+    [TestCategory("PlatformMacOS")]
+    [TestCategory("PlatformLinux")]
     public void CopyAndPaste_ReuseSimulator_AndServiceProviderDisposesIt()
     {
         var services = new ServiceCollection();
@@ -342,6 +345,9 @@ public class KeyboardSimulationTests
     }
 
     [TestMethod]
+    [TestCategory("PlatformWindows")]
+    [TestCategory("PlatformMacOS")]
+    [TestCategory("PlatformLinux")]
     public void SimulationError_ReleasesKeys_DisposesSimulator_AndAllowsRetry()
     {
         var simulator = new Mock<IEventSimulator>();

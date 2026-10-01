@@ -356,6 +356,7 @@ public class InputPermissionTests
     }
 
     [TestMethod]
+    [TestCategory("PlatformLinux")]
     public void ReadOnlyInputDevice_IsDeniedUntilWriteAccessIsGranted()
     {
         if (OperatingSystem.IsWindows() || Environment.UserName == "root")
@@ -388,6 +389,7 @@ public class InputPermissionTests
     }
 
     [TestMethod]
+    [TestCategory("PlatformLinux")]
     public void SimulationPermission_RequiresOnlyWriteAccessToUinput()
     {
         if (OperatingSystem.IsWindows() || Environment.UserName == "root")

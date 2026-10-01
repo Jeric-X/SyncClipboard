@@ -116,6 +116,8 @@ public class RootDirectoryProfileTests
     }
 
     [TestMethod]
+    [TestCategory("PlatformMacOS")]
+    [TestCategory("PlatformLinux")]
     public async Task Upload_LocalSelectionChangedToRoot_IsObsoleteWithoutHashing()
     {
         if (OperatingSystem.IsWindows())

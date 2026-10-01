@@ -36,3 +36,15 @@ jobs:
     with:
       checkout-repo: ${{ github.repository }}
       checkout-ref: ${{ github.ref }}
+
+  updater-windows-test:
+    needs: build-win
+    uses: ./.github/workflows/updater-windows-test.yml
+
+  updater-macos-test:
+    needs: build-mac
+    uses: ./.github/workflows/updater-macos-test.yml
+
+  updater-linux-test:
+    needs: build-linux
+    uses: ./.github/workflows/updater-linux-test.yml

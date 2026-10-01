@@ -1,0 +1,90 @@
+name: updater-windows-test
+
+on:
+  workflow_call:
+
+jobs:
+  business:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - cpu: x64
+            runner: windows-2025-vs2026
+          - cpu: arm64
+            runner: windows-11-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.302
+      - name: Run Windows business tests without UI
+        run: >-
+          dotnet test src/SyncClipboard.Test --configuration Release --arch ${{ matrix.cpu }}
+          --filter "TestCategory=PlatformWindows&TestCategory!=UpdaterSmoke"
+          --logger "trx;LogFileName=business.trx" --results-directory TestResults
+          --blame-hang-timeout 2m
+      - name: Verify every selected test ran
+        run: python build/tests/check-results.py TestResults/business.trx
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: updater-windows-business-${{ matrix.cpu }}
+          path: TestResults/**/*.trx
+
+  smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        cpu: [x64, arm64]
+        dotnet_runtime: ['', '_no-dotnet-runtime']
+        win_app_sdk: ['', '_no-win-app-sdk']
+        include:
+          - cpu: x64
+            runner: windows-2025-vs2026
+          - cpu: arm64
+            runner: windows-11-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.302
+      - uses: actions/download-artifact@v8
+        with:
+          name: win_${{ matrix.cpu }}${{ matrix.dotnet_runtime }}${{ matrix.win_app_sdk }}
+          path: application
+      - name: Install the matching Windows App Runtime
+        if: matrix.win_app_sdk == '_no-win-app-sdk'
+        shell: powershell
+        run: |
+          dotnet restore src/SyncClipboard.Updater.WinUI -r win-${{ matrix.cpu }}
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $assets = Get-Content src/SyncClipboard.Updater.WinUI/obj/project.assets.json -Raw | ConvertFrom-Json
+          $runtime = $assets.libraries.PSObject.Properties | Where-Object Name -Like 'Microsoft.WindowsAppSDK.Runtime/*'
+          if (-not $runtime) { throw 'Windows App Runtime package not found in restore assets.' }
+          $packages = $assets.packageFolders.PSObject.Properties.Name | Select-Object -First 1
+          $msix = Join-Path $packages "$($runtime.Value.path)/tools/MSIX/win10-${{ matrix.cpu }}"
+          $framework = Get-ChildItem $msix -Filter '*.msix' | Where-Object Name -Match '^Microsoft.WindowsAppRuntime\.\d+(\.\d+)?\.msix$'
+          if (-not $framework) { throw 'Windows App Runtime framework MSIX not found.' }
+          $framework | ForEach-Object { Add-AppxPackage -Path $_.FullName }
+          Get-ChildItem $msix -Filter '*.msix' | Where-Object FullName -NotIn $framework.FullName |
+            ForEach-Object { Add-AppxPackage -Path $_.FullName }
+      - name: Smoke test the packaged NativeAOT updater and WinUI dialog
+        env:
+          SYNC_CLIPBOARD_UPDATER_TEST_EXE: ${{ github.workspace }}\application\SyncClipboard.Updater.exe
+        run: >-
+          dotnet test src/SyncClipboard.Test --configuration Release --arch ${{ matrix.cpu }}
+          --filter "TestCategory=PlatformWindows&TestCategory=UpdaterSmoke"
+          --logger "trx;LogFileName=smoke.trx" --results-directory TestResults
+          --blame-hang-timeout 2m
+      - name: Verify smoke ran
+        run: python build/tests/check-results.py TestResults/smoke.trx
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: updater-windows-smoke-${{ matrix.cpu }}${{ matrix.dotnet_runtime }}${{ matrix.win_app_sdk }}
+          path: TestResults/**/*.trx

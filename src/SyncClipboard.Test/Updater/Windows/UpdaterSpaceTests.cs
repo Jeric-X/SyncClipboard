@@ -1,8 +1,9 @@
 using SyncClipboard.Updater;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Updater.Windows;
 
 [TestClass]
+[TestCategory("PlatformWindows")]
 public class UpdaterSpaceTests
 {
     [TestMethod]
