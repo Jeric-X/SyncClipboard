@@ -3,6 +3,7 @@ using SyncClipboard.Updater.Zip;
 using SyncClipboard.Updater.Dmg;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -212,7 +213,24 @@ internal static class UpdateWorker
         if (!OperatingSystem.IsLinux())
             normalized = normalized.ToUpperInvariant();
         var key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(normalized)));
-        if (!OperatingSystem.IsWindows())
+        if (OperatingSystem.IsLinux())
+        {
+            // An abstract socket reserves the name across users without leaving an owned file behind.
+            var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+            try
+            {
+                socket.Bind(new UnixDomainSocketEndPoint("\0SyncClipboard.Update." + key));
+                return socket;
+            }
+            catch (SocketException error)
+            {
+                socket.Dispose();
+                var message = error.SocketErrorCode == SocketError.AddressAlreadyInUse
+                    ? UpdaterText.Current.InstallationLocked : error.Message;
+                throw new IOException(message, error);
+            }
+        }
+        if (OperatingSystem.IsMacOS())
         {
             // Keep the file in place: unlinking a locked file would let a second updater lock a new inode.
             return new FileStream(Path.Combine("/tmp", "SyncClipboard.Update." + key + ".lock"),
