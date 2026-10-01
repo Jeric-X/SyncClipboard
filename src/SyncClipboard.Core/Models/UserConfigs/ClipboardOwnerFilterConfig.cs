@@ -16,13 +16,20 @@ public record ClipboardOwnerFilterConfig
 
     public virtual bool Equals(ClipboardOwnerFilterConfig? other)
     {
-        if (ReferenceEquals(this, other)) return true;
-        if (other is null) return false;
-        if (FilterMode != other.FilterMode) return false;
-        if (WhiteList.Count != other.WhiteList.Count) return false;
-        if (BlackList.Count != other.BlackList.Count) return false;
-        if (!WhiteList.SequenceEqual(other.WhiteList)) return false;
-        if (!BlackList.SequenceEqual(other.BlackList)) return false;
+        if (ReferenceEquals(this, other))
+            return true;
+        if (other is null)
+            return false;
+        if (FilterMode != other.FilterMode)
+            return false;
+        if (WhiteList.Count != other.WhiteList.Count)
+            return false;
+        if (BlackList.Count != other.BlackList.Count)
+            return false;
+        if (!WhiteList.SequenceEqual(other.WhiteList))
+            return false;
+        if (!BlackList.SequenceEqual(other.BlackList))
+            return false;
 
         return true;
     }

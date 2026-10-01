@@ -60,7 +60,8 @@ public class InputPermissionTests
         });
         provider.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(provider.HasRequestedAccessibilityPermission)) events.Add("requested");
+            if (e.PropertyName == nameof(provider.HasRequestedAccessibilityPermission))
+                events.Add("requested");
         };
 
         Parallel.For(0, 10, _ => Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission()));
@@ -195,7 +196,8 @@ public class InputPermissionTests
         var requestStateChanges = 0;
         provider.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(provider.HasRequestedAccessibilityPermission)) requestStateChanges++;
+            if (e.PropertyName == nameof(provider.HasRequestedAccessibilityPermission))
+                requestStateChanges++;
         };
 
         Assert.IsFalse(provider.HasRequestedAccessibilityPermission);
@@ -414,7 +416,8 @@ public class InputPermissionTests
             Assert.AreEqual(expected, provider.GetStatus());
             Assert.AreEqual(expected, provider.GetSimulationStatus());
             Assert.AreEqual(granted, provider.GetSimulationStatus().CanSimulateInput);
-            if (granted) Assert.IsTrue(provider.CheckAndRequestAccessibilityPermission());
+            if (granted)
+                Assert.IsTrue(provider.CheckAndRequestAccessibilityPermission());
             Assert.IsFalse(provider.HasRequestedAccessibilityPermission);
         }
     }

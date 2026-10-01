@@ -64,7 +64,8 @@ public partial class SystemSettingViewModel
     [RelayCommand(CanExecute = nameof(ShowAccessibilityPermission))]
     private void RequestAccessibilityPermission()
     {
-        if (!ShowAccessibilityPermission) return;
+        if (!ShowAccessibilityPermission)
+            return;
 
         InputPermissionProvider.CheckAndRequestAccessibilityPermission();
         RefreshInputPermissions();
@@ -73,7 +74,8 @@ public partial class SystemSettingViewModel
     [RelayCommand(CanExecute = nameof(ShowAccessibilityPermission))]
     private async Task OpenAccessibilitySettings()
     {
-        if (!ShowAccessibilityPermission) return;
+        if (!ShowAccessibilityPermission)
+            return;
 
         try
         {

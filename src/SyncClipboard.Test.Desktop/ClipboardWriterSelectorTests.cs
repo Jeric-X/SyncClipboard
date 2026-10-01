@@ -52,14 +52,16 @@ public class ClipboardWriterSelectorTests
         var selected = sources.Single(source => source.Object.SourceName == name);
         using var package = new AutoDisposeDataTransfer(new DataTransfer());
         using var cancellation = new CancellationTokenSource();
-        foreach (var source in sources) source.Invocations.Clear();
+        foreach (var source in sources)
+            source.Invocations.Clear();
 
         await writer.SetTextAsync("text", cancellation.Token);
         await writer.SetDataAsync(package, cancellation.Token);
 
         selected.Verify(source => source.SetTextAsync("text", cancellation.Token), Times.Once);
         selected.Verify(source => source.SetDataAsync(package, cancellation.Token), Times.Once);
-        foreach (var source in sources.Where(source => source != selected)) source.VerifyNoOtherCalls();
+        foreach (var source in sources.Where(source => source != selected))
+            source.VerifyNoOtherCalls();
     }
 
     [TestMethod]
@@ -86,7 +88,8 @@ public class ClipboardWriterSelectorTests
         _config.SetConfig(new ClipboardFactoryConfig { WriteMethod = ClipboardWriteMethod.WlClipboard });
         var sources = CreateSources();
         var writer = new ClipboardWriterSelector(sources.Select(source => source.Object), _config, true);
-        foreach (var source in sources) source.Invocations.Clear();
+        foreach (var source in sources)
+            source.Invocations.Clear();
         using var package = new AutoDisposeDataTransfer(new DataTransfer());
         sources[1].Setup(source => source.SetDataAsync(package, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new IOException("Wayland connection failed"));

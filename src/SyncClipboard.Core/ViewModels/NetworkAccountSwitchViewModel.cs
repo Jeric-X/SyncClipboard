@@ -106,7 +106,8 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
 
     public void Activate()
     {
-        if (_active) return;
+        if (_active)
+            return;
         _active = true;
         _autoSaveEnabled = false;
         LoadAccounts();
@@ -121,7 +122,8 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
 
     public void Deactivate()
     {
-        if (!_active) return;
+        if (!_active)
+            return;
         _active = false;
         _service.RemoveNetworkMonitoringDemand();
         _service.StatusChanged -= OnServiceStatusChanged;
@@ -189,8 +191,10 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
         IReadOnlyCollection<NetworkInterfaceChoice>? availableInterfaces = null)
     {
         availableInterfaces ??= Interfaces;
-        if (string.IsNullOrWhiteSpace(editor.Name)) return Strings.EnterRuleName;
-        if (editor.TargetAccount is null) return Strings.SelectAccountFirst;
+        if (string.IsNullOrWhiteSpace(editor.Name))
+            return Strings.EnterRuleName;
+        if (editor.TargetAccount is null)
+            return Strings.SelectAccountFirst;
 
         if (FindMissingInterface(editor.SelectedInterface, availableInterfaces) is { } missingInterface)
         {
@@ -199,8 +203,10 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
 
         var ssids = SplitLines(editor.WifiText);
         var (hasIpRange, ipError) = AnalyzeIpRanges(editor.IpText);
-        if (ipError is not null) return ipError;
-        if (ssids.Count == 0 && !hasIpRange) return Strings.AddConditionFirst;
+        if (ipError is not null)
+            return ipError;
+        if (ssids.Count == 0 && !hasIpRange)
+            return Strings.AddConditionFirst;
         return string.Empty;
     }
 
@@ -208,7 +214,8 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
         NetworkInterfaceChoice? selected,
         IReadOnlyCollection<NetworkInterfaceChoice> available)
     {
-        if (selected is not { Id.Length: > 0 } iface) return null;
+        if (selected is not { Id.Length: > 0 } iface)
+            return null;
         return available.Any(item => string.Equals(item.Id, iface.Id, StringComparison.OrdinalIgnoreCase))
             ? null
             : iface;
@@ -219,7 +226,8 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
         var hasIpRange = false;
         foreach (var value in SplitLines(ipText))
         {
-            if (NetworkRuleMatcher.RemoveRangeComment(value).Length == 0) continue;
+            if (NetworkRuleMatcher.RemoveRangeComment(value).Length == 0)
+                continue;
             if (!NetworkRuleMatcher.TryNormalizeRange(value, out _))
             {
                 return (false, string.Format(Strings.InvalidIpRange, value));
@@ -261,11 +269,13 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
     [RelayCommand]
     private async Task DeleteRule()
     {
-        if (SelectedRule is null) return;
+        if (SelectedRule is null)
+            return;
         var confirmed = await _dialog.ShowConfirmationAsync(
             Strings.DeleteRule,
             string.Format(Strings.DeleteRuleConfirm, SelectedRule.Name));
-        if (!confirmed) return;
+        if (!confirmed)
+            return;
 
         var rule = SelectedRule;
         var index = Rules.IndexOf(rule);
@@ -278,7 +288,8 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
     [RelayCommand]
     private void MoveUp()
     {
-        if (SelectedRule is null) return;
+        if (SelectedRule is null)
+            return;
         var index = Rules.IndexOf(SelectedRule);
         if (index > 0)
         {
@@ -290,7 +301,8 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
     [RelayCommand]
     private void MoveDown()
     {
-        if (SelectedRule is null) return;
+        if (SelectedRule is null)
+            return;
         var index = Rules.IndexOf(SelectedRule);
         if (index >= 0 && index < Rules.Count - 1)
         {
@@ -317,20 +329,23 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
     [RelayCommand]
     private void UseCurrentWifi()
     {
-        if (SelectedRule is null) return;
+        if (SelectedRule is null)
+            return;
         UseCurrentWifi(SelectedRule);
     }
 
     [RelayCommand]
     private void UseCurrentIp()
     {
-        if (SelectedRule is null) return;
+        if (SelectedRule is null)
+            return;
         UseCurrentIp(SelectedRule);
     }
 
     private void SaveImmediately()
     {
-        if (_autoSaveEnabled) _configManager.SetConfig(BuildConfig());
+        if (_autoSaveEnabled)
+            _configManager.SetConfig(BuildConfig());
     }
 
     private NetworkAccountSwitchConfig BuildConfig()
@@ -386,7 +401,8 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
         NotifyOnChange = config.NotifyOnChange;
         SelectedNoMatchAction = NoMatchActions.First(item => item.Value == config.NoMatchAction);
         DefaultAccount = FindAccount(config.DefaultAccount);
-        foreach (var editor in Rules) UnsubscribeRule(editor);
+        foreach (var editor in Rules)
+            UnsubscribeRule(editor);
         Rules.Clear();
         foreach (var rule in config.Rules)
         {
@@ -412,7 +428,8 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
 
     private void OnRulePropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(NetworkRuleEditor.Enabled)) SaveImmediately();
+        if (e.PropertyName == nameof(NetworkRuleEditor.Enabled))
+            SaveImmediately();
     }
 
     private async Task RefreshAsync()
@@ -420,7 +437,8 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
         try
         {
             await _service.RefreshAsync();
-            if (_active) await _dispatcher.RunOnMainThreadAsync(UpdateRuntimeState);
+            if (_active)
+                await _dispatcher.RunOnMainThreadAsync(UpdateRuntimeState);
         }
         catch (OperationCanceledException) when (!_active) { }
     }
@@ -469,12 +487,14 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
 
     private void OnServiceStatusChanged(object? sender, EventArgs e) => _ = _dispatcher.RunOnMainThreadAsync(() =>
     {
-        if (_active) UpdateRuntimeState();
+        if (_active)
+            UpdateRuntimeState();
     });
 
     private void OnSavedAccountsChanged(IEnumerable<DisplayedAccountConfig> accounts) => _ = _dispatcher.RunOnMainThreadAsync(() =>
     {
-        if (!_active) return;
+        if (!_active)
+            return;
         var selectedTargets = Rules.ToDictionary(rule => rule.Id, rule => ToAccountConfig(rule.TargetAccount));
         var defaultSelection = ToAccountConfig(DefaultAccount);
         LoadAccounts(accounts);
@@ -488,7 +508,8 @@ public partial class NetworkAccountSwitchViewModel : ObservableObject
     private void LoadAccounts(IEnumerable<DisplayedAccountConfig>? accounts = null)
     {
         Accounts.Clear();
-        foreach (var account in accounts ?? _accountManager.GetSavedAccounts()) Accounts.Add(account);
+        foreach (var account in accounts ?? _accountManager.GetSavedAccounts())
+            Accounts.Add(account);
     }
 
     private DisplayedAccountConfig? FindAccount(AccountConfig account) => Accounts.FirstOrDefault(item =>

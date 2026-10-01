@@ -12,7 +12,8 @@ public sealed class SyncClipboardConfigMigrationV1ToV2 : ISyncClipboardConfigMig
 
     public void Migrate(JsonObject root)
     {
-        if (root[ClipboardFactoryConfig.ConfigKey] is not JsonObject clipboard) return;
+        if (root[ClipboardFactoryConfig.ConfigKey] is not JsonObject clipboard)
+            return;
 
         if (!clipboard.ContainsKey(nameof(ClipboardFactoryConfig.ReadMethod)))
         {

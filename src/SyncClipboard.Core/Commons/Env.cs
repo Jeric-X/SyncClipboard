@@ -102,7 +102,8 @@ namespace SyncClipboard.Core.Commons
         {
             try
             {
-                if (!File.Exists(StaticConfigPath)) return new();
+                if (!File.Exists(StaticConfigPath))
+                    return new();
                 var text = File.ReadAllText(StaticConfigPath);
                 var jsonNode = JsonNode.Parse(text);
                 return jsonNode?[EnvConfig.ConfigKey]?.Deserialize<EnvConfig>() ?? new();
@@ -117,12 +118,15 @@ namespace SyncClipboard.Core.Commons
         {
             try
             {
-                if (!File.Exists(AppDataPathConfigPath)) return null;
+                if (!File.Exists(AppDataPathConfigPath))
+                    return null;
                 var text = File.ReadAllText(AppDataPathConfigPath);
                 var jsonNode = JsonNode.Parse(text);
                 var customPath = jsonNode?["CustomAppDataDirectory"]?.GetValue<string>();
-                if (string.IsNullOrEmpty(customPath)) return null;
-                if (!Directory.Exists(customPath)) return null;
+                if (string.IsNullOrEmpty(customPath))
+                    return null;
+                if (!Directory.Exists(customPath))
+                    return null;
                 return customPath;
             }
             catch

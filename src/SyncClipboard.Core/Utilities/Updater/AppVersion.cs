@@ -72,22 +72,26 @@ public class AppVersion : IComparable<AppVersion>
 
     public static bool operator >(AppVersion appVersion, AppVersion other)
     {
-        if (other is null) return false;
+        if (other is null)
+            return false;
         return appVersion?.CompareTo(other) > 0;
     }
     public static bool operator >=(AppVersion appVersion, AppVersion other)
     {
-        if (other is null) return false;
+        if (other is null)
+            return false;
         return appVersion?.CompareTo(other) >= 0;
     }
     public static bool operator <(AppVersion appVersion, AppVersion other)
     {
-        if (other is null) return false;
+        if (other is null)
+            return false;
         return appVersion?.CompareTo(other) < 0;
     }
     public static bool operator <=(AppVersion appVersion, AppVersion other)
     {
-        if (other is null) return false;
+        if (other is null)
+            return false;
         return appVersion?.CompareTo(other) <= 0;
     }
 }

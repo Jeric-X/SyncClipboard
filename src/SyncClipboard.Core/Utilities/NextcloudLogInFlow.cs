@@ -52,7 +52,8 @@ namespace SyncClipboard.Core.Utilities
 
         public async Task<WebDavCredential> WaitUserLogin(CancellationToken? cancellationToken = null)
         {
-            if (Result is not null) return Result;
+            if (Result is not null)
+                return Result;
 
             var secondResponse = await GetSecondResponse(cancellationToken);
             ArgumentNullException.ThrowIfNull(secondResponse);

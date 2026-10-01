@@ -206,8 +206,10 @@ public partial class HistoryWindow : Window, IWindow
         {
             try
             {
-                if (e.Property != ListBox.ScrollProperty) return;
-                if (e.NewValue is not ScrollViewer sv) return;
+                if (e.Property != ListBox.ScrollProperty)
+                    return;
+                if (e.NewValue is not ScrollViewer sv)
+                    return;
 
                 _ListBox.PropertyChanged -= handler;
                 AttachScrollViewerWatcher(sv);
@@ -321,7 +323,9 @@ public partial class HistoryWindow : Window, IWindow
 
     public bool GetScrollViewMetrics(out double offsetY, out double viewportHeight, out double extentHeight)
     {
-        offsetY = 0; viewportHeight = 0; extentHeight = 0;
+        offsetY = 0;
+        viewportHeight = 0;
+        extentHeight = 0;
         if (_scrollViewer != null)
         {
             var offset = _scrollViewer.Offset;
@@ -837,7 +841,8 @@ public partial class HistoryWindow : Window, IWindow
 
         // 计算最大宽度：确保预览面板至少300像素，分隔条宽度为1像素
         var maxWidth = (int)_MainContentGrid.Bounds.Width - 300 - 1;
-        if (maxWidth < 150) maxWidth = 150;
+        if (maxWidth < 150)
+            maxWidth = 150;
 
         // 限制宽度范围
         newWidth = Math.Clamp(newWidth, 150, maxWidth);

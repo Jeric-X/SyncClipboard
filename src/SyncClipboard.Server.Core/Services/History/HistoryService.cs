@@ -68,12 +68,16 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         }
 
         // 部分字段更新
-        if (dto.Starred.HasValue) existing.Stared = dto.Starred.Value;
-        if (dto.Pinned.HasValue) existing.Pinned = dto.Pinned.Value;
-        if (dto.IsDelete.HasValue) existing.IsDeleted = dto.IsDelete.Value;
+        if (dto.Starred.HasValue)
+            existing.Stared = dto.Starred.Value;
+        if (dto.Pinned.HasValue)
+            existing.Pinned = dto.Pinned.Value;
+        if (dto.IsDelete.HasValue)
+            existing.IsDeleted = dto.IsDelete.Value;
 
         existing.LastModified = dto.LastModified.Value.UtcDateTime;
-        if (dto.LastAccessed.HasValue) existing.LastAccessed = dto.LastAccessed.Value.UtcDateTime;
+        if (dto.LastAccessed.HasValue)
+            existing.LastAccessed = dto.LastAccessed.Value.UtcDateTime;
         existing.Version = dto.Version.Value;
 
         await _dbContext.SaveChangesAsync(token);

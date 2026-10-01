@@ -94,12 +94,18 @@ public static class MapperExtensions
     /// </summary>
     public static void ApplyFromServerUpdateDto(this HistoryRecord entity, HistoryRecordUpdateDto server)
     {
-        if (server.Starred.HasValue) entity.Stared = server.Starred.Value;
-        if (server.Pinned.HasValue) entity.Pinned = server.Pinned.Value;
-        if (server.IsDelete.HasValue && server.IsDelete.Value) entity.IsDeleted = true;
-        if (server.LastModified.HasValue) entity.LastModified = server.LastModified.Value.UtcDateTime;
-        if (server.LastAccessed.HasValue) entity.LastAccessed = server.LastAccessed.Value.UtcDateTime;
-        if (server.Version.HasValue) entity.Version = server.Version.Value;
+        if (server.Starred.HasValue)
+            entity.Stared = server.Starred.Value;
+        if (server.Pinned.HasValue)
+            entity.Pinned = server.Pinned.Value;
+        if (server.IsDelete.HasValue && server.IsDelete.Value)
+            entity.IsDeleted = true;
+        if (server.LastModified.HasValue)
+            entity.LastModified = server.LastModified.Value.UtcDateTime;
+        if (server.LastAccessed.HasValue)
+            entity.LastAccessed = server.LastAccessed.Value.UtcDateTime;
+        if (server.Version.HasValue)
+            entity.Version = server.Version.Value;
         entity.SyncStatus = HistorySyncStatus.Synced;
     }
 

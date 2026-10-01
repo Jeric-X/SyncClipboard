@@ -46,7 +46,8 @@ public class ClipboardReaderSelectorTests
         selected.Setup(source => source.GetStringAsync("text/html", It.IsAny<CancellationToken>())).ReturnsAsync("<p>text</p>");
         selected.Setup(source => source.GetDataAsync("image/png", It.IsAny<CancellationToken>())).ReturnsAsync(new byte[] { 1 });
         var reader = new ClipboardReaderSelector(sources.Select(source => source.Object), _config, isLinux: true);
-        foreach (var source in sources) source.Invocations.Clear();
+        foreach (var source in sources)
+            source.Invocations.Clear();
 
         Assert.AreEqual("text/plain", (await reader.GetFormatsAsync(CancellationToken.None))!.Single());
         Assert.AreEqual("text", await reader.GetTextAsync(CancellationToken.None));
@@ -55,7 +56,8 @@ public class ClipboardReaderSelectorTests
         await reader.GetBitmapAsync(CancellationToken.None);
         await reader.GetFilesAsync(CancellationToken.None);
         Assert.HasCount(6, selected.Invocations);
-        foreach (var source in sources.Where(source => source != selected)) source.VerifyNoOtherCalls();
+        foreach (var source in sources.Where(source => source != selected))
+            source.VerifyNoOtherCalls();
     }
 
     [TestMethod]
@@ -64,7 +66,8 @@ public class ClipboardReaderSelectorTests
         var sources = CreateSources();
         sources[1].Setup(source => source.GetTextAsync(It.IsAny<CancellationToken>())).ReturnsAsync("fallback");
         var reader = new ClipboardReaderSelector(sources.Select(source => source.Object), _config, isLinux: true);
-        foreach (var source in sources) source.Invocations.Clear();
+        foreach (var source in sources)
+            source.Invocations.Clear();
 
         Assert.IsNull(await reader.GetTextAsync(CancellationToken.None));
         sources[0].Setup(source => source.GetTextAsync(It.IsAny<CancellationToken>()))

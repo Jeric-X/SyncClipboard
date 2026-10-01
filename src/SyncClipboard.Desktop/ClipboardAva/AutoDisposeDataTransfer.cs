@@ -18,20 +18,30 @@ public sealed class AutoDisposeDataTransfer(DataTransfer data) : IDataTransfer, 
 
     ~AutoDisposeDataTransfer()
     {
-        try { DisposeCore(throwOnError: false); }
+        try
+        {
+            DisposeCore(throwOnError: false);
+        }
         catch { }
     }
 
     public void Dispose()
     {
-        try { DisposeCore(throwOnError: true); }
-        finally { GC.SuppressFinalize(this); }
+        try
+        {
+            DisposeCore(throwOnError: true);
+        }
+        finally
+        {
+            GC.SuppressFinalize(this);
+        }
     }
 
     private void DisposeCore(bool throwOnError)
     {
         var transfer = Interlocked.Exchange(ref _data, null);
-        if (transfer is null) return;
+        if (transfer is null)
+            return;
 
         var disposed = new HashSet<IDisposable>(ReferenceEqualityComparer.Instance);
         List<Exception>? errors = null;
@@ -46,10 +56,12 @@ public sealed class AutoDisposeDataTransfer(DataTransfer data) : IDataTransfer, 
                 }
                 catch (Exception ex)
                 {
-                    if (throwOnError) (errors ??= []).Add(ex);
+                    if (throwOnError)
+                        (errors ??= []).Add(ex);
                 }
             }
         }
-        if (errors is not null) throw new AggregateException(errors);
+        if (errors is not null)
+            throw new AggregateException(errors);
     }
 }

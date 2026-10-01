@@ -21,7 +21,8 @@ public sealed class SystemNetworkContextProvider(IWifiNetworkInfoProvider wifiPr
             lock (_listenerLock)
             {
                 _networkChanged += value;
-                if (_isListening || _networkChanged is null) return;
+                if (_isListening || _networkChanged is null)
+                    return;
                 StartListening();
             }
         }
@@ -30,7 +31,8 @@ public sealed class SystemNetworkContextProvider(IWifiNetworkInfoProvider wifiPr
             lock (_listenerLock)
             {
                 _networkChanged -= value;
-                if (!_isListening || _networkChanged is not null) return;
+                if (!_isListening || _networkChanged is not null)
+                    return;
                 StopListening();
             }
         }
@@ -136,7 +138,8 @@ public sealed class SystemNetworkContextProvider(IWifiNetworkInfoProvider wifiPr
     private void RaiseNetworkChanged()
     {
         EventHandler? handler;
-        lock (_listenerLock) handler = _networkChanged;
+        lock (_listenerLock)
+            handler = _networkChanged;
         handler?.Invoke(this, EventArgs.Empty);
     }
 
@@ -147,7 +150,8 @@ public sealed class SystemNetworkContextProvider(IWifiNetworkInfoProvider wifiPr
     {
         lock (_listenerLock)
         {
-            if (_isListening) StopListening();
+            if (_isListening)
+                StopListening();
             _networkChanged = null;
         }
         if (_wifiProvider is IDisposable disposable)

@@ -34,7 +34,11 @@ public partial class HotkeyInput : UserControl
     public Hotkey Hotkey
     {
         get { return GetValue(HotkeyProperty); }
-        set { if (Hotkey != value) SetValue(HotkeyProperty, value); }
+        set
+        {
+            if (Hotkey != value)
+                SetValue(HotkeyProperty, value);
+        }
     }
 
     public static readonly StyledProperty<Hotkey> HotkeyProperty = AvaloniaProperty.Register<HotkeyInput, Hotkey>(

@@ -39,8 +39,16 @@ public sealed class NetworkAccountSwitchService(
 
     public event EventHandler? StatusChanged
     {
-        add { lock (_monitoringLock) _statusChanged += value; }
-        remove { lock (_monitoringLock) _statusChanged -= value; }
+        add
+        {
+            lock (_monitoringLock)
+                _statusChanged += value;
+        }
+        remove
+        {
+            lock (_monitoringLock)
+                _statusChanged -= value;
+        }
     }
     public NetworkAccountSwitchStatus Status { get; private set; } = new();
     public NetworkContextSnapshot Snapshot { get; private set; } = new();
@@ -49,7 +57,8 @@ public sealed class NetworkAccountSwitchService(
     protected override void StartService()
     {
         _serviceStarted = true;
-        if (UpdateMonitoringState()) ScheduleEvaluation(force: true, immediate: true);
+        if (UpdateMonitoringState())
+            ScheduleEvaluation(force: true, immediate: true);
     }
 
     protected override void StopSerivce()
@@ -79,7 +88,8 @@ public sealed class NetworkAccountSwitchService(
 
     public void AddNetworkMonitoringDemand()
     {
-        lock (_monitoringLock) _networkMonitoringDemandCount++;
+        lock (_monitoringLock)
+            _networkMonitoringDemandCount++;
         UpdateMonitoringState();
     }
 
@@ -113,7 +123,8 @@ public sealed class NetworkAccountSwitchService(
 
     private void OnAccountSelectionChanged(object? sender, AccountManager.AccountSelectionChangedEventArgs e)
     {
-        if (!_config.Enabled) return;
+        if (!_config.Enabled)
+            return;
         if (e.Origin is not (AccountManager.AccountSelectionOrigin.Manual or AccountManager.AccountSelectionOrigin.External))
         {
             return;
@@ -354,7 +365,8 @@ public sealed class NetworkAccountSwitchService(
     {
         Status = status with { EvaluatedAt = DateTimeOffset.Now };
         EventHandler? handler;
-        lock (_monitoringLock) handler = _statusChanged;
+        lock (_monitoringLock)
+            handler = _statusChanged;
         handler?.Invoke(this, EventArgs.Empty);
     }
 }

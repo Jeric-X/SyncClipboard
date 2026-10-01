@@ -49,7 +49,8 @@ internal partial class DiagnoseViewModel : ObservableObject
         _config = config;
         AutoRefresh = _config.DiagnosePageAutoRefresh;
         var shouldListen = config.DiagnoseMode && config.DiagnosePageAutoRefresh;
-        if (_isListening == shouldListen) return;
+        if (_isListening == shouldListen)
+            return;
 
         _isListening = shouldListen;
         if (shouldListen)

@@ -27,7 +27,8 @@ public partial class SystemSettingViewModel
     private LocaleString<ClipboardReadMethod> clipboardReadingMethod = ClipboardReadMethods[0];
     partial void OnClipboardReadingMethodChanged(LocaleString<ClipboardReadMethod> value)
     {
-        if (_isLoadingClipboardConfig) return;
+        if (_isLoadingClipboardConfig)
+            return;
         var config = _configManager.GetConfig<ClipboardFactoryConfig>();
         _configManager.SetConfig(config with { ReadMethod = value.Key });
     }
@@ -36,7 +37,8 @@ public partial class SystemSettingViewModel
     private LocaleString<ClipboardWriteMethod> clipboardWritingMethod = ClipboardWriteMethods[0];
     partial void OnClipboardWritingMethodChanged(LocaleString<ClipboardWriteMethod> value)
     {
-        if (_isLoadingClipboardConfig) return;
+        if (_isLoadingClipboardConfig)
+            return;
         var config = _configManager.GetConfig<ClipboardFactoryConfig>();
         _configManager.SetConfig(config with { WriteMethod = value.Key });
     }

@@ -109,12 +109,14 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
             var keyCallbacks = NativeLibrary.GetExport(library, "kCFTypeDictionaryKeyCallBacks");
             var valueCallbacks = NativeLibrary.GetExport(library, "kCFTypeDictionaryValueCallBacks");
             options = CFDictionaryCreate(0, ref promptKey, ref trueValue, 1, keyCallbacks, valueCallbacks);
-            if (options == 0) throw new OutOfMemoryException();
+            if (options == 0)
+                throw new OutOfMemoryException();
             AXIsProcessTrustedWithOptions(options);
         }
         finally
         {
-            if (options != 0) CFRelease(options);
+            if (options != 0)
+                CFRelease(options);
             NativeLibrary.Free(library);
         }
     }
@@ -122,9 +124,12 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
     /// <summary>Returns current access and offers to request missing authorization without waiting for the dialog.</summary>
     public bool CheckAndRequestAccessibilityPermission()
     {
-        if (!_isMacOS) return true;
-        if (GetPermissionState(_isAccessibilityEnabled) == InputPermissionState.Available) return true;
-        if (HasRequestedAccessibilityPermission || Interlocked.CompareExchange(ref _requestInProgress, 1, 0) != 0) return false;
+        if (!_isMacOS)
+            return true;
+        if (GetPermissionState(_isAccessibilityEnabled) == InputPermissionState.Available)
+            return true;
+        if (HasRequestedAccessibilityPermission || Interlocked.CompareExchange(ref _requestInProgress, 1, 0) != 0)
+            return false;
 
         DelegateExtention.SafeFireAndForget(RequestAccessibilityPermissionAsync, nameof(InputPermissionProvider));
         return false;
@@ -136,7 +141,8 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
         {
             await _dispatcher.RunOnMainThreadAsync(async () =>
             {
-                if (HasRequestedAccessibilityPermission) return;
+                if (HasRequestedAccessibilityPermission)
+                    return;
                 if (!await _dialog.ShowConfirmationAsync(Strings.AccessibilityPermission,
                     Strings.AccessibilityPermissionRequestMessage, Strings.RequestPermission, Strings.Cancel)) return;
                 if (GetPermissionState(_isAccessibilityEnabled) == InputPermissionState.Available) return;

@@ -57,7 +57,8 @@ public partial class PropertyInputViewModel : ObservableObject
 
     private bool ValidateIntegerValue()
     {
-        if (PropertyType == null) return false;
+        if (PropertyType == null)
+            return false;
 
         var baseType = Nullable.GetUnderlyingType(PropertyType) ?? PropertyType;
         var roundedValue = Math.Round(NumericValue);
@@ -106,17 +107,24 @@ public partial class PropertyInputViewModel : ObservableObject
 
     private double? ConvertToInteger()
     {
-        if (PropertyType == null) return null;
+        if (PropertyType == null)
+            return null;
 
         var baseType = Nullable.GetUnderlyingType(PropertyType) ?? PropertyType;
         var roundedValue = Math.Round(NumericValue);
 
-        if (baseType == typeof(int)) return (int)roundedValue;
-        if (baseType == typeof(uint)) return (uint)Math.Max(0, roundedValue);
-        if (baseType == typeof(long)) return (long)roundedValue;
-        if (baseType == typeof(ulong)) return (ulong)Math.Max(0, roundedValue);
-        if (baseType == typeof(short)) return (short)Math.Max(short.MinValue, Math.Min(short.MaxValue, roundedValue));
-        if (baseType == typeof(ushort)) return (ushort)Math.Max(0, Math.Min(ushort.MaxValue, roundedValue));
+        if (baseType == typeof(int))
+            return (int)roundedValue;
+        if (baseType == typeof(uint))
+            return (uint)Math.Max(0, roundedValue);
+        if (baseType == typeof(long))
+            return (long)roundedValue;
+        if (baseType == typeof(ulong))
+            return (ulong)Math.Max(0, roundedValue);
+        if (baseType == typeof(short))
+            return (short)Math.Max(short.MinValue, Math.Min(short.MaxValue, roundedValue));
+        if (baseType == typeof(ushort))
+            return (ushort)Math.Max(0, Math.Min(ushort.MaxValue, roundedValue));
 
         return null;
     }

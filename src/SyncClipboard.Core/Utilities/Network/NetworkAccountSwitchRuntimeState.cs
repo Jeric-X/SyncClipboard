@@ -10,13 +10,15 @@ public sealed class NetworkAccountSwitchRuntimeState
     {
         get
         {
-            lock (_lock) return _manualOverride;
+            lock (_lock)
+                return _manualOverride;
         }
     }
 
     public void OnManualSelection()
     {
-        lock (_lock) _manualOverride = true;
+        lock (_lock)
+            _manualOverride = true;
     }
 
     public bool OnNetworkChanged()

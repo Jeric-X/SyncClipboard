@@ -234,7 +234,8 @@ public class AvaloniaClipboardWriterLifetimeTests
         public void Dispose()
         {
             Interlocked.Increment(ref _disposeCount);
-            if (throws) throw new IOException("释放失败");
+            if (throws)
+                throw new IOException("释放失败");
         }
     }
 }

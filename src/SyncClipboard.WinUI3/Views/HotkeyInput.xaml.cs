@@ -38,7 +38,11 @@ public sealed partial class HotkeyInput : UserControl
     public Hotkey Hotkey
     {
         get { return (Hotkey)GetValue(HotkeyProperty); }
-        set { if (Hotkey != value) SetValue(HotkeyProperty, value); }
+        set
+        {
+            if (Hotkey != value)
+                SetValue(HotkeyProperty, value);
+        }
     }
 
     public static readonly DependencyProperty HotkeyProperty = DependencyProperty.Register(

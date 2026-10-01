@@ -86,7 +86,8 @@ public sealed class OfficialAdapter(
 
             var serverUrl = _officialConfig.RemoteURL.TrimEnd('/');
             var signalRUrl = $"{serverUrl}{SignalRConstants.HubPath}";
-            if (string.IsNullOrWhiteSpace(signalRUrl)) return;
+            if (string.IsNullOrWhiteSpace(signalRUrl))
+                return;
             _hubConnection = new HubConnectionBuilder()
                 .WithUrl(new Uri(signalRUrl), config =>
                 {

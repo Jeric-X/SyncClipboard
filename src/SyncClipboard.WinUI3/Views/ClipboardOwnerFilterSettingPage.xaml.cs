@@ -29,7 +29,8 @@ public sealed partial class ClipboardOwnerFilterSettingPage : Page
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
-        if (e.Parameter is not string configKey) throw new ArgumentException("Clipboard owner filter setting requires a config key.", nameof(e));
+        if (e.Parameter is not string configKey)
+            throw new ArgumentException("Clipboard owner filter setting requires a config key.", nameof(e));
         _viewModel.UseConfig(configKey);
         _viewModel.OnClipboardOwnerCaptured += OnClipboardOwnerCaptured;
         ((MainWindow)App.Current.Services.GetRequiredService<IMainWindow>()).DispableScrollViewer();

@@ -23,8 +23,10 @@ public class Hotkey
 
     public override bool Equals(object? obj)
     {
-        if (ReferenceEquals(this, obj)) return true;
-        if (obj is not Hotkey other) return false;
+        if (ReferenceEquals(this, obj))
+            return true;
+        if (obj is not Hotkey other)
+            return false;
 
         return Keys.SequenceEqual(other.Keys);
     }

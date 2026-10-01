@@ -16,7 +16,9 @@ public interface IWindow
     NativeWindowInfo? GetNativeWindowInfo() => null;
     bool GetScrollViewMetrics(out double offsetY, out double viewportHeight, out double extentHeight)
     {
-        offsetY = 0; viewportHeight = 0; extentHeight = 0;
+        offsetY = 0;
+        viewportHeight = 0;
+        extentHeight = 0;
         return false;
     }
 

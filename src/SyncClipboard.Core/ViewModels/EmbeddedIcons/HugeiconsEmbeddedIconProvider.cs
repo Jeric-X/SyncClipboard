@@ -30,7 +30,8 @@ public static class HugeiconsEmbeddedIconProvider
 
     private static EmbeddedIconCategory ResolveFileCategory(string[]? filePaths)
     {
-        if (filePaths is not { Length: > 0 }) return EmbeddedIconCategory.File;
+        if (filePaths is not { Length: > 0 })
+            return EmbeddedIconCategory.File;
 
         var extension = Path.GetExtension(filePaths[0]);
         return string.IsNullOrEmpty(extension)

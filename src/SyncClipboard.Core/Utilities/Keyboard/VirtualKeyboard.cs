@@ -58,7 +58,8 @@ public sealed class VirtualKeyboard : IDisposable
 
     public void ReleaseKeys(Hotkey hotkey)
     {
-        if (hotkey.Keys.Length == 0) return;
+        if (hotkey.Keys.Length == 0)
+            return;
 
         Execute(simulator =>
         {
@@ -66,7 +67,8 @@ public sealed class VirtualKeyboard : IDisposable
             foreach (var key in hotkey.Keys)
             {
                 var releaseResult = simulator.SimulateKeyRelease(KeyCodeMap.MapReverse[key]);
-                if (result == UioHookResult.Success) result = releaseResult;
+                if (result == UioHookResult.Success)
+                    result = releaseResult;
             }
             EnsureSuccess(result);
         });
@@ -75,7 +77,8 @@ public sealed class VirtualKeyboard : IDisposable
     public void SendShortcut(params KeyCode[] keys)
     {
         ArgumentNullException.ThrowIfNull(keys);
-        if (keys.Length == 0) return;
+        if (keys.Length == 0)
+            return;
 
         Execute(simulator =>
         {
@@ -109,7 +112,8 @@ public sealed class VirtualKeyboard : IDisposable
                     }
                 }
             }
-            if (error is not null) ExceptionDispatchInfo.Throw(error);
+            if (error is not null)
+                ExceptionDispatchInfo.Throw(error);
         });
     }
 
@@ -166,7 +170,8 @@ public sealed class VirtualKeyboard : IDisposable
 
     private static void EnsureSuccess(UioHookResult result)
     {
-        if (result != UioHookResult.Success) throw new HookException(result);
+        if (result != UioHookResult.Success)
+            throw new HookException(result);
     }
 
     private void DisposeSimulator()
@@ -180,7 +185,8 @@ public sealed class VirtualKeyboard : IDisposable
     {
         lock (_lock)
         {
-            if (_disposed) return;
+            if (_disposed)
+                return;
             _disposed = true;
             DisposeSimulator();
         }

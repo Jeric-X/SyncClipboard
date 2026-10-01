@@ -29,8 +29,10 @@ public class PageDefinition(string name, string title, string? fontIcon = null)
 
     public override bool Equals(object? obj)
     {
-        if (obj == null) return false;
-        if (obj is not PageDefinition pageObj) return false;
+        if (obj == null)
+            return false;
+        if (obj is not PageDefinition pageObj)
+            return false;
 
         return this.Name == pageObj.Name;
     }

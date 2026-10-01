@@ -267,7 +267,8 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
             if (_viewModel.ShowPreviewPanel)
             {
                 var maxWidth = (int)_MainContentGrid.ActualWidth - 300 - 2;
-                if (maxWidth < 150) maxWidth = 150;
+                if (maxWidth < 150)
+                    maxWidth = 150;
                 if (_viewModel.ListViewWidth > maxWidth)
                 {
                     _viewModel.ListViewWidth = maxWidth;
@@ -899,7 +900,9 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
 
     public bool GetScrollViewMetrics(out double offsetY, out double viewportHeight, out double extentHeight)
     {
-        offsetY = 0; viewportHeight = 0; extentHeight = 0;
+        offsetY = 0;
+        viewportHeight = 0;
+        extentHeight = 0;
         if (_disposed)
         {
             return false;
@@ -917,7 +920,8 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
 
     private static T? FindDescendant<T>(DependencyObject start) where T : DependencyObject
     {
-        if (start == null) return null;
+        if (start == null)
+            return null;
 
         var queue = new Queue<DependencyObject>();
         queue.Enqueue(start);
@@ -1136,7 +1140,8 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
 
     private void StatusBorderLoaded(object sender, RoutedEventArgs _)
     {
-        if (sender is not Border border) return;
+        if (sender is not Border border)
+            return;
 
         // 直接绑定 ShowSyncStateIndicator（ViewModel 已组合两个条件）
         var binding = new Binding
@@ -1151,7 +1156,8 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
 
     private void RecordControlBarLoaded(object sender, RoutedEventArgs _)
     {
-        if (sender is not RecordControlBar controlBar) return;
+        if (sender is not RecordControlBar controlBar)
+            return;
 
         // 设置 ViewModel 绑定
         controlBar.ViewModel = _viewModel;
@@ -1210,7 +1216,8 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
 
         // 计算最大宽度：确保预览面板至少300像素
         var maxWidth = (int)_MainContentGrid.ActualWidth - 300 - 2;
-        if (maxWidth < 150) maxWidth = 150;
+        if (maxWidth < 150)
+            maxWidth = 150;
 
         // 限制宽度范围
         newWidth = Math.Clamp(newWidth, 150, maxWidth);

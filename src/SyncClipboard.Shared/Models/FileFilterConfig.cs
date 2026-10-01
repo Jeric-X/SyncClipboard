@@ -31,13 +31,20 @@ public record FileFilterConfig : IConfigValidator
 
     public virtual bool Equals(FileFilterConfig? other)
     {
-        if (ReferenceEquals(this, other)) return true;
-        if (other is null) return false;
-        if (FileFilterMode != other.FileFilterMode) return false;
-        if (WhiteList.Count != other.WhiteList.Count) return false;
-        if (BlackList.Count != other.BlackList.Count) return false;
-        if (!WhiteList.SequenceEqual(other.WhiteList)) return false;
-        if (!BlackList.SequenceEqual(other.BlackList)) return false;
+        if (ReferenceEquals(this, other))
+            return true;
+        if (other is null)
+            return false;
+        if (FileFilterMode != other.FileFilterMode)
+            return false;
+        if (WhiteList.Count != other.WhiteList.Count)
+            return false;
+        if (BlackList.Count != other.BlackList.Count)
+            return false;
+        if (!WhiteList.SequenceEqual(other.WhiteList))
+            return false;
+        if (!BlackList.SequenceEqual(other.BlackList))
+            return false;
 
         return true;
     }

@@ -60,7 +60,8 @@ public sealed class AsyncLatestWinsDebouncer : IDisposable
     {
         lock (_lock)
         {
-            if (_disposed) return;
+            if (_disposed)
+                return;
             _disposed = true;
         }
         CancelPending();
