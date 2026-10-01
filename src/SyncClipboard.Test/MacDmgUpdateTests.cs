@@ -148,8 +148,11 @@ public class MacDmgUpdateTests
             File.Copy(helper, Path.Combine(workspace, "SyncClipboard.Updater"));
             foreach (var library in MacUpdaterFiles.Libraries)
                 File.Copy(Path.Combine(Path.GetDirectoryName(helper)!, library), Path.Combine(workspace, library));
-            update = update with { WorkDirectory = workspace };
-            var start = UpdateWorker.CreateStartInfo(Path.Combine(workspace, "SyncClipboard.Updater"), update);
+            var start = FileReplacementPackageInstaller.CreateStartInfo(new(update.PackagePath, update.Digest), workspace,
+                Path.Combine(update.Target, "Contents", "MonoBundle"));
+            // The test host stays alive to observe completion; only replace the parent identity.
+            var processIdIndex = start.ArgumentList.IndexOf("--process-id");
+            start.ArgumentList[processIdIndex + 1] = int.MaxValue.ToString(System.Globalization.CultureInfo.InvariantCulture);
             using var process = Process.Start(start)!;
             try
             {

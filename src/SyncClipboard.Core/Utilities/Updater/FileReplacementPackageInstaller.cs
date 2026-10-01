@@ -76,11 +76,15 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
         }
     }
 
-    internal static ProcessStartInfo CreateStartInfo(UpdateInstallRequest request, string workspace)
+    internal static ProcessStartInfo CreateStartInfo(UpdateInstallRequest request, string workspace, string? programDirectory = null)
     {
+        programDirectory ??= Env.ProgramDirectory;
         var targetPath = OperatingSystem.IsMacOS()
-            ? MacUpdaterFiles.FindBundle(Env.ProgramDirectory) ?? Path.GetFullPath(Env.ProgramDirectory)
-            : Path.GetFullPath(Env.ProgramDirectory);
+            ? MacUpdaterFiles.FindBundle(programDirectory) ?? Path.GetFullPath(programDirectory)
+            : Path.GetFullPath(programDirectory);
+        var executable = OperatingSystem.IsMacOS()
+            ? Path.Combine(targetPath, "Contents", "MacOS", "SyncClipboard.Desktop.MacOS")
+            : OperatingSystem.IsWindows() ? Path.Combine(targetPath, "SyncClipboard.exe") : Env.ProgramPath;
         var updaterPath = Path.Combine(workspace, OperatingSystem.IsMacOS() ? "SyncClipboard.Updater" : "SyncClipboard.Updater.exe");
         var appElevated = OperatingSystem.IsWindows() && Env.IsRunningAsAdministrator;
         using var currentProcess = Process.GetCurrentProcess();
@@ -92,7 +96,7 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
             "--package-path", Path.GetFullPath(request.PackagePath),
             "--digest", request.Digest,
             "--target", targetPath,
-            "--executable", OperatingSystem.IsWindows() ? Path.Combine(targetPath, "SyncClipboard.exe") : Env.ProgramPath,
+            "--executable", executable,
             "--process-id", Environment.ProcessId.ToString(CultureInfo.InvariantCulture),
             "--process-start-time", currentProcess.StartTime.ToUniversalTime().Ticks.ToString(CultureInfo.InvariantCulture),
             "--app-elevated", appElevated ? "true" : "false",
