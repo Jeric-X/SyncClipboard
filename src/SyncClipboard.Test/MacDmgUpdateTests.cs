@@ -301,6 +301,16 @@ public class MacDmgUpdateTests
         var target = await CreateBundleAsync(Path.Combine(directory, "installed", "SyncClipboard.app"), "old");
         var package = Path.Combine(directory, "update.dmg");
         await MacCommand.RunAsync("/usr/bin/hdiutil", ["create", "-srcfolder", source, "-format", "UDZO", package], Token);
+        TestContext.WriteLine("Checking DMG file usage before reading: " + package);
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            TestContext.WriteLine(await MacCommand.RunAsync("/usr/sbin/lsof", ["-nP", "--", package], timeout.Token));
+        }
+        catch (Exception diagnosticError)
+        {
+            TestContext.WriteLine("lsof diagnostic failed: " + diagnosticError.Message);
+        }
         var digest = await ReadPackageDigestAsync(package);
         return new UpdateArguments(package, digest, target,
             int.MaxValue, "en", [], directory);
