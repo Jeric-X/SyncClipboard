@@ -36,6 +36,11 @@ internal sealed class UpdateWindow : Window, IUpdateInteraction
             }
         };
         status.Text = text.StartFromApplication;
+        desktop.Exit += (_, e) =>
+        {
+            if (exitCode != 0)
+                e.ApplicationExitCode = exitCode;
+        };
         Closing += async (_, e) =>
         {
             if (!running)

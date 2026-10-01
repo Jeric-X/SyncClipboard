@@ -242,9 +242,27 @@ public class MacDmgUpdateTests
         var target = await CreateBundleAsync(Path.Combine(directory, "installed", "SyncClipboard.app"), "old");
         var package = Path.Combine(directory, "update.dmg");
         await MacCommand.RunAsync("/usr/bin/hdiutil", ["create", "-srcfolder", source, "-format", "UDZO", package], Token);
-        var digest = "sha256:" + Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(package, Token)));
+        var digest = await ReadPackageDigestAsync(package);
         return new UpdateArguments(package, digest, target,
             int.MaxValue, "en", [], directory);
+    }
+
+    private async Task<string> ReadPackageDigestAsync(string package)
+    {
+        var elapsed = Stopwatch.StartNew();
+        while (true)
+        {
+            try
+            {
+                var bytes = await File.ReadAllBytesAsync(package, Token);
+                return "sha256:" + Convert.ToHexString(SHA256.HashData(bytes));
+            }
+            catch (IOException error) when ((error.HResult & 0xffff) == 32 && elapsed.Elapsed < TimeSpan.FromSeconds(10))
+            {
+                // The newly created DMG can remain briefly locked after hdiutil exits.
+                await Task.Delay(200, Token);
+            }
+        }
     }
 
     private async Task<string> CreateBundleAsync(string bundle, string version)
