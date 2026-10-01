@@ -12,7 +12,7 @@ internal sealed class AppImageReplacement(string target, string backup, bool ele
     {
         interaction.SetRollbackAvailable(false);
         interaction.Report("backup", -1);
-        await UpdateIo.RunAsync(UpdaterText.Current.BackUp + target, async () =>
+        await InteractiveOperation.RunAsync(UpdaterText.Current.BackUp + target, async () =>
         {
             Directory.CreateDirectory(Path.GetDirectoryName(backup)!);
             PackageFiles.CheckSpace(Path.GetDirectoryName(backup)!, new FileInfo(target).Length);
@@ -23,7 +23,7 @@ internal sealed class AppImageReplacement(string target, string backup, bool ele
         try
         {
             interaction.Report("installing", -1);
-            await UpdateIo.RunAsync(UpdaterText.Current.Replace + target, async () =>
+            await InteractiveOperation.RunAsync(UpdaterText.Current.Replace + target, async () =>
             {
                 await PrepareAsync(source, token);
                 await ReplaceAsync();
@@ -38,7 +38,7 @@ internal sealed class AppImageReplacement(string target, string backup, bool ele
             {
                 interaction.SetRollbackAvailable(false);
                 interaction.Report("restoring", -1);
-                await UpdateIo.RunAsync(UpdaterText.Current.Restore + target, async () =>
+                await InteractiveOperation.RunAsync(UpdaterText.Current.Restore + target, async () =>
                 {
                     await PrepareAsync(backup, CancellationToken.None);
                     await ReplaceAsync();
@@ -53,14 +53,14 @@ internal sealed class AppImageReplacement(string target, string backup, bool ele
         finally
         {
             interaction.SetRollbackAvailable(false);
-            await UpdateIo.RunAsync(UpdaterText.Current.RemoveTemporaryFile + prepared,
+            await InteractiveOperation.RunAsync(UpdaterText.Current.RemoveTemporaryFile + prepared,
                 () => RemovePreparedAsync(CancellationToken.None), interaction.AskFailureActionAsync,
                 CancellationToken.None, backup);
         }
     }
 
     public Task CleanupAsync(IUpdateInteraction interaction)
-        => UpdateIo.RunAsync(UpdaterText.Current.RemoveTemporaryFile + backup, () =>
+        => InteractiveOperation.RunAsync(UpdaterText.Current.RemoveTemporaryFile + backup, () =>
         {
             File.Delete(backup);
             return Task.CompletedTask;

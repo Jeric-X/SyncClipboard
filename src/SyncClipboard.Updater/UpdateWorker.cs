@@ -63,7 +63,7 @@ internal static class UpdateWorker
             }
 
             canRestart = false;
-            await UpdateIo.RunAsync(UpdaterText.Current.LockInstallation + update.Target, () =>
+            await InteractiveOperation.RunAsync(UpdaterText.Current.LockInstallation + update.Target, () =>
             {
                 targetLock = AcquireInstallationLock(update.Target);
                 return Task.CompletedTask;
@@ -127,7 +127,7 @@ internal static class UpdateWorker
         foreach (var directory in directories)
         {
             var needsElevation = false;
-            await UpdateIo.RunAsync(UpdaterText.Current.CheckWriteAccess + directory, () =>
+            await InteractiveOperation.RunAsync(UpdaterText.Current.CheckWriteAccess + directory, () =>
             {
                 try
                 {
@@ -163,7 +163,7 @@ internal static class UpdateWorker
         try
         {
             interaction.Report("preparing", -1);
-            await UpdateIo.RunAsync(UpdaterText.Current.PreparePackage + update.PackagePath + " -> " + update.WorkDirectory, async () =>
+            await InteractiveOperation.RunAsync(UpdaterText.Current.PreparePackage + update.PackagePath + " -> " + update.WorkDirectory, async () =>
             {
                 // Each retry gets a fresh destination, so partial extraction never conflicts with CreateNew.
                 attempt = Path.Combine(update.WorkDirectory!, "attempt-" + Guid.NewGuid().ToString("N"));
@@ -392,7 +392,7 @@ internal static class UpdateWorker
         ValidateWorkspace(workspace);
         var updaterPath = Path.Combine(workspace, "SyncClipboard.Updater.exe");
         var runningInWorkspace = string.Equals(Environment.ProcessPath, updaterPath, StringComparison.OrdinalIgnoreCase);
-        await UpdateIo.RunAsync(UpdaterText.Current.RemoveWorkspace + workspace, () =>
+        await InteractiveOperation.RunAsync(UpdaterText.Current.RemoveWorkspace + workspace, () =>
         {
             if (!runningInWorkspace)
             {
@@ -417,7 +417,7 @@ internal static class UpdateWorker
 
         if (runningInWorkspace)
         {
-            await UpdateIo.RunAsync(UpdaterText.Current.StartCleanup + workspace, () =>
+            await InteractiveOperation.RunAsync(UpdaterText.Current.StartCleanup + workspace, () =>
             {
                 using var cleanup = Process.Start(CreateSelfCleanupStartInfo(workspace))
                     ?? throw new IOException(UpdaterText.Current.CleanupStartFailed);

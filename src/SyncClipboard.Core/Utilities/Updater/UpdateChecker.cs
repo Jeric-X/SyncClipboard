@@ -151,20 +151,12 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         }
 
         var stateText = GetStateText(CurrentState.State);
-        List<ActionButton> buttons = [
-            new ActionButton(I18n.Strings.GoToAboutPage, () => mainWindow.OpenPage(PageDefinition.About, null))
-        ];
-
-        /*与特定state关联的按钮可能过时，需要在state改变时清除这个按钮
-
-        var action = GetStateAction();
-        if (action is not null)
-        {
-            var (actionText, manualAction) = action.Value;
-            buttons.Add(new Button(actionText, () => manualAction(CancellationToken.None)));
-        }*/
-
-        notificationManager.ShowText(stateText, I18n.Strings.CheckOnAboutPage, buttons);
+        var readyToInstall = CurrentState.State == UpdaterState.ReadyToInstall;
+        var button = readyToInstall
+            ? new ActionButton(I18n.Strings.InstallUpdate, async () => await InstallUpdate(CancellationToken.None))
+            : new ActionButton(I18n.Strings.GoToAboutPage, () => mainWindow.OpenPage(PageDefinition.About, null));
+        var message = readyToInstall ? updateInfo.PackageName : I18n.Strings.CheckOnAboutPage;
+        notificationManager.ShowText(stateText, message, [button]);
     }
 
     public Task RunAutoUpdateFlow(CancellationToken token = default)

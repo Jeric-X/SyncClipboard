@@ -12,7 +12,7 @@ internal sealed class MacBundleReplacement(string target, string backup, bool el
     {
         interaction.SetRollbackAvailable(false);
         interaction.Report("backup", -1);
-        await UpdateIo.RunAsync(UpdaterText.Current.BackUp + target, async () =>
+        await InteractiveOperation.RunAsync(UpdaterText.Current.BackUp + target, async () =>
         {
             PackageFiles.CheckSpace(Path.GetDirectoryName(backup)!, FileSystem.GetSize(target));
             await RemoveAsync(backup, token);
@@ -23,7 +23,7 @@ internal sealed class MacBundleReplacement(string target, string backup, bool el
         try
         {
             interaction.Report("installing", -1);
-            await UpdateIo.RunAsync(UpdaterText.Current.Replace + target, async () =>
+            await InteractiveOperation.RunAsync(UpdaterText.Current.Replace + target, async () =>
             {
                 await PrepareAsync(source, token);
                 // The unsupported-filesystem fallback may remove the old bundle before a later rename fails.
@@ -39,7 +39,7 @@ internal sealed class MacBundleReplacement(string target, string backup, bool el
             {
                 interaction.SetRollbackAvailable(false);
                 interaction.Report("restoring", -1);
-                await UpdateIo.RunAsync(UpdaterText.Current.Restore + target, async () =>
+                await InteractiveOperation.RunAsync(UpdaterText.Current.Restore + target, async () =>
                 {
                     await PrepareAsync(backup, CancellationToken.None);
                     await ReplaceAsync();
@@ -54,14 +54,14 @@ internal sealed class MacBundleReplacement(string target, string backup, bool el
         finally
         {
             interaction.SetRollbackAvailable(false);
-            await UpdateIo.RunAsync(UpdaterText.Current.RemoveDirectory + prepared,
+            await InteractiveOperation.RunAsync(UpdaterText.Current.RemoveDirectory + prepared,
                 () => RemoveAsync(prepared, CancellationToken.None), interaction.AskFailureActionAsync,
                 CancellationToken.None, backup);
         }
     }
 
     public Task CleanupAsync(IUpdateInteraction interaction)
-        => UpdateIo.RunAsync(UpdaterText.Current.RemoveDirectory + backup,
+        => InteractiveOperation.RunAsync(UpdaterText.Current.RemoveDirectory + backup,
             () => RemoveAsync(backup, CancellationToken.None), interaction.AskFailureActionAsync, CancellationToken.None, backup);
 
     private async Task PrepareAsync(string source, CancellationToken token)

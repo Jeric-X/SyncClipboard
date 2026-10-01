@@ -16,7 +16,7 @@ internal sealed class UpdateRecoveryException(string backupPath, Exception origi
 
 internal sealed class UpdateRollbackException(Exception inner) : IOException(UpdaterText.Current.RollbackRequested, inner);
 
-internal static class UpdateIo
+internal static class InteractiveOperation
 {
     internal static async Task RunAsync(string path, Func<Task> operation, UpdateFailureHandler? onFailure,
         CancellationToken token, string? backupPath = null, Func<bool>? canRollback = null)
