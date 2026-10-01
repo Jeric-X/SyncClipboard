@@ -34,7 +34,7 @@ internal sealed class UpdateInstallerFactory : IUpdateInstallerFactory
         return null;
     }
 
-    private static IUpdateInstaller? CreateMacInstaller(string packageName, string programDirectory)
+    private static FileReplacementPackageInstaller? CreateMacInstaller(string packageName, string programDirectory)
     {
         if (!packageName.EndsWith(".dmg", StringComparison.OrdinalIgnoreCase))
             return null;
@@ -43,7 +43,7 @@ internal sealed class UpdateInstallerFactory : IUpdateInstallerFactory
             ? new FileReplacementPackageInstaller() : null;
     }
 
-    private static IUpdateInstaller? CreateAppImageInstaller(string packageName, string programDirectory, string? appImagePath)
+    private static FileReplacementPackageInstaller? CreateAppImageInstaller(string packageName, string programDirectory, string? appImagePath)
     {
         if (!packageName.EndsWith(".AppImage", StringComparison.OrdinalIgnoreCase)
             || appImagePath is null || !Path.IsPathFullyQualified(appImagePath) || !File.Exists(appImagePath))
