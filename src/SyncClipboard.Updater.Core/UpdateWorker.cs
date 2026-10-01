@@ -183,7 +183,8 @@ internal static class UpdateWorker
                 await appImageReplacement.ApplyAsync(stage!, interaction, token);
             else
                 await FileReplacement.ApplyAsync(stage!, update.Target, Path.Combine(attempt!, "backup"),
-                    WindowsZipPackage.GetProtectedPaths(update), interaction.Report, token, interaction.AskFailureActionAsync);
+                    WindowsZipPackage.GetProtectedPaths(update), interaction.Report, token,
+                    interaction.AskFailureActionAsync, interaction.SetRollbackAvailable);
             return dmg;
         }
         catch
@@ -391,67 +392,24 @@ internal static class UpdateWorker
     {
         ValidateWorkspace(workspace);
         var updaterPath = Path.Combine(workspace, "SyncClipboard.Updater.exe");
-        var runningInWorkspace = string.Equals(Environment.ProcessPath, updaterPath, StringComparison.OrdinalIgnoreCase);
+        var runningInWorkspace = OperatingSystem.IsWindows()
+            && string.Equals(Environment.ProcessPath, updaterPath, StringComparison.OrdinalIgnoreCase);
         await InteractiveOperation.RunAsync(UpdaterText.Current.RemoveWorkspace + workspace, () =>
         {
-            if (!runningInWorkspace)
+            if (runningInWorkspace)
             {
-                Directory.Delete(workspace, true);
-                return Task.CompletedTask;
-            }
-
-            foreach (var path in Directory.EnumerateFileSystemEntries(workspace))
-            {
-                if (string.Equals(path, updaterPath, StringComparison.OrdinalIgnoreCase))
-                    continue;
-                if (Path.GetFileName(path) == WorkspaceMarker)
-                    continue;
-
-                if (Directory.Exists(path))
-                    Directory.Delete(path, true);
-                else
-                    File.Delete(path);
-            }
-            return Task.CompletedTask;
-        }, onFailure, CancellationToken.None);
-
-        if (runningInWorkspace)
-        {
-            await InteractiveOperation.RunAsync(UpdaterText.Current.StartCleanup + workspace, () =>
-            {
+                // WinUI keeps its DLLs and resources mapped until the updater has exited.
                 using var cleanup = Process.Start(CreateSelfCleanupStartInfo(workspace))
                     ?? throw new IOException(UpdaterText.Current.CleanupStartFailed);
-                return Task.CompletedTask;
-            }, onFailure, CancellationToken.None);
-        }
+            }
+            else
+                Directory.Delete(workspace, true);
+            return Task.CompletedTask;
+        }, onFailure, CancellationToken.None);
     }
 
     internal static ProcessStartInfo CreateSelfCleanupStartInfo(string workspace)
-    {
-        // Only the running executable and marker remain. Windows releases the EXE after we exit.
-        // Pass paths through environment variables so they are never interpreted as command text.
-        // Wait before the IF so every retry waits, including when deleting the EXE fails.
-        const string command = """
-            for /l %i in (1,1,60) do (
-            "!SystemRoot!\System32\ping.exe" -n 2 127.0.0.1 >nul 2>&1
-            & del /q "!SYNC_CLIPBOARD_CLEANUP_WORK!\SyncClipboard.Updater.exe" >nul 2>&1
-            & if not exist "!SYNC_CLIPBOARD_CLEANUP_WORK!\SyncClipboard.Updater.exe" (
-            del /q "!SYNC_CLIPBOARD_CLEANUP_WORK!\.syncclipboard-update" >nul 2>&1
-            & rd "!SYNC_CLIPBOARD_CLEANUP_WORK!" >nul 2>&1
-            & if not exist "!SYNC_CLIPBOARD_CLEANUP_WORK!\" exit /b 0
-            )
-            )
-            """;
-        var start = new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "cmd.exe"))
-        {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WorkingDirectory = Path.GetTempPath(),
-            Arguments = "/d /q /e:on /v:on /c " + command.ReplaceLineEndings(" ")
-        };
-        start.Environment["SYNC_CLIPBOARD_CLEANUP_WORK"] = workspace;
-        return start;
-    }
+        => WindowsWorkspaceCleanup.CreateStartInfo(workspace);
 
     internal static void ValidateWorkspace(string workspace)
     {

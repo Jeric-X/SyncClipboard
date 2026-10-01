@@ -16,7 +16,7 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
         else if (bundle is not null)
             workspace = await PrepareMacUpdaterAsync(bundle, token);
         else
-            workspace = await PrepareUpdaterAsync(Path.Combine(Env.ProgramDirectory, "SyncClipboard.Updater.exe"), token);
+            workspace = await PrepareWindowsUpdaterAsync(Env.ProgramDirectory, token);
         var started = false;
         try
         {
@@ -52,6 +52,26 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
         {
             if (Directory.Exists(workspace))
                 Directory.Delete(workspace, true);
+            throw;
+        }
+    }
+
+    internal static async Task<string> PrepareWindowsUpdaterAsync(string directory, CancellationToken token)
+    {
+        var workspace = await PrepareUpdaterAsync(Path.Combine(directory, "SyncClipboard.Updater.exe"), token);
+        try
+        {
+            foreach (var (path, name) in WindowsUpdaterFiles.GetDependencies(directory))
+            {
+                await using var source = File.OpenRead(path);
+                await using var destination = File.Create(Path.Combine(workspace, name));
+                await source.CopyToAsync(destination, token);
+            }
+            return workspace;
+        }
+        catch
+        {
+            Directory.Delete(workspace, true);
             throw;
         }
     }

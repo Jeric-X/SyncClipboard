@@ -116,41 +116,9 @@ internal sealed class UpdaterText
         ? "终止，不回滚，保留备份"
         : "Abort without rollback; keep backups";
 
-    public string EnterYesNoRetry => isChinese
-        ? "请输入 y、n 或 r。"
-        : "Enter y, n, or r.";
-
-    public string ChooseAction => isChinese
-        ? "请选择操作"
-        : "Choose an action";
-
-    public string FailureMenu => isChinese
-        ? "[1] 终止 [2] 重试（默认）"
-        : "[1] Abort [2] Retry (default)";
-
-    public string RecoveryMenu => isChinese
-        ? "[1] 终止（不回滚，保留备份，不启动主程序） [2] 重试（默认） [3] 回滚"
-        : "[1] Abort (no rollback; keep backups; do not start the application) [2] Retry (default) [3] Roll back";
-
-    public string EnterFailureAction => isChinese
-        ? "请输入 1 或 2。"
-        : "Enter 1 or 2.";
-
-    public string EnterRecoveryAction => isChinese
-        ? "请输入 1、2 或 3。"
-        : "Enter 1, 2, or 3.";
-
-    public string Completed => isChinese
-        ? "更新完成。"
-        : "Update completed.";
-
     public string CleanupIncomplete => isChinese
         ? "更新已完成，但临时文件或旧备份未清理完毕。"
         : "The update completed, but temporary files or old backups could not be fully removed.";
-
-    public string RemainingDirectory => isChinese
-        ? "残留目录: "
-        : "Remaining directory: ";
 
     public string DesktopUserUnavailable => isChinese
         ? "无法获取普通权限的桌面用户，不能以原权限启动主程序。请手动启动 SyncClipboard。"
@@ -167,10 +135,6 @@ internal sealed class UpdaterText
     public string Workspace => isChinese
         ? "日志及工作目录: "
         : "Log and workspace: ";
-
-    public string PressEnterToClose => isChinese
-        ? "按回车关闭"
-        : "Press Enter to close";
 
     public string Close => isChinese
         ? "关闭"

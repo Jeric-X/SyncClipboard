@@ -13,32 +13,11 @@ public class UpdaterLocalizationTests
     [DataRow("en-US", false)]
     [DataRow("fr", false)]
     [DataRow("", false)]
-    public async Task Console_UsesSelectedLanguageAndFallsBackToEnglish(string language, bool chinese)
+    public void Text_UsesSelectedLanguageAndFallsBackToEnglish(string language, bool chinese)
     {
-        using var input = new StringReader("n\n");
-        using var output = new StringWriter();
-        var interaction = new ConsoleUpdateInteraction(language, input: input, output: output);
-
-        interaction.Report("installing", 50);
-        await interaction.ConfirmForceExitAsync(TestContext.CancellationTokenSource.Token);
-        await interaction.ShowResultAsync(new UpdateResult(0));
-
-        var result = output.ToString();
-        if (chinese)
-        {
-            Assert.Contains("安装更新: 50%", result);
-            Assert.Contains("是否强制退出并继续更新？", result);
-            Assert.Contains("更新完成。", result);
-            Assert.DoesNotContain("Update completed.", result);
-            Assert.DoesNotContain("Force it to exit", result);
-        }
-        else
-        {
-            Assert.Contains("Install the update: 50%", result);
-            Assert.Contains("Force it to exit", result);
-            Assert.Contains("Update completed.", result);
-            Assert.DoesNotContain("更新", result);
-        }
+        var text = UpdaterText.ForLanguage(language);
+        Assert.AreEqual(chinese ? "安装更新" : "Install the update", text.Installing);
+        Assert.Contains(chinese ? "是否强制退出" : "Force it to exit", text.ConfirmForceExit);
     }
 
     [TestMethod]
@@ -72,17 +51,15 @@ public class UpdaterLocalizationTests
 
     private async Task CheckWorkerLanguageAsync(string language)
     {
-        using var input = new StringReader("");
-        using var output = new StringWriter();
-        var interaction = new ConsoleUpdateInteraction(language, input: input, output: output);
+        var interaction = new RecordingUpdateInteraction();
         var update = new UpdateArguments("package.zip", "sha256:" + new string('A', 64), ".",
             int.MaxValue, language, []);
 
         var result = await UpdateWorker.RunAsync(update, interaction, TestContext.CancellationTokenSource.Token);
 
         Assert.AreEqual(1, result);
-        Assert.Contains(UpdaterText.ForLanguage(language).WorkspaceNotPrepared, output.ToString());
+        Assert.Contains(UpdaterText.ForLanguage(language).WorkspaceNotPrepared, interaction.Result!.Error!);
         var otherLanguage = language == "en" ? "zh-CN" : "en";
-        Assert.DoesNotContain(UpdaterText.ForLanguage(otherLanguage).WorkspaceNotPrepared, output.ToString());
+        Assert.DoesNotContain(UpdaterText.ForLanguage(otherLanguage).WorkspaceNotPrepared, interaction.Result!.Error!);
     }
 }

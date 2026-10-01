@@ -3,6 +3,7 @@ using SyncClipboard.Updater;
 using SyncClipboard.Core.Utilities.Updater;
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Reflection.PortableExecutable;
 using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Principal;
@@ -194,11 +195,18 @@ public class NativeUpdaterTests
         File.WriteAllText(Path.Combine(stage, "b", "new.txt"), "new");
         File.WriteAllText(Path.Combine(stage, "z.txt"), "new");
         using var cancel = new CancellationTokenSource();
-        await Assert.ThrowsAsync<OperationCanceledException>(() => ApplyAsync((phase, percent) =>
+        var rollbackAvailable = false;
+        var progressStates = new List<(string Phase, bool CanRollback)>();
+        await Assert.ThrowsAsync<OperationCanceledException>(() => FileReplacement.ApplyAsync(stage, target,
+            Path.Combine(directory, "backup"), [], (phase, percent) =>
         {
+            progressStates.Add((phase, rollbackAvailable));
             if (phase == "installing" && percent >= 66)
                 cancel.Cancel();
-        }, cancel.Token));
+        }, cancel.Token, setRollbackAvailable: available => rollbackAvailable = available));
+        Assert.IsFalse(rollbackAvailable);
+        foreach (var (phase, canRollback) in progressStates)
+            Assert.AreEqual(phase == "installing", canRollback);
         Assert.AreEqual("old", File.ReadAllText(Path.Combine(target, "a.txt")));
         Assert.IsFalse(Directory.Exists(Path.Combine(target, "b")));
         Assert.IsFalse(File.Exists(Path.Combine(target, "z.txt")));
@@ -331,28 +339,6 @@ public class NativeUpdaterTests
     }
 
     [TestMethod]
-    [DataRow("1", nameof(UpdateFailureAction.Abort))]
-    [DataRow("2", nameof(UpdateFailureAction.Retry))]
-    [DataRow("3", nameof(UpdateFailureAction.Rollback))]
-    [DataRow("invalid\n2", nameof(UpdateFailureAction.Retry))]
-    [DataRow("", nameof(UpdateFailureAction.Rollback))]
-    [DataRow("\n", nameof(UpdateFailureAction.Retry))]
-    public async Task FailurePrompt_ReadsChoiceAndRollsBackOnEndOfInput(string answer, string expectedName)
-    {
-        var expected = Enum.Parse<UpdateFailureAction>(expectedName);
-        using var input = new StringReader(answer);
-        using var output = new StringWriter();
-        var interaction = new ConsoleUpdateInteraction("zh-CN", input: input, output: output);
-        var action = await interaction.AskFailureActionAsync("locked.dll", new IOException("file is locked"), true,
-            TestContext.CancellationTokenSource.Token);
-        Assert.AreEqual(expected, action);
-        Assert.Contains("locked.dll", output.ToString());
-        Assert.Contains("终止", output.ToString());
-        Assert.Contains("重试", output.ToString());
-        Assert.Contains("回滚", output.ToString());
-    }
-
-    [TestMethod]
     public async Task LockedDestination_RollsBackEarlierChangesWithoutTouchingLockedFile()
     {
         if (!OperatingSystem.IsWindows())
@@ -382,16 +368,14 @@ public class NativeUpdaterTests
         using var identity = WindowsIdentity.GetCurrent();
         denied.AddAccessRule(new FileSystemAccessRule(identity.User!, FileSystemRights.CreateFiles, AccessControlType.Deny));
         info.SetAccessControl(denied);
-        using var input = new StringReader("1\n");
-        using var output = new StringWriter();
-        var interaction = new ConsoleUpdateInteraction("en", input: input, output: output);
+        var interaction = new RecordingUpdateInteraction();
         try
         {
             Assert.IsTrue(await UpdateWorker.RequiresElevationAsync([target], false, interaction, TestContext.CancellationTokenSource.Token));
-            Assert.AreEqual("", output.ToString());
+            Assert.IsNull(interaction.FailurePath);
             await Assert.ThrowsAsync<UpdateAbortedException>(() => UpdateWorker.RequiresElevationAsync([target], true, interaction,
                 TestContext.CancellationTokenSource.Token));
-            Assert.Contains(target, output.ToString());
+            Assert.Contains(target, interaction.FailurePath!);
         }
         finally
         {
@@ -571,16 +555,15 @@ public class NativeUpdaterTests
         File.WriteAllText(Path.Combine(workspace, ".syncclipboard-update"), "SyncClipboard updater workspace v1");
         var backup = Path.Combine(workspace, "backup.zip");
         using var locked = new FileStream(backup, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-        using var input = new StringReader("1\n");
-        using var output = new StringWriter();
-        var interaction = new ConsoleUpdateInteraction("zh-CN", input: input, output: output);
+        var interaction = new RecordingUpdateInteraction();
 
         var result = await UpdateWorker.CleanupAndReportAsync(Arguments() with { WorkDirectory = workspace }, interaction);
 
         Assert.AreEqual(1, result);
         Assert.IsTrue(File.Exists(backup));
-        Assert.Contains("更新已完成，但临时文件或旧备份未清理完毕。", output.ToString());
-        Assert.Contains("残留目录: " + workspace, output.ToString());
+        Assert.IsTrue(interaction.Result!.CleanupIncomplete);
+        Assert.AreEqual(workspace, interaction.Result.WorkDirectory);
+        Assert.IsFalse(string.IsNullOrEmpty(interaction.Result.Error));
     }
 
     [TestMethod]
@@ -594,7 +577,11 @@ public class NativeUpdaterTests
         var updater = Path.Combine(workspace, "SyncClipboard.Updater.exe");
         File.WriteAllText(Path.Combine(workspace, ".syncclipboard-update"), "SyncClipboard updater workspace v1");
         using var locked = new FileStream(updater, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
-        using var process = Process.Start(UpdateWorker.CreateSelfCleanupStartInfo(workspace))!;
+        using var owner = StartWaitingProcess();
+        var start = UpdateWorker.CreateSelfCleanupStartInfo(workspace);
+        start.Environment["SYNC_CLIPBOARD_CLEANUP_PID"] = owner.Id.ToString();
+        start.Environment["SYNC_CLIPBOARD_CLEANUP_START"] = owner.StartTime.ToUniversalTime().Ticks.ToString();
+        using var process = Process.Start(start)!;
         try
         {
             await Task.Delay(300, TestContext.CancellationTokenSource.Token);
@@ -602,6 +589,9 @@ public class NativeUpdaterTests
             Assert.IsTrue(File.Exists(updater));
 
             locked.Dispose();
+            Assert.IsFalse(process.HasExited);
+            owner.Kill();
+            await owner.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
             await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token)
                 .WaitAsync(TimeSpan.FromSeconds(10), TestContext.CancellationTokenSource.Token);
             Assert.AreEqual(0, process.ExitCode);
@@ -610,6 +600,8 @@ public class NativeUpdaterTests
         }
         finally
         {
+            if (!owner.HasExited)
+                owner.Kill();
             if (!process.HasExited)
             {
                 process.Kill(entireProcessTree: true);
@@ -756,10 +748,14 @@ public class NativeUpdaterTests
         if (native is null)
             Assert.Inconclusive("Publish the NativeAOT updater and set SYNC_CLIPBOARD_UPDATER_TEST_EXE.");
         Assert.IsTrue(File.Exists(native), "The CI-published updater is missing.");
-        foreach (var name in new[] { "SyncClipboard.exe", "SyncClipboard.Updater.exe" })
+        var application = Environment.GetEnvironmentVariable("SYNC_CLIPBOARD_UPDATER_TEST_APP");
+        Assert.IsNotNull(application, "Publish SyncClipboard.Test.UpdaterHost and set SYNC_CLIPBOARD_UPDATER_TEST_APP.");
+        foreach (var destination in new[] { target, stage })
         {
-            File.Copy(native, Path.Combine(target, name));
-            File.Copy(native, Path.Combine(stage, name));
+            File.Copy(application, Path.Combine(destination, "SyncClipboard.exe"));
+            File.Copy(native, Path.Combine(destination, "SyncClipboard.Updater.exe"));
+            foreach (var (source, _) in WindowsUpdaterFiles.GetDependencies(Path.GetDirectoryName(native)!))
+                File.Copy(source, Path.Combine(destination, Path.GetFileName(source)));
         }
         const string packageName = "SyncClipboard_win_x64_portable.zip";
         File.WriteAllText(Path.Combine(stage, "update_info.json"), JsonSerializer.Serialize(new
@@ -769,7 +765,7 @@ public class NativeUpdaterTests
         File.WriteAllText(Path.Combine(stage, "installed.txt"), "new version");
         var zip = Path.Combine(directory, packageName);
         ZipFile.CreateFromDirectory(stage, zip);
-        var workspace = await FileReplacementPackageInstaller.PrepareUpdaterAsync(Path.Combine(target, "SyncClipboard.Updater.exe"),
+        var workspace = await FileReplacementPackageInstaller.PrepareWindowsUpdaterAsync(target,
             TestContext.CancellationTokenSource.Token);
         using var identity = WindowsIdentity.GetCurrent();
         var arguments = Arguments() with
@@ -791,16 +787,79 @@ public class NativeUpdaterTests
         process.StandardInput.Close();
         var output = process.StandardOutput.ReadToEndAsync(TestContext.CancellationTokenSource.Token);
         var errors = process.StandardError.ReadToEndAsync(TestContext.CancellationTokenSource.Token);
-        await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
-        Assert.AreEqual(0, process.ExitCode);
+        try
+        {
+            await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token).WaitAsync(TimeSpan.FromSeconds(90), TestContext.CancellationTokenSource.Token);
+            Assert.AreEqual(0, process.ExitCode, await errors);
+        }
+        finally
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
+                if (File.Exists(Path.Combine(workspace, "install.log")))
+                    TestContext.WriteLine(File.ReadAllText(Path.Combine(workspace, "install.log")));
+            }
+        }
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.CancellationTokenSource.Token);
         timeout.CancelAfter(TimeSpan.FromSeconds(45));
-        while (!File.Exists(Path.Combine(target, "installed.txt")) || Directory.Exists(workspace))
+        while (!File.Exists(Path.Combine(target, "restart-marker.txt")) || Directory.Exists(workspace))
             await Task.Delay(100, timeout.Token);
         Assert.AreEqual("new version", File.ReadAllText(Path.Combine(target, "installed.txt")));
         Assert.AreEqual("keep config", File.ReadAllText(Path.Combine(target, "StaticConfig.json")));
         TestContext.WriteLine(await output);
         TestContext.WriteLine(await errors);
+    }
+
+    [TestMethod]
+    public async Task NativeAotUpdater_ShowsWinUiWindowAndDialogUsingMainApplicationDependencies()
+    {
+        var native = Environment.GetEnvironmentVariable("SYNC_CLIPBOARD_UPDATER_TEST_EXE");
+        if (!OperatingSystem.IsWindows() || native is null)
+            Assert.Inconclusive("Set SYNC_CLIPBOARD_UPDATER_TEST_EXE to the packaged WinUI updater.");
+        var sourceDirectory = Path.GetDirectoryName(native)!;
+        using (var file = File.OpenRead(native))
+        using (var pe = new PEReader(file))
+            Assert.IsNull(pe.PEHeaders.CorHeader, "The packaged updater must be a native executable.");
+        var workspace = await FileReplacementPackageInstaller.PrepareWindowsUpdaterAsync(sourceDirectory,
+            TestContext.CancellationTokenSource.Token);
+        try
+        {
+            var start = new ProcessStartInfo(Path.Combine(workspace, "SyncClipboard.Updater.exe"))
+            {
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                WorkingDirectory = directory,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+            start.ArgumentList.Add("--smoke-test");
+            using var process = Process.Start(start)!;
+            try
+            {
+                var output = process.StandardOutput.ReadToEndAsync(TestContext.CancellationTokenSource.Token);
+                var error = process.StandardError.ReadToEndAsync(TestContext.CancellationTokenSource.Token);
+                await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token).WaitAsync(TimeSpan.FromSeconds(30), TestContext.CancellationTokenSource.Token);
+                Assert.AreEqual(0, process.ExitCode, await error);
+                Assert.Contains("GUI_SMOKE=PASS", await output);
+                var mode = File.Exists(Path.Combine(sourceDirectory, "Microsoft.WindowsAppRuntime.dll")) ? "local" : "installed";
+                Assert.Contains("WINDOWS_APP_SDK=" + mode, await output);
+                TestContext.WriteLine(await output);
+            }
+            finally
+            {
+                if (!process.HasExited)
+                {
+                    process.Kill(entireProcessTree: true);
+                    await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
+                }
+            }
+        }
+        finally
+        {
+            Directory.Delete(workspace, true);
+        }
     }
 
     private Task ApplyAsync(Action<string, int> progress, CancellationToken token = default)

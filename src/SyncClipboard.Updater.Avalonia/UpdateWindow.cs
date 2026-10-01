@@ -85,7 +85,7 @@ internal sealed class UpdateWindow : Window, IUpdateInteraction
                 else if (args.Length != 0)
                 {
                     running = true;
-                    exitCode = await Task.Run(() => Program.RunUpdateAsync(args, this, cancellation.Token));
+                    exitCode = await Task.Run(() => UpdateRunner.RunAsync(args, this, cancellation.Token));
                     running = false;
                     closeDialog?.Close();
                     desktop.Shutdown(exitCode);
