@@ -157,7 +157,9 @@ internal sealed record UpdateArguments(
     private static string ParseExecutable(string value, string target)
     {
         var executable = Path.GetFullPath(value);
-        var expected = Path.Combine(target, "SyncClipboard.exe");
+        var expected = OperatingSystem.IsMacOS() && target.EndsWith(".app", StringComparison.OrdinalIgnoreCase)
+            ? Path.Combine(target, "Contents", "MacOS", MacDmgPackage.ExecutableName)
+            : Path.Combine(target, "SyncClipboard.exe");
         if (!string.Equals(executable, expected, StringComparison.OrdinalIgnoreCase))
         {
             throw new ArgumentException(UpdaterText.Current.InvalidExecutable);

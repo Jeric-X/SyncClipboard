@@ -16,6 +16,7 @@
   </PropertyGroup>
   <ItemGroup Condition="'$(UpdaterUseAvalonia)' == 'true'">
     <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
   </ItemGroup>
   <ItemGroup Condition="'$(UpdaterUseAvalonia)' != 'true'">
     <Compile Remove="UpdaterApplication.cs;UpdateWindow.cs" />

@@ -74,6 +74,13 @@ jobs:
           "$check_dir/SyncClipboard.Updater" --smoke-test | tee updater-smoke.log
           grep -q 'GUI_SMOKE=PASS' updater-smoke.log
 
+      - name: Test DMG auto update
+        if: matrix.cpu == 'arm64'
+        timeout-minutes: 10
+        env:
+          SYNC_CLIPBOARD_UPDATER_TEST_EXE: ${{ runner.temp }}/更新 helper 含空格/SyncClipboard.Updater
+        run: dotnet test src/SyncClipboard.Test/SyncClipboard.Test.csproj -c Release --filter 'FullyQualifiedName~MacDmgUpdateTests'
+
       - name: mv app
         run: | 
           mv src/SyncClipboard.Desktop.MacOS/bin/Release/net10.0-macos/osx-${{ matrix.cpu }}/SyncClipboard.Desktop.MacOS.app build/macos/SyncClipboard.app

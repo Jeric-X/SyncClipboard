@@ -161,9 +161,9 @@ public class NativeUpdaterTests
     {
         var zip = CreateZip(("library.dll", "new"));
         var hash = Digest(zip);
-        await WindowsZipPackage.VerifyHashAsync(zip, hash.ToLowerInvariant(), TestContext.CancellationTokenSource.Token);
+        await PackageFiles.VerifyHashAsync(zip, hash.ToLowerInvariant(), TestContext.CancellationTokenSource.Token);
         File.AppendAllText(zip, "changed");
-        await Assert.ThrowsAsync<InvalidDataException>(() => WindowsZipPackage.VerifyHashAsync(zip, hash,
+        await Assert.ThrowsAsync<InvalidDataException>(() => PackageFiles.VerifyHashAsync(zip, hash,
             TestContext.CancellationTokenSource.Token));
     }
 
@@ -517,14 +517,15 @@ public class NativeUpdaterTests
     [TestMethod]
     public void InstallationLock_RejectsSameTargetAndAllowsDifferentTargetsAndReacquisition()
     {
-        if (!OperatingSystem.IsWindows())
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
         {
-            Assert.Inconclusive("Windows global semaphore test.");
+            Assert.Inconclusive("Requires a supported updater platform.");
             return;
         }
+        var sameTarget = OperatingSystem.IsWindows() ? target.ToUpperInvariant() + "\\" : target + "/";
         using (UpdateWorker.AcquireInstallationLock(target))
         {
-            Assert.Throws<IOException>(() => UpdateWorker.AcquireInstallationLock(target.ToUpperInvariant() + "\\"));
+            Assert.Throws<IOException>(() => UpdateWorker.AcquireInstallationLock(sameTarget));
             using var other = UpdateWorker.AcquireInstallationLock(stage);
         }
         using var reacquired = UpdateWorker.AcquireInstallationLock(target);

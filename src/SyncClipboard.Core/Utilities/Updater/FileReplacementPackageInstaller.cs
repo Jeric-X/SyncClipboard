@@ -9,7 +9,10 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
 {
     public async Task StartAsync(UpdateInstallRequest request, CancellationToken token)
     {
-        var workspace = await PrepareUpdaterAsync(Path.Combine(Env.ProgramDirectory, "SyncClipboard.Updater.exe"), token);
+        var bundle = OperatingSystem.IsMacOS() ? MacUpdaterFiles.FindBundle(Env.ProgramDirectory) : null;
+        var workspace = bundle is null
+            ? await PrepareUpdaterAsync(Path.Combine(Env.ProgramDirectory, "SyncClipboard.Updater.exe"), token)
+            : await PrepareMacUpdaterAsync(bundle, token);
         var started = false;
         try
         {
@@ -25,7 +28,8 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
         }
     }
 
-    internal static async Task<string> PrepareUpdaterAsync(string updaterPath, CancellationToken token)
+    internal static async Task<string> PrepareUpdaterAsync(string updaterPath, CancellationToken token,
+        string fileName = "SyncClipboard.Updater.exe")
     {
         var workspace = Path.Combine(Path.GetTempPath(), "SyncClipboard-updates", Guid.NewGuid().ToString("N"));
         try
@@ -33,7 +37,7 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
             Directory.CreateDirectory(workspace);
             await File.WriteAllTextAsync(Path.Combine(workspace, ".syncclipboard-update"), "SyncClipboard updater workspace v1", token);
             await using var source = File.OpenRead(updaterPath);
-            await using var destination = new FileStream(Path.Combine(workspace, "SyncClipboard.Updater.exe"),
+            await using var destination = new FileStream(Path.Combine(workspace, fileName),
                 FileMode.CreateNew, FileAccess.Write, FileShare.None);
             await source.CopyToAsync(destination, token);
             return workspace;
@@ -46,10 +50,38 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
         }
     }
 
+    internal static async Task<string> PrepareMacUpdaterAsync(string bundle, CancellationToken token)
+    {
+        var files = MacUpdaterFiles.GetFiles(bundle);
+        if (files.Length == 0)
+            throw new FileNotFoundException("The macOS updater or its native libraries are missing.");
+        var workspace = await PrepareUpdaterAsync(files[0], token, "SyncClipboard.Updater");
+        try
+        {
+            var executable = Path.Combine(workspace, "SyncClipboard.Updater");
+            if (!OperatingSystem.IsWindows())
+                File.SetUnixFileMode(executable, File.GetUnixFileMode(files[0]) | UnixFileMode.UserExecute);
+            foreach (var library in files.Skip(1))
+            {
+                await using var source = File.OpenRead(library);
+                await using var destination = File.Create(Path.Combine(workspace, Path.GetFileName(library)));
+                await source.CopyToAsync(destination, token);
+            }
+            return workspace;
+        }
+        catch
+        {
+            Directory.Delete(workspace, true);
+            throw;
+        }
+    }
+
     internal static ProcessStartInfo CreateStartInfo(UpdateInstallRequest request, string workspace)
     {
-        var targetPath = Path.GetFullPath(Env.ProgramDirectory);
-        var updaterPath = Path.Combine(workspace, "SyncClipboard.Updater.exe");
+        var targetPath = OperatingSystem.IsMacOS()
+            ? MacUpdaterFiles.FindBundle(Env.ProgramDirectory) ?? Path.GetFullPath(Env.ProgramDirectory)
+            : Path.GetFullPath(Env.ProgramDirectory);
+        var updaterPath = Path.Combine(workspace, OperatingSystem.IsMacOS() ? "SyncClipboard.Updater" : "SyncClipboard.Updater.exe");
         var appElevated = OperatingSystem.IsWindows() && Env.IsRunningAsAdministrator;
         using var currentProcess = Process.GetCurrentProcess();
         var start = new ProcessStartInfo(updaterPath) { UseShellExecute = false };

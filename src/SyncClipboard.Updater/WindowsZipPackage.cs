@@ -2,7 +2,6 @@ using SyncClipboard.Core.Utilities;
 using System.IO.Compression;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace SyncClipboard.Updater;
@@ -27,10 +26,10 @@ internal static class WindowsZipPackage
     public static async Task<string> PrepareAsync(UpdateArguments update, string attempt, CancellationToken token)
     {
         ValidateTarget(update);
-        CheckSpace(attempt, new FileInfo(update.PackagePath).Length);
+        PackageFiles.CheckSpace(attempt, new FileInfo(update.PackagePath).Length);
         var snapshot = Path.Combine(attempt, "package.zip");
-        await CopyAsync(update.PackagePath, snapshot, token);
-        await VerifyHashAsync(snapshot, update.Digest, token);
+        await PackageFiles.CopyAsync(update.PackagePath, snapshot, token);
+        await PackageFiles.VerifyHashAsync(snapshot, update.Digest, token);
         var stage = Path.Combine(attempt, "payload");
         Directory.CreateDirectory(stage);
         await ExtractAsync(snapshot, stage, update.Target, GetProtectedPaths(update), token);
@@ -38,19 +37,11 @@ internal static class WindowsZipPackage
         return stage;
     }
 
-    internal static async Task VerifyHashAsync(string path, string digest, CancellationToken token)
-    {
-        await using var stream = File.OpenRead(path);
-        var hash = "sha256:" + Convert.ToHexString(await SHA256.HashDataAsync(stream, token));
-        if (!string.Equals(hash, digest, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidDataException(UpdaterText.Current.HashMismatch);
-    }
-
     internal static async Task ExtractAsync(string package, string stage, string target,
         string[] protectedPaths, CancellationToken token)
     {
         using var archive = ZipFile.OpenRead(package);
-        CheckSpace(stage, archive.Entries.Aggregate(0L, (size, entry) => checked(size + entry.Length)));
+        PackageFiles.CheckSpace(stage, archive.Entries.Aggregate(0L, (size, entry) => checked(size + entry.Length)));
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var entry in archive.Entries)
         {
@@ -113,19 +104,5 @@ internal static class WindowsZipPackage
         var machine = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? Machine.Arm64 : Machine.Amd64;
         if (reader.PEHeaders.PEHeader is null || reader.PEHeaders.CoffHeader.Machine != machine)
             throw new InvalidDataException(UpdaterText.Current.IncompatibleArchitecture + Path.GetFileName(executable));
-    }
-
-    internal static async Task CopyAsync(string source, string destination, CancellationToken token)
-    {
-        await using var input = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.Read);
-        await using var output = new FileStream(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-        await input.CopyToAsync(output, token);
-        await output.FlushAsync(token);
-    }
-
-    internal static void CheckSpace(string directory, long bytes)
-    {
-        if (!FileSystem.HasEnoughSpace(directory, checked(bytes + 32L * 1024 * 1024)))
-            throw new IOException(UpdaterText.Current.InsufficientSpace);
     }
 }

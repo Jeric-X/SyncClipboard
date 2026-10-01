@@ -19,11 +19,19 @@ internal static class Program
             }
             if (args.Length != 0 && args is not ["--smoke-test"])
             {
-                if (!OperatingSystem.IsWindows())
-                    throw new PlatformNotSupportedException(UpdaterText.Current.WindowsOnly);
+                if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
+                    throw new PlatformNotSupportedException(UpdaterText.Current.UnsupportedPlatform);
                 var update = UpdateArguments.Parse(args);
-                var interaction = new ConsoleUpdateInteraction(update.Language);
-                return UpdateWorker.RunAsync(update, interaction, CancellationToken.None).GetAwaiter().GetResult();
+                if (OperatingSystem.IsWindows())
+                {
+                    var interaction = new ConsoleUpdateInteraction(update.Language);
+                    return UpdateWorker.RunAsync(update, interaction, CancellationToken.None).GetAwaiter().GetResult();
+                }
+#if UPDATER_AVALONIA
+                UpdaterApplication.Update = update;
+#else
+                throw new PlatformNotSupportedException(UpdaterText.Current.UnsupportedPlatform);
+#endif
             }
 
 #if UPDATER_AVALONIA

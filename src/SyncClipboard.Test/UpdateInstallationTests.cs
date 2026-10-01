@@ -185,7 +185,7 @@ public class UpdateInstallationTests
     {
         var target = Path.GetFullPath(Env.ProgramDirectory);
         var workspace = Path.Combine(directory, "workspace");
-        var updater = Path.Combine(workspace, "SyncClipboard.Updater.exe");
+        var updater = Path.Combine(workspace, OperatingSystem.IsMacOS() ? "SyncClipboard.Updater" : "SyncClipboard.Updater.exe");
         var package = Path.Combine(directory, "package with spaces 中文.zip");
         var digest = "sha256:" + new string('B', 64);
         var request = new UpdateInstallRequest(package, digest);

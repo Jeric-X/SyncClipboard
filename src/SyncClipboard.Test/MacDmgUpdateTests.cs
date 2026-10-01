@@ -1,0 +1,239 @@
+using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities.Updater;
+using SyncClipboard.Updater;
+using System.Diagnostics;
+using System.Security.Cryptography;
+using System.Runtime.Versioning;
+
+namespace SyncClipboard.Test;
+
+[TestClass]
+[SupportedOSPlatform("macos")]
+public class MacDmgUpdateTests
+{
+    public TestContext TestContext { get; set; } = null!;
+    private string directory = null!;
+    private CancellationToken Token => TestContext.CancellationTokenSource.Token;
+
+    [TestInitialize]
+    public void Initialize()
+    {
+        if (!OperatingSystem.IsMacOS())
+            Assert.Inconclusive("Requires macOS disk image and code signing tools.");
+        directory = Directory.CreateTempSubdirectory("SyncClipboard DMG 中文 ' ").FullName;
+    }
+
+    [TestCleanup]
+    public void Cleanup()
+    {
+        if (directory is not null)
+            Directory.Delete(directory, true);
+    }
+
+    [TestMethod]
+    public async Task DmgInstallation_ReplacesBundlePreservesSignatureAndCleansBackup()
+    {
+        var update = await CreateUpdateAsync();
+        var attempt = Directory.CreateDirectory(Path.Combine(directory, "attempt")).FullName;
+        var package = await MacDmgPackage.PrepareAsync(update, attempt, Token);
+        var replacement = new MacBundleReplacement(update.Target, Path.Combine(directory, "backup", "SyncClipboard.app"), false);
+        var interaction = new Interaction();
+        try
+        {
+            await replacement.ApplyAsync(package.BundlePath, interaction, Token);
+        }
+        finally
+        {
+            await package.DetachAsync(null);
+        }
+        Assert.IsEmpty(Directory.EnumerateFileSystemEntries(Path.Combine(attempt, "mount")));
+
+        var resources = Path.Combine(update.Target, "Contents", "Resources");
+        Assert.AreEqual("new", File.ReadAllText(Path.Combine(resources, "version")));
+        Assert.IsFalse(File.Exists(Path.Combine(resources, "old-only")));
+        Assert.AreEqual("version", new FileInfo(Path.Combine(resources, "current")).LinkTarget);
+        await MacCommand.RunAsync("/usr/bin/codesign", ["--verify", "--deep", "--strict", update.Target], Token);
+        Assert.AreEqual("old", File.ReadAllText(Path.Combine(replacement.Backup, "Contents", "Resources", "version")));
+        await replacement.CleanupAsync(interaction);
+        Assert.IsFalse(Directory.Exists(replacement.Backup));
+    }
+
+    [TestMethod]
+    [DataRow("Retry")]
+    [DataRow("Rollback")]
+    [DataRow("Abort")]
+    public async Task ReplacementFailure_OffersRetryRollbackOrAbortWithUsableBackup(string choice)
+    {
+        var target = await CreateBundleAsync(Path.Combine(directory, "installed", "SyncClipboard.app"), "old");
+        var stage = await CreateBundleAsync(Path.Combine(directory, "stage", "SyncClipboard.app"), "new");
+        var replacement = new MacBundleReplacement(target, Path.Combine(directory, "backup", "SyncClipboard.app"), false);
+        var unreadable = Path.Combine(stage, "Contents", "Resources", "version");
+        var originalMode = File.GetUnixFileMode(unreadable);
+        var prompts = 0;
+        var interaction = new Interaction
+        {
+            OnReport = phase =>
+            {
+                if (phase == "installing" && prompts == 0)
+                    File.SetUnixFileMode(unreadable, UnixFileMode.None);
+            },
+            OnFailure = (_, _, canRollback, _) =>
+            {
+                prompts++;
+                Assert.IsTrue(canRollback);
+                File.SetUnixFileMode(unreadable, originalMode);
+                return Task.FromResult(Enum.Parse<UpdateFailureAction>(choice));
+            }
+        };
+        if (choice == "Retry")
+            await replacement.ApplyAsync(stage, interaction, Token);
+        else if (choice == "Rollback")
+            await Assert.ThrowsAsync<IOException>(() => replacement.ApplyAsync(stage, interaction, Token));
+        else
+        {
+            var error = await Assert.ThrowsAsync<UpdateAbortedException>(() => replacement.ApplyAsync(stage, interaction, Token));
+            Assert.AreEqual(replacement.Backup, error.BackupPath);
+        }
+        Assert.AreEqual(1, prompts);
+        var remaining = choice == "Abort" ? replacement.Backup : target;
+        Assert.AreEqual(choice == "Retry" ? "new" : "old",
+            File.ReadAllText(Path.Combine(remaining, "Contents", "Resources", "version")));
+        await MacCommand.RunAsync("/usr/bin/codesign", ["--verify", "--deep", "--strict", remaining], Token);
+    }
+
+    [TestMethod]
+    public async Task MainApplication_PreparesExecutableAndSharedLibrariesWithoutChangingBundle()
+    {
+        var bundle = await CreateBundleAsync(Path.Combine(directory, "SyncClipboard.app"), "old");
+        var program = Path.Combine(bundle, "Contents", "MonoBundle");
+        foreach (var name in MacUpdaterFiles.Libraries)
+            await File.WriteAllTextAsync(Path.Combine(program, name), name, Token);
+        var helper = Path.Combine(bundle, "Contents", "Resources", "Updater", "SyncClipboard.Updater");
+        Directory.CreateDirectory(Path.GetDirectoryName(helper)!);
+        File.Copy("/usr/bin/true", helper);
+        await MacCommand.RunAsync("/usr/bin/codesign", ["--force", "--deep", "--sign", "-", bundle], Token);
+        var info = new UpdateInfoConfig { ManageType = "manual", UpdateSrc = "github", PackageName = "update.DMG" };
+        Assert.IsNotNull(UpdateInstallerFactory.Create(info, false, program, isMacOS: true));
+        var workspace = await FileReplacementPackageInstaller.PrepareMacUpdaterAsync(bundle, Token);
+        try
+        {
+            foreach (var name in MacUpdaterFiles.Libraries)
+                Assert.AreEqual(name, File.ReadAllText(Path.Combine(workspace, name)));
+            using var copiedHelper = Process.Start(new ProcessStartInfo(Path.Combine(workspace, "SyncClipboard.Updater"))
+            {
+                UseShellExecute = false
+            })!;
+            await copiedHelper.WaitForExitAsync(Token);
+            Assert.AreEqual(0, copiedHelper.ExitCode);
+            await MacCommand.RunAsync("/usr/bin/codesign", ["--verify", "--deep", "--strict", bundle], Token);
+        }
+        finally
+        {
+            Directory.Delete(workspace, true);
+        }
+    }
+
+    [TestMethod]
+    public async Task NativeUpdater_InstallsDmgRestartsAndRemovesWorkspace()
+    {
+        var helper = Environment.GetEnvironmentVariable("SYNC_CLIPBOARD_UPDATER_TEST_EXE");
+        if (string.IsNullOrWhiteSpace(helper) || !File.Exists(helper))
+            Assert.Inconclusive("Set SYNC_CLIPBOARD_UPDATER_TEST_EXE to the published macOS NativeAOT updater.");
+        var update = await CreateUpdateAsync();
+        var workspace = Path.Combine(Path.GetTempPath(), "SyncClipboard-updates", Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(workspace);
+        try
+        {
+            File.WriteAllText(Path.Combine(workspace, ".syncclipboard-update"), "SyncClipboard updater workspace v1");
+            File.Copy(helper, Path.Combine(workspace, "SyncClipboard.Updater"));
+            foreach (var library in MacUpdaterFiles.Libraries)
+                File.Copy(Path.Combine(Path.GetDirectoryName(helper)!, library), Path.Combine(workspace, library));
+            update = update with { WorkDirectory = workspace };
+            var start = UpdateWorker.CreateStartInfo(Path.Combine(workspace, "SyncClipboard.Updater"), update);
+            using var process = Process.Start(start)!;
+            try
+            {
+                await process.WaitForExitAsync(Token).WaitAsync(TimeSpan.FromSeconds(60), Token);
+                Assert.AreEqual(0, process.ExitCode);
+            }
+            finally
+            {
+                if (!process.HasExited)
+                    process.Kill(entireProcessTree: true);
+            }
+            Assert.AreEqual("new", File.ReadAllText(Path.Combine(update.Target, "Contents", "Resources", "version")));
+            await MacCommand.RunAsync("/usr/bin/codesign", ["--verify", "--deep", "--strict", update.Target], Token);
+            Assert.IsFalse(Directory.Exists(workspace));
+            var marker = Path.Combine(directory, "restarted");
+            using var launchTimeout = CancellationTokenSource.CreateLinkedTokenSource(Token);
+            launchTimeout.CancelAfter(TimeSpan.FromSeconds(10));
+            while (!File.Exists(marker))
+                await Task.Delay(100, launchTimeout.Token);
+            Assert.AreEqual("started", File.ReadAllText(marker));
+        }
+        finally
+        {
+            if (Directory.Exists(workspace))
+                Directory.Delete(workspace, true);
+        }
+    }
+
+    private async Task<UpdateArguments> CreateUpdateAsync()
+    {
+        var source = Path.Combine(directory, "image");
+        await CreateBundleAsync(Path.Combine(source, "SyncClipboard.app"), "new");
+        var target = await CreateBundleAsync(Path.Combine(directory, "installed", "SyncClipboard.app"), "old");
+        var package = Path.Combine(directory, "update.dmg");
+        await MacCommand.RunAsync("/usr/bin/hdiutil", ["create", "-srcfolder", source, "-format", "UDZO", package], Token);
+        var digest = "sha256:" + Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(package, Token)));
+        return new UpdateArguments(package, digest, target, Path.Combine(target, "Contents", "MacOS", MacDmgPackage.ExecutableName),
+            int.MaxValue, "en", [], directory);
+    }
+
+    private async Task<string> CreateBundleAsync(string bundle, string version)
+    {
+        var contents = Path.Combine(bundle, "Contents");
+        Directory.CreateDirectory(Path.Combine(contents, "MacOS"));
+        Directory.CreateDirectory(Path.Combine(contents, "MonoBundle"));
+        var resources = Directory.CreateDirectory(Path.Combine(contents, "Resources")).FullName;
+        var source = Path.Combine(directory, "main.c");
+        var marker = Path.Combine(directory, "restarted").Replace("\\", "\\\\").Replace("\"", "\\\"");
+        File.WriteAllText(source, $$"""
+            #include <stdio.h>
+            int main(void) {
+                FILE *f = fopen("{{marker}}", "w");
+                if (f) { fputs("started", f); fclose(f); }
+                return 0;
+            }
+            """);
+        await MacCommand.RunAsync("/usr/bin/clang", [source, "-o", Path.Combine(contents, "MacOS", MacDmgPackage.ExecutableName)], Token);
+        File.WriteAllText(Path.Combine(contents, "Info.plist"), """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <plist version="1.0"><dict>
+            <key>CFBundleIdentifier</key><string>com.syncclipboard.updater-test</string>
+            <key>CFBundleExecutable</key><string>SyncClipboard.Desktop.MacOS</string>
+            <key>CFBundlePackageType</key><string>APPL</string>
+            </dict></plist>
+            """);
+        File.WriteAllText(Path.Combine(contents, "MonoBundle", "update_info.json"), """
+            {"UpdateInfo":{"manage_type":"manual","update_src":"github","package_name":"update.dmg"}}
+            """);
+        File.WriteAllText(Path.Combine(resources, "version"), version);
+        File.CreateSymbolicLink(Path.Combine(resources, "current"), "version");
+        if (version == "old")
+            File.WriteAllText(Path.Combine(resources, "old-only"), "old");
+        await MacCommand.RunAsync("/usr/bin/codesign", ["--force", "--deep", "--sign", "-", bundle], Token);
+        return bundle;
+    }
+
+    private sealed class Interaction : IUpdateInteraction
+    {
+        public Action<string>? OnReport { get; init; }
+        public UpdateFailureHandler? OnFailure { get; init; }
+        public void Report(string phase, int percent) => OnReport?.Invoke(phase);
+        public Task<ForceExitAction> ConfirmForceExitAsync(CancellationToken token) => Task.FromResult(ForceExitAction.No);
+        public Task<UpdateFailureAction> AskFailureActionAsync(string path, Exception error, bool canRollback, CancellationToken token)
+            => OnFailure?.Invoke(path, error, canRollback, token) ?? throw new AssertFailedException(path + ": " + error);
+        public Task ShowResultAsync(UpdateResult result) => Task.CompletedTask;
+    }
+}

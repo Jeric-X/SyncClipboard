@@ -7,20 +7,24 @@ namespace SyncClipboard.Core.Utilities.Updater;
 internal sealed class UpdateInstallerFactory : IUpdateInstallerFactory
 {
     public IUpdateInstaller? Create(UpdateInfoConfig updateInfo)
-        => Create(updateInfo, OperatingSystem.IsWindows(), Env.ProgramDirectory);
+        => Create(updateInfo, OperatingSystem.IsWindows(), Env.ProgramDirectory, OperatingSystem.IsMacOS());
 
-    internal static IUpdateInstaller? Create(UpdateInfoConfig updateInfo, bool isWindows, string programDirectory)
+    internal static IUpdateInstaller? Create(UpdateInfoConfig updateInfo, bool isWindows, string programDirectory, bool isMacOS = false)
     {
         if (updateInfo.ManageType != UpdateInfoConfig.TypeManual || updateInfo.UpdateSrc != "github"
             || string.IsNullOrWhiteSpace(updateInfo.PackageName))
             return null;
 
-        if (!isWindows || !updateInfo.PackageName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-            return null;
+        if (isWindows && updateInfo.PackageName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            return File.Exists(Path.Combine(programDirectory, "SyncClipboard.Updater.exe"))
+                ? new FileReplacementPackageInstaller() : null;
 
-        if (!File.Exists(Path.Combine(programDirectory, "SyncClipboard.Updater.exe")))
-            return null;
-
-        return new FileReplacementPackageInstaller();
+        if (isMacOS && updateInfo.PackageName.EndsWith(".dmg", StringComparison.OrdinalIgnoreCase))
+        {
+            var bundle = MacUpdaterFiles.FindBundle(programDirectory);
+            if (bundle is not null && MacUpdaterFiles.GetFiles(bundle).Length != 0)
+                return new FileReplacementPackageInstaller();
+        }
+        return null;
     }
 }

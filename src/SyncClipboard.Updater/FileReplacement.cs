@@ -43,11 +43,11 @@ internal static class FileReplacement
                 }).ToArray();
             Directory.CreateDirectory(backup);
             var backupBytes = entries.Where(e => e.Existed).Sum(e => new FileInfo(e.Destination).Length);
-            WindowsZipPackage.CheckSpace(backup, backupBytes);
+            PackageFiles.CheckSpace(backup, backupBytes);
             growth = entries.Sum(e => Math.Max(0, new FileInfo(e.Source).Length
                 - (e.Existed ? new FileInfo(e.Destination).Length : 0)));
             largestFile = entries.Length == 0 ? 0 : entries.Max(e => new FileInfo(e.Source).Length);
-            WindowsZipPackage.CheckSpace(target, checked(growth + largestFile));
+            PackageFiles.CheckSpace(target, checked(growth + largestFile));
             return Task.CompletedTask;
         }, onFailure, token, backup);
         var createdDirectories = new List<string>();
@@ -72,7 +72,7 @@ internal static class FileReplacement
             // Backups may occupy the same drive as the installation.
             await UpdateIo.RunAsync(UpdaterText.Current.CheckFreeSpace + target, () =>
             {
-                WindowsZipPackage.CheckSpace(target, checked(growth + largestFile));
+                PackageFiles.CheckSpace(target, checked(growth + largestFile));
                 return Task.CompletedTask;
             }, onFailure, token, backup);
             for (var i = 0; i < entries.Length; i++)
@@ -170,7 +170,7 @@ internal static class FileReplacement
         var temporary = Path.Combine(Path.GetDirectoryName(destination)!, ".syncclipboard-" + Guid.NewGuid().ToString("N"));
         try
         {
-            await WindowsZipPackage.CopyAsync(source, temporary, token);
+            await PackageFiles.CopyAsync(source, temporary, token);
             File.Move(temporary, destination, true);
             replaced?.Invoke();
         }
