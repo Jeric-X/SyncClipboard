@@ -113,9 +113,15 @@ public class MacDmgUpdateTests
     }
 
     [TestMethod]
-    public async Task CancellationDuringReplacement_RestoresSignedOriginalBundle()
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task CancellationDuringReplacement_RestoresOriginalBundle(bool locallyModified)
     {
         var target = await CreateBundleAsync(Path.Combine(directory, "installed", "SyncClipboard.app"), "old");
+        var originalVersion = locallyModified ? "locally modified" : "old";
+        var versionPath = Path.Combine(target, "Contents", "Resources", "version");
+        if (locallyModified)
+            await File.WriteAllTextAsync(versionPath, originalVersion, Token);
         var stage = await CreateBundleAsync(Path.Combine(directory, "stage", "SyncClipboard.app"), "new");
         var replacement = new MacBundleReplacement(target, Path.Combine(directory, "backup", "SyncClipboard.app"), false);
         using var cancel = CancellationTokenSource.CreateLinkedTokenSource(Token);
@@ -128,8 +134,9 @@ public class MacDmgUpdateTests
             }
         };
         await Assert.ThrowsAsync<IOException>(() => replacement.ApplyAsync(stage, interaction, cancel.Token));
-        Assert.AreEqual("old", File.ReadAllText(Path.Combine(target, "Contents", "Resources", "version")));
-        await MacCommand.RunAsync("/usr/bin/codesign", ["--verify", "--deep", "--strict", target], Token);
+        Assert.AreEqual(originalVersion, File.ReadAllText(versionPath));
+        if (!locallyModified)
+            await MacCommand.RunAsync("/usr/bin/codesign", ["--verify", "--deep", "--strict", target], Token);
         Assert.IsEmpty(Directory.GetDirectories(Path.GetDirectoryName(target)!, ".SyncClipboard-update-*"));
     }
 

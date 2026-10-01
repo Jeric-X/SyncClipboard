@@ -26,6 +26,7 @@ internal sealed class MacBundleReplacement(string target, string backup, bool el
             await InteractiveOperation.RunAsync(UpdaterText.Current.Replace + target, async () =>
             {
                 await PrepareAsync(source, token);
+                await MacCommand.RunAsync("/usr/bin/codesign", ["--verify", "--deep", "--strict", prepared], token);
                 // The unsupported-filesystem fallback may remove the old bundle before a later rename fails.
                 modified = true;
                 interaction.SetRollbackAvailable(true);
@@ -69,7 +70,6 @@ internal sealed class MacBundleReplacement(string target, string backup, bool el
         await RemoveAsync(prepared, token);
         PackageFiles.CheckSpace(Path.GetDirectoryName(target)!, FileSystem.GetSize(source));
         await CopyAsync(source, prepared, token);
-        await MacCommand.RunAsync("/usr/bin/codesign", ["--verify", "--deep", "--strict", prepared], token);
     }
 
     private Task ReplaceAsync()
