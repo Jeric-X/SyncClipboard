@@ -9,7 +9,7 @@ internal sealed class UpdateWindow : Window
 {
     public UpdateWindow(bool smokeTest, IClassicDesktopStyleApplicationLifetime desktop)
     {
-        Title = "SyncClipboard Updater";
+        Title = UpdaterText.Current.Title;
         Width = 520;
         Height = 180;
         CanResize = false;
@@ -20,10 +20,10 @@ internal sealed class UpdateWindow : Window
             Spacing = 16,
             Children =
             {
-                new TextBlock { Text = "SyncClipboard 更新助手 / Updater", FontSize = 18, Foreground = Brushes.Black },
+                new TextBlock { Text = UpdaterText.Current.Title, FontSize = 18, Foreground = Brushes.Black },
                 new TextBlock
                 {
-                    Text = "更新功能尚未接入。 / Installation is not implemented yet.",
+                    Text = UpdaterText.Current.InstallationNotImplemented,
                     TextWrapping = TextWrapping.Wrap,
                     Foreground = Brushes.Black
                 }

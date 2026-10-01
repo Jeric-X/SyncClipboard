@@ -20,5 +20,10 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore src/SyncClipboard.Test/SyncClipboard.Test.csproj
 
+    - name: Publish NativeAOT updater for integration tests
+      run: dotnet publish src/SyncClipboard.Updater/SyncClipboard.Updater.csproj -c Release -r win-x64 -o "${{ runner.temp }}/native-updater"
+
     - name: Run Core tests
+      env:
+        SYNC_CLIPBOARD_UPDATER_TEST_EXE: ${{ runner.temp }}/native-updater/SyncClipboard.Updater.exe
       run: dotnet test src/SyncClipboard.Test/SyncClipboard.Test.csproj --configuration Release --no-restore

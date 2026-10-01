@@ -14,7 +14,7 @@ internal static class FileSystem
         var fullPath = Path.GetFullPath(directory);
         var drive = DriveInfo.GetDrives().Where(d => d.IsReady && IsWithin(fullPath, d.RootDirectory.FullName))
             .OrderByDescending(d => d.RootDirectory.FullName.Length).FirstOrDefault();
-        return drive is null || drive.AvailableFreeSpace >= bytes;
+        return drive is not null && drive.AvailableFreeSpace >= bytes;
     }
 
     public static long GetSize(string path) => Directory.Exists(path)
@@ -38,15 +38,5 @@ internal static class FileSystem
         {
             return false;
         }
-    }
-
-    public static bool HasLinkedAncestor(string path)
-    {
-        for (FileSystemInfo? item = Directory.Exists(path) ? new DirectoryInfo(path) : new FileInfo(path);
-            item is not null; item = item is DirectoryInfo dir ? dir.Parent : ((FileInfo)item).Directory)
-        {
-            if ((item.Attributes & FileAttributes.ReparsePoint) != 0) return true;
-        }
-        return false;
     }
 }

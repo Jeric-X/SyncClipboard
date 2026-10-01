@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SyncClipboard.Core\SyncClipboard.Core.csproj" />
+    <ProjectReference Include="..\SyncClipboard.Updater\SyncClipboard.Updater.csproj" />
   </ItemGroup>
 
 </Project>

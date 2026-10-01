@@ -182,3 +182,11 @@ Strings are in `SyncClipboard.Core/I18n/Strings.resx` (auto-generated `Strings.D
 - `src/.editorconfig` defines C# code style rules.
 - Use roughly 120 columns as a readability guideline for C#, not a hard limit. Prefer keeping short method calls and conditions on one line; wrap noticeably long or complex expressions at logical boundaries. Do not split cohesive expressions solely to meet 120 columns or mechanically put each argument on its own line. Reassess layout after edits and collapse unnecessary line breaks when expressions become shorter. Avoid unrelated formatting-only changes.
 - Before adding a file-level `using`, check the owning project's `global using` declarations (such as `GlobalUsings.cs` and `Usings.cs`) and SDK-generated implicit usings. Do not duplicate namespaces already imported globally; remove redundant usings in files touched by the task without expanding into unrelated cleanup. Global usings apply only within their project, do not propagate through project references, and do not implicitly import child namespaces.
+
+## 测试原则
+
+- 新增测试应验证明确的功能要求、重要失败路径或已确认缺陷，不应仅证明本次修改生效。
+- 用户要求删除或简化机制时，同步清理相关测试，不自动增加“旧机制不存在”的测试或把原断言取反。
+- “不保证”不等于“保证相反”：例如不保留旧权限，不代表新旧权限必须不同。
+- 优先验证实际行为，避免只检查内部标志、旧参数名称等实现细节。
+- 测试混有有效验证和废弃断言时，仅删除无效部分，保留必要的功能测试。

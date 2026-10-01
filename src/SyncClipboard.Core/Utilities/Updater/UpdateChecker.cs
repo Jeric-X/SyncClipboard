@@ -119,7 +119,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         {
             SetStatus(UpdaterState.Installing);
             if (updateInstaller is null) throw new NotSupportedException(I18n.Strings.UpdateInstallationUnsupported);
-            var request = new UpdateInstallRequest(DownloadPath, GithubAsset!.Digest!, GithubRelease!.TagName!);
+            var request = new UpdateInstallRequest(DownloadPath, GithubAsset!.Digest!);
             await updateInstaller.StartAsync(request, token);
         }
         catch (OperationCanceledException)

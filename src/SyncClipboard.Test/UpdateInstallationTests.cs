@@ -8,7 +8,6 @@ using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Core.ViewModels;
-using System.ComponentModel;
 using System.Reflection;
 using System.Security.Cryptography;
 
@@ -53,6 +52,24 @@ public class UpdateInstallationTests
         Assert.AreEqual(string.Empty, checker.CurrentState.ActionText);
         await checker.CurrentState.ManualAction!(CancellationToken.None);
         installer.Verify(i => i.StartAsync(It.IsAny<UpdateInstallRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [TestMethod]
+    public async Task PrepareUpdater_CopiesHelperAndCreatesWorkspaceMarker()
+    {
+        var source = Path.Combine(directory, "helper.exe");
+        await File.WriteAllTextAsync(source, "updater", TestContext.CancellationTokenSource.Token);
+        var workspace = await FileReplacementPackageInstaller.PrepareUpdaterAsync(source, TestContext.CancellationTokenSource.Token);
+        try
+        {
+            SyncClipboard.Updater.UpdateWorker.ValidateWorkspace(workspace);
+            Assert.AreEqual("updater", File.ReadAllText(Path.Combine(workspace, "SyncClipboard.Updater.exe")));
+            Assert.AreEqual("updater", File.ReadAllText(source));
+        }
+        finally
+        {
+            Directory.Delete(workspace, true);
+        }
     }
 
     [TestMethod]
@@ -134,7 +151,8 @@ public class UpdateInstallationTests
             Digest = "sha256:" + Convert.ToHexString(SHA256.HashData(bytes)),
             BrowserDownloadUrl = "https://example.invalid/update.package"
         });
-        if (cached) await File.WriteAllBytesAsync(Path.Combine(directory, "test.package"), bytes,
+        if (cached)
+            await File.WriteAllBytesAsync(Path.Combine(directory, "test.package"), bytes,
             TestContext.CancellationTokenSource.Token);
         SetStatus(checker, UpdaterState.ReadyForDownload);
 
@@ -165,43 +183,38 @@ public class UpdateInstallationTests
     [TestMethod]
     public void WorkerArguments_PreservePathsAndDigestWithoutReadingPackage()
     {
-        var updater = Path.Combine(directory, "missing updater");
-        var target = Path.Combine(directory, "target with spaces 中文");
-        var installer = new FileReplacementPackageInstaller(updater, target);
+        var target = Path.GetFullPath(Env.ProgramDirectory);
+        var workspace = Path.Combine(directory, "workspace");
+        var updater = Path.Combine(workspace, "SyncClipboard.Updater.exe");
         var package = Path.Combine(directory, "package with spaces 中文.zip");
         var digest = "sha256:" + new string('B', 64);
-        var request = new UpdateInstallRequest(package, digest, "v9.0.0");
+        var request = new UpdateInstallRequest(package, digest);
 
-        var start = installer.CreateStartInfo(request);
+        var start = FileReplacementPackageInstaller.CreateStartInfo(request, workspace);
         var arguments = start.ArgumentList.ToArray();
 
         Assert.AreEqual(updater, start.FileName);
+        Assert.AreEqual(workspace, arguments[Array.IndexOf(arguments, "--work-dir") + 1]);
         Assert.IsFalse(start.UseShellExecute);
         Assert.AreEqual(string.Empty, start.Arguments);
         Assert.AreEqual(package, arguments[Array.IndexOf(arguments, "--package-path") + 1]);
         Assert.AreEqual(digest, arguments[Array.IndexOf(arguments, "--digest") + 1]);
         Assert.AreEqual(target, arguments[Array.IndexOf(arguments, "--target") + 1]);
+        Assert.AreEqual(OperatingSystem.IsWindows() ? Path.Combine(target, "SyncClipboard.exe") : Env.ProgramPath,
+            arguments[Array.IndexOf(arguments, "--executable") + 1]);
         Assert.AreEqual(Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture),
             arguments[Array.IndexOf(arguments, "--process-id") + 1]);
-        Assert.IsEmpty(Directory.GetFileSystemEntries(directory));
-    }
-
-    [TestMethod]
-    public async Task MissingUpdater_ReportsLaunchFailureWithoutCreatingFiles()
-    {
-        var installer = new FileReplacementPackageInstaller(Path.Combine(directory, "missing updater"), directory);
-        var request = new UpdateInstallRequest(Path.Combine(directory, "package"), "sha256:unused", "v9.0.0");
-
-        await Assert.ThrowsAsync<Win32Exception>(() => installer.StartAsync(request, CancellationToken.None));
-
+        var appElevated = OperatingSystem.IsWindows() && Env.IsRunningAsAdministrator;
+        Assert.AreEqual(appElevated ? "true" : "false",
+            arguments[Array.IndexOf(arguments, "--app-elevated") + 1]);
         Assert.IsEmpty(Directory.GetFileSystemEntries(directory));
     }
 
     [TestMethod]
     public async Task CanceledLaunch_DoesNotStartUpdater()
     {
-        var installer = new FileReplacementPackageInstaller(Path.Combine(directory, "missing updater"), directory);
-        var request = new UpdateInstallRequest(Path.Combine(directory, "package"), "sha256:unused", "v9.0.0");
+        var installer = new FileReplacementPackageInstaller();
+        var request = new UpdateInstallRequest(Path.Combine(directory, "package"), "sha256:unused");
 
         await Assert.ThrowsAsync<OperationCanceledException>(() => installer.StartAsync(request, new CancellationToken(true)));
 
@@ -232,31 +245,59 @@ public class UpdateInstallationTests
     }
 
     [TestMethod]
-    [DataRow("manual", "github", "SyncClipboard_win_x64_portable.zip")]
-    [DataRow("manual", "github", "unknown.package")]
-    [DataRow("manual", "github", "")]
-    [DataRow("manual", "homebrew", "SyncClipboard_win_x64_portable.zip")]
-    [DataRow("external", "github", "SyncClipboard_win_x64_portable.zip")]
-    [DataRow("market", "github", "SyncClipboard_win_x64_portable.zip")]
-    public void Factory_ReturnsNullForUnimplementedPackagesAndChannels(
-        string manageType, string source, string packageName)
+    [DataRow("manual", "github", "SyncClipboard_win_x64_portable.zip", true, true)]
+    [DataRow("manual", "github", "SyncClipboard_win_x64_portable.zip", false, false)]
+    [DataRow("manual", "github", "SyncClipboard_win_arm64_portable.zip", true, true)]
+    [DataRow("manual", "github", "custom-update.zip", true, true)]
+    [DataRow("manual", "github", "custom-update.ZIP", true, true)]
+    [DataRow("manual", "github", "custom-update.zip.exe", true, false)]
+    [DataRow("manual", "github", "unknown.package", true, false)]
+    [DataRow("manual", "github", "", true, false)]
+    [DataRow("manual", "homebrew", "SyncClipboard_win_x64_portable.zip", true, false)]
+    [DataRow("external", "github", "SyncClipboard_win_x64_portable.zip", true, false)]
+    [DataRow("market", "github", "SyncClipboard_win_x64_portable.zip", true, false)]
+    public void Factory_SelectsWindowsZipInstaller(
+        string manageType, string source, string packageName, bool isWindows, bool supported)
     {
-        var factory = new UpdateInstallerFactory();
-
-        var installer = factory.Create(new UpdateInfoConfig
+        File.WriteAllText(Path.Combine(directory, "SyncClipboard.Updater.exe"), "updater");
+        var installer = UpdateInstallerFactory.Create(new UpdateInfoConfig
         {
             ManageType = manageType,
             UpdateSrc = source,
             PackageName = packageName
-        });
+        }, isWindows, directory);
 
-        Assert.IsNull(installer);
-        // Selection reports functionality without probing files or installation permissions.
-        Assert.IsEmpty(Directory.GetFileSystemEntries(directory));
+        Assert.AreEqual(supported, installer is FileReplacementPackageInstaller);
+        if (!supported)
+            Assert.IsNull(installer);
     }
 
     [TestMethod]
-    public void Factory_FromDependencyInjectionKeepsUnimplementedInstallationDisabled()
+    [DataRow(false)]
+    [DataRow(true)]
+    public void MissingUpdater_OffersOpenFolderInsteadOfInstallation(bool directoryAtUpdaterPath)
+    {
+        if (directoryAtUpdaterPath)
+            Directory.CreateDirectory(Path.Combine(directory, "SyncClipboard.Updater.exe"));
+
+        var installer = UpdateInstallerFactory.Create(new UpdateInfoConfig
+        {
+            ManageType = UpdateInfoConfig.TypeManual,
+            UpdateSrc = "github",
+            PackageName = "SyncClipboard_win_x64_portable.zip"
+        }, true, directory);
+        Assert.IsNull(installer);
+
+        var checker = CreateChecker(installer);
+        SetDownloadedStatus(checker);
+
+        Assert.AreEqual(UpdaterState.Downloaded, checker.CurrentState.State);
+        Assert.AreEqual(SyncClipboard.Core.I18n.Strings.OpenFolder, checker.CurrentState.ActionText);
+        Assert.IsNotNull(checker.CurrentState.ManualAction);
+    }
+
+    [TestMethod]
+    public void Factory_FromDependencyInjectionSelectsInstallerForCurrentPlatform()
     {
         var services = new ServiceCollection();
         AppCore.ConfigCommonService(services);
@@ -269,7 +310,9 @@ public class UpdateInstallationTests
             PackageName = "SyncClipboard_win_x64_portable.zip"
         });
 
-        Assert.IsNull(installer);
+        var supported = OperatingSystem.IsWindows()
+            && File.Exists(Path.Combine(Env.ProgramDirectory, "SyncClipboard.Updater.exe"));
+        Assert.AreEqual(supported, installer is FileReplacementPackageInstaller);
         Assert.IsNull(provider.GetService<IUpdateInstaller>());
     }
 
@@ -280,7 +323,12 @@ public class UpdateInstallationTests
         var viewModel = new AboutViewModel.UpdateStatusViewModel { Action = _ => pending.Task };
         var download = viewModel.RunActionCommand.ExecuteAsync(null);
         var canceled = false;
-        viewModel.Action = _ => { canceled = true; pending.SetResult(); return Task.CompletedTask; };
+        viewModel.Action = _ =>
+        {
+            canceled = true;
+            pending.SetResult();
+            return Task.CompletedTask;
+        };
         Assert.IsTrue(viewModel.RunActionCommand.CanExecute(null));
         await viewModel.RunActionCommand.ExecuteAsync(null);
         await download;

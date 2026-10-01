@@ -11,13 +11,20 @@ internal static class Program
     {
         try
         {
+            UpdaterText.Current = UpdaterText.FromArguments(args);
             if (args is ["--help"])
             {
-                Console.WriteLine("SyncClipboard.Updater [--smoke-test]");
+                Console.WriteLine(UpdaterText.Current.Help);
                 return 0;
             }
             if (args.Length != 0 && args is not ["--smoke-test"])
-                throw new ArgumentException("Use --help for available options.");
+            {
+                if (!OperatingSystem.IsWindows())
+                    throw new PlatformNotSupportedException(UpdaterText.Current.WindowsOnly);
+                var update = UpdateArguments.Parse(args);
+                var interaction = new ConsoleUpdateInteraction(update.Language);
+                return UpdateWorker.RunAsync(update, interaction, CancellationToken.None).GetAwaiter().GetResult();
+            }
 
 #if UPDATER_AVALONIA
             UpdaterApplication.SmokeTest = args is ["--smoke-test"];
@@ -26,8 +33,8 @@ internal static class Program
                 .With(new X11PlatformOptions { RenderingMode = [X11RenderingMode.Software] })
                 .StartWithClassicDesktopLifetime([]);
 #else
-            Console.WriteLine("SyncClipboard 更新助手 / Updater");
-            Console.WriteLine("更新功能尚未接入。 / Installation is not implemented yet.");
+            Console.WriteLine(UpdaterText.Current.Title);
+            Console.WriteLine(UpdaterText.Current.StartFromApplication);
             if (args is ["--smoke-test"]) Console.WriteLine("CONSOLE_SMOKE=PASS");
             return 0;
 #endif
