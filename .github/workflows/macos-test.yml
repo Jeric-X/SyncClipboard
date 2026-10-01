@@ -1,4 +1,4 @@
-name: updater-macos-test
+name: macos-test
 
 on:
   workflow_call:
@@ -20,7 +20,7 @@ jobs:
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.302
-      - name: Run macOS business tests without updater UI
+      - name: Run macOS platform tests without updater UI
         run: >-
           dotnet test src/SyncClipboard.Test --configuration Release --arch ${{ matrix.cpu }}
           --filter 'TestCategory=PlatformMacOS&TestCategory!=UpdaterSmoke'
@@ -52,5 +52,5 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: updater-macos-${{ matrix.cpu }}
+          name: macos-tests-${{ matrix.cpu }}
           path: TestResults/**/*.trx

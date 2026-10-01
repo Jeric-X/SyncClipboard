@@ -50,7 +50,7 @@ jobs:
 
   create-gh-release-formal:
     if: ${{ startsWith(github.ref, 'refs/tags/') }}
-    needs: [create-gh-release-draft, build-win, build-server, build-linux, build-mac, updater-windows-test, updater-macos-test, updater-linux-test]
+    needs: [create-gh-release-draft, build-win, build-server, build-linux, build-mac, windows-test, macos-test, linux-test]
     uses: ./.github/workflows/release-formal.yml
 
   update-homebrew:
@@ -67,14 +67,14 @@ jobs:
     secrets:
       WINGET_CREATE_GITHUB_TOKEN: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}
 
-  updater-windows-test:
+  windows-test:
     needs: build-win
-    uses: ./.github/workflows/updater-windows-test.yml
+    uses: ./.github/workflows/windows-test.yml
 
-  updater-macos-test:
+  macos-test:
     needs: build-mac
-    uses: ./.github/workflows/updater-macos-test.yml
+    uses: ./.github/workflows/macos-test.yml
 
-  updater-linux-test:
+  linux-test:
     needs: build-linux
-    uses: ./.github/workflows/updater-linux-test.yml
+    uses: ./.github/workflows/linux-test.yml

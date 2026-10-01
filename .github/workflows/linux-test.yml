@@ -1,4 +1,4 @@
-name: updater-linux-test
+name: linux-test
 
 on:
   workflow_call:
@@ -33,7 +33,7 @@ jobs:
           echo "${{ matrix.tool_sha256 }}  $tool" | sha256sum --check
           chmod +x "$tool"
           echo "SYNC_CLIPBOARD_APPIMAGE_TEST_TOOL=$tool" >> "$GITHUB_ENV"
-      - name: Run Linux business tests without a display server
+      - name: Run Linux platform tests without a display server
         run: >-
           dotnet test src/SyncClipboard.Test --configuration Release --arch ${{ matrix.cpu }}
           --filter 'TestCategory=PlatformLinux&TestCategory!=UpdaterSmoke'
@@ -44,7 +44,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: updater-linux-business-${{ matrix.cpu }}
+          name: linux-tests-${{ matrix.cpu }}
           path: TestResults/**/*.trx
 
   smoke:
