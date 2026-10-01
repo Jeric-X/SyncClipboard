@@ -51,7 +51,7 @@ internal static class Program
         try
         {
             UpdaterText.Current = UpdaterText.FromArguments(args);
-            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
+            if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
                 throw new PlatformNotSupportedException(UpdaterText.Current.UnsupportedPlatform);
             update = UpdateArguments.Parse(args);
             return await UpdateWorker.RunAsync(update, interaction, token);

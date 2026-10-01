@@ -516,7 +516,7 @@ public class NativeUpdaterTests
     [TestMethod]
     public void InstallationLock_RejectsSameTargetAndAllowsDifferentTargetsAndReacquisition()
     {
-        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
         {
             Assert.Inconclusive("Requires a supported updater platform.");
             return;

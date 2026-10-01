@@ -70,7 +70,7 @@ public class UpdaterInteractionTests
     [TestMethod]
     public async Task StartupFailure_DisplaysCauseAndWaitsForAcknowledgement()
     {
-        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
             Assert.Inconclusive("Requires an updater-supported platform.");
         var shown = new TaskCompletionSource<UpdateResult>(TaskCreationOptions.RunContinuationsAsynchronously);
         var acknowledged = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

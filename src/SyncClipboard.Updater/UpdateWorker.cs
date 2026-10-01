@@ -1,3 +1,4 @@
+using SyncClipboard.Updater.AppImage;
 using SyncClipboard.Updater.Zip;
 using SyncClipboard.Updater.Dmg;
 using System.ComponentModel;
@@ -22,6 +23,7 @@ internal static class UpdateWorker
         UpdaterText.Current = UpdaterText.ForLanguage(update.Language);
         IDisposable? targetLock = null;
         MacBundleReplacement? macReplacement = null;
+        AppImageReplacement? appImageReplacement = null;
         MacDmgPackage? dmg = null;
         var canRestart = true;
         try
@@ -33,15 +35,22 @@ internal static class UpdateWorker
                 throw new IOException(UpdaterText.Current.OutsideWorkspace);
             if (OperatingSystem.IsMacOS())
                 MacDmgPackage.ValidateTarget(update);
+            else if (OperatingSystem.IsLinux())
+                AppImagePackage.ValidateTarget(update);
             else
                 WindowsZipPackage.ValidateTarget(update);
-            string[] writeDirectories = OperatingSystem.IsMacOS()
-                ? [Path.GetDirectoryName(update.Target)!, update.Target]
-                : [update.Target];
+            string[] writeDirectories = [update.Target];
+            if (OperatingSystem.IsMacOS())
+                writeDirectories = [Path.GetDirectoryName(update.Target)!, update.Target];
+            else if (OperatingSystem.IsLinux())
+                writeDirectories = [Path.GetDirectoryName(update.Target)!];
             var needsElevation = await RequiresElevationAsync(writeDirectories, update.Elevated, interaction, token);
             if (OperatingSystem.IsMacOS())
                 macReplacement = new MacBundleReplacement(update.Target,
                     Path.Combine(update.WorkDirectory, "backup", "SyncClipboard.app"), needsElevation);
+            else if (OperatingSystem.IsLinux())
+                appImageReplacement = new AppImageReplacement(update.Target,
+                    Path.Combine(update.WorkDirectory, "backup", Path.GetFileName(update.Target)), needsElevation);
             else if (needsElevation)
             {
                 Log(update, UpdaterText.Current.RequestingElevation);
@@ -60,11 +69,11 @@ internal static class UpdateWorker
             }, interaction.AskFailureActionAsync, token);
             canRestart = true;
 
-            dmg = await InstallAsync(update, interaction, macReplacement, token);
+            dmg = await InstallAsync(update, interaction, macReplacement, appImageReplacement, token);
             targetLock?.Dispose();
             targetLock = null;
             await RestartAsync(update);
-            return await CleanupAndReportAsync(update, interaction, macReplacement, dmg);
+            return await CleanupAndReportAsync(update, interaction, macReplacement, dmg, appImageReplacement);
         }
         catch (Exception error)
         {
@@ -97,7 +106,7 @@ internal static class UpdateWorker
 
     private static async Task<bool> IsRunningInWorkspaceAsync(string workspace, CancellationToken token)
     {
-        var name = OperatingSystem.IsMacOS() ? "SyncClipboard.Updater" : "SyncClipboard.Updater.exe";
+        var name = OperatingSystem.IsWindows() ? "SyncClipboard.Updater.exe" : "SyncClipboard.Updater";
         var expected = Path.Combine(workspace, name);
         var executable = Path.GetFullPath(Environment.ProcessPath!);
         if (string.Equals(executable, expected, StringComparison.OrdinalIgnoreCase))
@@ -144,7 +153,7 @@ internal static class UpdateWorker
     }
 
     private static async Task<MacDmgPackage?> InstallAsync(UpdateArguments update, IUpdateInteraction interaction,
-        MacBundleReplacement? macReplacement, CancellationToken token)
+        MacBundleReplacement? macReplacement, AppImageReplacement? appImageReplacement, CancellationToken token)
     {
         string? stage = null;
         string? attempt = null;
@@ -159,6 +168,8 @@ internal static class UpdateWorker
                 Directory.CreateDirectory(attempt);
                 if (OperatingSystem.IsMacOS())
                     dmg = await MacDmgPackage.PrepareAsync(update, attempt, token, interaction.AskFailureActionAsync);
+                else if (OperatingSystem.IsLinux())
+                    stage = await AppImagePackage.PrepareAsync(update, attempt, token);
                 else
                     stage = await WindowsZipPackage.PrepareAsync(update, attempt, token);
             }, interaction.AskFailureActionAsync, token);
@@ -166,6 +177,8 @@ internal static class UpdateWorker
             await WaitForProcessAsync(update.ProcessId, update.ProcessStartTime, token, interaction.ConfirmForceExitAsync);
             if (macReplacement is not null)
                 await macReplacement.ApplyAsync(dmg!.BundlePath, interaction, token);
+            else if (appImageReplacement is not null)
+                await appImageReplacement.ApplyAsync(stage!, interaction, token);
             else
                 await FileReplacement.ApplyAsync(stage!, update.Target, Path.Combine(attempt!, "backup"),
                     WindowsZipPackage.GetProtectedPaths(update), interaction.Report, token, interaction.AskFailureActionAsync);
@@ -194,9 +207,11 @@ internal static class UpdateWorker
 
     internal static IDisposable AcquireInstallationLock(string target)
     {
-        var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(target)).ToUpperInvariant();
+        var normalized = Path.TrimEndingDirectorySeparator(Path.GetFullPath(target));
+        if (!OperatingSystem.IsLinux())
+            normalized = normalized.ToUpperInvariant();
         var key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(normalized)));
-        if (OperatingSystem.IsMacOS())
+        if (!OperatingSystem.IsWindows())
         {
             // Keep the file in place: unlinking a locked file would let a second updater lock a new inode.
             return new FileStream(Path.Combine("/tmp", "SyncClipboard.Update." + key + ".lock"),
@@ -303,6 +318,15 @@ internal static class UpdateWorker
             await MacCommand.RunAsync("/usr/bin/open", ["-n", update.Target], CancellationToken.None);
         else if (OperatingSystem.IsWindows())
             WindowsProcessLauncher.Start(Path.Combine(update.Target, "SyncClipboard.exe"), update.Target, update.AppElevated);
+        else if (OperatingSystem.IsLinux())
+        {
+            var start = new ProcessStartInfo(update.Target)
+            {
+                UseShellExecute = false,
+                WorkingDirectory = Path.GetDirectoryName(update.Target)!
+            };
+            using var process = Process.Start(start) ?? throw new IOException(UpdaterText.Current.RestartError + update.Target);
+        }
         else
             throw new PlatformNotSupportedException(UpdaterText.Current.UnsupportedPlatform);
     }
@@ -316,7 +340,8 @@ internal static class UpdateWorker
     }
 
     internal static async Task<int> CleanupAndReportAsync(UpdateArguments update, IUpdateInteraction interaction,
-        MacBundleReplacement? macReplacement = null, MacDmgPackage? dmg = null)
+        MacBundleReplacement? macReplacement = null, MacDmgPackage? dmg = null,
+        AppImageReplacement? appImageReplacement = null)
     {
         UpdateResult result;
         try
@@ -326,6 +351,8 @@ internal static class UpdateWorker
                 await dmg.DetachAsync(interaction.AskFailureActionAsync);
             if (macReplacement is not null)
                 await macReplacement.CleanupAsync(interaction);
+            if (appImageReplacement is not null)
+                await appImageReplacement.CleanupAsync(interaction);
             await CleanupAsync(update.WorkDirectory!, interaction.AskFailureActionAsync);
             result = new UpdateResult(0);
         }
@@ -333,7 +360,8 @@ internal static class UpdateWorker
         {
             Log(update, error.ToString());
             var cause = error is UpdateAbortedException ? error.InnerException ?? error : error;
-            var backup = Directory.Exists(macReplacement?.Backup) ? macReplacement.Backup : null;
+            var backup = Directory.Exists(macReplacement?.Backup) ? macReplacement.Backup
+                : File.Exists(appImageReplacement?.Backup) ? appImageReplacement.Backup : null;
             result = new UpdateResult(1, cause.Message, update.WorkDirectory, backup, CleanupIncomplete: true);
         }
         await interaction.ShowResultAsync(result);

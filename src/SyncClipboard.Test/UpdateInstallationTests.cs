@@ -192,13 +192,17 @@ public class UpdateInstallationTests
             Directory.CreateDirectory(programDirectory);
             File.WriteAllText(Path.Combine(target, "Contents", "Info.plist"), "bundle");
         }
+        else if (OperatingSystem.IsLinux())
+        {
+            target = Path.Combine(directory, "SyncClipboard.AppImage");
+        }
         var workspace = Path.Combine(directory, "workspace");
-        var updater = Path.Combine(workspace, OperatingSystem.IsMacOS() ? "SyncClipboard.Updater" : "SyncClipboard.Updater.exe");
+        var updater = Path.Combine(workspace, OperatingSystem.IsWindows() ? "SyncClipboard.Updater.exe" : "SyncClipboard.Updater");
         var package = Path.Combine(directory, "package with spaces 中文.zip");
         var digest = "sha256:" + new string('B', 64);
         var request = new UpdateInstallRequest(package, digest);
 
-        var start = FileReplacementPackageInstaller.CreateStartInfo(request, workspace, programDirectory);
+        var start = FileReplacementPackageInstaller.CreateStartInfo(request, workspace, programDirectory, target);
         var arguments = start.ArgumentList.ToArray();
 
         Assert.AreEqual(updater, start.FileName);
@@ -208,7 +212,7 @@ public class UpdateInstallationTests
         Assert.AreEqual(package, arguments[Array.IndexOf(arguments, "--package-path") + 1]);
         Assert.AreEqual(digest, arguments[Array.IndexOf(arguments, "--digest") + 1]);
         Assert.AreEqual(target, arguments[Array.IndexOf(arguments, "--target") + 1]);
-        if (OperatingSystem.IsMacOS() || OperatingSystem.IsWindows())
+        if (OperatingSystem.IsMacOS() || OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
         {
             var parsed = SyncClipboard.Updater.UpdateArguments.Parse(arguments);
             Assert.AreEqual(Path.TrimEndingDirectorySeparator(target), parsed.Target);
