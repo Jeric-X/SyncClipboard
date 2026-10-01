@@ -27,6 +27,7 @@ internal static class UpdateIo
             try
             {
                 await operation();
+                token.ThrowIfCancellationRequested();
                 return;
             }
             catch (Exception error) when (error is IOException or UnauthorizedAccessException

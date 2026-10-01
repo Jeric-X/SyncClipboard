@@ -57,14 +57,13 @@ public class MacDmgUpdateTests
         Assert.AreEqual("old", File.ReadAllText(Path.Combine(replacement.Backup, "Contents", "Resources", "version")));
         await replacement.CleanupAsync(interaction);
         Assert.IsFalse(Directory.Exists(replacement.Backup));
+        Assert.IsEmpty(Directory.GetDirectories(Path.GetDirectoryName(update.Target)!, ".SyncClipboard-update-*"));
     }
 
     [TestMethod]
     [DataRow("Retry")]
-    [DataRow("Rollback")]
     [DataRow("Abort")]
-    [DataRow("CancelTask")]
-    public async Task ReplacementFailure_OffersRetryRollbackOrAbortWithUsableBackup(string choice)
+    public async Task PreparationFailure_OffersRetryOrAbortWithOriginalBundleIntact(string choice)
     {
         var target = await CreateBundleAsync(Path.Combine(directory, "installed", "SyncClipboard.app"), "old");
         var stage = await CreateBundleAsync(Path.Combine(directory, "stage", "SyncClipboard.app"), "new");
@@ -83,30 +82,81 @@ public class MacDmgUpdateTests
             OnFailure = (_, _, canRollback, _) =>
             {
                 prompts++;
-                Assert.IsTrue(canRollback);
+                Assert.IsFalse(canRollback);
+                Assert.AreEqual("old", File.ReadAllText(Path.Combine(target, "Contents", "Resources", "version")));
                 File.SetUnixFileMode(unreadable, originalMode);
-                if (choice == "CancelTask")
-                {
-                    cancellation.Cancel();
-                    return Task.FromCanceled<UpdateFailureAction>(cancellation.Token);
-                }
                 return Task.FromResult(Enum.Parse<UpdateFailureAction>(choice));
             }
         };
         if (choice == "Retry")
             await replacement.ApplyAsync(stage, interaction, cancellation.Token);
-        else if (choice is "Rollback" or "CancelTask")
-            await Assert.ThrowsAsync<IOException>(() => replacement.ApplyAsync(stage, interaction, cancellation.Token));
         else
         {
             var error = await Assert.ThrowsAsync<UpdateAbortedException>(() => replacement.ApplyAsync(stage, interaction, cancellation.Token));
             Assert.AreEqual(replacement.Backup, error.BackupPath);
         }
         Assert.AreEqual(1, prompts);
-        var remaining = choice == "Abort" ? replacement.Backup : target;
         Assert.AreEqual(choice == "Retry" ? "new" : "old",
-            File.ReadAllText(Path.Combine(remaining, "Contents", "Resources", "version")));
-        await MacCommand.RunAsync("/usr/bin/codesign", ["--verify", "--deep", "--strict", remaining], Token);
+            File.ReadAllText(Path.Combine(target, "Contents", "Resources", "version")));
+        await MacCommand.RunAsync("/usr/bin/codesign", ["--verify", "--deep", "--strict", target], Token);
+    }
+
+    [TestMethod]
+    public async Task CancellationDuringReplacement_RestoresSignedOriginalBundle()
+    {
+        var target = await CreateBundleAsync(Path.Combine(directory, "installed", "SyncClipboard.app"), "old");
+        var stage = await CreateBundleAsync(Path.Combine(directory, "stage", "SyncClipboard.app"), "new");
+        var replacement = new MacBundleReplacement(target, Path.Combine(directory, "backup", "SyncClipboard.app"), false);
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        var interaction = new Interaction
+        {
+            OnRollbackAvailability = available =>
+            {
+                if (available)
+                    cancel.Cancel();
+            }
+        };
+        await Assert.ThrowsAsync<IOException>(() => replacement.ApplyAsync(stage, interaction, cancel.Token));
+        Assert.AreEqual("old", File.ReadAllText(Path.Combine(target, "Contents", "Resources", "version")));
+        await MacCommand.RunAsync("/usr/bin/codesign", ["--verify", "--deep", "--strict", target], Token);
+        Assert.IsEmpty(Directory.GetDirectories(Path.GetDirectoryName(target)!, ".SyncClipboard-update-*"));
+    }
+
+    [TestMethod]
+    public void BundleSwap_ExchangesBothNonemptyDirectories()
+    {
+        var target = Directory.CreateDirectory(Path.Combine(directory, "old.app")).FullName;
+        var prepared = Directory.CreateDirectory(Path.Combine(directory, "new.app")).FullName;
+        File.WriteAllText(Path.Combine(target, "version"), "old");
+        File.WriteAllText(Path.Combine(prepared, "version"), "new");
+        MacBundleSwap.Replace(prepared, target);
+        Assert.AreEqual("new", File.ReadAllText(Path.Combine(target, "version")));
+        Assert.AreEqual("old", File.ReadAllText(Path.Combine(prepared, "version")));
+    }
+
+    [TestMethod]
+    [DataRow(45, true)]
+    [DataRow(102, true)]
+    [DataRow(13, false)]
+    [DataRow(16, false)]
+    public void BundleSwap_FallsBackOnlyWhenUnsupported(int error, bool fallback)
+    {
+        var target = Directory.CreateDirectory(Path.Combine(directory, "old.app")).FullName;
+        var prepared = Directory.CreateDirectory(Path.Combine(directory, "new.app")).FullName;
+        File.WriteAllText(Path.Combine(target, "version"), "old");
+        File.WriteAllText(Path.Combine(prepared, "version"), "new");
+        if (fallback)
+        {
+            MacBundleSwap.HandleSwapFailure(prepared, target, error);
+            Assert.AreEqual("new", File.ReadAllText(Path.Combine(target, "version")));
+            Assert.IsFalse(Directory.Exists(prepared));
+        }
+        else
+        {
+            Assert.Throws<IOException>(() => MacBundleSwap.HandleSwapFailure(prepared, target, error));
+            Assert.AreEqual("old", File.ReadAllText(Path.Combine(target, "version")));
+            Assert.AreEqual("new", File.ReadAllText(Path.Combine(prepared, "version")));
+        }
     }
 
     [TestMethod]
@@ -305,6 +355,8 @@ public class MacDmgUpdateTests
     {
         public UpdateResult? Result { get; private set; }
         public Action<string>? OnReport { get; init; }
+        public Action<bool>? OnRollbackAvailability { get; init; }
+        public void SetRollbackAvailable(bool available) => OnRollbackAvailability?.Invoke(available);
         public UpdateFailureHandler? OnFailure { get; init; }
         public void Report(string phase, int percent) => OnReport?.Invoke(phase);
         public Task<ForceExitAction> ConfirmForceExitAsync(CancellationToken token) => Task.FromResult(ForceExitAction.No);

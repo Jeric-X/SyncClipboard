@@ -158,11 +158,9 @@ public class AppImageUpdateTests
 
     [TestMethod]
     [DataRow("Retry")]
-    [DataRow("Rollback")]
     [DataRow("Abort")]
-    [DataRow("CancelTask")]
     [UnsupportedOSPlatform("windows")]
-    public async Task ReplacementFailure_RetriesOrRestoresTheOriginalImage(string choice)
+    public async Task PreparationFailure_RetriesOrKeepsTheOriginalImage(string choice)
     {
         if (OperatingSystem.IsWindows())
             Assert.Inconclusive("Requires Unix file permissions.");
@@ -185,15 +183,10 @@ public class AppImageUpdateTests
             OnFailure = (_, _, canRollback, _) =>
             {
                 prompts++;
-                Assert.IsTrue(canRollback);
-                Assert.IsTrue(rollbackAvailable);
-                Assert.IsFalse(File.Exists(target));
+                Assert.IsFalse(canRollback);
+                Assert.IsFalse(rollbackAvailable);
+                Assert.AreEqual("old", File.ReadAllText(target));
                 File.SetUnixFileMode(source, sourceMode);
-                if (choice == "CancelTask")
-                {
-                    cancel.Cancel();
-                    return Task.FromCanceled<UpdateFailureAction>(cancel.Token);
-                }
                 return Task.FromResult(Enum.Parse<UpdateFailureAction>(choice));
             },
             OnRollbackAvailability = available => rollbackAvailable = available
@@ -206,10 +199,37 @@ public class AppImageUpdateTests
         else
         {
             await Assert.ThrowsAsync<IOException>(() => replacement.ApplyAsync(source, interaction, cancel.Token));
-            Assert.AreEqual("old", File.ReadAllText(choice == "Abort" ? replacement.Backup : target));
+            Assert.AreEqual("old", File.ReadAllText(target));
+            Assert.AreEqual("old", File.ReadAllText(replacement.Backup));
         }
         Assert.AreEqual(1, prompts);
         Assert.IsFalse(rollbackAvailable);
+    }
+
+    [TestMethod]
+    public async Task CancellationAfterReplacement_RestoresTheOriginalImage()
+    {
+        var target = Path.Combine(directory, "installed.AppImage");
+        var source = Path.Combine(directory, "source.AppImage");
+        File.WriteAllText(target, "old");
+        File.WriteAllBytes(source, ImageBytes());
+        var replacement = new AppImageReplacement(target, Path.Combine(directory, "backup", "old.AppImage"), false);
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        var interaction = new Interaction
+        {
+            OnRollbackAvailability = available =>
+            {
+                if (available)
+                {
+                    CollectionAssert.AreEqual(ImageBytes(), File.ReadAllBytes(target));
+                    cancel.Cancel();
+                }
+            }
+        };
+        await Assert.ThrowsAsync<IOException>(() => replacement.ApplyAsync(source, interaction, cancel.Token));
+        Assert.AreEqual("old", File.ReadAllText(target));
+        Assert.AreEqual("old", File.ReadAllText(replacement.Backup));
+        Assert.IsEmpty(Directory.GetFileSystemEntries(directory, ".SyncClipboard-update-*"));
     }
 
     [TestMethod]

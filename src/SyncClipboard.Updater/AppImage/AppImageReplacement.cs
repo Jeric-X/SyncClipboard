@@ -3,6 +3,8 @@ namespace SyncClipboard.Updater.AppImage;
 internal sealed class AppImageReplacement(string target, string backup, bool elevated)
 {
     internal string Backup => backup;
+    private readonly string prepared = Path.Combine(Path.GetDirectoryName(target)!,
+        ".SyncClipboard-update-" + Guid.NewGuid().ToString("N"));
     private const UnixFileMode ExecutableMode = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute
         | UnixFileMode.GroupRead | UnixFileMode.GroupExecute | UnixFileMode.OtherRead | UnixFileMode.OtherExecute;
 
@@ -23,12 +25,10 @@ internal sealed class AppImageReplacement(string target, string backup, bool ele
             interaction.Report("installing", -1);
             await UpdateIo.RunAsync(UpdaterText.Current.Replace + target, async () =>
             {
-                var existingBytes = File.Exists(target) ? new FileInfo(target).Length : 0;
-                PackageFiles.CheckSpace(Path.GetDirectoryName(target)!, Math.Max(0, new FileInfo(source).Length - existingBytes));
+                await PrepareAsync(source, token);
+                await ReplaceAsync();
                 modified = true;
                 interaction.SetRollbackAvailable(true);
-                await RemoveTargetAsync(token);
-                await CopyAsync(source, target, token);
             }, interaction.AskFailureActionAsync, token, backup, canRollback: () => modified);
             interaction.Report("installing", 100);
         }
@@ -40,8 +40,8 @@ internal sealed class AppImageReplacement(string target, string backup, bool ele
                 interaction.Report("restoring", -1);
                 await UpdateIo.RunAsync(UpdaterText.Current.Restore + target, async () =>
                 {
-                    await RemoveTargetAsync(CancellationToken.None);
-                    await CopyAsync(backup, target, CancellationToken.None);
+                    await PrepareAsync(backup, CancellationToken.None);
+                    await ReplaceAsync();
                 }, interaction.AskFailureActionAsync, CancellationToken.None, backup);
             }
             catch (Exception error)
@@ -60,15 +60,30 @@ internal sealed class AppImageReplacement(string target, string backup, bool ele
         => UpdateIo.RunAsync(UpdaterText.Current.RemoveTemporaryFile + backup, () =>
         {
             File.Delete(backup);
-            return Task.CompletedTask;
+            return RemovePreparedAsync(CancellationToken.None);
         }, interaction.AskFailureActionAsync, CancellationToken.None, backup);
 
-    private async Task RemoveTargetAsync(CancellationToken token)
+    private async Task PrepareAsync(string source, CancellationToken token)
+    {
+        await RemovePreparedAsync(token);
+        PackageFiles.CheckSpace(Path.GetDirectoryName(target)!, new FileInfo(source).Length);
+        await CopyAsync(source, prepared, token);
+    }
+
+    private Task RemovePreparedAsync(CancellationToken token)
     {
         if (elevated)
-            await LinuxCommand.RunElevatedAsync("/bin/rm", ["-f", "--", target], token);
-        else
-            File.Delete(target);
+            return LinuxCommand.RunElevatedAsync("/bin/rm", ["-f", "--", prepared], token);
+        File.Delete(prepared);
+        return Task.CompletedTask;
+    }
+
+    private Task ReplaceAsync()
+    {
+        if (elevated)
+            return LinuxCommand.RunElevatedAsync("/bin/mv", ["-fT", "--", prepared, target], CancellationToken.None);
+        File.Move(prepared, target, true);
+        return Task.CompletedTask;
     }
 
     private async Task CopyAsync(string source, string destination, CancellationToken token)

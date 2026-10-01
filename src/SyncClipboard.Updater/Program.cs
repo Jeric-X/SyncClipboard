@@ -13,6 +13,8 @@ internal static class Program
     {
         try
         {
+            if (OperatingSystem.IsMacOS() && args is ["--replace-bundle", var prepared, var target])
+                return SyncClipboard.Updater.Dmg.MacBundleSwap.RunCommand(prepared, target);
             UpdaterText.Current = UpdaterText.FromArguments(args);
             if (args is ["--help"])
             {
