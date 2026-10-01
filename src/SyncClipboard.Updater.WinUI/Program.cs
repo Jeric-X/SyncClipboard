@@ -21,6 +21,11 @@ internal static partial class Program
         try
         {
             UpdaterText.Current = UpdaterText.FromArguments(args);
+            if (args is ["--help"])
+            {
+                Console.WriteLine(UpdaterText.Current.Help);
+                return 0;
+            }
 #if UPDATER_LOCAL_RUNTIME
             Console.WriteLine("WINDOWS_APP_SDK=local");
 #else

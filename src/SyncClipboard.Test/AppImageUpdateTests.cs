@@ -87,10 +87,10 @@ public class AppImageUpdateTests
         {
             File.WriteAllText(Path.Combine(directory, file), file);
         }
-        var workspace = await FileReplacementPackageInstaller.PrepareUnixUpdaterAsync(LinuxUpdaterFiles.GetFiles(directory), Token);
+        var workspace = await FileReplacementPackageInstaller.PrepareUnixUpdaterAsync(FileReplacementPackageInstaller.LinuxUpdaterFiles.GetFiles(directory), Token);
         try
         {
-            foreach (var file in LinuxUpdaterFiles.Libraries)
+            foreach (var file in FileReplacementPackageInstaller.LinuxUpdaterFiles.Libraries)
             {
                 Assert.AreEqual(file, File.ReadAllText(Path.Combine(workspace, file)));
             }
@@ -104,7 +104,7 @@ public class AppImageUpdateTests
             start.Environment["APPIMAGE"] = Path.Combine(directory, "original.AppImage");
             start.Environment["LD_LIBRARY_PATH"] = Path.Combine(directory, "usr/lib") + ":/usr/lib";
             start.Environment["PATH"] = Path.Combine(directory, "usr/bin") + ":/usr/bin";
-            LinuxUpdaterFiles.ConfigureEnvironment(start);
+            FileReplacementPackageInstaller.LinuxUpdaterFiles.ConfigureEnvironment(start);
             Assert.AreEqual("/usr/lib", start.Environment["LD_LIBRARY_PATH"]);
             Assert.AreEqual("/usr/bin", start.Environment["PATH"]);
             Assert.IsFalse(start.Environment.ContainsKey("APPDIR"));
@@ -304,7 +304,7 @@ public class AppImageUpdateTests
             Assert.Inconclusive("Requires Linux and the published updater/appimagetool.");
         var target = await CreateAppImageAsync(tool, "old");
         var package = await CreateAppImageAsync(tool, "new");
-        var files = LinuxUpdaterFiles.GetFiles(Path.GetDirectoryName(helper)!);
+        var files = FileReplacementPackageInstaller.LinuxUpdaterFiles.GetFiles(Path.GetDirectoryName(helper)!);
         var workspace = await FileReplacementPackageInstaller.PrepareUnixUpdaterAsync(files, Token);
         try
         {

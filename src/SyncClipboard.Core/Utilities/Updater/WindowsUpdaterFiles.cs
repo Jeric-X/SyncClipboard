@@ -2,10 +2,11 @@ namespace SyncClipboard.Core.Utilities.Updater;
 
 internal static class WindowsUpdaterFiles
 {
-    // Copy only native UI dependencies, never the main application's managed assemblies or CLR.
+    // Reuse native UI dependencies, never the main application's managed assemblies or CLR.
     // Framework-dependent WinUI builds use the installed SDK through the copied bootstrap DLL.
-    private static readonly string[] Libraries =
+    private static readonly string[] FileNames =
     [
+        "SyncClipboard.Updater.exe", "SyncClipboard.pri",
         "CoreMessagingXP.dll", "dcompi.dll", "dwmcorei.dll", "DwmSceneI.dll", "DWriteCore.dll", "marshal.dll",
         "Microsoft.DirectManipulation.dll", "Microsoft.InputStateManager.dll", "Microsoft.Internal.FrameworkUdk.dll",
         "Microsoft.UI.Composition.OSSupport.dll", "Microsoft.UI.Input.dll", "Microsoft.UI.Windowing.Core.dll",
@@ -16,18 +17,16 @@ internal static class WindowsUpdaterFiles
         "libSkiaSharp.dll", "libHarfBuzzSharp.dll"
     ];
 
-    internal static IEnumerable<(string Source, string Name)> GetDependencies(string directory)
+    internal static IEnumerable<(string Source, string Name)> GetFiles(string directory)
     {
-        foreach (var name in Libraries)
+        foreach (var name in FileNames)
         {
             var path = Path.Combine(directory, name);
-            if (File.Exists(path))
-                yield return (path, name);
+            // The executable is required; copying it must fail if it is missing.
+            if (name != "SyncClipboard.Updater.exe" && !File.Exists(path))
+                continue;
+            // WinUI resolves the main application's merged theme resources under this name.
+            yield return (path, name == "SyncClipboard.pri" ? "resources.pri" : name);
         }
-        // The merged main-app PRI includes WinUI's theme resources. A pure-code updater has
-        // no PRI of its own; MRT resolves this existing content under the conventional name.
-        var resources = Path.Combine(directory, "SyncClipboard.pri");
-        if (File.Exists(resources))
-            yield return (resources, "resources.pri");
     }
 }

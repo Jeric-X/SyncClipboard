@@ -32,7 +32,7 @@ internal sealed class UpdateInstallerFactory : IUpdateInstallerFactory
         }
         if (!isWindows && !isMacOS && updateInfo.PackageName.EndsWith(".AppImage", StringComparison.OrdinalIgnoreCase)
             && appImagePath is not null && Path.IsPathFullyQualified(appImagePath) && File.Exists(appImagePath)
-            && LinuxUpdaterFiles.GetFiles(programDirectory).Length != 0)
+            && FileReplacementPackageInstaller.LinuxUpdaterFiles.GetFiles(programDirectory).Length != 0)
             return new FileReplacementPackageInstaller();
         return null;
     }

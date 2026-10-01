@@ -12,6 +12,6 @@
     <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../SyncClipboard.Updater.Core/SyncClipboard.Updater.Core.csproj" />
+    <ProjectReference Include="$(MSBuildThisFileDirectory)SyncClipboard.Updater.Core.csproj" />
   </ItemGroup>
 </Project>

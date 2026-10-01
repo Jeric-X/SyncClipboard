@@ -87,7 +87,8 @@ public class UpdateInstallationTests
     {
         var source = Path.Combine(directory, "helper.exe");
         await File.WriteAllTextAsync(source, "updater", TestContext.CancellationTokenSource.Token);
-        var workspace = await FileReplacementPackageInstaller.PrepareUpdaterAsync(source, TestContext.CancellationTokenSource.Token);
+        var workspace = await FileReplacementPackageInstaller.PrepareUpdaterAsync([(source, "SyncClipboard.Updater.exe")],
+            TestContext.CancellationTokenSource.Token);
         try
         {
             SyncClipboard.Updater.UpdateWorker.ValidateWorkspace(workspace);
@@ -261,7 +262,7 @@ public class UpdateInstallationTests
         var request = new UpdateInstallRequest(Path.Combine(directory, "package"), "sha256:unused");
 
         string[] names = OperatingSystem.IsLinux()
-            ? ["SyncClipboard.Updater", .. LinuxUpdaterFiles.Libraries]
+            ? ["SyncClipboard.Updater", .. FileReplacementPackageInstaller.LinuxUpdaterFiles.Libraries]
             : ["SyncClipboard.Updater.exe"];
         var created = new List<string>();
         try

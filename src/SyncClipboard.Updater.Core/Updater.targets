@@ -4,7 +4,7 @@
   <PropertyGroup>
     <_UpdaterProjectName>SyncClipboard.Updater.Avalonia</_UpdaterProjectName>
     <_UpdaterProjectName Condition="'$(MSBuildProjectName)' == 'SyncClipboard.WinUI3'">SyncClipboard.Updater.WinUI</_UpdaterProjectName>
-    <_UpdaterProjectDirectory>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../src/$(_UpdaterProjectName)'))</_UpdaterProjectDirectory>
+    <_UpdaterProjectDirectory>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../$(_UpdaterProjectName)'))</_UpdaterProjectDirectory>
     <_UpdaterDotNet Condition="'$(DotNetHostPath)' != ''">$(DotNetHostPath)</_UpdaterDotNet>
     <_UpdaterDotNet Condition="'$(_UpdaterDotNet)' == ''">dotnet</_UpdaterDotNet>
   </PropertyGroup>

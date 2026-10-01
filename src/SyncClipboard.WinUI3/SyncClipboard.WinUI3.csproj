@@ -201,6 +201,6 @@
     <Resource Include="Assets\upload017.ico" />
   </ItemGroup>
 
-  <Import Project="../../build/Updater.targets" />
+  <Import Project="../SyncClipboard.Updater.Core/Updater.targets" />
 
 </Project>

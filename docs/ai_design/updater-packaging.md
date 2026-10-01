@@ -6,11 +6,11 @@
 - `SyncClipboard.Updater.WinUI`：WinUI 主程序对应的 Windows 更新界面。
 - `SyncClipboard.Updater.Avalonia`：Avalonia 桌面入口对应的更新界面，包括 macOS、Linux 和 Windows Avalonia。
 
-两个界面项目引用 Core，导入 `build/Updater.props` 共用 NativeAOT 发布配置。输出统一命名为 `SyncClipboard.Updater`，Core 被链接到可执行文件中，不向应用包添加 `SyncClipboard.Updater.Core.dll`。
+两个界面项目引用 Core，导入 `src/SyncClipboard.Updater.Core/Updater.props` 共用 NativeAOT 发布配置。输出统一命名为 `SyncClipboard.Updater`，Core 被链接到可执行文件中，不向应用包添加 `SyncClipboard.Updater.Core.dll`。
 
 ## 构建与打包
 
-桌面入口导入 `build/Updater.targets`，随主程序发布同架构更新器，只收集一个可执行文件。Windows/Linux 放在主输出目录，macOS 通过 BundleResource 放在 `.app/Contents/Resources/Updater/` 并随应用签名。Server 不参与。
+桌面入口导入 `src/SyncClipboard.Updater.Core/Updater.targets`，随主程序发布同架构更新器，只收集一个可执行文件。Windows/Linux 放在主输出目录，macOS 通过 BundleResource 放在 `.app/Contents/Resources/Updater/` 并随应用签名。Server 不参与。
 
 所有 WinUI 组合都打包更新器，包括未附带 .NET 或 Windows App SDK 的组合。更新器始终为 NativeAOT；只有 `WindowsAppSDKSelfContained` 跟随主程序，使用 SDK 的标准自动初始化机制：
 
@@ -31,7 +31,7 @@ WinUI 自包含输出的 `SyncClipboard.pri` 含合并后的主题资源，复�
 
 ## 验证
 
-Core 测试通过交互接口验证更新逻辑，在 CI 中独立运行。更新器的界面启动、安装、配置保留、重启和清理目前通过手动集成测试验证。
+Core 测试通过交互接口验证更新逻辑，在 CI 中独立运行。更新器的界面启动可通过现有冒烟测试手动验证。
 
 更改 Windows App SDK、WinUI 控件或 Avalonia 版本后，应重新验证原生依赖集合。运行库初始化遵循 [Microsoft 官方文档](https://learn.microsoft.com/windows/apps/windows-app-sdk/use-windows-app-sdk-run-time)。
 

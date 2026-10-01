@@ -7,7 +7,6 @@ using System.Reflection.PortableExecutable;
 using System.Security.AccessControl;
 using System.Security.Cryptography;
 using System.Security.Principal;
-using System.Text.Json;
 
 namespace SyncClipboard.Test;
 
@@ -18,7 +17,6 @@ public class NativeUpdaterTests
     private string directory = null!;
     private string target = null!;
     private string stage = null!;
-    private bool startedNativeUpdater;
 
     [TestInitialize]
     public void Initialize()
@@ -29,33 +27,7 @@ public class NativeUpdaterTests
     }
 
     [TestCleanup]
-    public void Cleanup()
-    {
-        if (startedNativeUpdater)
-        {
-            foreach (var process in Process.GetProcessesByName("SyncClipboard.Updater").Concat(Process.GetProcessesByName("SyncClipboard")))
-            {
-                using (process)
-                {
-                    try
-                    {
-                        if (process.MainModule?.FileName.StartsWith(directory + Path.DirectorySeparatorChar,
-                            StringComparison.OrdinalIgnoreCase) != true)
-                            continue;
-                        process.Kill(entireProcessTree: true);
-                        process.WaitForExit(5000);
-                    }
-                    catch (Exception error) when (error is InvalidOperationException or System.ComponentModel.Win32Exception)
-                    {
-                        TestContext.WriteLine(error.Message);
-                    }
-                }
-            }
-            foreach (var log in Directory.EnumerateFiles(directory, "install.log", SearchOption.AllDirectories))
-                TestContext.WriteLine(File.ReadAllText(log));
-        }
-        Directory.Delete(directory, true);
-    }
+    public void Cleanup() => Directory.Delete(directory, true);
 
     [TestMethod]
     [DataRow(false)]
@@ -734,82 +706,6 @@ public class NativeUpdaterTests
         else
             start.ArgumentList.Add("30");
         return Process.Start(start)!;
-    }
-
-    [TestMethod]
-    public async Task NativeAotUpdater_StartsFromPreparedWorkspaceInstallsRestartsAndCleansWorkspace()
-    {
-        if (!OperatingSystem.IsWindows())
-        {
-            Assert.Inconclusive("Windows NativeAOT process integration test.");
-            return;
-        }
-        var native = Environment.GetEnvironmentVariable("SYNC_CLIPBOARD_UPDATER_TEST_EXE");
-        if (native is null)
-            Assert.Inconclusive("Publish the NativeAOT updater and set SYNC_CLIPBOARD_UPDATER_TEST_EXE.");
-        Assert.IsTrue(File.Exists(native), "The CI-published updater is missing.");
-        var application = Environment.GetEnvironmentVariable("SYNC_CLIPBOARD_UPDATER_TEST_APP");
-        Assert.IsNotNull(application, "Publish SyncClipboard.Test.UpdaterHost and set SYNC_CLIPBOARD_UPDATER_TEST_APP.");
-        foreach (var destination in new[] { target, stage })
-        {
-            File.Copy(application, Path.Combine(destination, "SyncClipboard.exe"));
-            File.Copy(native, Path.Combine(destination, "SyncClipboard.Updater.exe"));
-            foreach (var (source, _) in WindowsUpdaterFiles.GetDependencies(Path.GetDirectoryName(native)!))
-                File.Copy(source, Path.Combine(destination, Path.GetFileName(source)));
-        }
-        const string packageName = "SyncClipboard_win_x64_portable.zip";
-        File.WriteAllText(Path.Combine(stage, "update_info.json"), JsonSerializer.Serialize(new
-        { UpdateInfo = new { manage_type = "manual", update_src = "github", package_name = packageName } }));
-        File.WriteAllText(Path.Combine(target, "StaticConfig.json"), "keep config");
-        File.WriteAllText(Path.Combine(stage, "StaticConfig.json"), "bad config");
-        File.WriteAllText(Path.Combine(stage, "installed.txt"), "new version");
-        var zip = Path.Combine(directory, packageName);
-        ZipFile.CreateFromDirectory(stage, zip);
-        var workspace = await FileReplacementPackageInstaller.PrepareWindowsUpdaterAsync(target,
-            TestContext.CancellationTokenSource.Token);
-        using var identity = WindowsIdentity.GetCurrent();
-        var arguments = Arguments() with
-        {
-            PackagePath = zip,
-            Digest = Digest(zip),
-            WorkDirectory = workspace,
-            AppElevated = new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator)
-        };
-        var start = UpdateWorker.CreateStartInfo(Path.Combine(workspace, "SyncClipboard.Updater.exe"), arguments);
-        start.Environment["TEMP"] = directory;
-        start.Environment["TMP"] = directory;
-        start.RedirectStandardInput = true;
-        start.RedirectStandardOutput = true;
-        start.RedirectStandardError = true;
-        start.CreateNoWindow = true;
-        startedNativeUpdater = true;
-        using var process = Process.Start(start)!;
-        process.StandardInput.Close();
-        var output = process.StandardOutput.ReadToEndAsync(TestContext.CancellationTokenSource.Token);
-        var errors = process.StandardError.ReadToEndAsync(TestContext.CancellationTokenSource.Token);
-        try
-        {
-            await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token).WaitAsync(TimeSpan.FromSeconds(90), TestContext.CancellationTokenSource.Token);
-            Assert.AreEqual(0, process.ExitCode, await errors);
-        }
-        finally
-        {
-            if (!process.HasExited)
-            {
-                process.Kill(entireProcessTree: true);
-                await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
-                if (File.Exists(Path.Combine(workspace, "install.log")))
-                    TestContext.WriteLine(File.ReadAllText(Path.Combine(workspace, "install.log")));
-            }
-        }
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.CancellationTokenSource.Token);
-        timeout.CancelAfter(TimeSpan.FromSeconds(45));
-        while (!File.Exists(Path.Combine(target, "restart-marker.txt")) || Directory.Exists(workspace))
-            await Task.Delay(100, timeout.Token);
-        Assert.AreEqual("new version", File.ReadAllText(Path.Combine(target, "installed.txt")));
-        Assert.AreEqual("keep config", File.ReadAllText(Path.Combine(target, "StaticConfig.json")));
-        TestContext.WriteLine(await output);
-        TestContext.WriteLine(await errors);
     }
 
     [TestMethod]

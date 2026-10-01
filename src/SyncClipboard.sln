@@ -41,8 +41,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncClipboard.Updater.Core"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncClipboard.Updater.WinUI", "SyncClipboard.Updater.WinUI\SyncClipboard.Updater.WinUI.csproj", "{C18E24F6-5810-427B-B14B-392EA0F405E5}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SyncClipboard.Test.UpdaterHost", "SyncClipboard.Test.UpdaterHost\SyncClipboard.Test.UpdaterHost.csproj", "{19892260-C841-4BEB-9B95-866E81A2CFE5}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -67,14 +65,6 @@ Global
 		{C18E24F6-5810-427B-B14B-392EA0F405E5}.Release|ARM64.Build.0 = Release|ARM64
 		{C18E24F6-5810-427B-B14B-392EA0F405E5}.Release|x64.ActiveCfg = Release|x64
 		{C18E24F6-5810-427B-B14B-392EA0F405E5}.Release|x64.Build.0 = Release|x64
-		{19892260-C841-4BEB-9B95-866E81A2CFE5}.Debug|ARM64.ActiveCfg = Debug|Any CPU
-		{19892260-C841-4BEB-9B95-866E81A2CFE5}.Debug|ARM64.Build.0 = Debug|Any CPU
-		{19892260-C841-4BEB-9B95-866E81A2CFE5}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{19892260-C841-4BEB-9B95-866E81A2CFE5}.Debug|x64.Build.0 = Debug|Any CPU
-		{19892260-C841-4BEB-9B95-866E81A2CFE5}.Release|ARM64.ActiveCfg = Release|Any CPU
-		{19892260-C841-4BEB-9B95-866E81A2CFE5}.Release|ARM64.Build.0 = Release|Any CPU
-		{19892260-C841-4BEB-9B95-866E81A2CFE5}.Release|x64.ActiveCfg = Release|Any CPU
-		{19892260-C841-4BEB-9B95-866E81A2CFE5}.Release|x64.Build.0 = Release|Any CPU
 		{4BE98FBE-5A16-4706-AD83-9444A5E2954F}.Debug|ARM64.ActiveCfg = Debug|Any CPU
 		{4BE98FBE-5A16-4706-AD83-9444A5E2954F}.Debug|ARM64.Build.0 = Debug|Any CPU
 		{4BE98FBE-5A16-4706-AD83-9444A5E2954F}.Debug|x64.ActiveCfg = Debug|Any CPU

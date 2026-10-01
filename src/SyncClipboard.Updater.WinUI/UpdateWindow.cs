@@ -1,6 +1,7 @@
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Windows.UI;
 using Windows.Graphics;
 
 namespace SyncClipboard.Updater;
@@ -26,8 +27,15 @@ internal sealed partial class UpdateWindow : Window, IUpdateInteraction
     {
         Title = text.Title;
         AppWindow.Resize(new SizeInt32(680, 460));
-        if (AppWindow.Presenter is OverlappedPresenter presenter)
-            presenter.IsMaximizable = false;
+        var presenter = OverlappedPresenter.Create();
+        presenter.IsMaximizable = false;
+        AppWindow.SetPresenter(presenter);
+        var titleBar = new Grid
+        {
+            Height = 32,
+            Padding = new Thickness(24, 0, 160, 0),
+            Children = { new TextBlock { Text = text.Title, VerticalAlignment = VerticalAlignment.Center } }
+        };
         var layout = new Grid
         {
             Padding = new Thickness(24),
@@ -35,17 +43,34 @@ internal sealed partial class UpdateWindow : Window, IUpdateInteraction
             RowDefinitions =
             {
                 new() { Height = GridLength.Auto }, new() { Height = GridLength.Auto },
-                new() { Height = GridLength.Auto }, new() { Height = new GridLength(1, GridUnitType.Star) },
+                new() { Height = new GridLength(1, GridUnitType.Star) },
                 new() { Height = GridLength.Auto }
             }
         };
-        FrameworkElement[] controls = [new TextBlock { Text = text.Title, FontSize = 24 }, status, progress, message, actions];
+        FrameworkElement[] controls = [status, progress, message, actions];
         for (var i = 0; i < controls.Length; i++)
         {
             Grid.SetRow(controls[i], i);
             layout.Children.Add(controls[i]);
         }
-        Content = layout;
+        var root = new Grid
+        {
+            RowDefinitions = { new() { Height = GridLength.Auto }, new() { Height = new GridLength(1, GridUnitType.Star) } },
+            Children = { titleBar, layout }
+        };
+        Grid.SetRow(layout, 1);
+        Content = root;
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(titleBar);
+        AppWindow.TitleBar.ButtonBackgroundColor = default(Color);
+        AppWindow.TitleBar.ButtonInactiveBackgroundColor = default(Color);
+        void UpdateTitleBar(FrameworkElement sender, object _)
+        {
+            AppWindow.TitleBar.ButtonForegroundColor = sender.ActualTheme == ElementTheme.Dark
+                ? Color.FromArgb(255, 255, 255, 255) : Color.FromArgb(255, 0, 0, 0);
+        }
+        root.ActualThemeChanged += UpdateTitleBar;
+        root.Loaded += (sender, args) => UpdateTitleBar(root, args);
         status.Text = text.StartFromApplication;
         AppWindow.Closing += OnClosing;
         ((FrameworkElement)Content).Loaded += async (_, _) =>

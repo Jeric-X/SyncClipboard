@@ -43,6 +43,6 @@
     <PartialAppManifest Include="..\..\build\macos\Info.plist" />
   </ItemGroup>
 
-  <Import Project="../../build/Updater.targets" />
+  <Import Project="../SyncClipboard.Updater.Core/Updater.targets" />
 
 </Project>

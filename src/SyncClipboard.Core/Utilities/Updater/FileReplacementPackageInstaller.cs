@@ -32,8 +32,8 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
         }
     }
 
-    internal static async Task<string> PrepareUpdaterAsync(string updaterPath, CancellationToken token,
-        string fileName = "SyncClipboard.Updater.exe")
+    internal static async Task<string> PrepareUpdaterAsync(IEnumerable<(string Source, string Name)> files,
+        CancellationToken token)
     {
         var workspace = OperatingSystem.IsLinux()
             ? Directory.CreateTempSubdirectory("SyncClipboard-update-").FullName
@@ -42,10 +42,13 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
         {
             Directory.CreateDirectory(workspace);
             await File.WriteAllTextAsync(Path.Combine(workspace, ".syncclipboard-update"), "SyncClipboard updater workspace v1", token);
-            await using var source = File.OpenRead(updaterPath);
-            await using var destination = new FileStream(Path.Combine(workspace, fileName),
-                FileMode.CreateNew, FileAccess.Write, FileShare.None);
-            await source.CopyToAsync(destination, token);
+            foreach (var (path, name) in files)
+            {
+                await using var source = File.OpenRead(path);
+                await using var destination = new FileStream(Path.Combine(workspace, name),
+                    FileMode.CreateNew, FileAccess.Write, FileShare.None);
+                await source.CopyToAsync(destination, token);
+            }
             return workspace;
         }
         catch
@@ -56,25 +59,8 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
         }
     }
 
-    internal static async Task<string> PrepareWindowsUpdaterAsync(string directory, CancellationToken token)
-    {
-        var workspace = await PrepareUpdaterAsync(Path.Combine(directory, "SyncClipboard.Updater.exe"), token);
-        try
-        {
-            foreach (var (path, name) in WindowsUpdaterFiles.GetDependencies(directory))
-            {
-                await using var source = File.OpenRead(path);
-                await using var destination = File.Create(Path.Combine(workspace, name));
-                await source.CopyToAsync(destination, token);
-            }
-            return workspace;
-        }
-        catch
-        {
-            Directory.Delete(workspace, true);
-            throw;
-        }
-    }
+    internal static Task<string> PrepareWindowsUpdaterAsync(string directory, CancellationToken token)
+        => PrepareUpdaterAsync(WindowsUpdaterFiles.GetFiles(directory), token);
 
     internal static Task<string> PrepareMacUpdaterAsync(string bundle, CancellationToken token)
         => PrepareUnixUpdaterAsync(MacUpdaterFiles.GetFiles(bundle), token);
@@ -83,18 +69,12 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
     {
         if (files.Length == 0)
             throw new FileNotFoundException("The updater or its native libraries are missing.");
-        var workspace = await PrepareUpdaterAsync(files[0], token, "SyncClipboard.Updater");
+        var workspace = await PrepareUpdaterAsync(files.Select(path => (path, Path.GetFileName(path))), token);
         try
         {
             var executable = Path.Combine(workspace, "SyncClipboard.Updater");
             if (!OperatingSystem.IsWindows())
                 File.SetUnixFileMode(executable, File.GetUnixFileMode(files[0]) | UnixFileMode.UserExecute);
-            foreach (var library in files.Skip(1))
-            {
-                await using var source = File.OpenRead(library);
-                await using var destination = File.Create(Path.Combine(workspace, Path.GetFileName(library)));
-                await source.CopyToAsync(destination, token);
-            }
             return workspace;
         }
         catch
@@ -149,5 +129,37 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
             start.ArgumentList.Add(Path.GetFullPath(path));
         }
         return start;
+    }
+
+    internal static class LinuxUpdaterFiles
+    {
+        internal static readonly string[] Libraries = ["libSkiaSharp.so", "libHarfBuzzSharp.so"];
+
+        public static string[] GetFiles(string programDirectory)
+        {
+            string[] names = ["SyncClipboard.Updater", .. Libraries];
+            var files = names.Select(name => Path.Combine(programDirectory, name)).ToArray();
+            return files.All(File.Exists) ? files : [];
+        }
+
+        public static void ConfigureEnvironment(ProcessStartInfo start)
+        {
+            start.Environment.TryGetValue("APPDIR", out var appDir);
+            if (!string.IsNullOrEmpty(appDir))
+            {
+                foreach (var key in new[] { "LD_LIBRARY_PATH", "PATH", "XDG_DATA_DIRS" })
+                {
+                    if (start.Environment.TryGetValue(key, out var value) && value is not null)
+                    {
+                        var paths = value.Split(':').Where(path => !Path.IsPathFullyQualified(path) || !FileSystem.IsWithin(path, appDir));
+                        start.Environment[key] = string.Join(':', paths);
+                    }
+                }
+            }
+            foreach (var key in new[] { "APPDIR", "APPIMAGE", "ARGV0", "OWD" })
+            {
+                start.Environment.Remove(key);
+            }
+        }
     }
 }
