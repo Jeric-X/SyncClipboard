@@ -17,8 +17,13 @@ internal sealed class ConsoleUpdateInteraction : IUpdateInteraction
     private int progressPercent = -1;
 
     public ConsoleUpdateInteraction(string language, TextReader? input = null, TextWriter? output = null)
+        : this(UpdaterText.ForLanguage(language), input, output)
     {
-        text = UpdaterText.ForLanguage(language);
+    }
+
+    internal ConsoleUpdateInteraction(UpdaterText text, TextReader? input = null, TextWriter? output = null)
+    {
+        this.text = text;
         this.input = input ?? Console.In;
         this.output = output ?? Console.Out;
         waitForAcknowledgement = input is null && !Console.IsInputRedirected;

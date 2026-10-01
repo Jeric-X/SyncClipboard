@@ -10,7 +10,7 @@ public class UpdaterSpaceTests
     {
         if (!OperatingSystem.IsWindows())
             Assert.Inconclusive("Windows UNC path test.");
-        Assert.Throws<IOException>(() => WindowsZipPackage.CheckSpace(
+        Assert.Throws<IOException>(() => PackageFiles.CheckSpace(
             @"\\127.0.0.1\SyncClipboard-unknown-share\installation", 1));
     }
 }

@@ -183,14 +183,22 @@ public class UpdateInstallationTests
     [TestMethod]
     public void WorkerArguments_PreservePathsAndDigestWithoutReadingPackage()
     {
-        var target = Path.GetFullPath(Env.ProgramDirectory);
+        var programDirectory = Path.GetFullPath(Env.ProgramDirectory);
+        var target = programDirectory;
+        if (OperatingSystem.IsMacOS())
+        {
+            target = Path.Combine(directory, "SyncClipboard.app");
+            programDirectory = Path.Combine(target, "Contents", "MonoBundle");
+            Directory.CreateDirectory(programDirectory);
+            File.WriteAllText(Path.Combine(target, "Contents", "Info.plist"), "bundle");
+        }
         var workspace = Path.Combine(directory, "workspace");
-        var updater = Path.Combine(workspace, "SyncClipboard.Updater.exe");
+        var updater = Path.Combine(workspace, OperatingSystem.IsMacOS() ? "SyncClipboard.Updater" : "SyncClipboard.Updater.exe");
         var package = Path.Combine(directory, "package with spaces 中文.zip");
         var digest = "sha256:" + new string('B', 64);
         var request = new UpdateInstallRequest(package, digest);
 
-        var start = FileReplacementPackageInstaller.CreateStartInfo(request, workspace);
+        var start = FileReplacementPackageInstaller.CreateStartInfo(request, workspace, programDirectory);
         var arguments = start.ArgumentList.ToArray();
 
         Assert.AreEqual(updater, start.FileName);
@@ -200,14 +208,18 @@ public class UpdateInstallationTests
         Assert.AreEqual(package, arguments[Array.IndexOf(arguments, "--package-path") + 1]);
         Assert.AreEqual(digest, arguments[Array.IndexOf(arguments, "--digest") + 1]);
         Assert.AreEqual(target, arguments[Array.IndexOf(arguments, "--target") + 1]);
-        Assert.AreEqual(OperatingSystem.IsWindows() ? Path.Combine(target, "SyncClipboard.exe") : Env.ProgramPath,
-            arguments[Array.IndexOf(arguments, "--executable") + 1]);
+        if (OperatingSystem.IsMacOS() || OperatingSystem.IsWindows())
+        {
+            var parsed = SyncClipboard.Updater.UpdateArguments.Parse(arguments);
+            Assert.AreEqual(Path.TrimEndingDirectorySeparator(target), parsed.Target);
+        }
         Assert.AreEqual(Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture),
             arguments[Array.IndexOf(arguments, "--process-id") + 1]);
         var appElevated = OperatingSystem.IsWindows() && Env.IsRunningAsAdministrator;
         Assert.AreEqual(appElevated ? "true" : "false",
             arguments[Array.IndexOf(arguments, "--app-elevated") + 1]);
-        Assert.IsEmpty(Directory.GetFileSystemEntries(directory));
+        Assert.IsFalse(File.Exists(package));
+        Assert.IsFalse(Directory.Exists(workspace));
     }
 
     [TestMethod]

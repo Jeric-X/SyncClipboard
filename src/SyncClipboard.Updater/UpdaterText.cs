@@ -31,10 +31,9 @@ internal sealed class UpdaterText
     public string Help => $"""
         {Title}
         SyncClipboard.Updater [--smoke-test]
-        --package-path <zip>
+        --package-path <zip|dmg>
         --digest sha256:<hash>
         --target <directory>
-        --executable <SyncClipboard.exe>
         --process-id <pid>
         --work-dir <workspace>
         [--language <language>]
@@ -50,13 +49,16 @@ internal sealed class UpdaterText
         ? "请从 SyncClipboard 启动更新。"
         : "Start updates from SyncClipboard.";
 
-    public string InstallationNotImplemented => isChinese
-        ? "更新功能尚未接入。"
-        : "Installation is not implemented yet.";
+    public string UnsupportedPlatform => isChinese
+        ? "此平台尚不支持自动安装更新。"
+        : "Automatic installation is not supported on this platform yet.";
 
-    public string WindowsOnly => isChinese
-        ? "仅支持在 Windows 上安装 ZIP 更新包。"
-        : "ZIP installation is supported on Windows only.";
+    public string DetachImage => isChinese ? "卸载磁盘映像: " : "Detach disk image: ";
+    public string CommandFailed => isChinese ? "命令执行失败: " : "Command failed: ";
+    public string InvalidAppBundle => isChinese ? "无效的 SyncClipboard 应用包。" : "Invalid SyncClipboard app bundle.";
+    public string DataInsideBundle => isChinese
+        ? "请先将用户数据移出应用包，再安装更新: "
+        : "Move user data outside the app bundle before installing the update: ";
 
     public string Preparing => isChinese
         ? "复制并校验更新包"
@@ -89,6 +91,12 @@ internal sealed class UpdaterText
     public string No => isChinese
         ? "否"
         : "No";
+
+    public string Cancel => isChinese ? "取消" : "Cancel";
+
+    public string ConfirmClose => isChinese
+        ? "更新正在进行，强行终止可能导致安装异常"
+        : "An update is in progress. Forcing it to stop may leave the installation incomplete.";
 
     public string Retry => isChinese
         ? "重试"
@@ -265,10 +273,6 @@ internal sealed class UpdaterText
     public string InvalidAppElevated => isChinese
         ? "--app-elevated 必须为 true 或 false。"
         : "--app-elevated must be true or false.";
-
-    public string InvalidExecutable => isChinese
-        ? "主程序必须为安装目录中的 SyncClipboard.exe。"
-        : "The application executable must be SyncClipboard.exe in the installation directory.";
 
     public string MissingTarget => isChinese
         ? "安装目录不存在。"
