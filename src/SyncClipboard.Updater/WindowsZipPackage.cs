@@ -99,7 +99,6 @@ internal static class WindowsZipPackage
     {
         var executable = Path.Combine(stage, "SyncClipboard.exe");
         ValidateArchitecture(executable);
-        ValidateArchitecture(Path.Combine(stage, "SyncClipboard.Updater.exe"));
         using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(stage, "update_info.json")));
         var info = document.RootElement.GetProperty("UpdateInfo");
         if (info.GetProperty("manage_type").GetString() != "manual" || info.GetProperty("update_src").GetString() != "github"

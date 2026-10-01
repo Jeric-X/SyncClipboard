@@ -21,22 +21,6 @@ internal static class Program
             {
                 if (!OperatingSystem.IsWindows())
                     throw new PlatformNotSupportedException(UpdaterText.Current.WindowsOnly);
-                if (args is ["--cleanup-work", var workspace, "--wait-pid", var pid, "--wait-start", var start, "--language", var language])
-                {
-                    var cleanupInteraction = new ConsoleUpdateInteraction(language);
-                    try
-                    {
-                        UpdateWorker.CleanupAsync(workspace, int.Parse(pid, System.Globalization.CultureInfo.InvariantCulture),
-                            long.Parse(start, System.Globalization.CultureInfo.InvariantCulture), cleanupInteraction.AskFailureActionAsync)
-                            .GetAwaiter().GetResult();
-                    }
-                    catch (Exception error)
-                    {
-                        cleanupInteraction.ShowResultAsync(new UpdateResult(1, error.Message, workspace)).GetAwaiter().GetResult();
-                        return 1;
-                    }
-                    return 0;
-                }
                 var update = UpdateArguments.Parse(args);
                 var interaction = new ConsoleUpdateInteraction(update.Language, update.Elevated);
                 return UpdateWorker.RunAsync(update, interaction, CancellationToken.None).GetAwaiter().GetResult();

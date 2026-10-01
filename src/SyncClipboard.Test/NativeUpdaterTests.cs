@@ -613,7 +613,7 @@ public class NativeUpdaterTests
     {
         if (linkedRoot && OperatingSystem.IsWindows())
             Assert.Inconclusive("Symbolic link creation requires a separate Windows privilege.");
-        await Assert.ThrowsAsync<IOException>(() => UpdateWorker.CleanupAsync(target, int.MaxValue, 0));
+        await Assert.ThrowsAsync<IOException>(() => UpdateWorker.CleanupAsync(target));
         var root = Path.Combine(directory, "SyncClipboard-updates");
         if (linkedRoot)
             Directory.CreateSymbolicLink(root, Directory.CreateDirectory(Path.Combine(directory, "actual-work")).FullName);
@@ -621,9 +621,44 @@ public class NativeUpdaterTests
         Directory.CreateDirectory(workspace);
         File.WriteAllText(Path.Combine(workspace, ".syncclipboard-update"), "SyncClipboard updater workspace v1");
         File.WriteAllText(Path.Combine(workspace, "backup"), "old");
-        await UpdateWorker.CleanupAsync(workspace, int.MaxValue, 0);
+        await UpdateWorker.CleanupAsync(workspace);
         Assert.IsFalse(Directory.Exists(workspace));
         Assert.IsTrue(Directory.Exists(target));
+    }
+
+    [TestMethod]
+    public async Task SelfCleanup_WaitsForExecutableReleaseAndPreservesSpecialCharactersInPath()
+    {
+        if (!OperatingSystem.IsWindows())
+            Assert.Inconclusive("Windows command process cleanup test.");
+
+        var root = Path.Combine(directory, "cleanup & %i% ! literal (test)", "SyncClipboard-updates");
+        var workspace = Directory.CreateDirectory(Path.Combine(root, Guid.NewGuid().ToString("N"))).FullName;
+        var updater = Path.Combine(workspace, "SyncClipboard.Updater.exe");
+        File.WriteAllText(Path.Combine(workspace, ".syncclipboard-update"), "SyncClipboard updater workspace v1");
+        using var locked = new FileStream(updater, FileMode.CreateNew, FileAccess.Write, FileShare.Read);
+        using var process = Process.Start(UpdateWorker.CreateSelfCleanupStartInfo(workspace))!;
+        try
+        {
+            await Task.Delay(300, TestContext.CancellationTokenSource.Token);
+            Assert.IsFalse(process.HasExited);
+            Assert.IsTrue(File.Exists(updater));
+
+            locked.Dispose();
+            await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token)
+                .WaitAsync(TimeSpan.FromSeconds(10), TestContext.CancellationTokenSource.Token);
+            Assert.AreEqual(0, process.ExitCode);
+            Assert.IsFalse(Directory.Exists(workspace));
+            Assert.IsTrue(Directory.Exists(target));
+        }
+        finally
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
+            }
+        }
     }
 
     [TestMethod]
@@ -778,7 +813,9 @@ public class NativeUpdaterTests
     }
 
     [TestMethod]
-    public async Task NativeAotUpdater_StartsFromPreparedWorkspaceInstallsRestartsAndCleansWorkspace()
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task NativeAotUpdater_StartsFromPreparedWorkspaceInstallsRestartsAndCleansWorkspace(bool packageHasUpdater)
     {
         if (!OperatingSystem.IsWindows())
             Assert.Inconclusive("Windows NativeAOT process integration test.");
@@ -789,8 +826,10 @@ public class NativeUpdaterTests
         foreach (var name in new[] { "SyncClipboard.exe", "SyncClipboard.Updater.exe" })
         {
             File.Copy(native, Path.Combine(target, name));
-            File.Copy(native, Path.Combine(stage, name));
         }
+        File.Copy(native, Path.Combine(stage, "SyncClipboard.exe"));
+        if (packageHasUpdater)
+            File.WriteAllText(Path.Combine(stage, "SyncClipboard.Updater.exe"), "not an executable");
         const string packageName = "SyncClipboard_win_x64_portable.zip";
         File.WriteAllText(Path.Combine(stage, "update_info.json"), JsonSerializer.Serialize(new
         { UpdateInfo = new { manage_type = "manual", update_src = "github", package_name = packageName } }));

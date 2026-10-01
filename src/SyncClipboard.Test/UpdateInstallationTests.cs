@@ -260,18 +260,41 @@ public class UpdateInstallationTests
     public void Factory_SelectsWindowsZipInstaller(
         string manageType, string source, string packageName, bool isWindows, bool supported)
     {
+        File.WriteAllText(Path.Combine(directory, "SyncClipboard.Updater.exe"), "updater");
         var installer = UpdateInstallerFactory.Create(new UpdateInfoConfig
         {
             ManageType = manageType,
             UpdateSrc = source,
             PackageName = packageName
-        }, isWindows);
+        }, isWindows, directory);
 
         Assert.AreEqual(supported, installer is FileReplacementPackageInstaller);
         if (!supported)
             Assert.IsNull(installer);
-        // Selection reports functionality without probing files or installation permissions.
-        Assert.IsEmpty(Directory.GetFileSystemEntries(directory));
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void MissingUpdater_OffersOpenFolderInsteadOfInstallation(bool directoryAtUpdaterPath)
+    {
+        if (directoryAtUpdaterPath)
+            Directory.CreateDirectory(Path.Combine(directory, "SyncClipboard.Updater.exe"));
+
+        var installer = UpdateInstallerFactory.Create(new UpdateInfoConfig
+        {
+            ManageType = UpdateInfoConfig.TypeManual,
+            UpdateSrc = "github",
+            PackageName = "SyncClipboard_win_x64_portable.zip"
+        }, true, directory);
+        Assert.IsNull(installer);
+
+        var checker = CreateChecker(installer);
+        SetDownloadedStatus(checker);
+
+        Assert.AreEqual(UpdaterState.Downloaded, checker.CurrentState.State);
+        Assert.AreEqual(SyncClipboard.Core.I18n.Strings.OpenFolder, checker.CurrentState.ActionText);
+        Assert.IsNotNull(checker.CurrentState.ManualAction);
     }
 
     [TestMethod]
@@ -288,7 +311,9 @@ public class UpdateInstallationTests
             PackageName = "SyncClipboard_win_x64_portable.zip"
         });
 
-        Assert.AreEqual(OperatingSystem.IsWindows(), installer is FileReplacementPackageInstaller);
+        var supported = OperatingSystem.IsWindows()
+            && File.Exists(Path.Combine(Env.ProgramDirectory, "SyncClipboard.Updater.exe"));
+        Assert.AreEqual(supported, installer is FileReplacementPackageInstaller);
         Assert.IsNull(provider.GetService<IUpdateInstaller>());
     }
 
