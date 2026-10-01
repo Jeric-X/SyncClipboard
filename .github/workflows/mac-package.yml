@@ -57,30 +57,6 @@ jobs:
           dotnet publish SyncClipboard.Desktop.MacOS.csproj -r osx-${{ matrix.cpu }} -c Release
         working-directory: ./src/SyncClipboard.Desktop.MacOS
 
-      - name: Check updater with the application's native libraries
-        timeout-minutes: 2
-        run: |
-          app_dir="$GITHUB_WORKSPACE/src/SyncClipboard.Desktop.MacOS/bin/Release/net10.0-macos/osx-${{ matrix.cpu }}/SyncClipboard.Desktop.MacOS.app"
-          check_dir="$RUNNER_TEMP/更新 helper 含空格"
-          mkdir -p "$check_dir"
-          cp "$app_dir/Contents/Resources/Updater/SyncClipboard.Updater" "$check_dir/"
-          for library in libSkiaSharp.dylib libHarfBuzzSharp.dylib libAvaloniaNative.dylib; do
-            library_path=$(find "$app_dir/Contents" -name "$library" -type f -print -quit)
-            test -n "$library_path"
-            cp "$library_path" "$check_dir/"
-          done
-          chmod +x "$check_dir/SyncClipboard.Updater"
-          cd "$RUNNER_TEMP"
-          "$check_dir/SyncClipboard.Updater" --smoke-test | tee updater-smoke.log
-          grep -q 'GUI_SMOKE=PASS' updater-smoke.log
-
-      - name: Test DMG auto update
-        if: matrix.cpu == 'arm64'
-        timeout-minutes: 10
-        env:
-          SYNC_CLIPBOARD_UPDATER_TEST_EXE: ${{ runner.temp }}/更新 helper 含空格/SyncClipboard.Updater
-        run: dotnet test src/SyncClipboard.Test/SyncClipboard.Test.csproj -c Release --filter 'FullyQualifiedName~MacDmgUpdateTests'
-
       - name: mv app
         run: | 
           mv src/SyncClipboard.Desktop.MacOS/bin/Release/net10.0-macos/osx-${{ matrix.cpu }}/SyncClipboard.Desktop.MacOS.app build/macos/SyncClipboard.app

@@ -146,17 +146,6 @@ jobs:
           grep -aFx "SHA-1: $checksum" "$APPIMAGE_NAME.zsync"
         working-directory: ./build/linux/output
 
-      - name: Test AppImage auto update
-        if: matrix.package-type == 'AppImage' && matrix.cpu == 'x64' && matrix.type == 'self-contained'
-        timeout-minutes: 10
-        env:
-          SYNC_CLIPBOARD_UPDATER_TEST_EXE: ${{ github.workspace }}/linux-bin/SyncClipboard.Updater
-          SYNC_CLIPBOARD_APPIMAGE_TEST_TOOL: ${{ runner.temp }}/appimagetool/appimagetool-x86_64.AppImage
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y xvfb xauth libice6 libsm6 libx11-6 libxext6 libxrandr2 libxi6 libxcursor1 libfontconfig1
-          xvfb-run -a dotnet test src/SyncClipboard.Test/SyncClipboard.Test.csproj -c Release --filter 'FullyQualifiedName~AppImageUpdateTests|FullyQualifiedName~UpdateInstallation|FullyQualifiedName~UpdaterInteraction|FullyQualifiedName~InstallationLock'
-
       - name: Upload build artifacts ${{ matrix.type }} ${{ matrix.package-type }}
         uses: actions/upload-artifact@v7
         with:

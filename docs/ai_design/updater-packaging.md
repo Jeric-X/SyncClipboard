@@ -31,6 +31,8 @@ WinUI 自包含输出的 `SyncClipboard.pri` 含合并后的主题资源，复�
 
 ## 验证
 
-Core 测试通过交互接口验证更新流程，不再依赖控制台或界面程序集。Windows 构建 CI 仅负责构建和打包，不安装 Windows App SDK 运行库或执行更新器运行检查。原生集成测试保留为手动验证：从主程序输出准备临时目录，检查 NativeAOT PE、真实 WinUI 窗口及对话框，并执行 ZIP 安装、保留配置、重启和清理。重启使用独立 NativeAOT 测试程序，不启动真实 SyncClipboard。
+Core 测试通过交互接口验证更新逻辑，在 CI 中独立运行。更新器的界面启动、安装、配置保留、重启和清理目前通过手动集成测试验证。
 
 更改 Windows App SDK、WinUI 控件或 Avalonia 版本后，应重新验证原生依赖集合。运行库初始化遵循 [Microsoft 官方文档](https://learn.microsoft.com/windows/apps/windows-app-sdk/use-windows-app-sdk-run-time)。
+
+待实现：在各平台实现集成冒烟测试。
