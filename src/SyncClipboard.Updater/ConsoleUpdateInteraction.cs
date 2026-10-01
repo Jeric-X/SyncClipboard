@@ -10,7 +10,11 @@ internal sealed class ConsoleUpdateInteraction : IUpdateInteraction
     private readonly TextReader input;
     private readonly TextWriter output;
     private readonly bool waitForAcknowledgement;
+    private readonly bool useProgressBar;
     private bool usePrompts;
+    private bool progressLineOpen;
+    private string? progressPhase;
+    private int progressPercent = -1;
 
     public ConsoleUpdateInteraction(string language, TextReader? input = null, TextWriter? output = null)
     {
@@ -19,6 +23,7 @@ internal sealed class ConsoleUpdateInteraction : IUpdateInteraction
         this.output = output ?? Console.Out;
         waitForAcknowledgement = input is null && !Console.IsInputRedirected;
         usePrompts = input is null && output is null && !Console.IsInputRedirected && !Console.IsOutputRedirected;
+        useProgressBar = usePrompts;
         if (usePrompts)
         {
             Prompt.ConsoleDriverFactory = () => new UpdaterConsoleDriver(new DefaultConsoleDriver());
@@ -28,6 +33,12 @@ internal sealed class ConsoleUpdateInteraction : IUpdateInteraction
 
     public void Report(string phase, int percent)
     {
+        percent = Math.Clamp(percent, -1, 100);
+        if (phase == progressPhase && percent == progressPercent)
+            return;
+        var phaseChanged = phase != progressPhase;
+        progressPhase = phase;
+        progressPercent = percent;
         var message = phase switch
         {
             "preparing" => text.Preparing,
@@ -37,7 +48,28 @@ internal sealed class ConsoleUpdateInteraction : IUpdateInteraction
             "restoring" => text.Restoring,
             _ => phase
         };
-        WriteLine(percent < 0 ? message : $"{message}: {percent}%");
+        if (!useProgressBar || percent < 0)
+        {
+            WriteLine(percent < 0 ? message : $"{message}: {percent}%");
+            return;
+        }
+
+        if (phaseChanged || !progressLineOpen)
+            WriteLine(message);
+        try
+        {
+            const int width = 24;
+            var filled = percent * width / 100;
+            output.Write($"\r[{new string('█', filled)}{new string('-', width - filled)}] {percent,3}%");
+            output.Flush();
+            progressLineOpen = true;
+            if (percent == 100)
+                FinishProgressLine();
+        }
+        catch (IOException error)
+        {
+            Debug.WriteLine(error);
+        }
     }
 
     public async Task<ForceExitAction> ConfirmForceExitAsync(CancellationToken token)
@@ -134,6 +166,7 @@ internal sealed class ConsoleUpdateInteraction : IUpdateInteraction
             return false;
         try
         {
+            FinishProgressLine();
             result = prompt();
             return true;
         }
@@ -155,11 +188,20 @@ internal sealed class ConsoleUpdateInteraction : IUpdateInteraction
     {
         try
         {
+            FinishProgressLine();
             output.WriteLine(text);
         }
         catch (IOException error)
         {
             Debug.WriteLine(error);
         }
+    }
+
+    private void FinishProgressLine()
+    {
+        if (!progressLineOpen)
+            return;
+        output.WriteLine();
+        progressLineOpen = false;
     }
 }

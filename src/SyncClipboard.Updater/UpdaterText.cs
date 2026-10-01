@@ -79,8 +79,8 @@ internal sealed class UpdaterText
         : "Restore the previous version";
 
     public string ConfirmForceExit => isChinese
-        ? "主程序等待 10 秒仍未退出。是否强制退出并继续更新？未保存的内容可能丢失。"
-        : "SyncClipboard has not exited after 10 seconds. Force it to exit and continue updating? Unsaved changes may be lost.";
+        ? "主程序仍未退出。是否强制退出并继续更新？"
+        : "SyncClipboard has not exited. Force it to exit and continue updating?";
 
     public string Yes => isChinese
         ? "是"
