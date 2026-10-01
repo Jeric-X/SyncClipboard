@@ -17,9 +17,11 @@ namespace SyncClipboard.Test;
 [TestClass]
 public class InputPermissionTests
 {
+    public TestContext TestContext { get; set; } = null!;
+
     internal static InputPermissionProvider CreatePermissionProvider(ILogger logger, Action requestAccessibilityPermission,
         bool isMacOS = true, Func<bool>? isAccessibilityEnabled = null,
-        Func<Task<bool>>? confirm = null, Action? openSettings = null)
+        Func<Task<bool>>? confirm = null, Action? openSettings = null, Func<Task>? resetPermission = null)
     {
         var dispatcher = new Mock<IThreadDispatcher>();
         dispatcher.Setup(x => x.RunOnMainThreadAsync(It.IsAny<Func<Task>>()))
@@ -29,7 +31,8 @@ public class InputPermissionTests
             Strings.AccessibilityPermissionRequestMessage, Strings.RequestPermission, Strings.Cancel))
             .Returns(() => confirm?.Invoke() ?? Task.FromResult(true));
         return new InputPermissionProvider(logger, dispatcher.Object, dialog.Object,
-            openSettings ?? (() => { }), requestAccessibilityPermission, isMacOS, isAccessibilityEnabled);
+            openSettings ?? (() => { }), requestAccessibilityPermission, resetPermission ?? (() => Task.CompletedTask),
+            isMacOS, isAccessibilityEnabled);
     }
 
     [TestMethod]
@@ -50,6 +53,10 @@ public class InputPermissionTests
         {
             Assert.IsFalse(provider!.HasRequestedAccessibilityPermission);
             events.Add("settings");
+        }, resetPermission: () =>
+        {
+            events.Add("reset");
+            return Task.CompletedTask;
         });
         provider.PropertyChanged += (_, e) =>
         {
@@ -69,8 +76,65 @@ public class InputPermissionTests
         confirmation.SetResult(true);
         Assert.IsTrue(provider.HasRequestedAccessibilityPermission);
         Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
-        string[] expected = ["dialog", "dialog", "settings", "request", "requested"];
+        string[] expected = ["dialog", "dialog", "reset", "settings", "request", "requested"];
         CollectionAssert.AreEqual(expected, events);
+    }
+
+    [TestMethod]
+    public async Task AccessibilityRequest_WaitsForReset_AndCoalescesRequestsWhileResetting()
+    {
+        var reset = new TaskCompletionSource();
+        var requested = new TaskCompletionSource();
+        var events = new List<string>();
+        var provider = CreatePermissionProvider(Mock.Of<ILogger>(), () => events.Add("request"),
+            isAccessibilityEnabled: () => false, openSettings: () => events.Add("settings"), resetPermission: () =>
+            {
+                events.Add("reset");
+                return reset.Task;
+            });
+        provider.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(provider.HasRequestedAccessibilityPermission)) requested.SetResult();
+        };
+
+        Parallel.For(0, 10, _ => Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission()));
+        string[] resettingEvents = ["reset"];
+        CollectionAssert.AreEqual(resettingEvents, events);
+        Assert.IsFalse(provider.HasRequestedAccessibilityPermission);
+
+        reset.SetResult();
+        await requested.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
+        string[] requestedEvents = ["reset", "settings", "request"];
+        CollectionAssert.AreEqual(requestedEvents, events);
+        Assert.IsTrue(provider.HasRequestedAccessibilityPermission);
+    }
+
+    [TestMethod]
+    public void AccessibilityResetFailure_IsLogged_AndAllowsRetryBeforeRequesting()
+    {
+        var resets = 0;
+        var requests = 0;
+        var settings = 0;
+        var logger = new Mock<ILogger>();
+        var provider = CreatePermissionProvider(logger.Object, () => requests++,
+            isAccessibilityEnabled: () => false, openSettings: () => settings++, resetPermission: () =>
+            {
+                resets++;
+                return resets == 1 ? Task.FromException(new InvalidOperationException("Reset failed")) : Task.CompletedTask;
+            });
+
+        Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
+        Assert.IsFalse(provider.HasRequestedAccessibilityPermission);
+        Assert.AreEqual(0, settings);
+        Assert.AreEqual(0, requests);
+        logger.Verify(x => x.Write(nameof(InputPermissionProvider), It.Is<string>(message => message.Contains("Reset failed"))),
+            Times.Once);
+
+        Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
+        Assert.IsTrue(provider.HasRequestedAccessibilityPermission);
+        Assert.AreEqual(2, resets);
+        Assert.AreEqual(1, settings);
+        Assert.AreEqual(1, requests);
     }
 
     [TestMethod]
@@ -107,7 +171,12 @@ public class InputPermissionTests
         var granted = true;
         var requests = 0;
         var provider = InputPermissionTests.CreatePermissionProvider(Mock.Of<ILogger>(),
-            () => Interlocked.Increment(ref requests), isAccessibilityEnabled: () => granted);
+            () => Interlocked.Increment(ref requests), isAccessibilityEnabled: () => granted,
+            resetPermission: () =>
+            {
+                Assert.IsFalse(granted, "Existing authorization must not be reset during permission checks.");
+                return Task.CompletedTask;
+            });
 
         Assert.IsTrue(provider.CheckAndRequestAccessibilityPermission());
         Assert.AreEqual(0, requests);
@@ -128,7 +197,8 @@ public class InputPermissionTests
     public void AccessibilityRequest_OnOtherPlatforms_DoesNotRequest()
     {
         var requests = 0;
-        var provider = InputPermissionTests.CreatePermissionProvider(Mock.Of<ILogger>(), () => requests++, isMacOS: false);
+        var provider = InputPermissionTests.CreatePermissionProvider(Mock.Of<ILogger>(), () => requests++, isMacOS: false,
+            resetPermission: () => throw new AssertFailedException("Other platforms must not reset macOS permissions."));
 
         Assert.IsTrue(provider.CheckAndRequestAccessibilityPermission());
         Assert.IsFalse(provider.HasRequestedAccessibilityPermission);
