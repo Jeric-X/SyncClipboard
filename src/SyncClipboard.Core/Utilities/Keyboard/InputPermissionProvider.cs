@@ -88,6 +88,7 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
         catch (OperationCanceledException)
         {
             if (!process.HasExited) process.Kill();
+            await process.WaitForExitAsync(CancellationToken.None);
             throw new TimeoutException("Accessibility permission reset timed out.");
         }
 
@@ -138,6 +139,7 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
                 if (HasRequestedAccessibilityPermission) return;
                 if (!await _dialog.ShowConfirmationAsync(Strings.AccessibilityPermission,
                     Strings.AccessibilityPermissionRequestMessage, Strings.RequestPermission, Strings.Cancel)) return;
+                if (GetPermissionState(_isAccessibilityEnabled) == InputPermissionState.Available) return;
 
                 await _resetAccessibilityPermission();
                 _openAccessibilitySettings();

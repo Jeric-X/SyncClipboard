@@ -81,6 +81,40 @@ public class InputPermissionTests
     }
 
     [TestMethod]
+    public void AccessibilityGrantedDuringConfirmation_IsPreserved_AndLaterRevocationAllowsRequest()
+    {
+        var confirmation = new TaskCompletionSource<bool>();
+        var granted = false;
+        var resets = 0;
+        var requests = 0;
+        var settings = 0;
+        var provider = CreatePermissionProvider(Mock.Of<ILogger>(), () => requests++,
+            isAccessibilityEnabled: () => granted, confirm: () => confirmation.Task,
+            openSettings: () => settings++, resetPermission: () =>
+            {
+                resets++;
+                return Task.CompletedTask;
+            });
+
+        Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
+        granted = true;
+        confirmation.SetResult(true);
+
+        Assert.AreEqual(0, resets);
+        Assert.AreEqual(0, requests);
+        Assert.AreEqual(0, settings);
+        Assert.IsFalse(provider.HasRequestedAccessibilityPermission);
+        Assert.IsTrue(provider.CheckAndRequestAccessibilityPermission());
+
+        granted = false;
+        Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
+        Assert.AreEqual(1, resets);
+        Assert.AreEqual(1, requests);
+        Assert.AreEqual(1, settings);
+        Assert.IsTrue(provider.HasRequestedAccessibilityPermission);
+    }
+
+    [TestMethod]
     public async Task AccessibilityRequest_WaitsForReset_AndCoalescesRequestsWhileResetting()
     {
         var reset = new TaskCompletionSource();
