@@ -2,7 +2,7 @@ using SyncClipboard.Core.Utilities;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 
-namespace SyncClipboard.Updater;
+namespace SyncClipboard.Updater.Dmg;
 
 internal sealed class MacDmgPackage(string bundlePath, string mountPath)
 {

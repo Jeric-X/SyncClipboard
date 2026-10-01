@@ -1,3 +1,4 @@
+using SyncClipboard.Updater.Zip;
 using SyncClipboard.Updater;
 using SyncClipboard.Core.Utilities.Updater;
 using System.Diagnostics;
@@ -80,8 +81,6 @@ public class NativeUpdaterTests
         Assert.Throws<ArgumentException>(() => UpdateArguments.Parse([.. args, "--unknown", "value"]));
         Assert.Throws<ArgumentException>(() => UpdateArguments.Parse([.. args, "--app-elevated", "true"]));
         Assert.Throws<ArgumentException>(() => UpdateArguments.Parse((Arguments() with { Digest = "sha256:bad" }).ToCommandLine().ToArray()));
-        Assert.Throws<ArgumentException>(() => UpdateArguments.Parse((Arguments() with { Executable = Path.Combine(directory, "other.exe") })
-            .ToCommandLine().ToArray()));
     }
 
     [TestMethod]
@@ -388,9 +387,9 @@ public class NativeUpdaterTests
         var interaction = new ConsoleUpdateInteraction("en", input: input, output: output);
         try
         {
-            Assert.IsTrue(await UpdateWorker.RequiresElevationAsync(target, false, interaction, TestContext.CancellationTokenSource.Token));
+            Assert.IsTrue(await UpdateWorker.RequiresElevationAsync([target], false, interaction, TestContext.CancellationTokenSource.Token));
             Assert.AreEqual("", output.ToString());
-            await Assert.ThrowsAsync<UpdateAbortedException>(() => UpdateWorker.RequiresElevationAsync(target, true, interaction,
+            await Assert.ThrowsAsync<UpdateAbortedException>(() => UpdateWorker.RequiresElevationAsync([target], true, interaction,
                 TestContext.CancellationTokenSource.Token));
             Assert.Contains(target, output.ToString());
         }
@@ -808,7 +807,7 @@ public class NativeUpdaterTests
         => FileReplacement.ApplyAsync(stage, target, Path.Combine(directory, "backup"), [], progress, token);
 
     private UpdateArguments Arguments() => new(Path.Combine(directory, "package 中文.zip"), "sha256:" + new string('A', 64),
-        target, Path.Combine(target, "SyncClipboard.exe"), int.MaxValue, "zh-CN", [Path.Combine(target, "custom")]);
+        target, int.MaxValue, "zh-CN", [Path.Combine(target, "custom")]);
 
     private string CreateZip(params (string Name, string Content)[] entries)
     {

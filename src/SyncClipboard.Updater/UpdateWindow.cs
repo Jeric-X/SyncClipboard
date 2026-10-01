@@ -14,9 +14,12 @@ internal sealed class UpdateWindow : Window, IUpdateInteraction
     private readonly ProgressBar progress = new() { Minimum = 0, Maximum = 100, Height = 12 };
     private readonly StackPanel actions = new() { Orientation = Orientation.Horizontal, Spacing = 12 };
     private readonly UpdaterText text = UpdaterText.Current;
+    private readonly CancellationTokenSource cancellation = new();
+    private Window? closeDialog;
     private bool running;
+    private int exitCode;
 
-    public UpdateWindow(bool smokeTest, UpdateArguments? update, IClassicDesktopStyleApplicationLifetime desktop)
+    public UpdateWindow(string[] args, IClassicDesktopStyleApplicationLifetime desktop)
     {
         Title = text.Title;
         Width = 620;
@@ -33,28 +36,101 @@ internal sealed class UpdateWindow : Window, IUpdateInteraction
             }
         };
         status.Text = text.StartFromApplication;
-        Closing += (_, _) =>
+        Closing += async (_, e) =>
         {
-            // Closing the updater means forced termination, just like closing the Windows console.
-            if (running)
-                Environment.Exit(3);
+            if (!running)
+                return;
+            e.Cancel = true;
+            if (closeDialog is not null)
+                return;
+            try
+            {
+                var choice = await ConfirmCloseAsync();
+                if (!running)
+                    return;
+                if (choice == UpdateFailureAction.Abort)
+                    Environment.Exit(3);
+                if (choice == UpdateFailureAction.Rollback)
+                {
+                    actions.Children.Clear();
+                    message.Text = string.Empty;
+                    status.Text = text.Restoring;
+                    progress.IsIndeterminate = true;
+                    await cancellation.CancelAsync();
+                }
+            }
+            catch (Exception error)
+            {
+                Program.ShowFatalError(error);
+            }
         };
         Opened += async (_, _) =>
         {
-            if (smokeTest)
+            try
             {
-                await Task.Delay(1000);
-                Console.WriteLine("GUI_SMOKE=PASS");
-                desktop.Shutdown(0);
+                if (args is ["--smoke-test"])
+                {
+                    await Task.Delay(1000);
+                    Console.WriteLine("GUI_SMOKE=PASS");
+                    desktop.Shutdown(0);
+                }
+                else if (args.Length != 0)
+                {
+                    running = true;
+                    exitCode = await Task.Run(() => Program.RunUpdateAsync(args, this, cancellation.Token));
+                    running = false;
+                    closeDialog?.Close();
+                    desktop.Shutdown(exitCode);
+                }
             }
-            else if (update is not null)
+            catch (Exception error)
             {
-                running = true;
-                var result = await Task.Run(() => UpdateWorker.RunAsync(update, this, CancellationToken.None));
                 running = false;
-                desktop.Shutdown(result);
+                closeDialog?.Close();
+                Program.ShowFatalError(error);
+                desktop.Shutdown(1);
             }
         };
+    }
+
+    private async Task<UpdateFailureAction?> ConfirmCloseAsync()
+    {
+        var dialog = new Window
+        {
+            Title = text.Title,
+            Width = 460,
+            SizeToContent = SizeToContent.Height,
+            CanResize = false,
+            WindowStartupLocation = WindowStartupLocation.CenterOwner
+        };
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
+        (string Label, UpdateFailureAction? Action)[] choices =
+        [
+            (text.Abort, UpdateFailureAction.Abort),
+            (text.Rollback, UpdateFailureAction.Rollback),
+            (text.Cancel, null)
+        ];
+        foreach (var (label, action) in choices)
+        {
+            var button = new Button { Content = label, IsDefault = action is null, IsCancel = action is null };
+            button.Click += (_, _) => dialog.Close(action);
+            buttons.Children.Add(button);
+        }
+        dialog.Content = new StackPanel
+        {
+            Margin = new Thickness(24),
+            Spacing = 20,
+            Children = { new TextBlock { Text = text.ConfirmClose, TextWrapping = TextWrapping.Wrap }, buttons }
+        };
+        closeDialog = dialog;
+        try
+        {
+            return await dialog.ShowDialog<UpdateFailureAction?>(this);
+        }
+        finally
+        {
+            closeDialog = null;
+        }
     }
 
     public void Report(string phase, int percent) => Dispatcher.UIThread.Post(() =>
@@ -92,8 +168,14 @@ internal sealed class UpdateWindow : Window, IUpdateInteraction
     {
         if (result.ExitCode == 0)
             return;
-        var details = result.CleanupIncomplete ? text.CleanupIncomplete : text.Failed;
-        details += "\n\n" + result.Error;
+        await Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            running = false;
+            exitCode = result.ExitCode;
+            status.Text = result.CleanupIncomplete ? text.CleanupIncomplete : text.Failed;
+            closeDialog?.Close();
+        });
+        var details = result.Error ?? text.Failed;
         if (result.BackupPath is not null)
             details += "\n\n" + text.BackupDirectory + result.BackupPath;
         if (result.WorkDirectory is not null)

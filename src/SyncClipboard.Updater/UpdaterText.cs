@@ -34,7 +34,6 @@ internal sealed class UpdaterText
         --package-path <zip|dmg>
         --digest sha256:<hash>
         --target <directory>
-        --executable <application executable>
         --process-id <pid>
         --work-dir <workspace>
         [--language <language>]
@@ -92,6 +91,12 @@ internal sealed class UpdaterText
     public string No => isChinese
         ? "否"
         : "No";
+
+    public string Cancel => isChinese ? "取消" : "Cancel";
+
+    public string ConfirmClose => isChinese
+        ? "更新正在进行。请选择终止更新、回滚到旧版本，或取消关闭。"
+        : "An update is in progress. Abort, roll back to the previous version, or cancel closing?";
 
     public string Retry => isChinese
         ? "重试"
@@ -268,10 +273,6 @@ internal sealed class UpdaterText
     public string InvalidAppElevated => isChinese
         ? "--app-elevated 必须为 true 或 false。"
         : "--app-elevated must be true or false.";
-
-    public string InvalidExecutable => isChinese
-        ? "主程序路径与安装目录不匹配。"
-        : "The application executable does not match the installation directory.";
 
     public string MissingTarget => isChinese
         ? "安装目录不存在。"

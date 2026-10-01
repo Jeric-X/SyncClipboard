@@ -4,7 +4,7 @@ using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 
-namespace SyncClipboard.Updater;
+namespace SyncClipboard.Updater.Zip;
 
 internal static class WindowsZipPackage
 {

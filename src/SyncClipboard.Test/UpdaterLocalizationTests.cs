@@ -76,7 +76,7 @@ public class UpdaterLocalizationTests
         using var output = new StringWriter();
         var interaction = new ConsoleUpdateInteraction(language, input: input, output: output);
         var update = new UpdateArguments("package.zip", "sha256:" + new string('A', 64), ".",
-            "SyncClipboard.exe", int.MaxValue, language, []);
+            int.MaxValue, language, []);
 
         var result = await UpdateWorker.RunAsync(update, interaction, TestContext.CancellationTokenSource.Token);
 

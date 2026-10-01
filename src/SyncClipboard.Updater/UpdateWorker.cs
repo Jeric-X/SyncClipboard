@@ -1,3 +1,5 @@
+using SyncClipboard.Updater.Zip;
+using SyncClipboard.Updater.Dmg;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Security.Cryptography;
@@ -33,8 +35,10 @@ internal static class UpdateWorker
                 MacDmgPackage.ValidateTarget(update);
             else
                 WindowsZipPackage.ValidateTarget(update);
-            var writeDirectory = OperatingSystem.IsMacOS() ? Path.GetDirectoryName(update.Target)! : update.Target;
-            var needsElevation = await RequiresElevationAsync(writeDirectory, update.Elevated, interaction, token);
+            string[] writeDirectories = OperatingSystem.IsMacOS()
+                ? [Path.GetDirectoryName(update.Target)!, update.Target]
+                : [update.Target];
+            var needsElevation = await RequiresElevationAsync(writeDirectories, update.Elevated, interaction, token);
             if (OperatingSystem.IsMacOS())
                 macReplacement = new MacBundleReplacement(update.Target,
                     Path.Combine(update.WorkDirectory, "backup", "SyncClipboard.app"), needsElevation);
@@ -75,7 +79,9 @@ internal static class UpdateWorker
             if (!recoveryRequired && error is not UpdateProcessExitException)
                 await RestartIfStoppedAsync(update);
             var exitCode = error is UpdateProcessExitException ? 3 : recoveryRequired ? RecoveryRequired : 1;
-            await interaction.ShowResultAsync(new UpdateResult(exitCode, error.Message, update.WorkDirectory, error switch
+            var message = error is OperationCanceledException && token.IsCancellationRequested
+                ? UpdaterText.Current.Canceled : error.Message;
+            await interaction.ShowResultAsync(new UpdateResult(exitCode, message, update.WorkDirectory, error switch
             {
                 UpdateRecoveryException recovery => recovery.BackupPath,
                 UpdateAbortedException aborted => aborted.BackupPath,
@@ -104,23 +110,28 @@ internal static class UpdateWorker
         return actualFile == expectedFile;
     }
 
-    internal static async Task<bool> RequiresElevationAsync(string target, bool elevated,
+    internal static async Task<bool> RequiresElevationAsync(string[] directories, bool elevated,
         IUpdateInteraction interaction, CancellationToken token)
     {
-        var needsElevation = false;
-        await UpdateIo.RunAsync(UpdaterText.Current.CheckWriteAccess + target, () =>
+        foreach (var directory in directories)
         {
-            try
+            var needsElevation = false;
+            await UpdateIo.RunAsync(UpdaterText.Current.CheckWriteAccess + directory, () =>
             {
-                ProbeDirectoryWriteAccess(target);
-            }
-            catch (UnauthorizedAccessException) when (!elevated)
-            {
-                needsElevation = true;
-            }
-            return Task.CompletedTask;
-        }, interaction.AskFailureActionAsync, token);
-        return needsElevation;
+                try
+                {
+                    ProbeDirectoryWriteAccess(directory);
+                }
+                catch (UnauthorizedAccessException) when (!elevated)
+                {
+                    needsElevation = true;
+                }
+                return Task.CompletedTask;
+            }, interaction.AskFailureActionAsync, token);
+            if (needsElevation)
+                return true;
+        }
+        return false;
     }
 
     internal static void ProbeDirectoryWriteAccess(string target)
@@ -291,7 +302,7 @@ internal static class UpdateWorker
         if (OperatingSystem.IsMacOS())
             await MacCommand.RunAsync("/usr/bin/open", ["-n", update.Target], CancellationToken.None);
         else if (OperatingSystem.IsWindows())
-            WindowsProcessLauncher.Start(update.Executable, update.Target, update.AppElevated);
+            WindowsProcessLauncher.Start(Path.Combine(update.Target, "SyncClipboard.exe"), update.Target, update.AppElevated);
         else
             throw new PlatformNotSupportedException(UpdaterText.Current.UnsupportedPlatform);
     }
@@ -322,7 +333,8 @@ internal static class UpdateWorker
         {
             Log(update, error.ToString());
             var cause = error is UpdateAbortedException ? error.InnerException ?? error : error;
-            result = new UpdateResult(1, cause.Message, update.WorkDirectory, macReplacement?.Backup, CleanupIncomplete: true);
+            var backup = Directory.Exists(macReplacement?.Backup) ? macReplacement.Backup : null;
+            result = new UpdateResult(1, cause.Message, update.WorkDirectory, backup, CleanupIncomplete: true);
         }
         await interaction.ShowResultAsync(result);
         return result.ExitCode;

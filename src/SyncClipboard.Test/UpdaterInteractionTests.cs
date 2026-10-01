@@ -59,12 +59,43 @@ public class UpdaterInteractionTests
         var interaction = new RecordingInteraction();
         var missing = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
         var update = new UpdateArguments("missing.zip", "sha256:" + new string('A', 64), missing,
-            Path.Combine(missing, "SyncClipboard.exe"), int.MaxValue, "en", []);
+            int.MaxValue, "en", []);
         var result = await UpdateWorker.RunAsync(update, interaction, TestContext.CancellationTokenSource.Token);
         Assert.AreEqual(1, result);
         Assert.IsNotNull(interaction.Result);
         Assert.AreEqual(1, interaction.Result.ExitCode);
         Assert.IsNotNull(interaction.Result.Error);
+    }
+
+    [TestMethod]
+    public async Task StartupFailure_DisplaysCauseAndWaitsForAcknowledgement()
+    {
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS())
+            Assert.Inconclusive("Requires an updater-supported platform.");
+        var shown = new TaskCompletionSource<UpdateResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var acknowledged = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var interaction = new RecordingInteraction
+        {
+            OnResult = result =>
+            {
+                shown.TrySetResult(result);
+                return acknowledged.Task;
+            }
+        };
+        var run = SyncClipboard.Updater.Program.RunUpdateAsync(["--digest", "invalid", "--language", "zh-CN"],
+            interaction, TestContext.CancellationTokenSource.Token);
+        try
+        {
+            var result = await shown.Task.WaitAsync(TestContext.CancellationTokenSource.Token);
+            Assert.AreEqual(1, result.ExitCode);
+            Assert.AreEqual(UpdaterText.ForLanguage("zh-CN").InvalidDigest, result.Error);
+            Assert.IsFalse(run.IsCompleted);
+        }
+        finally
+        {
+            acknowledged.TrySetResult();
+        }
+        Assert.AreEqual(1, await run);
     }
 
     [TestMethod]
@@ -100,7 +131,7 @@ public class UpdaterInteractionTests
         };
         try
         {
-            Assert.IsFalse(await UpdateWorker.RequiresElevationAsync(directory, false, interaction,
+            Assert.IsFalse(await UpdateWorker.RequiresElevationAsync([directory], false, interaction,
                 TestContext.CancellationTokenSource.Token));
             Assert.IsEmpty(Directory.GetFileSystemEntries(directory));
             Assert.AreEqual(1, prompts);
@@ -115,6 +146,7 @@ public class UpdaterInteractionTests
     private sealed class RecordingInteraction : IUpdateInteraction
     {
         public UpdateResult? Result { get; private set; }
+        public Func<UpdateResult, Task>? OnResult { get; init; }
         public UpdateFailureHandler? OnFailure { get; init; }
         public void Report(string phase, int percent) { }
         public Task<ForceExitAction> ConfirmForceExitAsync(CancellationToken token) => throw new AssertFailedException("Unexpected confirmation.");
@@ -123,7 +155,7 @@ public class UpdaterInteractionTests
         public Task ShowResultAsync(UpdateResult result)
         {
             Result = result;
-            return Task.CompletedTask;
+            return OnResult?.Invoke(result) ?? Task.CompletedTask;
         }
     }
 }

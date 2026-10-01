@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Principal;
 
-namespace SyncClipboard.Updater;
+namespace SyncClipboard.Updater.Zip;
 
 [SupportedOSPlatform("windows")]
 internal static class WindowsProcessLauncher

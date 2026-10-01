@@ -185,14 +185,12 @@ public class UpdateInstallationTests
     {
         var programDirectory = Path.GetFullPath(Env.ProgramDirectory);
         var target = programDirectory;
-        var executable = OperatingSystem.IsWindows() ? Path.Combine(target, "SyncClipboard.exe") : Env.ProgramPath;
         if (OperatingSystem.IsMacOS())
         {
             target = Path.Combine(directory, "SyncClipboard.app");
             programDirectory = Path.Combine(target, "Contents", "MonoBundle");
             Directory.CreateDirectory(programDirectory);
             File.WriteAllText(Path.Combine(target, "Contents", "Info.plist"), "bundle");
-            executable = Path.Combine(target, "Contents", "MacOS", "SyncClipboard.Desktop.MacOS");
         }
         var workspace = Path.Combine(directory, "workspace");
         var updater = Path.Combine(workspace, OperatingSystem.IsMacOS() ? "SyncClipboard.Updater" : "SyncClipboard.Updater.exe");
@@ -210,12 +208,10 @@ public class UpdateInstallationTests
         Assert.AreEqual(package, arguments[Array.IndexOf(arguments, "--package-path") + 1]);
         Assert.AreEqual(digest, arguments[Array.IndexOf(arguments, "--digest") + 1]);
         Assert.AreEqual(target, arguments[Array.IndexOf(arguments, "--target") + 1]);
-        Assert.AreEqual(executable, arguments[Array.IndexOf(arguments, "--executable") + 1]);
         if (OperatingSystem.IsMacOS() || OperatingSystem.IsWindows())
         {
             var parsed = SyncClipboard.Updater.UpdateArguments.Parse(arguments);
             Assert.AreEqual(Path.TrimEndingDirectorySeparator(target), parsed.Target);
-            Assert.AreEqual(executable, parsed.Executable);
         }
         Assert.AreEqual(Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture),
             arguments[Array.IndexOf(arguments, "--process-id") + 1]);

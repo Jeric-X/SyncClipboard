@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace SyncClipboard.Updater;
+namespace SyncClipboard.Updater.Dmg;
 
 internal static class MacCommand
 {

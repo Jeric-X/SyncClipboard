@@ -1,3 +1,4 @@
+using SyncClipboard.Updater.Dmg;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Updater;
@@ -62,6 +63,7 @@ public class MacDmgUpdateTests
     [DataRow("Retry")]
     [DataRow("Rollback")]
     [DataRow("Abort")]
+    [DataRow("CancelTask")]
     public async Task ReplacementFailure_OffersRetryRollbackOrAbortWithUsableBackup(string choice)
     {
         var target = await CreateBundleAsync(Path.Combine(directory, "installed", "SyncClipboard.app"), "old");
@@ -70,6 +72,7 @@ public class MacDmgUpdateTests
         var unreadable = Path.Combine(stage, "Contents", "Resources", "version");
         var originalMode = File.GetUnixFileMode(unreadable);
         var prompts = 0;
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Token);
         var interaction = new Interaction
         {
             OnReport = phase =>
@@ -82,16 +85,21 @@ public class MacDmgUpdateTests
                 prompts++;
                 Assert.IsTrue(canRollback);
                 File.SetUnixFileMode(unreadable, originalMode);
+                if (choice == "CancelTask")
+                {
+                    cancellation.Cancel();
+                    return Task.FromCanceled<UpdateFailureAction>(cancellation.Token);
+                }
                 return Task.FromResult(Enum.Parse<UpdateFailureAction>(choice));
             }
         };
         if (choice == "Retry")
-            await replacement.ApplyAsync(stage, interaction, Token);
-        else if (choice == "Rollback")
-            await Assert.ThrowsAsync<IOException>(() => replacement.ApplyAsync(stage, interaction, Token));
+            await replacement.ApplyAsync(stage, interaction, cancellation.Token);
+        else if (choice is "Rollback" or "CancelTask")
+            await Assert.ThrowsAsync<IOException>(() => replacement.ApplyAsync(stage, interaction, cancellation.Token));
         else
         {
-            var error = await Assert.ThrowsAsync<UpdateAbortedException>(() => replacement.ApplyAsync(stage, interaction, Token));
+            var error = await Assert.ThrowsAsync<UpdateAbortedException>(() => replacement.ApplyAsync(stage, interaction, cancellation.Token));
             Assert.AreEqual(replacement.Backup, error.BackupPath);
         }
         Assert.AreEqual(1, prompts);
@@ -99,6 +107,52 @@ public class MacDmgUpdateTests
         Assert.AreEqual(choice == "Retry" ? "new" : "old",
             File.ReadAllText(Path.Combine(remaining, "Contents", "Resources", "version")));
         await MacCommand.RunAsync("/usr/bin/codesign", ["--verify", "--deep", "--strict", remaining], Token);
+    }
+
+    [TestMethod]
+    public async Task DirectoryPreflight_RequestsElevationForReadOnlyBundleInWritableParent()
+    {
+        var bundle = Directory.CreateDirectory(Path.Combine(directory, "SyncClipboard.app")).FullName;
+        var mode = File.GetUnixFileMode(bundle);
+        File.SetUnixFileMode(bundle, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        try
+        {
+            Assert.IsTrue(await UpdateWorker.RequiresElevationAsync([directory, bundle], false, new Interaction(), Token));
+        }
+        finally
+        {
+            File.SetUnixFileMode(bundle, mode);
+        }
+    }
+
+    [TestMethod]
+    public async Task CleanupFailure_ReportsRemainingWorkspaceAfterBackupWasRemoved()
+    {
+        var workspace = Directory.CreateDirectory(Path.Combine(directory, "SyncClipboard-updates", Guid.NewGuid().ToString("N"))).FullName;
+        File.WriteAllText(Path.Combine(workspace, ".syncclipboard-update"), "SyncClipboard updater workspace v1");
+        var backup = Directory.CreateDirectory(Path.Combine(workspace, "backup", "SyncClipboard.app")).FullName;
+        File.WriteAllText(Path.Combine(backup, "old"), "old");
+        var remaining = Directory.CreateDirectory(Path.Combine(workspace, "remaining")).FullName;
+        File.WriteAllText(Path.Combine(remaining, "file"), "remaining");
+        var mode = File.GetUnixFileMode(remaining);
+        File.SetUnixFileMode(remaining, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        var interaction = new Interaction { OnFailure = (_, _, _, _) => Task.FromResult(UpdateFailureAction.Abort) };
+        var update = new UpdateArguments("update.dmg", "sha256:" + new string('A', 64), "SyncClipboard.app",
+            int.MaxValue, "en", [], WorkDirectory: workspace);
+        try
+        {
+            Assert.AreEqual(1, await UpdateWorker.CleanupAndReportAsync(update, interaction,
+                new MacBundleReplacement(update.Target, backup, false)));
+            Assert.IsNotNull(interaction.Result);
+            Assert.IsTrue(interaction.Result.CleanupIncomplete);
+            Assert.AreEqual(workspace, interaction.Result.WorkDirectory);
+            Assert.IsNull(interaction.Result.BackupPath);
+            Assert.IsTrue(File.Exists(Path.Combine(remaining, "file")));
+        }
+        finally
+        {
+            File.SetUnixFileMode(remaining, mode);
+        }
     }
 
     [TestMethod]
@@ -189,7 +243,7 @@ public class MacDmgUpdateTests
         var package = Path.Combine(directory, "update.dmg");
         await MacCommand.RunAsync("/usr/bin/hdiutil", ["create", "-srcfolder", source, "-format", "UDZO", package], Token);
         var digest = "sha256:" + Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(package, Token)));
-        return new UpdateArguments(package, digest, target, Path.Combine(target, "Contents", "MacOS", MacDmgPackage.ExecutableName),
+        return new UpdateArguments(package, digest, target,
             int.MaxValue, "en", [], directory);
     }
 
@@ -231,12 +285,17 @@ public class MacDmgUpdateTests
 
     private sealed class Interaction : IUpdateInteraction
     {
+        public UpdateResult? Result { get; private set; }
         public Action<string>? OnReport { get; init; }
         public UpdateFailureHandler? OnFailure { get; init; }
         public void Report(string phase, int percent) => OnReport?.Invoke(phase);
         public Task<ForceExitAction> ConfirmForceExitAsync(CancellationToken token) => Task.FromResult(ForceExitAction.No);
         public Task<UpdateFailureAction> AskFailureActionAsync(string path, Exception error, bool canRollback, CancellationToken token)
             => OnFailure?.Invoke(path, error, canRollback, token) ?? throw new AssertFailedException(path + ": " + error);
-        public Task ShowResultAsync(UpdateResult result) => Task.CompletedTask;
+        public Task ShowResultAsync(UpdateResult result)
+        {
+            Result = result;
+            return Task.CompletedTask;
+        }
     }
 }

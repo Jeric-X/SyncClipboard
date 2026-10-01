@@ -6,7 +6,6 @@ internal sealed record UpdateArguments(
     string PackagePath,
     string Digest,
     string Target,
-    string Executable,
     int ProcessId,
     string Language,
     string[] ProtectedPaths,
@@ -23,7 +22,6 @@ internal sealed record UpdateArguments(
         var processId = ParseProcessId(GetRequiredValue(values, "--process-id"));
         var target = Path.GetFullPath(GetRequiredValue(values, "--target"));
         target = Path.TrimEndingDirectorySeparator(target);
-        var executable = ParseExecutable(GetRequiredValue(values, "--executable"), target);
         var packagePath = Path.GetFullPath(GetRequiredValue(values, "--package-path"));
 
         var language = values.GetValueOrDefault("--language", "en");
@@ -41,7 +39,6 @@ internal sealed record UpdateArguments(
             PackagePath: packagePath,
             Digest: digest,
             Target: target,
-            Executable: executable,
             ProcessId: processId,
             Language: language,
             ProtectedPaths: protectedPaths,
@@ -67,7 +64,6 @@ internal sealed record UpdateArguments(
                 case "--package-path":
                 case "--digest":
                 case "--target":
-                case "--executable":
                 case "--process-id":
                 case "--language":
                 case "--protect-path":
@@ -154,20 +150,6 @@ internal sealed record UpdateArguments(
         return appElevated;
     }
 
-    private static string ParseExecutable(string value, string target)
-    {
-        var executable = Path.GetFullPath(value);
-        var expected = OperatingSystem.IsMacOS() && target.EndsWith(".app", StringComparison.OrdinalIgnoreCase)
-            ? Path.Combine(target, "Contents", "MacOS", MacDmgPackage.ExecutableName)
-            : Path.Combine(target, "SyncClipboard.exe");
-        if (!string.Equals(executable, expected, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new ArgumentException(UpdaterText.Current.InvalidExecutable);
-        }
-
-        return executable;
-    }
-
     public IEnumerable<string> ToCommandLine()
     {
         string[] args =
@@ -175,7 +157,6 @@ internal sealed record UpdateArguments(
             "--package-path", PackagePath,
             "--digest", Digest,
             "--target", Target,
-            "--executable", Executable,
             "--process-id", ProcessId.ToString(CultureInfo.InvariantCulture),
             "--app-elevated", AppElevated ? "true" : "false",
             "--language", Language

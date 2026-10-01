@@ -1,6 +1,6 @@
 using SyncClipboard.Core.Utilities;
 
-namespace SyncClipboard.Updater;
+namespace SyncClipboard.Updater.Dmg;
 
 internal sealed class MacBundleReplacement(string target, string backup, bool elevated)
 {
