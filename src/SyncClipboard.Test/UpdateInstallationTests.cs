@@ -19,12 +19,23 @@ public class UpdateInstallationTests
     public TestContext TestContext { get; set; } = null!;
 
     private string directory = null!;
+    private ConfigurationTestServices configurationServices = null!;
+    private ConfigManager config = null!;
 
     [TestInitialize]
-    public void Initialize() => directory = Directory.CreateTempSubdirectory("SyncClipboard update 中文 ").FullName;
+    public void Initialize()
+    {
+        directory = Directory.CreateTempSubdirectory("SyncClipboard update 中文 ").FullName;
+        configurationServices = new ConfigurationTestServices();
+        config = new ConfigManager(Path.Combine(directory, "SyncClipboard.json"), configurationServices.Upgrader);
+    }
 
     [TestCleanup]
-    public void Cleanup() => Directory.Delete(directory, true);
+    public void Cleanup()
+    {
+        configurationServices.Dispose();
+        Directory.Delete(directory, true);
+    }
 
     [TestMethod]
     public async Task Installing_BlocksRepeatedClicksAndChecks_AndReportsLaunchFailure()
@@ -287,8 +298,9 @@ public class UpdateInstallationTests
                 File.WriteAllText(path, "test updater file");
                 created.Add(path);
             }
+            var existingPaths = Directory.GetFileSystemEntries(directory);
             await Assert.ThrowsAsync<OperationCanceledException>(() => installer.StartAsync(request, new CancellationToken(true)));
-            Assert.IsEmpty(Directory.GetFileSystemEntries(directory));
+            CollectionAssert.AreEquivalent(existingPaths, Directory.GetFileSystemEntries(directory));
         }
         finally
         {
@@ -299,13 +311,49 @@ public class UpdateInstallationTests
         }
     }
 
-    private UpdateChecker CreateChecker(IUpdateInstaller? installer, IHttp? http = null, Mock<IUpdateInstallerFactory>? factory = null)
+    private UpdateChecker CreateChecker(IUpdateInstaller? installer, IHttp? http = null,
+        Mock<IUpdateInstallerFactory>? factory = null, INotificationManager? notifications = null)
     {
         var path = Path.Combine(directory, "update_info.json");
         File.WriteAllText(path, "{\"UpdateInfo\":{\"manage_type\":\"manual\",\"update_src\":\"github\",\"package_name\":\"test.package\"}}");
         factory ??= new Mock<IUpdateInstallerFactory>();
         factory.Setup(f => f.Create(It.IsAny<UpdateInfoConfig>())).Returns(installer);
-        return new UpdateChecker(null!, http!, Mock.Of<ILogger>(), null!, Mock.Of<INotificationManager>(), null!, null!, factory.Object, new ConfigBase(path));
+        return new UpdateChecker(null!, http!, Mock.Of<ILogger>(), null!, notifications ?? Mock.Of<INotificationManager>(),
+            null!, config, factory.Object, new ConfigBase(path));
+    }
+
+    [TestMethod]
+    public void AutoDownloadSettingChange_AllowsCurrentVersionToNotifyAgain()
+    {
+        var notifications = new Mock<INotificationManager>();
+        var checker = CreateChecker(Mock.Of<IUpdateInstaller>(), notifications: notifications.Object);
+        SetProperty(checker, "GithubRelease", new GitHubRelease { TagName = "v9.0.0" });
+        SetStatus(checker, UpdaterState.ReadyForDownload);
+        var notify = typeof(UpdateChecker).GetMethod("SendNotification", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        notify.Invoke(checker, null);
+        var count = notifications.Invocations.Count;
+        Assert.IsGreaterThan(0, count);
+        notify.Invoke(checker, null);
+        Assert.AreEqual(count, notifications.Invocations.Count);
+
+        var current = config.GetConfig<ProgramConfig>();
+        config.SetConfig(current with { AutoDownloadUpdate = !current.AutoDownloadUpdate });
+        SetDownloadedStatus(checker);
+        notify.Invoke(checker, null);
+        Assert.AreEqual(count * 2, notifications.Invocations.Count);
+        notify.Invoke(checker, null);
+        Assert.AreEqual(count * 2, notifications.Invocations.Count);
+    }
+
+    [TestMethod]
+    public async Task InnoInstaller_RejectsPackageChangedAfterDownloadBeforeLaunching()
+    {
+        var package = Path.Combine(directory, "installer.exe");
+        File.WriteAllText(package, "downloaded installer");
+        var digest = "sha256:" + Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(package)));
+        File.AppendAllText(package, "changed");
+        await Assert.ThrowsAsync<InvalidDataException>(() => new InnoSetupInstaller().StartAsync(
+            new UpdateInstallRequest(package, digest), TestContext.CancellationTokenSource.Token));
     }
 
     [TestMethod]

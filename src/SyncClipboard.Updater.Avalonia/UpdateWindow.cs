@@ -43,62 +43,66 @@ internal sealed class UpdateWindow : Window, IUpdateInteraction
             if (exitCode != 0)
                 e.ApplicationExitCode = exitCode;
         };
-        Closing += async (_, e) =>
+        Closing += OnClosing;
+        Opened += async (_, _) => await RunUpdateAsync(args, desktop);
+    }
+
+    private async void OnClosing(object? sender, WindowClosingEventArgs e)
+    {
+        if (!running)
+            return;
+        e.Cancel = true;
+        if (closeDialog is not null)
+            return;
+        try
         {
+            var choice = await ConfirmCloseAsync();
             if (!running)
                 return;
-            e.Cancel = true;
-            if (closeDialog is not null)
-                return;
-            try
+            if (choice == UpdateFailureAction.Abort)
+                Environment.Exit(3);
+            if (choice == UpdateFailureAction.Rollback && rollbackAvailable)
             {
-                var choice = await ConfirmCloseAsync();
-                if (!running)
-                    return;
-                if (choice == UpdateFailureAction.Abort)
-                    Environment.Exit(3);
-                if (choice == UpdateFailureAction.Rollback && rollbackAvailable)
-                {
-                    SetRollbackAvailable(false);
-                    actions.Children.Clear();
-                    message.Text = string.Empty;
-                    status.Text = text.Restoring;
-                    progress.IsIndeterminate = true;
-                    await cancellation.CancelAsync();
-                }
+                SetRollbackAvailable(false);
+                actions.Children.Clear();
+                message.Text = string.Empty;
+                status.Text = text.Restoring;
+                progress.IsIndeterminate = true;
+                await cancellation.CancelAsync();
             }
-            catch (Exception error)
-            {
-                Program.ShowFatalError(error);
-            }
-        };
-        Opened += async (_, _) =>
+        }
+        catch (Exception error)
         {
-            try
+            Program.ShowFatalError(error);
+        }
+    }
+
+    private async Task RunUpdateAsync(string[] args, IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        try
+        {
+            if (args is ["--smoke-test"])
             {
-                if (args is ["--smoke-test"])
-                {
-                    await Task.Delay(1000);
-                    Console.WriteLine("GUI_SMOKE=PASS");
-                    desktop.Shutdown(0);
-                }
-                else if (args.Length != 0)
-                {
-                    running = true;
-                    exitCode = await Task.Run(() => UpdateRunner.RunAsync(args, this, cancellation.Token));
-                    running = false;
-                    closeDialog?.Close();
-                    desktop.Shutdown(exitCode);
-                }
+                await Task.Delay(1000);
+                Console.WriteLine("GUI_SMOKE=PASS");
+                desktop.Shutdown(0);
             }
-            catch (Exception error)
+            else if (args.Length != 0)
             {
+                running = true;
+                exitCode = await Task.Run(() => UpdateRunner.RunAsync(args, this, cancellation.Token));
                 running = false;
                 closeDialog?.Close();
-                Program.ShowFatalError(error);
-                desktop.Shutdown(1);
+                desktop.Shutdown(exitCode);
             }
-        };
+        }
+        catch (Exception error)
+        {
+            running = false;
+            closeDialog?.Close();
+            Program.ShowFatalError(error);
+            desktop.Shutdown(1);
+        }
     }
 
     private async Task<UpdateFailureAction?> ConfirmCloseAsync()

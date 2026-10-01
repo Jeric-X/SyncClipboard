@@ -88,13 +88,24 @@ internal static class WindowsZipPackage
 
     internal static void ValidatePayload(string stage, string packageName)
     {
-        var executable = Path.Combine(stage, "SyncClipboard.exe");
+        var executable = GetExecutablePath(stage);
         ValidateArchitecture(executable);
         using var document = JsonDocument.Parse(File.ReadAllText(Path.Combine(stage, "update_info.json")));
         var info = document.RootElement.GetProperty("UpdateInfo");
         if (info.GetProperty("manage_type").GetString() != "manual" || info.GetProperty("update_src").GetString() != "github"
             || info.GetProperty("package_name").GetString() != packageName)
             throw new InvalidDataException(UpdaterText.Current.PackageMismatch);
+    }
+
+    internal static string GetExecutablePath(string directory)
+    {
+        foreach (var name in new[] { "SyncClipboard.exe", "SyncClipboard.Desktop.Default.exe" })
+        {
+            var executable = Path.Combine(directory, name);
+            if (File.Exists(executable))
+                return executable;
+        }
+        throw new FileNotFoundException(UpdaterText.Current.InvalidArchivePath + directory);
     }
 
     private static void ValidateArchitecture(string executable)

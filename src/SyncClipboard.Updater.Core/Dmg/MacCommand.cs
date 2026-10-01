@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 
 namespace SyncClipboard.Updater.Dmg;
@@ -35,9 +36,7 @@ internal static class MacCommand
         }
         catch (OperationCanceledException)
         {
-            if (!process.HasExited)
-                process.Kill(entireProcessTree: true);
-            await process.WaitForExitAsync(CancellationToken.None);
+            await StopAsync(process);
             throw;
         }
         var message = await errors;
@@ -45,6 +44,28 @@ internal static class MacCommand
         if (process.ExitCode != 0)
             throw new IOException($"{UpdaterText.Current.CommandFailed}{executable} ({process.ExitCode}): {message.Trim()} {result}");
         return result.Trim();
+    }
+
+    private static async Task StopAsync(Process process)
+    {
+        try
+        {
+            if (!process.HasExited)
+                process.Kill(entireProcessTree: true);
+        }
+        catch (Exception error) when (error is Win32Exception or InvalidOperationException or AggregateException)
+        {
+            Debug.WriteLine(error);
+        }
+        try
+        {
+            await process.WaitForExitAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(30));
+        }
+        catch (TimeoutException error)
+        {
+            // Continue cancellation even if a privileged child could not be stopped.
+            Debug.WriteLine(error);
+        }
     }
 
     private static string Quote(string value) => "'" + value.Replace("'", "'\"'\"'") + "'";

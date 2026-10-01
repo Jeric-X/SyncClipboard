@@ -12,7 +12,9 @@ namespace SyncClipboard.Test.Updater.Windows;
 public class WindowsUpdaterTests : UpdaterTestBase
 {
     [TestMethod]
-    public async Task ZipInstallation_VerifiesExtractsReplacesAndCleansWorkspace()
+    [DataRow("SyncClipboard.exe")]
+    [DataRow("SyncClipboard.Desktop.Default.exe")]
+    public async Task ZipInstallation_VerifiesExtractsReplacesAndCleansWorkspace(string executableName)
     {
         if (!OperatingSystem.IsWindows())
             Assert.Inconclusive("Requires Windows executables.");
@@ -23,7 +25,7 @@ public class WindowsUpdaterTests : UpdaterTestBase
             """));
         using (var archive = ZipFile.Open(package, ZipArchiveMode.Update))
         {
-            archive.CreateEntryFromFile(executable, "SyncClipboard.exe");
+            archive.CreateEntryFromFile(executable, executableName);
         }
         File.WriteAllText(Path.Combine(target, "library.dll"), "old");
         Directory.CreateDirectory(Path.Combine(target, "appdata"));
@@ -41,7 +43,7 @@ public class WindowsUpdaterTests : UpdaterTestBase
         Assert.AreEqual("new", File.ReadAllText(Path.Combine(target, "library.dll")));
         Assert.AreEqual("old", File.ReadAllText(Path.Combine(backup, "library.dll")));
         Assert.AreEqual("user history", File.ReadAllText(Path.Combine(target, "appdata", "history.db")));
-        CollectionAssert.AreEqual(File.ReadAllBytes(executable), File.ReadAllBytes(Path.Combine(target, "SyncClipboard.exe")));
+        CollectionAssert.AreEqual(File.ReadAllBytes(executable), File.ReadAllBytes(Path.Combine(target, executableName)));
         Assert.AreEqual(0, await UpdateWorker.CleanupAndReportAsync(update, interaction));
         Assert.AreEqual(0, interaction.Result!.ExitCode);
         Assert.IsFalse(Directory.Exists(workspace));

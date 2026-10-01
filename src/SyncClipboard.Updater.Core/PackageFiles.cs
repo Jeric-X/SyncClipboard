@@ -23,7 +23,7 @@ internal static class PackageFiles
 
     internal static void CheckSpace(string directory, long bytes)
     {
-        if (!FileSystem.HasEnoughSpace(directory, checked(bytes + 32L * 1024 * 1024)))
+        if (!FileSystem.HasEnoughSpace(directory, checked(bytes + (32L * 1024 * 1024))))
             throw new IOException(UpdaterText.Current.InsufficientSpace);
     }
 }

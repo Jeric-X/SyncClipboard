@@ -1,6 +1,7 @@
 using SyncClipboard.Core.Utilities;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Xml.Linq;
 
 namespace SyncClipboard.Updater.Dmg;
 
@@ -54,6 +55,27 @@ internal sealed class MacDmgPackage(string bundlePath, string mountPath)
         => InteractiveOperation.RunAsync(UpdaterText.Current.DetachImage + mountPath,
             () => MacCommand.RunAsync("/usr/bin/hdiutil", ["detach", mountPath], CancellationToken.None),
             onFailure, CancellationToken.None);
+
+    internal static async Task DetachAttemptAsync(string attempt)
+    {
+        var mount = Path.Combine(attempt, "mount");
+        if (!Directory.Exists(mount))
+            return;
+        var identity = await MacCommand.RunAsync("/usr/bin/stat", ["-f", "%d:%i", mount], CancellationToken.None);
+        var info = await MacCommand.RunAsync("/usr/bin/hdiutil", ["info", "-plist"], CancellationToken.None);
+        var mounts = XDocument.Parse(info).Descendants("key").Where(key => key.Value == "mount-point")
+            .Select(key => (key.NextNode as XElement)?.Value);
+        foreach (var mountedPath in mounts)
+        {
+            if (mountedPath is null || !Directory.Exists(mountedPath))
+                continue;
+            var mountedIdentity = await MacCommand.RunAsync("/usr/bin/stat", ["-f", "%d:%i", mountedPath], CancellationToken.None);
+            if (mountedIdentity != identity)
+                continue;
+            await MacCommand.RunAsync("/usr/bin/hdiutil", ["detach", mountedPath], CancellationToken.None);
+            return;
+        }
+    }
 
     internal static async Task ValidatePayloadAsync(string bundle, string packageName, CancellationToken token)
     {

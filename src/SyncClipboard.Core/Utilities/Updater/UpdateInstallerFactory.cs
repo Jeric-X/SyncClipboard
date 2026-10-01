@@ -17,23 +17,38 @@ internal sealed class UpdateInstallerFactory : IUpdateInstallerFactory
             || string.IsNullOrWhiteSpace(updateInfo.PackageName))
             return null;
 
-        if (isWindows && updateInfo.PackageName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+        if (isWindows)
+            return CreateWindowsInstaller(updateInfo.PackageName, programDirectory);
+        if (isMacOS)
+            return CreateMacInstaller(updateInfo.PackageName, programDirectory);
+        return CreateAppImageInstaller(updateInfo.PackageName, programDirectory, appImagePath);
+    }
+
+    private static IUpdateInstaller? CreateWindowsInstaller(string packageName, string programDirectory)
+    {
+        if (packageName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
             return new InnoSetupInstaller();
-
-        if (isWindows && updateInfo.PackageName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
-            return File.Exists(Path.Combine(programDirectory, "SyncClipboard.Updater.exe"))
-                ? new FileReplacementPackageInstaller() : null;
-
-        if (isMacOS && updateInfo.PackageName.EndsWith(".dmg", StringComparison.OrdinalIgnoreCase))
-        {
-            var bundle = MacUpdaterFiles.FindBundle(programDirectory);
-            if (bundle is not null && MacUpdaterFiles.GetFiles(bundle).Length != 0)
-                return new FileReplacementPackageInstaller();
-        }
-        if (!isWindows && !isMacOS && updateInfo.PackageName.EndsWith(".AppImage", StringComparison.OrdinalIgnoreCase)
-            && appImagePath is not null && Path.IsPathFullyQualified(appImagePath) && File.Exists(appImagePath)
-            && FileReplacementPackageInstaller.LinuxUpdaterFiles.GetFiles(programDirectory).Length != 0)
+        if (packageName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)
+            && File.Exists(Path.Combine(programDirectory, "SyncClipboard.Updater.exe")))
             return new FileReplacementPackageInstaller();
         return null;
+    }
+
+    private static IUpdateInstaller? CreateMacInstaller(string packageName, string programDirectory)
+    {
+        if (!packageName.EndsWith(".dmg", StringComparison.OrdinalIgnoreCase))
+            return null;
+        var bundle = MacUpdaterFiles.FindBundle(programDirectory);
+        return bundle is not null && MacUpdaterFiles.GetFiles(bundle).Length != 0
+            ? new FileReplacementPackageInstaller() : null;
+    }
+
+    private static IUpdateInstaller? CreateAppImageInstaller(string packageName, string programDirectory, string? appImagePath)
+    {
+        if (!packageName.EndsWith(".AppImage", StringComparison.OrdinalIgnoreCase)
+            || appImagePath is null || !Path.IsPathFullyQualified(appImagePath) || !File.Exists(appImagePath))
+            return null;
+        return FileReplacementPackageInstaller.LinuxUpdaterFiles.GetFiles(programDirectory).Length != 0
+            ? new FileReplacementPackageInstaller() : null;
     }
 }

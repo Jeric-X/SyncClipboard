@@ -70,6 +70,18 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         this.mainWindow = mainWindow;
         updateInfo = updateInfoConfig.GetConfig<UpdateInfoConfig>();
         updateInstaller = updateInstallerFactory.Create(updateInfo);
+        var autoDownload = configManager.GetConfig<ProgramConfig>().AutoDownloadUpdate;
+        configManager.ListenConfig<ProgramConfig>(config =>
+        {
+            lock (installationGate)
+            {
+                if (autoDownload == config.AutoDownloadUpdate)
+                    return;
+                autoDownload = config.AutoDownloadUpdate;
+                if (GithubRelease?.TagName is { } version)
+                    notifiedVersion.Remove(version);
+            }
+        });
         SetStatus(UpdaterState.Idle);
         logger.WriteAsync(updateInfo.ToString());
     }
@@ -145,9 +157,10 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         {
             return;
         }
-        if (string.IsNullOrEmpty(GithubRelease?.TagName) || notifiedVersion.Add(GithubRelease.TagName) is false)
+        lock (installationGate)
         {
-            return;
+            if (string.IsNullOrEmpty(GithubRelease?.TagName) || !notifiedVersion.Add(GithubRelease.TagName))
+                return;
         }
 
         var stateText = GetStateText(CurrentState.State);

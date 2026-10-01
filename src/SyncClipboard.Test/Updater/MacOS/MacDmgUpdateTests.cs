@@ -293,6 +293,82 @@ public class MacDmgUpdateTests
         }
     }
 
+    [TestMethod]
+    public async Task PackagePreparationRetry_RemovesFailedAttemptBeforeRetrying()
+    {
+        var update = await CreateUpdateAsync();
+        var original = update.PackagePath + ".unavailable";
+        File.Move(update.PackagePath, original);
+        string? failedAttempt = null;
+        var interaction = new Interaction
+        {
+            OnFailure = (_, _, _, _) =>
+            {
+                if (failedAttempt is not null)
+                    throw new AssertFailedException("Preparation should succeed after restoring the package.");
+                failedAttempt = Directory.GetDirectories(directory, "attempt-*").Single();
+                File.Move(original, update.PackagePath);
+                return Task.FromResult(UpdateFailureAction.Retry);
+            }
+        };
+        var (Attempt, Stage, Dmg) = await UpdateWorker.PreparePackageAsync(update, interaction, Token);
+        try
+        {
+            Assert.IsNotNull(failedAttempt);
+            Assert.IsFalse(Directory.Exists(failedAttempt));
+            Assert.HasCount(1, Directory.GetDirectories(directory, "attempt-*"));
+            Assert.IsNotNull(Dmg);
+        }
+        finally
+        {
+            if (Dmg is not null)
+                await Dmg.DetachAsync(null);
+        }
+    }
+
+    [TestMethod]
+    public async Task FailedAttemptCleanup_DetachesItsMountedImageBeforeDeletingFiles()
+    {
+        var update = await CreateUpdateAsync();
+        var attempt = Directory.CreateDirectory(Path.Combine(directory, "attempt-mounted")).FullName;
+        var package = await MacDmgPackage.PrepareAsync(update, attempt, Token);
+        var detached = false;
+        try
+        {
+            Assert.IsTrue(Directory.Exists(package.BundlePath));
+            await MacDmgPackage.DetachAttemptAsync(attempt);
+            detached = true;
+            Directory.Delete(attempt, true);
+            Assert.IsFalse(Directory.Exists(attempt));
+        }
+        finally
+        {
+            if (!detached)
+                await package.DetachAsync(null);
+        }
+    }
+
+    [TestMethod]
+    public async Task CanceledCommand_StopsBeforeReturningCancellation()
+    {
+        var marker = Path.Combine(directory, "command-started");
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        var operation = MacCommand.RunAsync("/bin/sh", ["-c", "echo ready > \"$1\"; exec /bin/sleep 60", "sh", marker], cancel.Token);
+        try
+        {
+            using var wait = CancellationTokenSource.CreateLinkedTokenSource(Token);
+            wait.CancelAfter(TimeSpan.FromSeconds(10));
+            while (!File.Exists(marker))
+                await Task.Delay(20, wait.Token);
+            await cancel.CancelAsync();
+            await Assert.ThrowsAsync<OperationCanceledException>(() => operation.WaitAsync(TimeSpan.FromSeconds(35), Token));
+        }
+        finally
+        {
+            await cancel.CancelAsync();
+        }
+    }
+
     private async Task<UpdateArguments> CreateUpdateAsync()
     {
         var source = Path.Combine(directory, "image");

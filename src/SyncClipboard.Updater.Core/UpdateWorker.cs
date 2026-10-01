@@ -29,29 +29,14 @@ internal static class UpdateWorker
         var canRestart = true;
         try
         {
-            if (update.WorkDirectory is null)
-                throw new IOException(UpdaterText.Current.WorkspaceNotPrepared);
-            ValidateWorkspace(update.WorkDirectory);
-            if (!await IsRunningInWorkspaceAsync(update.WorkDirectory, token))
-                throw new IOException(UpdaterText.Current.OutsideWorkspace);
-            if (OperatingSystem.IsMacOS())
-                MacDmgPackage.ValidateTarget(update);
-            else if (OperatingSystem.IsLinux())
-                AppImagePackage.ValidateTarget(update);
-            else
-                WindowsZipPackage.ValidateTarget(update);
-            string[] writeDirectories = [update.Target];
-            if (OperatingSystem.IsMacOS())
-                writeDirectories = [Path.GetDirectoryName(update.Target)!, update.Target];
-            else if (OperatingSystem.IsLinux())
-                writeDirectories = [Path.GetDirectoryName(update.Target)!];
-            var needsElevation = await RequiresElevationAsync(writeDirectories, update.Elevated, interaction, token);
+            var workspace = await ValidateEnvironmentAsync(update, token);
+            var needsElevation = await RequiresElevationAsync(GetWriteDirectories(update.Target), update.Elevated, interaction, token);
             if (OperatingSystem.IsMacOS())
                 macReplacement = new MacBundleReplacement(update.Target,
-                    Path.Combine(update.WorkDirectory, "backup", "SyncClipboard.app"), needsElevation);
+                    Path.Combine(workspace, "backup", "SyncClipboard.app"), needsElevation);
             else if (OperatingSystem.IsLinux())
                 appImageReplacement = new AppImageReplacement(update.Target,
-                    Path.Combine(update.WorkDirectory, "backup", Path.GetFileName(update.Target)), needsElevation);
+                    Path.Combine(workspace, "backup", Path.GetFileName(update.Target)), needsElevation);
             else if (needsElevation)
             {
                 Log(update, UpdaterText.Current.RequestingElevation);
@@ -82,27 +67,64 @@ internal static class UpdateWorker
                 await DetachAfterFailureAsync(dmg, update, interaction);
             targetLock?.Dispose();
             targetLock = null;
-            if (error is UpdateProcessExitException { Declined: true })
-                return 3;
-            Log(update, error.ToString());
-            var recoveryRequired = error is UpdateRecoveryException or UpdateAbortedException || !canRestart;
-            if (!recoveryRequired && error is not UpdateProcessExitException)
-                await RestartIfStoppedAsync(update);
-            var exitCode = error is UpdateProcessExitException ? 3 : recoveryRequired ? RecoveryRequired : 1;
-            var message = error is OperationCanceledException && token.IsCancellationRequested
-                ? UpdaterText.Current.Canceled : error.Message;
-            await interaction.ShowResultAsync(new UpdateResult(exitCode, message, update.WorkDirectory, error switch
-            {
-                UpdateRecoveryException recovery => recovery.BackupPath,
-                UpdateAbortedException aborted => aborted.BackupPath,
-                _ => null
-            }));
-            return exitCode;
+            return await ReportFailureAsync(update, interaction, error, canRestart, token);
         }
         finally
         {
             targetLock?.Dispose();
         }
+    }
+
+    private static async Task<string> ValidateEnvironmentAsync(UpdateArguments update, CancellationToken token)
+    {
+        if (update.WorkDirectory is null)
+            throw new IOException(UpdaterText.Current.WorkspaceNotPrepared);
+        ValidateWorkspace(update.WorkDirectory);
+        if (!await IsRunningInWorkspaceAsync(update.WorkDirectory, token))
+            throw new IOException(UpdaterText.Current.OutsideWorkspace);
+        if (OperatingSystem.IsMacOS())
+            MacDmgPackage.ValidateTarget(update);
+        else if (OperatingSystem.IsLinux())
+            AppImagePackage.ValidateTarget(update);
+        else
+            WindowsZipPackage.ValidateTarget(update);
+        return update.WorkDirectory;
+    }
+
+    private static string[] GetWriteDirectories(string target)
+    {
+        if (OperatingSystem.IsMacOS())
+            return [Path.GetDirectoryName(target)!, target];
+        if (OperatingSystem.IsLinux())
+            return [Path.GetDirectoryName(target)!];
+        return [target];
+    }
+
+    private static async Task<int> ReportFailureAsync(UpdateArguments update, IUpdateInteraction interaction,
+        Exception error, bool canRestart, CancellationToken token)
+    {
+        if (error is UpdateProcessExitException { Declined: true })
+            return 3;
+        Log(update, error.ToString());
+        var recoveryRequired = error is UpdateRecoveryException or UpdateAbortedException || !canRestart;
+        if (!recoveryRequired && error is not UpdateProcessExitException)
+            await RestartIfStoppedAsync(update);
+        var result = CreateFailureResult(update, error, recoveryRequired, token.IsCancellationRequested);
+        await interaction.ShowResultAsync(result);
+        return result.ExitCode;
+    }
+
+    private static UpdateResult CreateFailureResult(UpdateArguments update, Exception error, bool recoveryRequired, bool canceled)
+    {
+        var exitCode = error is UpdateProcessExitException ? 3 : recoveryRequired ? RecoveryRequired : 1;
+        var message = error is OperationCanceledException && canceled
+            ? UpdaterText.Current.Canceled : error.Message;
+        return new UpdateResult(exitCode, message, update.WorkDirectory, error switch
+        {
+            UpdateRecoveryException recovery => recovery.BackupPath,
+            UpdateAbortedException aborted => aborted.BackupPath,
+            _ => null
+        });
     }
 
     private static async Task<bool> IsRunningInWorkspaceAsync(string workspace, CancellationToken token)
@@ -162,19 +184,7 @@ internal static class UpdateWorker
         MacDmgPackage? dmg = null;
         try
         {
-            interaction.Report("preparing", -1);
-            await InteractiveOperation.RunAsync(UpdaterText.Current.PreparePackage + update.PackagePath + " -> " + update.WorkDirectory, async () =>
-            {
-                // Each retry gets a fresh destination, so partial extraction never conflicts with CreateNew.
-                attempt = Path.Combine(update.WorkDirectory!, "attempt-" + Guid.NewGuid().ToString("N"));
-                Directory.CreateDirectory(attempt);
-                if (OperatingSystem.IsMacOS())
-                    dmg = await MacDmgPackage.PrepareAsync(update, attempt, token, interaction.AskFailureActionAsync);
-                else if (OperatingSystem.IsLinux())
-                    stage = await AppImagePackage.PrepareAsync(update, attempt, token);
-                else
-                    stage = await WindowsZipPackage.PrepareAsync(update, attempt, token);
-            }, interaction.AskFailureActionAsync, token);
+            (attempt, stage, dmg) = await PreparePackageAsync(update, interaction, token);
             interaction.Report("waiting", -1);
             await WaitForProcessAsync(update.ProcessId, update.ProcessStartTime, token, interaction.ConfirmForceExitAsync);
             if (macReplacement is not null)
@@ -194,6 +204,37 @@ internal static class UpdateWorker
             throw;
         }
     }
+
+    internal static async Task<(string Attempt, string? Stage, MacDmgPackage? Dmg)> PreparePackageAsync(
+        UpdateArguments update, IUpdateInteraction interaction, CancellationToken token)
+    {
+        string? attempt = null;
+        string? stage = null;
+        MacDmgPackage? dmg = null;
+        interaction.Report("preparing", -1);
+        await InteractiveOperation.RunAsync(UpdaterText.Current.PreparePackage + update.PackagePath + " -> " + update.WorkDirectory, async () =>
+        {
+            if (attempt is not null)
+                await RemovePreparationAttemptAsync(attempt, interaction);
+            attempt = Path.Combine(update.WorkDirectory!, "attempt-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(attempt);
+            if (OperatingSystem.IsMacOS())
+                dmg = await MacDmgPackage.PrepareAsync(update, attempt, token, interaction.AskFailureActionAsync);
+            else if (OperatingSystem.IsLinux())
+                stage = await AppImagePackage.PrepareAsync(update, attempt, token);
+            else
+                stage = await WindowsZipPackage.PrepareAsync(update, attempt, token);
+        }, interaction.AskFailureActionAsync, token);
+        return (attempt!, stage, dmg);
+    }
+
+    private static Task RemovePreparationAttemptAsync(string attempt, IUpdateInteraction interaction)
+        => InteractiveOperation.RunAsync(UpdaterText.Current.RemoveWorkspace + attempt, async () =>
+        {
+            if (OperatingSystem.IsMacOS())
+                await MacDmgPackage.DetachAttemptAsync(attempt);
+            Directory.Delete(attempt, true);
+        }, interaction.AskFailureActionAsync, CancellationToken.None);
 
     private static async Task DetachAfterFailureAsync(MacDmgPackage dmg, UpdateArguments update, IUpdateInteraction interaction)
     {
@@ -282,39 +323,50 @@ internal static class UpdateWorker
                     await process.WaitForExitAsync(token);
                     return;
                 }
-                while (true)
-                {
-                    using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
-                    timeout.CancelAfter(gracefulWait ?? TimeSpan.FromSeconds(10));
-                    try
-                    {
-                        await process.WaitForExitAsync(timeout.Token);
-                        return;
-                    }
-                    catch (OperationCanceledException) when (!token.IsCancellationRequested) { }
-                    if (process.HasExited)
-                        return;
-                    var action = await confirmForceExit(token);
-                    if (action == ForceExitAction.No)
-                        throw new UpdateProcessExitException(UpdaterText.Current.Canceled, declined: true);
-                    token.ThrowIfCancellationRequested();
-                    if (process.HasExited)
-                        return;
-                    if (action == ForceExitAction.Yes)
-                        break;
-                }
-                try
-                {
-                    process.Kill();
-                    await process.WaitForExitAsync(token).WaitAsync(TimeSpan.FromSeconds(10), token);
-                }
-                catch (Exception error) when (error is Win32Exception or InvalidOperationException or TimeoutException)
-                {
-                    if (!process.HasExited)
-                        throw new UpdateProcessExitException(UpdaterText.Current.ForceExitFailed, error);
-                }
+                if (await ConfirmProcessExitAsync(process, confirmForceExit, gracefulWait, token))
+                    await KillProcessAsync(process, token);
             }
             catch (InvalidOperationException) when (process.HasExited) { }
+        }
+    }
+
+    private static async Task<bool> ConfirmProcessExitAsync(Process process,
+        Func<CancellationToken, Task<ForceExitAction>> confirmForceExit, TimeSpan? gracefulWait, CancellationToken token)
+    {
+        while (true)
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+            timeout.CancelAfter(gracefulWait ?? TimeSpan.FromSeconds(10));
+            try
+            {
+                await process.WaitForExitAsync(timeout.Token);
+                return false;
+            }
+            catch (OperationCanceledException) when (!token.IsCancellationRequested) { }
+            if (process.HasExited)
+                return false;
+            var action = await confirmForceExit(token);
+            if (action == ForceExitAction.No)
+                throw new UpdateProcessExitException(UpdaterText.Current.Canceled, declined: true);
+            token.ThrowIfCancellationRequested();
+            if (process.HasExited)
+                return false;
+            if (action == ForceExitAction.Yes)
+                return true;
+        }
+    }
+
+    private static async Task KillProcessAsync(Process process, CancellationToken token)
+    {
+        try
+        {
+            process.Kill();
+            await process.WaitForExitAsync(token).WaitAsync(TimeSpan.FromSeconds(10), token);
+        }
+        catch (Exception error) when (error is Win32Exception or InvalidOperationException or TimeoutException)
+        {
+            if (!process.HasExited)
+                throw new UpdateProcessExitException(UpdaterText.Current.ForceExitFailed, error);
         }
     }
 
@@ -337,7 +389,7 @@ internal static class UpdateWorker
         if (OperatingSystem.IsMacOS())
             await MacCommand.RunAsync("/usr/bin/open", ["-n", update.Target], CancellationToken.None);
         else if (OperatingSystem.IsWindows())
-            WindowsProcessLauncher.Start(Path.Combine(update.Target, "SyncClipboard.exe"), update.Target, update.AppElevated);
+            WindowsProcessLauncher.Start(WindowsZipPackage.GetExecutablePath(update.Target), update.Target, update.AppElevated);
         else if (OperatingSystem.IsLinux())
         {
             var start = new ProcessStartInfo(update.Target)
@@ -379,13 +431,22 @@ internal static class UpdateWorker
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or Win32Exception)
         {
             Log(update, error.ToString());
-            var cause = error is UpdateAbortedException ? error.InnerException ?? error : error;
-            var backup = Directory.Exists(macReplacement?.Backup) ? macReplacement.Backup
-                : File.Exists(appImageReplacement?.Backup) ? appImageReplacement.Backup : null;
-            result = new UpdateResult(1, cause.Message, update.WorkDirectory, backup, CleanupIncomplete: true);
+            result = CreateCleanupFailureResult(update, error, macReplacement, appImageReplacement);
         }
         await interaction.ShowResultAsync(result);
         return result.ExitCode;
+    }
+
+    private static UpdateResult CreateCleanupFailureResult(UpdateArguments update, Exception error,
+        MacBundleReplacement? macReplacement, AppImageReplacement? appImageReplacement)
+    {
+        var cause = error is UpdateAbortedException ? error.InnerException ?? error : error;
+        string? backup = null;
+        if (Directory.Exists(macReplacement?.Backup))
+            backup = macReplacement.Backup;
+        else if (File.Exists(appImageReplacement?.Backup))
+            backup = appImageReplacement.Backup;
+        return new UpdateResult(1, cause.Message, update.WorkDirectory, backup, CleanupIncomplete: true);
     }
 
     internal static async Task CleanupAsync(string workspace, UpdateFailureHandler? onFailure = null)

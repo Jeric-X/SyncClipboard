@@ -125,6 +125,86 @@ public class NativeUpdaterTests : UpdaterTestBase
     }
 
     [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task Replacement_TypeConflictsBackUpEntireOldPathsAndCanRollBack(bool rollback)
+    {
+        Directory.CreateDirectory(Path.Combine(target, "a", "empty"));
+        File.WriteAllText(Path.Combine(target, "a", "old.txt"), "old directory content");
+        File.WriteAllText(Path.Combine(target, "b"), "old file");
+        File.WriteAllText(Path.Combine(stage, "a"), "new file");
+        File.WriteAllText(Path.Combine(target, "c"), "old file replaced by an empty directory");
+        Directory.CreateDirectory(Path.Combine(stage, "c"));
+        Directory.CreateDirectory(Path.Combine(stage, "b", "nested"));
+        File.WriteAllText(Path.Combine(stage, "b", "nested", "new.txt"), "new directory content");
+        var backup = Path.Combine(directory, "backup");
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(TestContext.CancellationTokenSource.Token);
+        var backupsReadyBeforeReplacement = false;
+        var task = FileReplacement.ApplyAsync(stage, target, backup, [], (phase, percent) =>
+        {
+            if (phase == "backup")
+            {
+                backupsReadyBeforeReplacement = File.ReadAllText(Path.Combine(backup, "a", "old.txt")) == "old directory content"
+                    && File.ReadAllText(Path.Combine(backup, "b")) == "old file"
+                    && Directory.Exists(Path.Combine(target, "a")) && File.Exists(Path.Combine(target, "b"));
+            }
+            if (rollback && phase == "installing" && percent == 100)
+                cancel.Cancel();
+        }, cancel.Token);
+        if (rollback)
+        {
+            await Assert.ThrowsAsync<OperationCanceledException>(() => task);
+            Assert.AreEqual("old directory content", File.ReadAllText(Path.Combine(target, "a", "old.txt")));
+            Assert.IsTrue(Directory.Exists(Path.Combine(target, "a", "empty")));
+            Assert.AreEqual("old file", File.ReadAllText(Path.Combine(target, "b")));
+            Assert.AreEqual("old file replaced by an empty directory", File.ReadAllText(Path.Combine(target, "c")));
+        }
+        else
+        {
+            await task;
+            Assert.AreEqual("new file", File.ReadAllText(Path.Combine(target, "a")));
+            Assert.IsTrue(Directory.Exists(Path.Combine(target, "c")));
+            Assert.IsEmpty(Directory.GetFileSystemEntries(Path.Combine(target, "c")));
+            Assert.AreEqual("new directory content", File.ReadAllText(Path.Combine(target, "b", "nested", "new.txt")));
+        }
+        Assert.IsTrue(backupsReadyBeforeReplacement);
+        Assert.AreEqual("old directory content", File.ReadAllText(Path.Combine(backup, "a", "old.txt")));
+        Assert.IsTrue(Directory.Exists(Path.Combine(backup, "a", "empty")));
+        Assert.AreEqual("old file", File.ReadAllText(Path.Combine(backup, "b")));
+    }
+
+    [TestMethod]
+    public async Task Replacement_TypeConflictDoesNotRemoveProtectedDescendants()
+    {
+        var protectedFile = Path.Combine(target, "data", "user.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(protectedFile)!);
+        File.WriteAllText(protectedFile, "user config");
+        File.WriteAllText(Path.Combine(stage, "data"), "new file");
+        await Assert.ThrowsAsync<IOException>(() => FileReplacement.ApplyAsync(stage, target,
+            Path.Combine(directory, "backup"), [protectedFile], (_, _) => { }, TestContext.CancellationTokenSource.Token));
+        Assert.AreEqual("user config", File.ReadAllText(protectedFile));
+    }
+
+    [TestMethod]
+    [DataRow("SyncClipboard.exe")]
+    [DataRow("SyncClipboard.Desktop.Default.exe")]
+    public void WindowsExecutableSelection_UsesAnExistingEntryPoint(string name)
+    {
+        var path = Path.Combine(stage, name);
+        File.WriteAllText(path, "executable");
+        Assert.AreEqual(path, WindowsZipPackage.GetExecutablePath(stage));
+        var winui = Path.Combine(stage, "SyncClipboard.exe");
+        File.WriteAllText(winui, "winui executable");
+        Assert.AreEqual(winui, WindowsZipPackage.GetExecutablePath(stage));
+    }
+
+    [TestMethod]
+    public void WindowsExecutableSelection_RejectsPackagesWithoutAnEntryPoint()
+    {
+        Assert.Throws<FileNotFoundException>(() => WindowsZipPackage.GetExecutablePath(stage));
+    }
+
+    [TestMethod]
     public async Task Replacement_PreservesUnrelatedFilesAndIgnoresProgressFailures()
     {
         File.WriteAllText(Path.Combine(target, "library.dll"), "old");

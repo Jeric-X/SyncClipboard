@@ -33,8 +33,6 @@ WinUI 自包含输出的 `SyncClipboard.pri` 含合并后的主题资源，复�
 
 ## 验证
 
-Core 测试通过交互接口验证更新逻辑，在 CI 中独立运行。更新器的界面启动可通过现有冒烟测试手动验证。
+平台无关测试由 core workflow 执行；依赖真实系统行为的测试由 Windows、macOS、Linux 独立 workflow 按平台分类执行。各平台复用主程序构建产物运行更新器 GUI smoke，业务逻辑通过无 UI 的交互接口验证。
 
 更改 Windows App SDK、WinUI 控件或 Avalonia 版本后，应重新验证原生依赖集合。运行库初始化遵循 [Microsoft 官方文档](https://learn.microsoft.com/windows/apps/windows-app-sdk/use-windows-app-sdk-run-time)。
-
-待实现：在各平台实现集成冒烟测试。
