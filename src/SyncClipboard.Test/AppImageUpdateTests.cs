@@ -130,6 +130,33 @@ public class AppImageUpdateTests
     }
 
     [TestMethod]
+    public async Task FailureBeforeReplacement_LeavesOriginalAndDoesNotOfferRollback()
+    {
+        var target = Path.Combine(directory, "installed.AppImage");
+        var source = Path.Combine(directory, "source.AppImage");
+        File.WriteAllText(target, "old");
+        File.WriteAllBytes(source, ImageBytes());
+        var replacement = new AppImageReplacement(target, Path.Combine(directory, "backup", "old.AppImage"), false);
+        var interaction = new Interaction
+        {
+            OnReport = phase =>
+            {
+                if (phase == "installing")
+                    File.Delete(source);
+            },
+            OnFailure = (_, _, canRollback, _) =>
+            {
+                Assert.IsFalse(canRollback);
+                Assert.AreEqual("old", File.ReadAllText(target));
+                return Task.FromResult(UpdateFailureAction.Abort);
+            },
+            OnRollbackAvailability = available => Assert.IsFalse(available)
+        };
+        await Assert.ThrowsAsync<UpdateAbortedException>(() => replacement.ApplyAsync(source, interaction, Token));
+        Assert.AreEqual("old", File.ReadAllText(target));
+    }
+
+    [TestMethod]
     [DataRow("Retry")]
     [DataRow("Rollback")]
     [DataRow("Abort")]
@@ -146,6 +173,7 @@ public class AppImageUpdateTests
         var replacement = new AppImageReplacement(target, Path.Combine(directory, "backup", "old.AppImage"), false);
         var sourceMode = File.GetUnixFileMode(source);
         var prompts = 0;
+        var rollbackAvailable = false;
         using var cancel = CancellationTokenSource.CreateLinkedTokenSource(Token);
         var interaction = new Interaction
         {
@@ -158,6 +186,7 @@ public class AppImageUpdateTests
             {
                 prompts++;
                 Assert.IsTrue(canRollback);
+                Assert.IsTrue(rollbackAvailable);
                 Assert.IsFalse(File.Exists(target));
                 File.SetUnixFileMode(source, sourceMode);
                 if (choice == "CancelTask")
@@ -166,7 +195,8 @@ public class AppImageUpdateTests
                     return Task.FromCanceled<UpdateFailureAction>(cancel.Token);
                 }
                 return Task.FromResult(Enum.Parse<UpdateFailureAction>(choice));
-            }
+            },
+            OnRollbackAvailability = available => rollbackAvailable = available
         };
         if (choice == "Retry")
         {
@@ -179,6 +209,31 @@ public class AppImageUpdateTests
             Assert.AreEqual("old", File.ReadAllText(choice == "Abort" ? replacement.Backup : target));
         }
         Assert.AreEqual(1, prompts);
+        Assert.IsFalse(rollbackAvailable);
+    }
+
+    [TestMethod]
+    public async Task CommandCancellation_StopsTheRunningProcessBeforeReturning()
+    {
+        if (OperatingSystem.IsWindows())
+            Assert.Inconclusive("Requires a Unix child process.");
+        using var process = Process.Start(new ProcessStartInfo("/bin/sleep", "60") { UseShellExecute = false })!;
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        try
+        {
+            var wait = LinuxCommand.WaitForExitAsync(process, cancel.Token);
+            cancel.Cancel();
+            await Assert.ThrowsAsync<OperationCanceledException>(() => wait.WaitAsync(TimeSpan.FromSeconds(5), Token));
+            Assert.IsTrue(process.HasExited);
+        }
+        finally
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+                await process.WaitForExitAsync(CancellationToken.None);
+            }
+        }
     }
 
     [TestMethod]
@@ -270,6 +325,8 @@ public class AppImageUpdateTests
     private sealed class Interaction : IUpdateInteraction
     {
         public Action<string>? OnReport { get; init; }
+        public Action<bool>? OnRollbackAvailability { get; init; }
+        public void SetRollbackAvailable(bool available) => OnRollbackAvailability?.Invoke(available);
         public UpdateFailureHandler? OnFailure { get; init; }
         public void Report(string phase, int percent) => OnReport?.Invoke(phase);
         public Task<ForceExitAction> ConfirmForceExitAsync(CancellationToken token) => Task.FromResult(ForceExitAction.No);

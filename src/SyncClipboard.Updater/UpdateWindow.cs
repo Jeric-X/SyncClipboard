@@ -16,6 +16,8 @@ internal sealed class UpdateWindow : Window, IUpdateInteraction
     private readonly UpdaterText text = UpdaterText.Current;
     private readonly CancellationTokenSource cancellation = new();
     private Window? closeDialog;
+    private Button? closeRollbackButton;
+    private volatile bool rollbackAvailable;
     private bool running;
     private int exitCode;
 
@@ -55,8 +57,9 @@ internal sealed class UpdateWindow : Window, IUpdateInteraction
                     return;
                 if (choice == UpdateFailureAction.Abort)
                     Environment.Exit(3);
-                if (choice == UpdateFailureAction.Rollback)
+                if (choice == UpdateFailureAction.Rollback && rollbackAvailable)
                 {
+                    SetRollbackAvailable(false);
                     actions.Children.Clear();
                     message.Text = string.Empty;
                     status.Text = text.Restoring;
@@ -118,6 +121,11 @@ internal sealed class UpdateWindow : Window, IUpdateInteraction
         foreach (var (label, action) in choices)
         {
             var button = new Button { Content = label, IsDefault = action is null, IsCancel = action is null };
+            if (action == UpdateFailureAction.Rollback)
+            {
+                closeRollbackButton = button;
+                button.IsVisible = rollbackAvailable;
+            }
             button.Click += (_, _) => dialog.Close(action);
             buttons.Children.Add(button);
         }
@@ -135,7 +143,17 @@ internal sealed class UpdateWindow : Window, IUpdateInteraction
         finally
         {
             closeDialog = null;
+            closeRollbackButton = null;
         }
+    }
+
+    public void SetRollbackAvailable(bool available)
+    {
+        rollbackAvailable = available;
+        Dispatcher.UIThread.Post(() =>
+        {
+            closeRollbackButton?.IsVisible = rollbackAvailable;
+        });
     }
 
     public void Report(string phase, int percent) => Dispatcher.UIThread.Post(() =>

@@ -8,6 +8,7 @@ internal sealed class MacBundleReplacement(string target, string backup, bool el
 
     public async Task ApplyAsync(string source, IUpdateInteraction interaction, CancellationToken token)
     {
+        interaction.SetRollbackAvailable(false);
         interaction.Report("backup", -1);
         await UpdateIo.RunAsync(UpdaterText.Current.BackUp + target, async () =>
         {
@@ -25,16 +26,18 @@ internal sealed class MacBundleReplacement(string target, string backup, bool el
                 var existingBytes = Directory.Exists(target) ? FileSystem.GetSize(target) : 0;
                 PackageFiles.CheckSpace(Path.GetDirectoryName(target)!, Math.Max(0, FileSystem.GetSize(source) - existingBytes));
                 modified = true;
+                interaction.SetRollbackAvailable(true);
                 await RemoveAsync(target, token);
                 await CopyAsync(source, target, token);
                 await MacCommand.RunAsync("/usr/bin/codesign", ["--verify", "--deep", "--strict", target], token);
-            }, interaction.AskFailureActionAsync, token, backup, canRollback: true);
+            }, interaction.AskFailureActionAsync, token, backup, canRollback: () => modified);
             interaction.Report("installing", 100);
         }
         catch (Exception original) when (original is not UpdateAbortedException && modified)
         {
             try
             {
+                interaction.SetRollbackAvailable(false);
                 interaction.Report("restoring", -1);
                 await UpdateIo.RunAsync(UpdaterText.Current.Restore + target, async () =>
                 {
@@ -48,10 +51,9 @@ internal sealed class MacBundleReplacement(string target, string backup, bool el
             }
             throw new IOException(UpdaterText.Current.RolledBack, original);
         }
-        catch (UpdateRollbackException original)
+        finally
         {
-            // A failure before deleting the old bundle needs no restoration.
-            throw new IOException(UpdaterText.Current.RolledBack, original);
+            interaction.SetRollbackAvailable(false);
         }
     }
 

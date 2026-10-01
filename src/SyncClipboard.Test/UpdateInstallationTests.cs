@@ -232,9 +232,30 @@ public class UpdateInstallationTests
         var installer = new FileReplacementPackageInstaller();
         var request = new UpdateInstallRequest(Path.Combine(directory, "package"), "sha256:unused");
 
-        await Assert.ThrowsAsync<OperationCanceledException>(() => installer.StartAsync(request, new CancellationToken(true)));
-
-        Assert.IsEmpty(Directory.GetFileSystemEntries(directory));
+        string[] names = OperatingSystem.IsLinux()
+            ? ["SyncClipboard.Updater", .. LinuxUpdaterFiles.Libraries]
+            : ["SyncClipboard.Updater.exe"];
+        var created = new List<string>();
+        try
+        {
+            foreach (var name in names)
+            {
+                var path = Path.Combine(Env.ProgramDirectory, name);
+                if (File.Exists(path))
+                    continue;
+                File.WriteAllText(path, "test updater file");
+                created.Add(path);
+            }
+            await Assert.ThrowsAsync<OperationCanceledException>(() => installer.StartAsync(request, new CancellationToken(true)));
+            Assert.IsEmpty(Directory.GetFileSystemEntries(directory));
+        }
+        finally
+        {
+            foreach (var path in created)
+            {
+                File.Delete(path);
+            }
+        }
     }
 
     private UpdateChecker CreateChecker(IUpdateInstaller? installer, IHttp? http = null, Mock<IUpdateInstallerFactory>? factory = null)

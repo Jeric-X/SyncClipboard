@@ -109,7 +109,8 @@ internal static class UpdateWorker
         var name = OperatingSystem.IsWindows() ? "SyncClipboard.Updater.exe" : "SyncClipboard.Updater";
         var expected = Path.Combine(workspace, name);
         var executable = Path.GetFullPath(Environment.ProcessPath!);
-        if (string.Equals(executable, expected, StringComparison.OrdinalIgnoreCase))
+        var comparison = OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+        if (string.Equals(executable, expected, comparison))
             return true;
         if (!OperatingSystem.IsMacOS() || !File.Exists(expected))
             return false;
@@ -437,8 +438,11 @@ internal static class UpdateWorker
     internal static void ValidateWorkspace(string workspace)
     {
         var directory = new DirectoryInfo(Path.GetFullPath(workspace));
-        if (directory.Parent?.Name != "SyncClipboard-updates" || !Guid.TryParseExact(directory.Name, "N", out _)
-            || !File.Exists(Path.Combine(directory.FullName, WorkspaceMarker)))
+        var namedWorkspace = directory.Name.StartsWith("SyncClipboard-update-", StringComparison.Ordinal)
+            && directory.Name.Length > "SyncClipboard-update-".Length;
+        var groupedWorkspace = directory.Parent?.Name == "SyncClipboard-updates"
+            && Guid.TryParseExact(directory.Name, "N", out _);
+        if ((!namedWorkspace && !groupedWorkspace) || !File.Exists(Path.Combine(directory.FullName, WorkspaceMarker)))
             throw new IOException(UpdaterText.Current.InvalidWorkspace);
     }
 

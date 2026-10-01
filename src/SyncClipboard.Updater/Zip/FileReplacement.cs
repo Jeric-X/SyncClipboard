@@ -71,7 +71,7 @@ internal static class FileReplacement
                     CreateParents(Path.GetDirectoryName(entry.Destination)!, createdDirectories);
                     await ReplaceAsync(entry.Source, entry.Destination, onFailure, backup, token,
                         () => entry.Modified = true);
-                }, onFailure, token, backup, canRollback: true);
+                }, onFailure, token, backup, canRollback: () => entries.Any(e => e.Modified));
                 Report(progress, "installing", (i + 1) * 100 / entries.Length);
                 token.ThrowIfCancellationRequested();
             }

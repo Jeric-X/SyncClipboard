@@ -8,6 +8,7 @@ internal sealed class AppImageReplacement(string target, string backup, bool ele
 
     public async Task ApplyAsync(string source, IUpdateInteraction interaction, CancellationToken token)
     {
+        interaction.SetRollbackAvailable(false);
         interaction.Report("backup", -1);
         await UpdateIo.RunAsync(UpdaterText.Current.BackUp + target, async () =>
         {
@@ -25,15 +26,17 @@ internal sealed class AppImageReplacement(string target, string backup, bool ele
                 var existingBytes = File.Exists(target) ? new FileInfo(target).Length : 0;
                 PackageFiles.CheckSpace(Path.GetDirectoryName(target)!, Math.Max(0, new FileInfo(source).Length - existingBytes));
                 modified = true;
+                interaction.SetRollbackAvailable(true);
                 await RemoveTargetAsync(token);
                 await CopyAsync(source, target, token);
-            }, interaction.AskFailureActionAsync, token, backup, canRollback: true);
+            }, interaction.AskFailureActionAsync, token, backup, canRollback: () => modified);
             interaction.Report("installing", 100);
         }
         catch (Exception original) when (original is not UpdateAbortedException && modified)
         {
             try
             {
+                interaction.SetRollbackAvailable(false);
                 interaction.Report("restoring", -1);
                 await UpdateIo.RunAsync(UpdaterText.Current.Restore + target, async () =>
                 {
@@ -46,6 +49,10 @@ internal sealed class AppImageReplacement(string target, string backup, bool ele
                 throw new UpdateRecoveryException(backup, original, [error]);
             }
             throw new IOException(UpdaterText.Current.RolledBack, original);
+        }
+        finally
+        {
+            interaction.SetRollbackAvailable(false);
         }
     }
 

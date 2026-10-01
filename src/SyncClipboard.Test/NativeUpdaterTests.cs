@@ -473,7 +473,7 @@ public class NativeUpdaterTests
                     prompts++;
                     Assert.Contains(path, failedPath);
                     Assert.IsInstanceOfType<UnauthorizedAccessException>(error);
-                    Assert.IsTrue(canRollback);
+                    Assert.IsFalse(canRollback);
                     Assert.AreEqual("old", File.ReadAllText(path));
                     if (readOnly)
                         Assert.AreNotEqual((FileAttributes)0, File.GetAttributes(path) & FileAttributes.ReadOnly);

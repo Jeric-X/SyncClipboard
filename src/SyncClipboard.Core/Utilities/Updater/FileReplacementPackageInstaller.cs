@@ -35,7 +35,9 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
     internal static async Task<string> PrepareUpdaterAsync(string updaterPath, CancellationToken token,
         string fileName = "SyncClipboard.Updater.exe")
     {
-        var workspace = Path.Combine(Path.GetTempPath(), "SyncClipboard-updates", Guid.NewGuid().ToString("N"));
+        var workspace = OperatingSystem.IsLinux()
+            ? Directory.CreateTempSubdirectory("SyncClipboard-update-").FullName
+            : Path.Combine(Path.GetTempPath(), "SyncClipboard-updates", Guid.NewGuid().ToString("N"));
         try
         {
             Directory.CreateDirectory(workspace);
