@@ -11,7 +11,7 @@ on:
 
 jobs:
   update-homebrew-tap:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Download x64 DMG
         uses: actions/download-artifact@v8

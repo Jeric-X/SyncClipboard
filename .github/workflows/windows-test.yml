@@ -1,0 +1,83 @@
+name: windows-test
+
+on:
+  workflow_call:
+
+jobs:
+  function-test:
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.302
+      - name: Run Windows platform tests without UI
+        run: >-
+          dotnet test src/SyncClipboard.Test --configuration Release --arch x64
+          --filter "TestCategory=PlatformWindows&TestCategory!=UpdaterSmoke"
+          --blame-hang-timeout 2m
+
+  smoke-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        win_app_sdk: ['', '_no-win-app-sdk']
+    runs-on: windows-2025-vs2026
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.302
+      - uses: actions/download-artifact@v8
+        with:
+          name: win_x64${{ matrix.win_app_sdk }}
+          path: application
+      - name: Install the matching Windows App Runtime
+        if: matrix.win_app_sdk == '_no-win-app-sdk'
+        shell: powershell
+        run: |
+          dotnet restore src/SyncClipboard.Updater.WinUI -r win-x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $assets = Get-Content src/SyncClipboard.Updater.WinUI/obj/project.assets.json -Raw | ConvertFrom-Json
+          $runtime = $assets.libraries.PSObject.Properties | Where-Object Name -Like 'Microsoft.WindowsAppSDK.Runtime/*'
+          if (-not $runtime) { throw 'Windows App Runtime package not found in restore assets.' }
+          $packages = $assets.packageFolders.PSObject.Properties.Name | Select-Object -First 1
+          $msix = Join-Path $packages "$($runtime.Value.path)/tools/MSIX/win10-x64"
+          $framework = Get-ChildItem $msix -Filter '*.msix' | Where-Object Name -Match '^Microsoft.WindowsAppRuntime\.\d+(\.\d+)?\.msix$'
+          if (-not $framework) { throw 'Windows App Runtime framework MSIX not found.' }
+          $otherPackages = Get-ChildItem $msix -Filter '*.msix' | Where-Object FullName -NotIn $framework.FullName
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          foreach ($package in (@($framework) + @($otherPackages))) {
+            $archive = [System.IO.Compression.ZipFile]::OpenRead($package.FullName)
+            try {
+              $stream = $archive.GetEntry('AppxManifest.xml').Open()
+              try {
+                $manifest = New-Object System.Xml.XmlDocument
+                $manifest.Load($stream)
+              } finally {
+                $stream.Dispose()
+              }
+            } finally {
+              $archive.Dispose()
+            }
+            $identity = $manifest.Package.Identity
+            $installed = Get-AppxPackage -Name $identity.Name -Publisher $identity.Publisher -ErrorAction Stop |
+              Where-Object {
+                $_.Architecture.ToString() -eq $identity.ProcessorArchitecture -and
+                [version]$_.Version -ge [version]$identity.Version
+              }
+            if ($installed) {
+              Write-Host "Skipping $($package.Name): an equal or newer version is already installed."
+              continue
+            }
+            Add-AppxPackage -Path $package.FullName -ErrorAction Stop
+          }
+      - name: Smoke test the packaged NativeAOT updater and WinUI dialog
+        env:
+          SYNC_CLIPBOARD_UPDATER_TEST_EXE: ${{ github.workspace }}\application\SyncClipboard.Updater.exe
+        run: >-
+          dotnet test src/SyncClipboard.Test --configuration Release --arch x64
+          --filter "TestCategory=PlatformWindows&TestCategory=UpdaterSmoke"
+          --blame-hang-timeout 2m

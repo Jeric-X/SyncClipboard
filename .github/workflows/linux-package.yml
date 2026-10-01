@@ -56,7 +56,7 @@ jobs:
           - package-type: rpm
             cpu: arm64
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     steps:
       - name: Checkout

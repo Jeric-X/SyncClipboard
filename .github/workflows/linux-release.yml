@@ -60,7 +60,7 @@ jobs:
           - package-type: rpm
             cpu: arm64
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: package
     steps:
       - name: Download last-job-built change log

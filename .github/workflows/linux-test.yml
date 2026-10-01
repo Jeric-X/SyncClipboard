@@ -1,0 +1,45 @@
+name: linux-test
+
+on:
+  workflow_call:
+
+jobs:
+  function-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.302
+      - name: Install appimagetool for real AppImage fixtures
+        run: |
+          tool="$RUNNER_TEMP/appimagetool.AppImage"
+          curl --fail --location --retry 3 \
+            "https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage" \
+            --output "$tool"
+          echo "ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0  $tool" | sha256sum --check
+          chmod +x "$tool"
+          echo "SYNC_CLIPBOARD_APPIMAGE_TEST_TOOL=$tool" >> "$GITHUB_ENV"
+      - name: function-test
+        run: >-
+          dotnet test src/SyncClipboard.Test --configuration Release --arch x64
+          --filter 'TestCategory=PlatformLinux&TestCategory!=UpdaterSmoke'
+          --blame-hang-timeout 2m
+      - name: Install Avalonia display dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y xvfb xauth libice6 libsm6 libx11-6 libfontconfig1 libgl1
+      - uses: actions/download-artifact@v8
+        with:
+          name: linux-x64-self-contained
+          path: application
+      - name: Restore executable permissions lost by artifact transport
+        run: chmod +x application/SyncClipboard.Updater
+      - name: smoke-test
+        env:
+          SYNC_CLIPBOARD_UPDATER_TEST_SOURCE: ${{ github.workspace }}/application
+        run: >-
+          xvfb-run -a dotnet test src/SyncClipboard.Test --configuration Release --arch x64 --no-build
+          --filter 'TestCategory=PlatformLinux&TestCategory=UpdaterSmoke'
+          --blame-hang-timeout 2m

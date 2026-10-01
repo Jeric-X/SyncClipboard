@@ -92,6 +92,10 @@ dotnet test src/SyncClipboard.Test --filter "FullyQualifiedName~TestClassName"
 
 Tests use MSTest with Moq. `ServiceProviderDataSource` attributes drive DI validation tests that ensure all registered services can be resolved.
 
+#### Test organization
+
+- Mark tests that require real OS behavior with `[TestCategory("PlatformWindows")]`, `[TestCategory("PlatformMacOS")]`, or `[TestCategory("PlatformLinux")]`. Use multiple categories when appropriate; leave platform-independent tests unmarked. Platform-specific tests must also check the current OS and call `Assert.Inconclusive` on unsupported platforms before performing platform-specific setup or operations; categories alone do not skip tests when running the full suite locally.
+
 ### Code Style
 
 ```bash

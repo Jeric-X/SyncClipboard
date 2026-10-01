@@ -50,6 +50,9 @@ public class HistoryShortcutConfigTests
     }
 
     [TestMethod]
+    [TestCategory("PlatformWindows")]
+    [TestCategory("PlatformMacOS")]
+    [TestCategory("PlatformLinux")]
     public void CloseShortcuts_CannotBeAssignedOrOverriddenByConfiguration()
     {
         var keys = new List<Hotkey> { new(Key.Esc), new(Key.Shift, Key.Esc), new(Key.Ctrl, Key.W) };

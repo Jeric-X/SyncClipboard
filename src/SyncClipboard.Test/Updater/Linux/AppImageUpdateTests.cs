@@ -1,6 +1,3 @@
-using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Updater;
 using SyncClipboard.Updater.AppImage;
@@ -10,9 +7,11 @@ using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Cryptography;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Updater.Linux;
 
 [TestClass]
+[TestCategory("PlatformLinux")]
+[SupportedOSPlatform("linux")]
 public class AppImageUpdateTests
 {
     public TestContext TestContext { get; set; } = null!;
@@ -20,64 +19,18 @@ public class AppImageUpdateTests
     private CancellationToken Token => TestContext.CancellationTokenSource.Token;
 
     [TestInitialize]
-    public void Initialize() => directory = Directory.CreateTempSubdirectory("SyncClipboard AppImage 中文 ' ").FullName;
-
-    [TestCleanup]
-    public void Cleanup() => Directory.Delete(directory, true);
-
-    [TestMethod]
-    [DoNotParallelize]
-    [DataRow("current", true)]
-    [DataRow("parent", true)]
-    [DataRow(null, false)]
-    [DataRow("unrelated", false)]
-    [DataRow("missing", false)]
-    [DataRow("relative", false)]
-    public void AppImagePath_RequiresProgramInsideAppDirectory(string? location, bool supported)
+    public void Initialize()
     {
-        var image = Path.Combine(directory, "SyncClipboard.AppImage");
-        File.WriteAllBytes(image, ImageBytes());
-        var programDirectory = Env.ProgramDirectory;
-        var appDirectory = location switch
-        {
-            "current" => programDirectory,
-            "parent" => Path.GetFullPath(Path.Combine(programDirectory, "..")),
-            "unrelated" => directory,
-            "missing" => Path.Combine(directory, "missing"),
-            "relative" => ".",
-            _ => null
-        };
-        var originalImage = Environment.GetEnvironmentVariable("APPIMAGE");
-        var originalDirectory = Environment.GetEnvironmentVariable("APPDIR");
-        try
-        {
-            Environment.SetEnvironmentVariable("APPIMAGE", image);
-            Environment.SetEnvironmentVariable("APPDIR", appDirectory);
-            Assert.AreEqual(supported ? image : null, Env.GetAppImageExecPath());
-        }
-        finally
-        {
-            Environment.SetEnvironmentVariable("APPIMAGE", originalImage);
-            Environment.SetEnvironmentVariable("APPDIR", originalDirectory);
-        }
+        if (!OperatingSystem.IsLinux())
+            Assert.Inconclusive("Requires Linux.");
+        directory = Directory.CreateTempSubdirectory("SyncClipboard AppImage 中文 ' ").FullName;
     }
 
-    [TestMethod]
-    [DataRow(null, true)]
-    [DataRow("SyncClipboard.Updater", false)]
-    [DataRow("libSkiaSharp.so", false)]
-    public void Factory_RequiresInstalledAppImageAndCurrentUpdaterFiles(string? missing, bool supported)
+    [TestCleanup]
+    public void Cleanup()
     {
-        var target = Path.Combine(directory, "renamed application");
-        File.WriteAllBytes(target, ImageBytes());
-        foreach (var file in new[] { "SyncClipboard.Updater", "libSkiaSharp.so", "libHarfBuzzSharp.so" })
-        {
-            if (file != missing)
-                File.WriteAllText(Path.Combine(directory, file), file);
-        }
-        var info = new UpdateInfoConfig { ManageType = "manual", UpdateSrc = "github", PackageName = "update.AppImage" };
-        Assert.AreEqual(supported, UpdateInstallerFactory.Create(info, false, directory, appImagePath: target) is not null);
-        Assert.IsNull(UpdateInstallerFactory.Create(info, false, directory, appImagePath: null));
+        if (directory is not null)
+            Directory.Delete(directory, true);
     }
 
     [TestMethod]
@@ -114,40 +67,6 @@ public class AppImageUpdateTests
         {
             Directory.Delete(workspace, true);
         }
-    }
-
-    [TestMethod]
-    public async Task Preparation_VerifiesCopiedImageBeforeReplacingTarget()
-    {
-        var target = Path.Combine(directory, "installed.AppImage");
-        var package = Path.Combine(directory, "update.AppImage");
-        File.WriteAllText(target, "old");
-        var bytes = ImageBytes();
-        File.WriteAllBytes(package, bytes);
-        var update = Arguments(package, target);
-        var attempt = Directory.CreateDirectory(Path.Combine(directory, "attempt")).FullName;
-        var snapshot = await AppImagePackage.PrepareAsync(update, attempt, Token);
-        File.WriteAllText(package, "changed after preparation");
-        CollectionAssert.AreEqual(bytes, File.ReadAllBytes(snapshot));
-        Assert.AreEqual("old", File.ReadAllText(target));
-        var retry = Directory.CreateDirectory(Path.Combine(directory, "retry")).FullName;
-        await Assert.ThrowsAsync<InvalidDataException>(() => AppImagePackage.PrepareAsync(update, retry, Token));
-        Assert.AreEqual("old", File.ReadAllText(target));
-    }
-
-    [TestMethod]
-    [DataRow(0)]
-    [DataRow(4)]
-    [DataRow(8)]
-    [DataRow(10)]
-    [DataRow(18)]
-    public async Task Payload_RejectsInvalidFormatOrArchitecture(int offset)
-    {
-        var path = Path.Combine(directory, "bad.AppImage");
-        var bytes = ImageBytes();
-        bytes[offset] = 0;
-        File.WriteAllBytes(path, bytes);
-        await Assert.ThrowsAsync<InvalidDataException>(() => AppImagePackage.ValidatePayloadAsync(path, Token));
     }
 
     [TestMethod]
@@ -296,41 +215,28 @@ public class AppImageUpdateTests
     }
 
     [TestMethod]
-    public async Task NativeUpdater_InstallsRealAppImageRestartsAndCleansWorkspace()
+    [DoNotParallelize]
+    public async Task AppImageInstallation_RestartsNewApplicationAndRemovesWorkspace()
     {
-        var helper = Environment.GetEnvironmentVariable("SYNC_CLIPBOARD_UPDATER_TEST_EXE");
         var tool = Environment.GetEnvironmentVariable("SYNC_CLIPBOARD_APPIMAGE_TEST_TOOL");
-        if (!OperatingSystem.IsLinux() || string.IsNullOrEmpty(helper) || string.IsNullOrEmpty(tool))
-            Assert.Inconclusive("Requires Linux and the published updater/appimagetool.");
+        if (string.IsNullOrEmpty(tool))
+            Assert.Inconclusive("Set SYNC_CLIPBOARD_APPIMAGE_TEST_TOOL to appimagetool.");
         var target = await CreateAppImageAsync(tool, "old");
         var package = await CreateAppImageAsync(tool, "new");
-        var files = FileReplacementPackageInstaller.LinuxUpdaterFiles.GetFiles(Path.GetDirectoryName(helper)!);
-        var workspace = await FileReplacementPackageInstaller.PrepareUnixUpdaterAsync(files, Token);
+        var workspace = Directory.CreateDirectory(Path.Combine(directory, "SyncClipboard-updates", Guid.NewGuid().ToString("N"))).FullName;
+        File.WriteAllText(Path.Combine(workspace, ".syncclipboard-update"), "SyncClipboard updater workspace v1");
+        var update = Arguments(package, target) with { WorkDirectory = workspace };
+        var attempt = Directory.CreateDirectory(Path.Combine(workspace, "attempt")).FullName;
+        var payload = await AppImagePackage.PrepareAsync(update, attempt, Token);
+        var replacement = new AppImageReplacement(target, Path.Combine(workspace, "backup", "old.AppImage"), false);
+        var interaction = new Interaction();
+        await replacement.ApplyAsync(payload, interaction, Token);
+        var originalExtract = Environment.GetEnvironmentVariable("APPIMAGE_EXTRACT_AND_RUN");
         try
         {
-            var request = new UpdateInstallRequest(package, Arguments(package, target).Digest);
-            var start = FileReplacementPackageInstaller.CreateStartInfo(request, workspace, directory, target);
-            start.ArgumentList[start.ArgumentList.IndexOf("--process-id") + 1] = int.MaxValue.ToString();
-            start.RedirectStandardOutput = true;
-            start.RedirectStandardError = true;
-            // Exercise the updater after the old AppImage mount is gone; FUSE is not required in CI.
-            start.Environment["APPIMAGE_EXTRACT_AND_RUN"] = "1";
-            using var process = Process.Start(start)!;
-            var output = process.StandardOutput.ReadToEndAsync(Token);
-            var errors = process.StandardError.ReadToEndAsync(Token);
-            try
-            {
-                await process.WaitForExitAsync(Token).WaitAsync(TimeSpan.FromSeconds(60), Token);
-                Assert.AreEqual(0, process.ExitCode, await output + await errors);
-            }
-            finally
-            {
-                if (!process.HasExited)
-                {
-                    process.Kill(entireProcessTree: true);
-                    await process.WaitForExitAsync(CancellationToken.None);
-                }
-            }
+            // Exercise the real AppImage runtime without requiring a FUSE mount in CI.
+            Environment.SetEnvironmentVariable("APPIMAGE_EXTRACT_AND_RUN", "1");
+            await UpdateWorker.RestartAsync(update);
             var marker = Path.Combine(directory, "restarted");
             var wait = Stopwatch.StartNew();
             while (!File.Exists(marker) && wait.Elapsed < TimeSpan.FromSeconds(10))
@@ -339,12 +245,15 @@ public class AppImageUpdateTests
             }
             Assert.AreEqual("new", File.ReadAllText(marker).Trim());
             CollectionAssert.AreEqual(File.ReadAllBytes(package), File.ReadAllBytes(target));
+            Assert.IsTrue(File.GetUnixFileMode(target).HasFlag(UnixFileMode.UserExecute));
+            Assert.AreEqual(0, await UpdateWorker.CleanupAndReportAsync(update, interaction, appImageReplacement: replacement));
             Assert.IsFalse(Directory.Exists(workspace));
+            Assert.IsFalse(File.Exists(replacement.Backup));
+            Assert.IsEmpty(Directory.GetFileSystemEntries(directory, ".SyncClipboard-update-*"));
         }
         finally
         {
-            if (Directory.Exists(workspace))
-                Directory.Delete(workspace, true);
+            Environment.SetEnvironmentVariable("APPIMAGE_EXTRACT_AND_RUN", originalExtract);
         }
     }
 

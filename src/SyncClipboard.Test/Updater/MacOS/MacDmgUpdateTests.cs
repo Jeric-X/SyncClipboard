@@ -5,9 +5,10 @@ using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Runtime.Versioning;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Updater.MacOS;
 
 [TestClass]
+[TestCategory("PlatformMacOS")]
 [SupportedOSPlatform("macos")]
 public class MacDmgUpdateTests
 {
@@ -254,50 +255,41 @@ public class MacDmgUpdateTests
     }
 
     [TestMethod]
-    public async Task NativeUpdater_InstallsDmgRestartsAndRemovesWorkspace()
+    public async Task DmgInstallation_RestartsNewApplicationAndRemovesWorkspace()
     {
-        var helper = Environment.GetEnvironmentVariable("SYNC_CLIPBOARD_UPDATER_TEST_EXE");
-        if (string.IsNullOrWhiteSpace(helper) || !File.Exists(helper))
-            Assert.Inconclusive("Set SYNC_CLIPBOARD_UPDATER_TEST_EXE to the published macOS NativeAOT updater.");
         var update = await CreateUpdateAsync();
-        var workspace = Path.Combine(Path.GetTempPath(), "SyncClipboard-updates", Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(workspace);
+        var workspace = Directory.CreateDirectory(Path.Combine(directory, "SyncClipboard-updates", Guid.NewGuid().ToString("N"))).FullName;
+        File.WriteAllText(Path.Combine(workspace, ".syncclipboard-update"), "SyncClipboard updater workspace v1");
+        update = update with { WorkDirectory = workspace };
+        var attempt = Directory.CreateDirectory(Path.Combine(workspace, "attempt")).FullName;
+        var package = await MacDmgPackage.PrepareAsync(update, attempt, Token);
+        var replacement = new MacBundleReplacement(update.Target, Path.Combine(workspace, "backup", "SyncClipboard.app"), false);
+        var interaction = new Interaction();
+        var detached = false;
         try
         {
-            File.WriteAllText(Path.Combine(workspace, ".syncclipboard-update"), "SyncClipboard updater workspace v1");
-            File.Copy(helper, Path.Combine(workspace, "SyncClipboard.Updater"));
-            foreach (var library in MacUpdaterFiles.Libraries)
-                File.Copy(Path.Combine(Path.GetDirectoryName(helper)!, library), Path.Combine(workspace, library));
-            var start = FileReplacementPackageInstaller.CreateStartInfo(new(update.PackagePath, update.Digest), workspace,
-                Path.Combine(update.Target, "Contents", "MonoBundle"));
-            // The test host stays alive to observe completion; only replace the parent identity.
-            var processIdIndex = start.ArgumentList.IndexOf("--process-id");
-            start.ArgumentList[processIdIndex + 1] = int.MaxValue.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            using var process = Process.Start(start)!;
-            try
-            {
-                await process.WaitForExitAsync(Token).WaitAsync(TimeSpan.FromSeconds(60), Token);
-                Assert.AreEqual(0, process.ExitCode);
-            }
-            finally
-            {
-                if (!process.HasExited)
-                    process.Kill(entireProcessTree: true);
-            }
-            Assert.AreEqual("new", File.ReadAllText(Path.Combine(update.Target, "Contents", "Resources", "version")));
-            await MacCommand.RunAsync("/usr/bin/codesign", ["--verify", "--deep", "--strict", update.Target], Token);
+            await replacement.ApplyAsync(package.BundlePath, interaction, Token);
+            await UpdateWorker.RestartAsync(update);
+            Assert.AreEqual(0, await UpdateWorker.CleanupAndReportAsync(update, interaction, replacement, package));
+            detached = true;
+            Assert.AreEqual(0, interaction.Result!.ExitCode);
             Assert.IsFalse(Directory.Exists(workspace));
+            Assert.IsFalse(Directory.Exists(replacement.Backup));
+            Assert.IsEmpty(Directory.GetDirectories(Path.GetDirectoryName(update.Target)!, ".SyncClipboard-update-*"));
+            await MacCommand.RunAsync("/usr/bin/codesign", ["--verify", "--deep", "--strict", update.Target], Token);
             var marker = Path.Combine(directory, "restarted");
             using var launchTimeout = CancellationTokenSource.CreateLinkedTokenSource(Token);
             launchTimeout.CancelAfter(TimeSpan.FromSeconds(10));
             while (!File.Exists(marker))
+            {
                 await Task.Delay(100, launchTimeout.Token);
-            Assert.AreEqual("started", File.ReadAllText(marker));
+            }
+            Assert.AreEqual("new", File.ReadAllText(marker));
         }
         finally
         {
-            if (Directory.Exists(workspace))
-                Directory.Delete(workspace, true);
+            if (!detached)
+                await package.DetachAsync(null);
         }
     }
 
@@ -353,7 +345,7 @@ public class MacDmgUpdateTests
             #include <stdio.h>
             int main(void) {
                 FILE *f = fopen("{{marker}}", "w");
-                if (f) { fputs("started", f); fclose(f); }
+                if (f) { fputs("{{version}}", f); fclose(f); }
                 return 0;
             }
             """);
