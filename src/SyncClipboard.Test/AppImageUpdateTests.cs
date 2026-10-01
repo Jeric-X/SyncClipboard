@@ -1,3 +1,4 @@
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Updater;
@@ -23,6 +24,43 @@ public class AppImageUpdateTests
 
     [TestCleanup]
     public void Cleanup() => Directory.Delete(directory, true);
+
+    [TestMethod]
+    [DoNotParallelize]
+    [DataRow("current", true)]
+    [DataRow("parent", true)]
+    [DataRow(null, false)]
+    [DataRow("unrelated", false)]
+    [DataRow("missing", false)]
+    [DataRow("relative", false)]
+    public void AppImagePath_RequiresProgramInsideAppDirectory(string? location, bool supported)
+    {
+        var image = Path.Combine(directory, "SyncClipboard.AppImage");
+        File.WriteAllBytes(image, ImageBytes());
+        var programDirectory = Env.ProgramDirectory;
+        var appDirectory = location switch
+        {
+            "current" => programDirectory,
+            "parent" => Path.GetFullPath(Path.Combine(programDirectory, "..")),
+            "unrelated" => directory,
+            "missing" => Path.Combine(directory, "missing"),
+            "relative" => ".",
+            _ => null
+        };
+        var originalImage = Environment.GetEnvironmentVariable("APPIMAGE");
+        var originalDirectory = Environment.GetEnvironmentVariable("APPDIR");
+        try
+        {
+            Environment.SetEnvironmentVariable("APPIMAGE", image);
+            Environment.SetEnvironmentVariable("APPDIR", appDirectory);
+            Assert.AreEqual(supported ? image : null, Env.GetAppImageExecPath());
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("APPIMAGE", originalImage);
+            Environment.SetEnvironmentVariable("APPDIR", originalDirectory);
+        }
+    }
 
     [TestMethod]
     [DataRow(null, true)]
@@ -204,6 +242,7 @@ public class AppImageUpdateTests
         }
         Assert.AreEqual(1, prompts);
         Assert.IsFalse(rollbackAvailable);
+        Assert.IsEmpty(Directory.GetFileSystemEntries(directory, ".SyncClipboard-update-*"));
     }
 
     [TestMethod]

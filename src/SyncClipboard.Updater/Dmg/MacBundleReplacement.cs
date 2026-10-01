@@ -43,7 +43,6 @@ internal sealed class MacBundleReplacement(string target, string backup, bool el
                 {
                     await PrepareAsync(backup, CancellationToken.None);
                     await ReplaceAsync();
-                    await RemoveAsync(prepared, CancellationToken.None);
                 }, interaction.AskFailureActionAsync, CancellationToken.None, backup);
             }
             catch (Exception error)
@@ -55,15 +54,15 @@ internal sealed class MacBundleReplacement(string target, string backup, bool el
         finally
         {
             interaction.SetRollbackAvailable(false);
+            await UpdateIo.RunAsync(UpdaterText.Current.RemoveDirectory + prepared,
+                () => RemoveAsync(prepared, CancellationToken.None), interaction.AskFailureActionAsync,
+                CancellationToken.None, backup);
         }
     }
 
     public Task CleanupAsync(IUpdateInteraction interaction)
-        => UpdateIo.RunAsync(UpdaterText.Current.RemoveDirectory + prepared + ", " + backup, async () =>
-        {
-            await RemoveAsync(prepared, CancellationToken.None);
-            await RemoveAsync(backup, CancellationToken.None);
-        }, interaction.AskFailureActionAsync, CancellationToken.None, backup);
+        => UpdateIo.RunAsync(UpdaterText.Current.RemoveDirectory + backup,
+            () => RemoveAsync(backup, CancellationToken.None), interaction.AskFailureActionAsync, CancellationToken.None, backup);
 
     private async Task PrepareAsync(string source, CancellationToken token)
     {

@@ -310,6 +310,44 @@ public class UpdateInstallationTests
     }
 
     [TestMethod]
+    [DataRow("update.dmg", true, null, true)]
+    [DataRow("update.DMG", true, null, true)]
+    [DataRow("update.dmg", false, null, false)]
+    [DataRow("update.zip", true, null, false)]
+    [DataRow("update.dmg", true, "Info.plist", false)]
+    [DataRow("update.dmg", true, "SyncClipboard.Updater", false)]
+    [DataRow("update.dmg", true, "libSkiaSharp.dylib", false)]
+    [DataRow("update.dmg", true, "libHarfBuzzSharp.dylib", false)]
+    [DataRow("update.dmg", true, "libAvaloniaNative.dylib", false)]
+    public void Factory_SelectsMacDmgInstaller(string packageName, bool isMacOS, string? missing, bool supported)
+    {
+        var contents = Path.Combine(directory, "SyncClipboard.app", "Contents");
+        var program = Directory.CreateDirectory(Path.Combine(contents, "MonoBundle")).FullName;
+        var resources = Directory.CreateDirectory(Path.Combine(contents, "Resources", "Updater")).FullName;
+        string[] files =
+        [
+            Path.Combine(contents, "Info.plist"),
+            Path.Combine(resources, "SyncClipboard.Updater"),
+            .. MacUpdaterFiles.Libraries.Select(name => Path.Combine(program, name))
+        ];
+        foreach (var file in files)
+        {
+            if (Path.GetFileName(file) != missing)
+                File.WriteAllText(file, "test");
+        }
+        var installer = UpdateInstallerFactory.Create(new UpdateInfoConfig
+        {
+            ManageType = UpdateInfoConfig.TypeManual,
+            UpdateSrc = "github",
+            PackageName = packageName
+        }, false, program, isMacOS: isMacOS);
+
+        Assert.AreEqual(supported, installer is FileReplacementPackageInstaller);
+        if (!supported)
+            Assert.IsNull(installer);
+    }
+
+    [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
     public void MissingUpdater_OffersOpenFolderInsteadOfInstallation(bool directoryAtUpdaterPath)

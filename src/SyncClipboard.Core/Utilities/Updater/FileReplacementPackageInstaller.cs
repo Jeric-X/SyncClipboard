@@ -92,7 +92,7 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
         if (OperatingSystem.IsMacOS())
             targetPath = MacUpdaterFiles.FindBundle(programDirectory) ?? targetPath;
         else if (OperatingSystem.IsLinux())
-            targetPath = appImagePath ?? LinuxUpdaterFiles.GetAppImagePath()
+            targetPath = appImagePath ?? Env.GetAppImageExecPath()
                 ?? throw new InvalidOperationException("The running AppImage could not be located.");
         var updaterPath = Path.Combine(workspace, OperatingSystem.IsWindows() ? "SyncClipboard.Updater.exe" : "SyncClipboard.Updater");
         var appElevated = OperatingSystem.IsWindows() && Env.IsRunningAsAdministrator;

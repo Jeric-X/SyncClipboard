@@ -8,7 +8,7 @@ internal sealed class UpdateInstallerFactory : IUpdateInstallerFactory
 {
     public IUpdateInstaller? Create(UpdateInfoConfig updateInfo)
         => Create(updateInfo, OperatingSystem.IsWindows(), Env.ProgramDirectory, OperatingSystem.IsMacOS(),
-            OperatingSystem.IsLinux() ? LinuxUpdaterFiles.GetAppImagePath() : null);
+            OperatingSystem.IsLinux() ? Env.GetAppImageExecPath() : null);
 
     internal static IUpdateInstaller? Create(UpdateInfoConfig updateInfo, bool isWindows, string programDirectory,
         bool isMacOS = false, string? appImagePath = null)

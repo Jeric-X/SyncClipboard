@@ -1,4 +1,4 @@
-using System.Runtime.Versioning;
+using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Core.Commons;
 
@@ -10,16 +10,12 @@ public static partial class Env
 
     public static string? GetAppImageExecPath()
     {
-        var argv0 = Environment.GetEnvironmentVariable("ARGV0");
+        var path = Environment.GetEnvironmentVariable("APPIMAGE");
         var appDir = Environment.GetEnvironmentVariable("APPDIR");
-        var owd = Environment.GetEnvironmentVariable("OWD");
-        if (string.IsNullOrEmpty(argv0) is false &&
-            string.IsNullOrEmpty(appDir) is false &&
-            string.IsNullOrEmpty(owd) is false)
-        {
-            return Path.GetFullPath(argv0);
-        }
-
-        return null;
+        if (string.IsNullOrEmpty(path) || !Path.IsPathFullyQualified(path) || !File.Exists(path))
+            return null;
+        if (string.IsNullOrEmpty(appDir) || !Path.IsPathFullyQualified(appDir) || !Directory.Exists(appDir))
+            return null;
+        return FileSystem.IsWithin(ProgramDirectory, appDir) ? path : null;
     }
 }

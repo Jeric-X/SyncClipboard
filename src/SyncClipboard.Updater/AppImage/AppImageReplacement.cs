@@ -53,6 +53,9 @@ internal sealed class AppImageReplacement(string target, string backup, bool ele
         finally
         {
             interaction.SetRollbackAvailable(false);
+            await UpdateIo.RunAsync(UpdaterText.Current.RemoveTemporaryFile + prepared,
+                () => RemovePreparedAsync(CancellationToken.None), interaction.AskFailureActionAsync,
+                CancellationToken.None, backup);
         }
     }
 
@@ -60,7 +63,7 @@ internal sealed class AppImageReplacement(string target, string backup, bool ele
         => UpdateIo.RunAsync(UpdaterText.Current.RemoveTemporaryFile + backup, () =>
         {
             File.Delete(backup);
-            return RemovePreparedAsync(CancellationToken.None);
+            return Task.CompletedTask;
         }, interaction.AskFailureActionAsync, CancellationToken.None, backup);
 
     private async Task PrepareAsync(string source, CancellationToken token)

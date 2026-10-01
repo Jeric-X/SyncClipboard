@@ -6,12 +6,6 @@ internal static class LinuxUpdaterFiles
 {
     internal static readonly string[] Libraries = ["libSkiaSharp.so", "libHarfBuzzSharp.so"];
 
-    public static string? GetAppImagePath()
-    {
-        var path = Environment.GetEnvironmentVariable("APPIMAGE");
-        return path is not null && Path.IsPathFullyQualified(path) && File.Exists(path) ? path : null;
-    }
-
     public static string[] GetFiles(string programDirectory)
     {
         string[] names = ["SyncClipboard.Updater", .. Libraries];

@@ -1,5 +1,4 @@
 using SyncClipboard.Updater.Dmg;
-using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Updater;
 using System.Diagnostics;
@@ -55,6 +54,7 @@ public class MacDmgUpdateTests
         Assert.AreEqual("version", new FileInfo(Path.Combine(resources, "current")).LinkTarget);
         await MacCommand.RunAsync("/usr/bin/codesign", ["--verify", "--deep", "--strict", update.Target], Token);
         Assert.AreEqual("old", File.ReadAllText(Path.Combine(replacement.Backup, "Contents", "Resources", "version")));
+        Assert.IsEmpty(Directory.GetDirectories(Path.GetDirectoryName(update.Target)!, ".SyncClipboard-update-*"));
         await replacement.CleanupAsync(interaction);
         Assert.IsFalse(Directory.Exists(replacement.Backup));
         Assert.IsEmpty(Directory.GetDirectories(Path.GetDirectoryName(update.Target)!, ".SyncClipboard-update-*"));
@@ -63,6 +63,7 @@ public class MacDmgUpdateTests
     [TestMethod]
     [DataRow("Retry")]
     [DataRow("Abort")]
+    [DataRow("CancelTask")]
     public async Task PreparationFailure_OffersRetryOrAbortWithOriginalBundleIntact(string choice)
     {
         var target = await CreateBundleAsync(Path.Combine(directory, "installed", "SyncClipboard.app"), "old");
@@ -84,12 +85,20 @@ public class MacDmgUpdateTests
                 prompts++;
                 Assert.IsFalse(canRollback);
                 Assert.AreEqual("old", File.ReadAllText(Path.Combine(target, "Contents", "Resources", "version")));
+                Assert.HasCount(1, Directory.GetDirectories(Path.GetDirectoryName(target)!, ".SyncClipboard-update-*"));
                 File.SetUnixFileMode(unreadable, originalMode);
+                if (choice == "CancelTask")
+                {
+                    cancellation.Cancel();
+                    return Task.FromCanceled<UpdateFailureAction>(cancellation.Token);
+                }
                 return Task.FromResult(Enum.Parse<UpdateFailureAction>(choice));
             }
         };
         if (choice == "Retry")
             await replacement.ApplyAsync(stage, interaction, cancellation.Token);
+        else if (choice == "CancelTask")
+            await Assert.ThrowsAsync<OperationCanceledException>(() => replacement.ApplyAsync(stage, interaction, cancellation.Token));
         else
         {
             var error = await Assert.ThrowsAsync<UpdateAbortedException>(() => replacement.ApplyAsync(stage, interaction, cancellation.Token));
@@ -99,6 +108,8 @@ public class MacDmgUpdateTests
         Assert.AreEqual(choice == "Retry" ? "new" : "old",
             File.ReadAllText(Path.Combine(target, "Contents", "Resources", "version")));
         await MacCommand.RunAsync("/usr/bin/codesign", ["--verify", "--deep", "--strict", target], Token);
+        Assert.AreEqual("old", File.ReadAllText(Path.Combine(replacement.Backup, "Contents", "Resources", "version")));
+        Assert.IsEmpty(Directory.GetDirectories(Path.GetDirectoryName(target)!, ".SyncClipboard-update-*"));
     }
 
     [TestMethod]
@@ -216,8 +227,6 @@ public class MacDmgUpdateTests
         Directory.CreateDirectory(Path.GetDirectoryName(helper)!);
         File.Copy("/usr/bin/true", helper);
         await MacCommand.RunAsync("/usr/bin/codesign", ["--force", "--deep", "--sign", "-", bundle], Token);
-        var info = new UpdateInfoConfig { ManageType = "manual", UpdateSrc = "github", PackageName = "update.DMG" };
-        Assert.IsNotNull(UpdateInstallerFactory.Create(info, false, program, isMacOS: true));
         var workspace = await FileReplacementPackageInstaller.PrepareMacUpdaterAsync(bundle, Token);
         try
         {
