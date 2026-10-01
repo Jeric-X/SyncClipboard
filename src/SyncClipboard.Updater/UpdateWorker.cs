@@ -302,15 +302,16 @@ internal static class UpdateWorker
     {
         // Only the running executable and marker remain. Windows releases the EXE after we exit.
         // Pass paths through environment variables so they are never interpreted as command text.
+        // Wait before the IF so every retry waits, including when deleting the EXE fails.
         const string command = """
             for /l %i in (1,1,60) do (
-            del /q "!SYNC_CLIPBOARD_CLEANUP_WORK!\SyncClipboard.Updater.exe" >nul 2>&1
+            "!SystemRoot!\System32\ping.exe" -n 2 127.0.0.1 >nul 2>&1
+            & del /q "!SYNC_CLIPBOARD_CLEANUP_WORK!\SyncClipboard.Updater.exe" >nul 2>&1
             & if not exist "!SYNC_CLIPBOARD_CLEANUP_WORK!\SyncClipboard.Updater.exe" (
             del /q "!SYNC_CLIPBOARD_CLEANUP_WORK!\.syncclipboard-update" >nul 2>&1
             & rd "!SYNC_CLIPBOARD_CLEANUP_WORK!" >nul 2>&1
             & if not exist "!SYNC_CLIPBOARD_CLEANUP_WORK!\" exit /b 0
             )
-            & "!SystemRoot!\System32\ping.exe" -n 2 127.0.0.1 >nul 2>&1
             )
             """;
         var start = new ProcessStartInfo(Path.Combine(Environment.SystemDirectory, "cmd.exe"))
