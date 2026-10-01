@@ -11,17 +11,16 @@ internal static class Program
     {
         try
         {
+            UpdaterText.Current = UpdaterText.FromArguments(args);
             if (args is ["--help"])
             {
-                Console.WriteLine("SyncClipboard.Updater [--smoke-test]\nWindows portable ZIP: --package-path <zip> --digest sha256:<hash> "
-                    + "--target <directory> --executable <SyncClipboard.exe> --process-id <pid> --work-dir <workspace> "
-                    + "[--language <language>] [--protect-path <path> ...]");
+                Console.WriteLine(UpdaterText.Current.Help);
                 return 0;
             }
             if (args.Length != 0 && args is not ["--smoke-test"])
             {
                 if (!OperatingSystem.IsWindows())
-                    throw new PlatformNotSupportedException("ZIP installation is supported on Windows only.");
+                    throw new PlatformNotSupportedException(UpdaterText.Current.WindowsOnly);
                 if (args is ["--cleanup-work", var workspace, "--wait-pid", var pid, "--wait-start", var start, "--language", var language])
                 {
                     var cleanupInteraction = new ConsoleUpdateInteraction(language);
@@ -50,8 +49,8 @@ internal static class Program
                 .With(new X11PlatformOptions { RenderingMode = [X11RenderingMode.Software] })
                 .StartWithClassicDesktopLifetime([]);
 #else
-            Console.WriteLine("SyncClipboard 更新助手 / Updater");
-            Console.WriteLine("请从 SyncClipboard 启动更新。 / Start updates from SyncClipboard.");
+            Console.WriteLine(UpdaterText.Current.Title);
+            Console.WriteLine(UpdaterText.Current.StartFromApplication);
             if (args is ["--smoke-test"]) Console.WriteLine("CONSOLE_SMOKE=PASS");
             return 0;
 #endif

@@ -1,6 +1,6 @@
 namespace SyncClipboard.Updater;
 
-internal sealed class UpdateRollbackException(Exception inner) : IOException("Rollback requested.", inner);
+internal sealed class UpdateRollbackException(Exception inner) : IOException(UpdaterText.Current.RollbackRequested, inner);
 
 internal static class UpdateIo
 {

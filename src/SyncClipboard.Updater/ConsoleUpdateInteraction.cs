@@ -6,7 +6,7 @@ namespace SyncClipboard.Updater;
 
 internal sealed class ConsoleUpdateInteraction : IUpdateInteraction
 {
-    private readonly bool chinese;
+    private readonly UpdaterText text;
     private readonly bool isElevated;
     private readonly TextReader input;
     private readonly TextWriter output;
@@ -15,7 +15,7 @@ internal sealed class ConsoleUpdateInteraction : IUpdateInteraction
 
     public ConsoleUpdateInteraction(string language, bool isElevated = false, TextReader? input = null, TextWriter? output = null)
     {
-        chinese = language.StartsWith("zh", StringComparison.OrdinalIgnoreCase);
+        text = UpdaterText.ForLanguage(language);
         this.isElevated = isElevated;
         this.input = input ?? Console.In;
         this.output = output ?? Console.Out;
@@ -30,25 +30,22 @@ internal sealed class ConsoleUpdateInteraction : IUpdateInteraction
 
     public void Report(string phase, int percent)
     {
-        var text = chinese ? phase switch
+        var message = phase switch
         {
-            "preparing" => "复制并校验更新包",
-            "waiting" => "等待程序退出",
-            "backup" => "备份程序文件",
-            "installing" => "安装更新",
-            "restoring" => "恢复旧版本",
+            "preparing" => text.Preparing,
+            "waiting" => text.Waiting,
+            "backup" => text.BackingUp,
+            "installing" => text.Installing,
+            "restoring" => text.Restoring,
             _ => phase
-        } : phase;
-        WriteLine(percent < 0 ? text : $"{text}: {percent}%");
+        };
+        WriteLine(percent < 0 ? message : $"{message}: {percent}%");
     }
 
     public async Task<ForceExitAction> ConfirmForceExitAsync(CancellationToken token)
     {
-        token.ThrowIfCancellationRequested();
-        var message = chinese
-            ? "主程序等待 10 秒仍未退出。是否强制退出并继续更新？未保存的内容可能丢失。"
-            : "SyncClipboard has not exited after 10 seconds. Force it to exit and continue updating? Unsaved changes may be lost.";
-        string[] choices = chinese ? ["是", "否", "重试"] : ["Yes", "No", "Retry"];
+        var message = text.ConfirmForceExit;
+        string[] choices = [text.Yes, text.No, text.Retry];
         if (TryPrompt(() => Prompt.Select(message, choices, defaultValue: choices[0]), out var selected))
             return selected == choices[0] ? ForceExitAction.Yes : selected == choices[1] ? ForceExitAction.No : ForceExitAction.Retry;
         WriteLine(message + " [Y/n/r]");
@@ -66,26 +63,21 @@ internal sealed class ConsoleUpdateInteraction : IUpdateInteraction
             if (answer.Equals("r", StringComparison.OrdinalIgnoreCase)
                 || answer.Equals("retry", StringComparison.OrdinalIgnoreCase) || answer == "重试")
                 return ForceExitAction.Retry;
-            WriteLine(chinese ? "请输入 y、n 或 r。" : "Enter y, n, or r.");
+            WriteLine(text.EnterYesNoRetry);
         }
     }
 
     public async Task<UpdateFailureAction> AskFailureActionAsync(string path, Exception error, bool canRollback, CancellationToken token)
     {
-        token.ThrowIfCancellationRequested();
         WriteLine($"{path}: {error.Message}");
         string[] choices = canRollback
-            ? chinese ? ["重试", "回滚，恢复旧版本", "终止，不回滚，保留备份"]
-                : ["Retry", "Roll back to the previous version", "Abort without rollback; keep backups"]
-            : chinese ? ["重试", "终止"] : ["Retry", "Abort"];
-        var message = chinese ? "请选择操作" : "Choose an action";
+            ? [text.Retry, text.Rollback, text.AbortKeepBackup]
+            : [text.Retry, text.Abort];
+        var message = text.ChooseAction;
         if (TryPrompt(() => Prompt.Select(message, choices, defaultValue: choices[0]), out var selected))
             return selected == choices[0] ? UpdateFailureAction.Retry
                 : canRollback && selected == choices[1] ? UpdateFailureAction.Rollback : UpdateFailureAction.Abort;
-        WriteLine(canRollback
-            ? chinese ? "[1] 终止（不回滚，保留备份，不启动主程序） [2] 重试（默认） [3] 回滚"
-                : "[1] Abort (no rollback; keep backups; do not start the application) [2] Retry (default) [3] Roll back"
-            : chinese ? "[1] 终止 [2] 重试（默认）" : "[1] Abort [2] Retry (default)");
+        WriteLine(canRollback ? text.RecoveryMenu : text.FailureMenu);
         while (true)
         {
             switch ((await input.ReadLineAsync(token))?.Trim())
@@ -100,8 +92,7 @@ internal sealed class ConsoleUpdateInteraction : IUpdateInteraction
                 case null:
                     return canRollback ? UpdateFailureAction.Rollback : UpdateFailureAction.Abort;
                 default:
-                    WriteLine(canRollback ? (chinese ? "请输入 1、2 或 3。" : "Enter 1, 2, or 3.")
-                        : (chinese ? "请输入 1 或 2。" : "Enter 1 or 2."));
+                    WriteLine(canRollback ? text.EnterRecoveryAction : text.EnterFailureAction);
                     break;
             }
         }
@@ -111,20 +102,20 @@ internal sealed class ConsoleUpdateInteraction : IUpdateInteraction
     {
         if (result.ExitCode == 0)
         {
-            WriteLine(chinese ? "更新完成。" : "Update completed.");
+            WriteLine(text.Completed);
             return;
         }
-        WriteLine(result.Error ?? (chinese ? "更新失败。" : "Update failed."));
+        WriteLine(result.Error ?? text.Failed);
         if (result.BackupPath is not null)
-            WriteLine((chinese ? "备份目录: " : "Backup directory: ") + result.BackupPath);
+            WriteLine(text.BackupDirectory + result.BackupPath);
         if (result.WorkDirectory is not null)
-            WriteLine((chinese ? "日志及工作目录: " : "Log and workspace: ") + result.WorkDirectory);
+            WriteLine(text.Workspace + result.WorkDirectory);
         if ((!isElevated || result.BackupPath is not null) && waitForAcknowledgement)
         {
-            var message = chinese ? "按回车关闭" : "Press Enter to close";
-            if (TryPrompt(() => Prompt.Select<string>(message, [chinese ? "关闭" : "Close"]), out _))
+            var message = text.PressEnterToClose;
+            if (TryPrompt(() => Prompt.Select<string>(message, [text.Close]), out _))
                 return;
-            WriteLine(chinese ? "按回车关闭。" : "Press Enter to close.");
+            WriteLine(text.PressEnterToClose);
             try
             {
                 await input.ReadLineAsync();

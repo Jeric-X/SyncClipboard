@@ -5,13 +5,13 @@ namespace SyncClipboard.Updater;
 internal enum UpdateFailureAction { Abort, Retry, Rollback }
 
 internal sealed class UpdateAbortedException(string? backupPath, Exception inner)
-    : IOException("Update terminated without rollback. / 更新已终止，未执行回滚。", inner)
+    : IOException(UpdaterText.Current.Aborted, inner)
 {
     public string? BackupPath { get; } = backupPath;
 }
 
 internal sealed class UpdateRecoveryException(string backupPath, Exception original, IEnumerable<Exception> recoveryErrors)
-    : AggregateException("Update rollback failed. / 更新回滚失败。", new[] { original }.Concat(recoveryErrors))
+    : AggregateException(UpdaterText.Current.RollbackFailed, new[] { original }.Concat(recoveryErrors))
 {
     public string BackupPath { get; } = backupPath;
 }
@@ -31,7 +31,7 @@ internal static class FileReplacement
         Entry[] entries = [];
         long growth = 0;
         long largestFile = 0;
-        await UpdateIo.RunAsync("Prepare backup / 准备备份: " + backup, () =>
+        await UpdateIo.RunAsync(UpdaterText.Current.PrepareBackup + backup, () =>
         {
             entries = Directory.EnumerateFiles(stage, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal)
                 .Select(path =>
@@ -57,7 +57,7 @@ internal static class FileReplacement
             {
                 token.ThrowIfCancellationRequested();
                 var entry = entries[i];
-                await UpdateIo.RunAsync("Back up / 备份: " + entry.Destination, async () =>
+                await UpdateIo.RunAsync(UpdaterText.Current.BackUp + entry.Destination, async () =>
                 {
                     ValidateDestination(entry.Destination, target, protectedPaths);
                     if (entry.Existed)
@@ -70,7 +70,7 @@ internal static class FileReplacement
                 Report(progress, "backup", (i + 1) * 100 / entries.Length);
             }
             // Backups may occupy the same drive as the installation.
-            await UpdateIo.RunAsync("Check free space / 检查空间: " + target, () =>
+            await UpdateIo.RunAsync(UpdaterText.Current.CheckFreeSpace + target, () =>
             {
                 WindowsZipPackage.CheckSpace(target, checked(growth + largestFile));
                 return Task.CompletedTask;
@@ -79,7 +79,7 @@ internal static class FileReplacement
             {
                 token.ThrowIfCancellationRequested();
                 var entry = entries[i];
-                await UpdateIo.RunAsync("Replace / 替换: " + entry.Destination, async () =>
+                await UpdateIo.RunAsync(UpdaterText.Current.Replace + entry.Destination, async () =>
                 {
                     ValidateDestination(entry.Destination, target, protectedPaths);
                     CreateParents(Path.GetDirectoryName(entry.Destination)!, createdDirectories);
@@ -87,8 +87,8 @@ internal static class FileReplacement
                         () => entry.Modified = true);
                 }, onFailure, token, backup, canRollback: true);
                 Report(progress, "installing", (i + 1) * 100 / entries.Length);
+                token.ThrowIfCancellationRequested();
             }
-            token.ThrowIfCancellationRequested();
         }
         catch (Exception original) when (original is not UpdateAbortedException)
         {
@@ -98,7 +98,7 @@ internal static class FileReplacement
                 try
                 {
                     Report(progress, "restoring", -1);
-                    await UpdateIo.RunAsync("Restore / 恢复: " + entry.Destination, async () =>
+                    await UpdateIo.RunAsync(UpdaterText.Current.Restore + entry.Destination, async () =>
                     {
                         ValidateDestination(entry.Destination, target, protectedPaths);
                         if (entry.Existed)
@@ -121,7 +121,7 @@ internal static class FileReplacement
             {
                 try
                 {
-                    await UpdateIo.RunAsync("Remove directory / 删除目录: " + directory, () =>
+                    await UpdateIo.RunAsync(UpdaterText.Current.RemoveDirectory + directory, () =>
                     {
                         if (!Directory.EnumerateFileSystemEntries(directory).Any())
                             Directory.Delete(directory);
@@ -138,7 +138,7 @@ internal static class FileReplacement
             if (errors.Count != 0)
                 throw new UpdateRecoveryException(backup, original, errors);
             if (original is UpdateRollbackException)
-                throw new IOException("Update rolled back. / 更新已回滚。", original);
+                throw new IOException(UpdaterText.Current.RolledBack, original);
             throw;
         }
     }
@@ -147,7 +147,7 @@ internal static class FileReplacement
     {
         if (!FileSystem.IsWithin(destination, target) || Directory.Exists(destination)
             || protectedPaths.Any(path => FileSystem.IsWithin(destination, path)))
-            throw new IOException("Unsafe update destination: " + destination);
+            throw new IOException(UpdaterText.Current.UnsafeDestination + destination);
     }
 
     private static void CreateParents(string directory, List<string> created)
@@ -171,13 +171,12 @@ internal static class FileReplacement
         try
         {
             await WindowsZipPackage.CopyAsync(source, temporary, token);
-            token.ThrowIfCancellationRequested();
             File.Move(temporary, destination, true);
             replaced?.Invoke();
         }
         finally
         {
-            await UpdateIo.RunAsync("Remove temporary file / 删除临时文件: " + temporary, () =>
+            await UpdateIo.RunAsync(UpdaterText.Current.RemoveTemporaryFile + temporary, () =>
             {
                 File.Delete(temporary);
                 return Task.CompletedTask;

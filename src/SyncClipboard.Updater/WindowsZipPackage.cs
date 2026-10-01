@@ -17,11 +17,11 @@ internal static class WindowsZipPackage
     public static void ValidateTarget(UpdateArguments update)
     {
         if (!Directory.Exists(update.Target))
-            throw new IOException("The installation directory is missing.");
+            throw new IOException(UpdaterText.Current.MissingTarget);
         if (GetProtectedPaths(update).Any(path => FileSystem.IsWithin(update.Target, path)))
-            throw new IOException("The installation directory is inside a protected data directory.");
+            throw new IOException(UpdaterText.Current.ProtectedTarget);
         if (update.WorkDirectory is not null && FileSystem.IsWithin(update.WorkDirectory, update.Target))
-            throw new IOException("The updater workspace must be outside the installation directory.");
+            throw new IOException(UpdaterText.Current.WorkspaceInsideTarget);
     }
 
     public static async Task<string> PrepareAsync(UpdateArguments update, string attempt, CancellationToken token)
@@ -43,7 +43,7 @@ internal static class WindowsZipPackage
         await using var stream = File.OpenRead(path);
         var hash = "sha256:" + Convert.ToHexString(await SHA256.HashDataAsync(stream, token));
         if (!string.Equals(hash, digest, StringComparison.OrdinalIgnoreCase))
-            throw new InvalidDataException("The update package SHA256 does not match the downloaded release.");
+            throw new InvalidDataException(UpdaterText.Current.HashMismatch);
     }
 
     internal static async Task ExtractAsync(string package, string stage, string target,
@@ -58,12 +58,12 @@ internal static class WindowsZipPackage
             var name = ValidateEntryName(entry);
             var relative = name.TrimEnd('/');
             if (!seen.Add(relative))
-                throw new InvalidDataException("Duplicate archive entry: " + name);
+                throw new InvalidDataException(UpdaterText.Current.DuplicateArchiveEntry + name);
             if (protectedPaths.Any(path => FileSystem.IsWithin(Path.Combine(target, relative), path)))
                 continue;
             var output = Path.GetFullPath(Path.Combine(stage, relative));
             if (!FileSystem.IsWithin(output, stage) || output == stage)
-                throw new InvalidDataException("Invalid archive path.");
+                throw new InvalidDataException(UpdaterText.Current.InvalidArchivePath);
             if (name.EndsWith('/'))
                 Directory.CreateDirectory(output);
             else
@@ -81,7 +81,7 @@ internal static class WindowsZipPackage
         var name = entry.FullName.Replace('\\', '/');
         if (string.IsNullOrEmpty(name) || name.StartsWith('/') || name.Contains(':')
             || ((entry.ExternalAttributes >> 16) & 0xF000) == 0xA000)
-            throw new InvalidDataException("Unsafe archive entry: " + entry.FullName);
+            throw new InvalidDataException(UpdaterText.Current.UnsafeArchiveEntry + entry.FullName);
         foreach (var part in name.TrimEnd('/').Split('/'))
         {
             var stem = part.Split('.')[0].ToUpperInvariant();
@@ -90,7 +90,7 @@ internal static class WindowsZipPackage
                 || stem is "CON" or "PRN" or "AUX" or "NUL" or "CONIN$" or "CONOUT$"
                 || (stem.Length == 4 && (stem.StartsWith("COM", StringComparison.Ordinal)
                     || stem.StartsWith("LPT", StringComparison.Ordinal)) && "123456789¹²³".Contains(stem[3])))
-                throw new InvalidDataException("Unsafe Windows archive entry: " + entry.FullName);
+                throw new InvalidDataException(UpdaterText.Current.UnsafeWindowsArchiveEntry + entry.FullName);
         }
         return name;
     }
@@ -104,7 +104,7 @@ internal static class WindowsZipPackage
         var info = document.RootElement.GetProperty("UpdateInfo");
         if (info.GetProperty("manage_type").GetString() != "manual" || info.GetProperty("update_src").GetString() != "github"
             || info.GetProperty("package_name").GetString() != packageName)
-            throw new InvalidDataException("The update package does not match this installation.");
+            throw new InvalidDataException(UpdaterText.Current.PackageMismatch);
     }
 
     private static void ValidateArchitecture(string executable)
@@ -113,7 +113,7 @@ internal static class WindowsZipPackage
         using var reader = new PEReader(stream);
         var machine = RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? Machine.Arm64 : Machine.Amd64;
         if (reader.PEHeaders.PEHeader is null || reader.PEHeaders.CoffHeader.Machine != machine)
-            throw new InvalidDataException("The update executable has an incompatible architecture: " + Path.GetFileName(executable));
+            throw new InvalidDataException(UpdaterText.Current.IncompatibleArchitecture + Path.GetFileName(executable));
     }
 
     internal static async Task CopyAsync(string source, string destination, CancellationToken token)
@@ -127,6 +127,6 @@ internal static class WindowsZipPackage
     internal static void CheckSpace(string directory, long bytes)
     {
         if (!FileSystem.HasEnoughSpace(directory, checked(bytes + 32L * 1024 * 1024)))
-            throw new IOException("Not enough free space for the update.");
+            throw new IOException(UpdaterText.Current.InsufficientSpace);
     }
 }

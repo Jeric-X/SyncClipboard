@@ -9,12 +9,10 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
 {
     public async Task StartAsync(UpdateInstallRequest request, CancellationToken token)
     {
-        token.ThrowIfCancellationRequested();
         var workspace = await PrepareUpdaterAsync(Path.Combine(Env.ProgramDirectory, "SyncClipboard.Updater.exe"), token);
         var started = false;
         try
         {
-            token.ThrowIfCancellationRequested();
             using var process = Process.Start(CreateStartInfo(request, workspace))
                 ?? throw new IOException("Could not start the update helper.");
             started = true;
@@ -29,7 +27,6 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
 
     internal static async Task<string> PrepareUpdaterAsync(string updaterPath, CancellationToken token)
     {
-        token.ThrowIfCancellationRequested();
         var workspace = Path.Combine(Path.GetTempPath(), "SyncClipboard-updates", Guid.NewGuid().ToString("N"));
         try
         {
