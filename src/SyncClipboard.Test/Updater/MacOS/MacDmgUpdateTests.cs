@@ -416,7 +416,7 @@ public class MacDmgUpdateTests
                 var bytes = await File.ReadAllBytesAsync(package, Token);
                 return "sha256:" + Convert.ToHexString(SHA256.HashData(bytes));
             }
-            catch (IOException error) when ((error.HResult & 0xffff) == 32 && elapsed.Elapsed < TimeSpan.FromSeconds(10))
+            catch (IOException) when (elapsed.Elapsed < TimeSpan.FromSeconds(30))
             {
                 // The newly created DMG can remain briefly locked after hdiutil exits.
                 await Task.Delay(200, Token);
