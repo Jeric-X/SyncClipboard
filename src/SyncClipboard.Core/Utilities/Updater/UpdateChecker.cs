@@ -95,7 +95,8 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
                 Task operation;
                 lock (installationGate)
                 {
-                    if (installing) return;
+                    if (installing)
+                        return;
                     operation = singletonTask.Run(task, token);
                 }
                 await operation;
@@ -117,12 +118,20 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         Task operation;
         lock (installationGate)
         {
-            if (installing || CurrentState.State != UpdaterState.ReadyToInstall) return;
+            if (installing || CurrentState.State != UpdaterState.ReadyToInstall)
+                return;
             installing = true;
             operation = singletonTask.Run(InstallUpdateCore, token);
         }
-        try { await operation; }
-        finally { lock (installationGate) installing = false; }
+        try
+        {
+            await operation;
+        }
+        finally
+        {
+            lock (installationGate)
+                installing = false;
+        }
     }
 
     private async Task InstallUpdateCore(CancellationToken token)
@@ -130,7 +139,8 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         try
         {
             SetStatus(UpdaterState.Installing);
-            if (updateInstaller is null) throw new NotSupportedException(I18n.Strings.UpdateInstallationUnsupported);
+            if (updateInstaller is null)
+                throw new NotSupportedException(I18n.Strings.UpdateInstallationUnsupported);
             var request = new UpdateInstallRequest(DownloadPath, GithubAsset!.Digest!);
             await updateInstaller.StartAsync(request, token);
         }
