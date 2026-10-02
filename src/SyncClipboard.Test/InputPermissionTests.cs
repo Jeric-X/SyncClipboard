@@ -60,7 +60,8 @@ public class InputPermissionTests
         });
         provider.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(provider.HasRequestedAccessibilityPermission)) events.Add("requested");
+            if (e.PropertyName == nameof(provider.HasRequestedAccessibilityPermission))
+                events.Add("requested");
         };
 
         Parallel.For(0, 10, _ => Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission()));
@@ -158,13 +159,15 @@ public class InputPermissionTests
             }, openSettings: () => events.Add("settings"), resetPermission: () =>
             {
                 events.Add("reset");
-                if (failure == "start") throw new InvalidOperationException("Reset failed to start");
+                if (failure == "start")
+                    throw new InvalidOperationException("Reset failed to start");
                 return Task.FromException(failure == "timeout"
                     ? new TimeoutException("Reset timed out") : new InvalidOperationException("Reset failed"));
             });
         provider.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(provider.HasRequestedAccessibilityPermission)) events.Add("requested");
+            if (e.PropertyName == nameof(provider.HasRequestedAccessibilityPermission))
+                events.Add("requested");
         };
 
         Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
@@ -187,15 +190,18 @@ public class InputPermissionTests
         var provider = InputPermissionTests.CreatePermissionProvider(logger.Object, () =>
         {
             requests++;
-            if (failure == "request") throw new InvalidOperationException("Request failed");
+            if (failure == "request")
+                throw new InvalidOperationException("Request failed");
         }, isAccessibilityEnabled: () => false, openSettings: () =>
         {
-            if (failure == "settings") throw new InvalidOperationException("Settings failed");
+            if (failure == "settings")
+                throw new InvalidOperationException("Settings failed");
         });
         var requestStateChanges = 0;
         provider.PropertyChanged += (_, e) =>
         {
-            if (e.PropertyName == nameof(provider.HasRequestedAccessibilityPermission)) requestStateChanges++;
+            if (e.PropertyName == nameof(provider.HasRequestedAccessibilityPermission))
+                requestStateChanges++;
         };
 
         Assert.IsFalse(provider.HasRequestedAccessibilityPermission);
@@ -414,7 +420,8 @@ public class InputPermissionTests
             Assert.AreEqual(expected, provider.GetStatus());
             Assert.AreEqual(expected, provider.GetSimulationStatus());
             Assert.AreEqual(granted, provider.GetSimulationStatus().CanSimulateInput);
-            if (granted) Assert.IsTrue(provider.CheckAndRequestAccessibilityPermission());
+            if (granted)
+                Assert.IsTrue(provider.CheckAndRequestAccessibilityPermission());
             Assert.IsFalse(provider.HasRequestedAccessibilityPermission);
         }
     }

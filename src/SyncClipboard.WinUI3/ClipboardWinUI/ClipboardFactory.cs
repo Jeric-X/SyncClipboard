@@ -78,7 +78,8 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
 
     private static async Task HanleBitmap(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
     {
-        if (meta.Image is not null) return;
+        if (meta.Image is not null)
+            return;
         var bitmapStrem = await ClipboardData.GetBitmapAsync().AsTask().WaitAsync(ctk);
         using var randomStream = await bitmapStrem.OpenReadAsync();
         meta.Image = ClipboardImage.TryCreateImage(await RandomStreamToBytes(randomStream, ctk));
@@ -86,7 +87,8 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
 
     private static async Task HanleDib(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
     {
-        if (meta.Image is not null) return;
+        if (meta.Image is not null)
+            return;
         var res = await ClipboardData.GetDataAsync("DeviceIndependentBitmap").AsTask().WaitAsync(ctk);
         using var stream = res.As<IRandomAccessStream>();
         meta.Image = ClipboardImage.TryCreateImage(await RandomStreamToBytes(stream, ctk));

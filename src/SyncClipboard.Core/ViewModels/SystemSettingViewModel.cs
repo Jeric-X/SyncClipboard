@@ -321,7 +321,8 @@ public partial class SystemSettingViewModel : ObservableObject
     public async Task<bool> ChangeAppDataFolderAsync(string selectedFolder)
     {
         var targetFolder = await ConfirmAndResolveTargetFolderAsync(selectedFolder);
-        if (targetFolder is null) return false;
+        if (targetFolder is null)
+            return false;
 
         if (Env.IsSamePath(targetFolder, Env.AppDataDirectory))
             return false;
@@ -483,7 +484,8 @@ public partial class SystemSettingViewModel : ObservableObject
             Strings.NoWithoutSubfolder,
             Strings.Cancel);
 
-        if (result is null) return null;
+        if (result is null)
+            return null;
 
         return result == true ? withSubfolder : selectedFolder;
     }
@@ -541,7 +543,8 @@ public partial class SystemSettingViewModel : ObservableObject
 
     private static void RestartApp()
     {
-        if (string.IsNullOrEmpty(Env.ProgramPath)) return;
+        if (string.IsNullOrEmpty(Env.ProgramPath))
+            return;
         try
         {
             Process.Start(new ProcessStartInfo
@@ -601,7 +604,8 @@ public partial class SystemSettingViewModel : ObservableObject
     private async Task<string?> MoveAppDataFolderAsync(string targetFolder)
     {
         var copyError = await CopyAppDataFilesAsync(targetFolder);
-        if (copyError is not null) return copyError;
+        if (copyError is not null)
+            return copyError;
 
         // Write to the independent config file in the default AppData location.
         // This file must never be in the custom path, as it determines that path at startup.

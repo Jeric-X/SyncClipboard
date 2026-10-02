@@ -21,14 +21,16 @@ public class WlClipboardWriterTests
     [TestInitialize]
     public void Initialize()
     {
-        if (OperatingSystem.IsWindows()) Assert.Inconclusive("Tests use a Unix executable to simulate wl-copy.");
+        if (OperatingSystem.IsWindows())
+            Assert.Inconclusive("Tests use a Unix executable to simulate wl-copy.");
         _directory = Directory.CreateTempSubdirectory("SyncClipboard-wl-copy-");
     }
 
     [TestCleanup]
     public void Cleanup()
     {
-        if (_directory is null) return;
+        if (_directory is null)
+            return;
         var childPid = Path.Combine(_directory.FullName, "child-pid");
         if (File.Exists(childPid))
         {
@@ -88,7 +90,8 @@ public class WlClipboardWriterTests
         package.Add(other);
         var image = sameItem ? other : new DataTransferItem();
         image.Set(DataFormat.CreateBytesPlatformFormat("image/png"), original.ToByteArray(MagickFormat.Png));
-        if (!sameItem) package.Add(image);
+        if (!sameItem)
+            package.Add(image);
 
         await CreateWriter().SetDataAsync(new AutoDisposeDataTransfer(package), CancellationToken.None);
         CollectionAssert.AreEqual(ImageArguments, ReadArguments());
@@ -109,7 +112,8 @@ public class WlClipboardWriterTests
         package.Add(text);
         var files = sameItem ? text : new DataTransferItem();
         files.Set(DataFormat.CreateBytesPlatformFormat("text/uri-list"), Encoding.UTF8.GetBytes("file:///tmp/a.pdf"));
-        if (!sameItem) package.Add(files);
+        if (!sameItem)
+            package.Add(files);
 
         await CreateWriter().SetDataAsync(new AutoDisposeDataTransfer(package), CancellationToken.None);
 
@@ -212,7 +216,8 @@ public class WlClipboardWriterTests
         using var package = ClipboardBitmapLifetimeTests.CreatePackage(bitmap);
         package.Data.Items[0].Set(DataFormat.CreateBytesPlatformFormat("image/png"), [1, 2, 3]);
         using var cancellation = new CancellationTokenSource();
-        if (cancel) cancellation.Cancel();
+        if (cancel)
+            cancellation.Cancel();
         var writer = CreateWriter(fail ? "exit 7" : "exit 0");
 
         if (cancel)
@@ -244,7 +249,8 @@ public class WlClipboardWriterTests
     {
         var path = Path.Combine(_directory.FullName, "wl-copy");
         var script = "#!/bin/sh\ndir=${0%/*}\nprintf '%s\\n' \"$@\" > \"$dir/args\"\n";
-        if (captureInput) script += "cat > \"$dir/data\"\n";
+        if (captureInput)
+            script += "cat > \"$dir/data\"\n";
         File.WriteAllText(path, script + ending + "\n");
         if (!OperatingSystem.IsWindows())
             File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);

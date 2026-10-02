@@ -30,7 +30,8 @@ public sealed partial class HotkeyBlacklistPage : Page
 
     private async void EditItemClick(object sender, RoutedEventArgs _)
     {
-        if (sender is not Button { DataContext: EditableWindowInfo item }) return;
+        if (sender is not Button { DataContext: EditableWindowInfo item })
+            return;
         var dialog = new WindowInfoEditDialog { XamlRoot = XamlRoot };
         dialog.SetWindowInfo(item.ToWindowInfo());
         if (await dialog.ShowAsync() == ContentDialogResult.Primary)
@@ -41,7 +42,8 @@ public sealed partial class HotkeyBlacklistPage : Page
 
     private void DeleteItemClick(object sender, RoutedEventArgs _)
     {
-        if (sender is Button { DataContext: EditableWindowInfo item }) _viewModel.RemoveItem(item);
+        if (sender is Button { DataContext: EditableWindowInfo item })
+            _viewModel.RemoveItem(item);
     }
 
     private void CaptureClick(object _, RoutedEventArgs __)

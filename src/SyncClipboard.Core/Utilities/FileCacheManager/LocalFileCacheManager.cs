@@ -68,7 +68,10 @@ public sealed class LocalFileCacheManager : IDisposable
         if (needRecreate)
         {
             LocalFileCacheDbContext.ClearConnectionPool();
-            try { File.Delete(dbPath); }
+            try
+            {
+                File.Delete(dbPath);
+            }
             catch (Exception ex)
             {
                 _logger.Write($"Failed to delete database file: {ex.Message}");

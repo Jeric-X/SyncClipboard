@@ -328,7 +328,8 @@ public partial class SyncSettingViewModel : ObservableObject
 
     public void ActivateNetworkAccountSwitchStatus()
     {
-        if (_networkAccountSwitchStatusActive) return;
+        if (_networkAccountSwitchStatusActive)
+            return;
         _networkAccountSwitchStatusActive = true;
         _networkAccountSwitchService.StatusChanged += OnNetworkAccountSwitchStatusChanged;
         AccountAutoSwitchDescription = NetworkAccountSwitchStatusFormatter.Format(_networkAccountSwitchService.Status);
@@ -336,7 +337,8 @@ public partial class SyncSettingViewModel : ObservableObject
 
     public void DeactivateNetworkAccountSwitchStatus()
     {
-        if (!_networkAccountSwitchStatusActive) return;
+        if (!_networkAccountSwitchStatusActive)
+            return;
         _networkAccountSwitchStatusActive = false;
         _networkAccountSwitchService.StatusChanged -= OnNetworkAccountSwitchStatusChanged;
     }

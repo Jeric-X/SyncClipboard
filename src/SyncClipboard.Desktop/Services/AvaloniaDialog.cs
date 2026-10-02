@@ -86,7 +86,8 @@ public class AvaloniaDialog : IMainWindowDialog
     {
         var window = _window
             ?? (Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow;
-        if (window is null) return null;
+        if (window is null)
+            return null;
 
         var folders = await window.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {

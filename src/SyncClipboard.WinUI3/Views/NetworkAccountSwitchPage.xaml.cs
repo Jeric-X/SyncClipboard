@@ -23,34 +23,40 @@ public sealed partial class NetworkAccountSwitchPage : Page
     {
         var editor = _viewModel.CreateRuleEditor();
         var dialog = new NetworkRuleEditDialog(_viewModel, editor) { XamlRoot = XamlRoot };
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary) _viewModel.AddRuleEditor(editor);
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            _viewModel.AddRuleEditor(editor);
     }
 
     private async void EditRuleClick(object sender, RoutedEventArgs _)
     {
-        if (sender is not Button { DataContext: NetworkRuleEditor rule }) return;
+        if (sender is not Button { DataContext: NetworkRuleEditor rule })
+            return;
         var editor = NetworkAccountSwitchViewModel.CloneRuleEditor(rule);
         var dialog = new NetworkRuleEditDialog(_viewModel, editor) { XamlRoot = XamlRoot };
-        if (await dialog.ShowAsync() == ContentDialogResult.Primary) _viewModel.UpdateRuleEditor(rule, editor);
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            _viewModel.UpdateRuleEditor(rule, editor);
     }
 
     private void DeleteRuleClick(object sender, RoutedEventArgs _)
     {
-        if (sender is not Button { DataContext: NetworkRuleEditor rule }) return;
+        if (sender is not Button { DataContext: NetworkRuleEditor rule })
+            return;
         _viewModel.SelectedRule = rule;
         _viewModel.DeleteRuleCommand.Execute(null);
     }
 
     private void MoveRuleUpClick(object sender, RoutedEventArgs _)
     {
-        if (sender is not Button { DataContext: NetworkRuleEditor rule }) return;
+        if (sender is not Button { DataContext: NetworkRuleEditor rule })
+            return;
         _viewModel.SelectedRule = rule;
         _viewModel.MoveUpCommand.Execute(null);
     }
 
     private void MoveRuleDownClick(object sender, RoutedEventArgs _)
     {
-        if (sender is not Button { DataContext: NetworkRuleEditor rule }) return;
+        if (sender is not Button { DataContext: NetworkRuleEditor rule })
+            return;
         _viewModel.SelectedRule = rule;
         _viewModel.MoveDownCommand.Execute(null);
     }

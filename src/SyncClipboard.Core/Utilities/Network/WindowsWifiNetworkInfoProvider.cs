@@ -53,7 +53,8 @@ public sealed class WindowsWifiNetworkInfoProvider : IWifiNetworkInfoProvider
 
     public void OpenWifiSettings()
     {
-        if (!OperatingSystem.IsWindows()) return;
+        if (!OperatingSystem.IsWindows())
+            return;
         Process.Start(new ProcessStartInfo("ms-settings:privacy-location") { UseShellExecute = true });
     }
 

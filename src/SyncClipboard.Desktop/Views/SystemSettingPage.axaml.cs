@@ -113,7 +113,8 @@ public partial class SystemSettingPage : UserControl
     private async void ChangeAppDataFolder(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         var topLevel = TopLevel.GetTopLevel(this);
-        if (topLevel is null) return;
+        if (topLevel is null)
+            return;
 
         var folders = await topLevel.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
         {
@@ -121,19 +122,22 @@ public partial class SystemSettingPage : UserControl
             AllowMultiple = false
         });
 
-        if (folders is null || folders.Count == 0) return;
+        if (folders is null || folders.Count == 0)
+            return;
 
         var selectedFolder = folders[0].Path.LocalPath;
         var viewModel = (SystemSettingViewModel)DataContext!;
 
-        if (sender is Button button) button.IsEnabled = false;
+        if (sender is Button button)
+            button.IsEnabled = false;
         try
         {
             await viewModel.ChangeAppDataFolderAsync(selectedFolder);
         }
         finally
         {
-            if (sender is Button btn) btn.IsEnabled = true;
+            if (sender is Button btn)
+                btn.IsEnabled = true;
         }
     }
 }

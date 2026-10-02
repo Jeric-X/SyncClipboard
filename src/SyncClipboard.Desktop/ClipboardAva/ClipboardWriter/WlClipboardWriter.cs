@@ -46,7 +46,8 @@ internal sealed class WlClipboardWriter : IClipboardWriter
         if (uris is not null)
         {
             var lines = Encoding.UTF8.GetString(uris).Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
-            if (lines.Length == 0) throw new ArgumentException("No files to copy.", nameof(transfer));
+            if (lines.Length == 0)
+                throw new ArgumentException("No files to copy.", nameof(transfer));
             using var data = new MemoryStream(Encoding.UTF8.GetBytes(string.Join("\r\n", lines) + "\r\n"));
             await CopyAsync(data, "text/uri-list", token);
             return;
@@ -115,7 +116,8 @@ internal sealed class WlClipboardWriter : IClipboardWriter
                 var error = await errorTask.WaitAsync(ct);
                 throw new InvalidOperationException($"wl-copy failed ({process.ExitCode}): {error.Trim()}");
             }
-            if (writeError is not null) throw writeError;
+            if (writeError is not null)
+                throw writeError;
         }
         catch (OperationCanceledException ex) when (!token.IsCancellationRequested)
         {

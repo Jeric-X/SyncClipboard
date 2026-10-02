@@ -38,17 +38,20 @@ public sealed partial class SystemSettingPage : Page
 
     private async void ChangeAppDataFolder(object sender, RoutedEventArgs _)
     {
-        if (sender is Button button) button.IsEnabled = false;
+        if (sender is Button button)
+            button.IsEnabled = false;
         try
         {
             var folder = await _dialog.PickFolderAsync(Strings.AppDataFolder);
-            if (folder is null) return;
+            if (folder is null)
+                return;
 
             await _viewModel.ChangeAppDataFolderAsync(folder);
         }
         finally
         {
-            if (sender is Button btn) btn.IsEnabled = true;
+            if (sender is Button btn)
+                btn.IsEnabled = true;
         }
     }
 }

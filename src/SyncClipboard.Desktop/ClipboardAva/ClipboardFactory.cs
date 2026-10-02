@@ -78,7 +78,10 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
             {
                 await Logger.WriteAsync(ex.Message);
             }
-            finally { NativeClipboardAccess.Semaphore.Release(); }
+            finally
+            {
+                NativeClipboardAccess.Semaphore.Release();
+            }
             await Task.Delay(200, ctk);
         }
 

@@ -29,8 +29,10 @@ public record NetworkAccountSwitchRule
 
     public virtual bool Equals(NetworkAccountSwitchRule? other)
     {
-        if (ReferenceEquals(this, other)) return true;
-        if (other is null) return false;
+        if (ReferenceEquals(this, other))
+            return true;
+        if (other is null)
+            return false;
 
         return Id == other.Id
             && Name == other.Name
@@ -68,8 +70,10 @@ public record NetworkAccountSwitchConfig
 
     public virtual bool Equals(NetworkAccountSwitchConfig? other)
     {
-        if (ReferenceEquals(this, other)) return true;
-        if (other is null) return false;
+        if (ReferenceEquals(this, other))
+            return true;
+        if (other is null)
+            return false;
 
         return Enabled == other.Enabled
             && NotifyOnChange == other.NotifyOnChange

@@ -234,7 +234,8 @@ public class KeyboardSimulationTests
         var created = 0;
         using var keyboard = new VirtualKeyboard(permissions.Object, () =>
         {
-            if (++created == 1) throw new HookException(UioHookResult.ErrorLinuxOpenUinput);
+            if (++created == 1)
+                throw new HookException(UioHookResult.ErrorLinuxOpenUinput);
             return simulator.Object;
         });
 

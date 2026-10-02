@@ -34,7 +34,8 @@ public class RemoteClipboardServerFactoryLifecycleTests
         }
         fixture.BuildAdapter = () =>
         {
-            if (blockFactory) Block();
+            if (blockFactory)
+                Block();
             return adapter.Object;
         };
         var resetting = Task.Run(fixture.Reset, TestContext.CancellationTokenSource.Token);
@@ -142,7 +143,8 @@ public class RemoteClipboardServerFactoryLifecycleTests
         }
         fixture.BuildAdapter = () =>
         {
-            if (disposeInFactory) fixture.Factory.Dispose();
+            if (disposeInFactory)
+                fixture.Factory.Dispose();
             return adapter.Object;
         };
 

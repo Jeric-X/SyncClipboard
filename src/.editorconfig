@@ -1,5 +1,9 @@
 [*.cs]
 
+# IDE2001: 控制语句正文单独换行，统一适用于 if、for、foreach、while 等语句
+csharp_style_allow_embedded_statements_on_same_line_experimental = false
+dotnet_diagnostic.IDE2001.severity = warning
+
 # CC0105: You should use 'var' whenever possible.
 dotnet_diagnostic.CC0105.severity = none
 

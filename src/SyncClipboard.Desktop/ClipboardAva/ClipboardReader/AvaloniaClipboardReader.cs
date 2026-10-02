@@ -39,7 +39,8 @@ public class AvaloniaClipboardReader(IClipboard clipboard) : IClipboardReader
     {
         return ReadAsync(async data =>
         {
-            if (data is null) return null;
+            if (data is null)
+                return null;
             var bitmap = await data.TryGetBitmapAsync().WaitAsync(token);
             return CopyBorrowedBitmap(data, bitmap);
         }, token);

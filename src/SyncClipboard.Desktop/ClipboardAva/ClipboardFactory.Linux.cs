@@ -114,7 +114,8 @@ internal partial class ClipboardFactory
     [SupportedOSPlatform("linux")]
     private async Task HandleLinuxUriList(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        if (meta.Files is not null) return;
+        if (meta.Files is not null)
+            return;
 
         var uriListStr = await Clipboard.GetStringAsync(Format.UriList, token);
         ArgumentNullException.ThrowIfNull(uriListStr, nameof(HandleLinuxUriList));
@@ -220,13 +221,15 @@ internal partial class ClipboardFactory
     [SupportedOSPlatform("linux")]
     private async Task HandleGnomeFile(ClipboardMetaInfomation meta, CancellationToken token)
     {
-        if (meta.Files is not null) return;
+        if (meta.Files is not null)
+            return;
 
         var str = await Clipboard.GetStringAsync(Format.GnomeFiles, token);
         ArgumentNullException.ThrowIfNull(str, nameof(HandleGnomeFile));
         var pathList = str.Split(["\r\n", "\r", "\n"], StringSplitOptions.None)
                             .Where(x => !string.IsNullOrEmpty(x)).ToArray();
-        if (pathList.Length < 2) return;
+        if (pathList.Length < 2)
+            return;
         if (pathList[0] == "cut")
         {
             meta.Effects = DragDropEffects.Move;

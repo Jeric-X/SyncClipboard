@@ -272,7 +272,8 @@ namespace SyncClipboard.Core
         private void RegisterForSystemHotkey(IMainWindow mainWindow, HistoryViewModel historyViewModel)
         {
             var hotkeyManager = Services.GetService<HotkeyManager>();
-            if (hotkeyManager is null) return;
+            if (hotkeyManager is null)
+                return;
 
             UniqueCommandCollection CommandCollection = new(Strings.System, PageDefinition.SystemSetting.FontIcon!)
             {

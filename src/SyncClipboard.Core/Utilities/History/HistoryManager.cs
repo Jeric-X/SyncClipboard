@@ -699,7 +699,8 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     public async Task SetStarredAsync(IEnumerable<HistoryRecordKey> keys, bool starred, CancellationToken token = default)
     {
         var lookup = keys.ToHashSet();
-        if (lookup.Count == 0) return;
+        if (lookup.Count == 0)
+            return;
 
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
@@ -767,7 +768,11 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                 {
                     foreach (var dir in Directory.GetDirectories(Env.HistoryFileFolder))
                     {
-                        try { Directory.Delete(dir, true); } catch { }
+                        try
+                        {
+                            Directory.Delete(dir, true);
+                        }
+                        catch { }
                     }
                 }
             }

@@ -298,7 +298,8 @@ public partial class HistoryViewModel : ObservableObject
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().IsTopmost;
         set
         {
-            if (value == IsTopmost) return;
+            if (value == IsTopmost)
+                return;
 
             window?.SetTopmost(value);
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { IsTopmost = value });
@@ -337,7 +338,8 @@ public partial class HistoryViewModel : ObservableObject
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().OnlyShowStarred;
         set
         {
-            if (value == OnlyShowStarred) return;
+            if (value == OnlyShowStarred)
+                return;
 
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { OnlyShowStarred = value });
             OnPropertyChanged(nameof(OnlyShowStarred));
@@ -351,7 +353,8 @@ public partial class HistoryViewModel : ObservableObject
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().ShowStarredFilter;
         set
         {
-            if (value == ShowStarredFilter) return;
+            if (value == ShowStarredFilter)
+                return;
 
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { ShowStarredFilter = value });
             OnPropertyChanged(nameof(ShowStarredFilter));
@@ -368,7 +371,8 @@ public partial class HistoryViewModel : ObservableObject
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().SortByLastAccessed;
         set
         {
-            if (value == SortByLastAccessed) return;
+            if (value == SortByLastAccessed)
+                return;
 
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { SortByLastAccessed = value });
             OnPropertyChanged(nameof(SortByLastAccessed));
@@ -382,7 +386,8 @@ public partial class HistoryViewModel : ObservableObject
         set
         {
             var clamped = Math.Clamp(value, 25, 400);
-            if (clamped == FontScalePercent) return;
+            if (clamped == FontScalePercent)
+                return;
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FontScalePercent = clamped });
             OnPropertyChanged(nameof(FontScalePercent));
             OnPropertyChanged(nameof(ListItemFontSize));
@@ -394,9 +399,11 @@ public partial class HistoryViewModel : ObservableObject
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().FollowCaretPosition;
         set
         {
-            if (value == FollowCaretPosition) return;
+            if (value == FollowCaretPosition)
+                return;
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowCaretPosition = value });
-            if (value) _serviceProvider.GetRequiredService<IInputPermissionProvider>().CheckAndRequestAccessibilityPermission();
+            if (value)
+                _serviceProvider.GetRequiredService<IInputPermissionProvider>().CheckAndRequestAccessibilityPermission();
         }
     }
 
@@ -405,9 +412,11 @@ public partial class HistoryViewModel : ObservableObject
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().FollowForegroundWindowScreen;
         set
         {
-            if (value == FollowForegroundWindowScreen) return;
+            if (value == FollowForegroundWindowScreen)
+                return;
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowForegroundWindowScreen = value });
-            if (value) _serviceProvider.GetRequiredService<IInputPermissionProvider>().CheckAndRequestAccessibilityPermission();
+            if (value)
+                _serviceProvider.GetRequiredService<IInputPermissionProvider>().CheckAndRequestAccessibilityPermission();
         }
     }
 
@@ -434,8 +443,10 @@ public partial class HistoryViewModel : ObservableObject
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().ListViewWidth;
         set
         {
-            if (value < 150) value = 150;
-            if (value == ListViewWidth) return;
+            if (value < 150)
+                value = 150;
+            if (value == ListViewWidth)
+                return;
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { ListViewWidth = value });
             OnPropertyChanged(nameof(ListViewWidth));
         }
@@ -561,21 +572,28 @@ public partial class HistoryViewModel : ObservableObject
     public async Task NotifyScrollPositionAsync(double offsetY, double viewportHeight, double extentHeight)
     {
         SetScrollViewMetrics(offsetY, viewportHeight, extentHeight);
-        if (IsEnd) return;
-        if (extentHeight <= 0) return;
+        if (IsEnd)
+            return;
+        if (extentHeight <= 0)
+            return;
 
-        if (IsScrollViewerEnabled() && offsetY + viewportHeight < 0.8 * extentHeight) return;
+        if (IsScrollViewerEnabled() && offsetY + viewportHeight < 0.8 * extentHeight)
+            return;
 
-        if (_isLoadTaskRunning != 0) return;
-        if (SelectedFilter == HistoryFilterType.Transferring) return;
+        if (_isLoadTaskRunning != 0)
+            return;
+        if (SelectedFilter == HistoryFilterType.Transferring)
+            return;
 
         await RunLoadTask(MorePageSize, _loadCts.Token);
     }
 
     private async Task RunLoadTask(int size, CancellationToken token)
     {
-        if (window is null) return;
-        if (Interlocked.CompareExchange(ref _isLoadTaskRunning, 1, 0) != 0) return;
+        if (window is null)
+            return;
+        if (Interlocked.CompareExchange(ref _isLoadTaskRunning, 1, 0) != 0)
+            return;
         using var scopeGuard = new ScopeGuard(() => Interlocked.Exchange(ref _isLoadTaskRunning, 0));
 
         await _loader.Run(async ct =>
@@ -705,7 +723,8 @@ public partial class HistoryViewModel : ObservableObject
     public void NavigateToNextFilter()
     {
         var filterCount = FilterOptions.Count;
-        if (filterCount == 0) return;
+        if (filterCount == 0)
+            return;
 
         var currentIndex = GetSelectedFilterOptionIndex();
         var nextIndex = (currentIndex + 1) % filterCount;
@@ -715,7 +734,8 @@ public partial class HistoryViewModel : ObservableObject
     public void NavigateToPreviousFilter()
     {
         var filterCount = FilterOptions.Count;
-        if (filterCount == 0) return;
+        if (filterCount == 0)
+            return;
 
         var currentIndex = GetSelectedFilterOptionIndex();
         var prevIndex = (currentIndex - 1 + filterCount) % filterCount;
@@ -728,7 +748,8 @@ public partial class HistoryViewModel : ObservableObject
             return;
 
         var count = HistoryItemCount;
-        if (count == 0) return;
+        if (count == 0)
+            return;
 
         var maxIndex = count - 1;
         if (SelectedIndex < maxIndex)
@@ -744,7 +765,8 @@ public partial class HistoryViewModel : ObservableObject
             return;
 
         var count = HistoryItemCount;
-        if (count == 0) return;
+        if (count == 0)
+            return;
 
         if (SelectedIndex > 0)
         {
@@ -756,7 +778,8 @@ public partial class HistoryViewModel : ObservableObject
     public void NavigateToFirst()
     {
         var count = HistoryItemCount;
-        if (count == 0) return;
+        if (count == 0)
+            return;
 
         SelectedIndex = 0;
         window?.ScrollToSelectedItem();
@@ -818,7 +841,8 @@ public partial class HistoryViewModel : ObservableObject
     public void NavigateToLast()
     {
         var count = HistoryItemCount;
-        if (count == 0) return;
+        if (count == 0)
+            return;
 
         SelectedIndex = count - 1;
         window?.ScrollToSelectedItem();
@@ -841,10 +865,14 @@ public partial class HistoryViewModel : ObservableObject
         }
 
         var keys = new List<Key> { key };
-        if (isShiftPressed) keys.Add(Key.Shift);
-        if (isAltPressed) keys.Add(Key.Alt);
-        if (isCtrlPressed) keys.Add(Key.Ctrl);
-        if (isMetaPressed) keys.Add(Key.Meta);
+        if (isShiftPressed)
+            keys.Add(Key.Shift);
+        if (isAltPressed)
+            keys.Add(Key.Alt);
+        if (isCtrlPressed)
+            keys.Add(Key.Ctrl);
+        if (isMetaPressed)
+            keys.Add(Key.Meta);
         var hotkey = new Hotkey(keys);
         if (HistoryShortcutConfig.IsReserved(hotkey))
         {
@@ -892,7 +920,8 @@ public partial class HistoryViewModel : ObservableObject
             return;
 
         var selectedItem = ((IList<HistoryRecordVM>)HistoryItems)[SelectedIndex];
-        if (selectedItem == null) return;
+        if (selectedItem == null)
+            return;
 
         await ChangeStarStatus(selectedItem);
     }
@@ -912,7 +941,8 @@ public partial class HistoryViewModel : ObservableObject
             return;
 
         var selectedItem = ((IList<HistoryRecordVM>)HistoryItems)[SelectedIndex];
-        if (selectedItem == null) return;
+        if (selectedItem == null)
+            return;
 
         await DeleteItem(selectedItem);
     }
@@ -924,7 +954,8 @@ public partial class HistoryViewModel : ObservableObject
             return;
 
         var selectedItem = ((IList<HistoryRecordVM>)HistoryItems)[SelectedIndex];
-        if (selectedItem == null) return;
+        if (selectedItem == null)
+            return;
 
         // Alt键表示不粘贴到剪贴板，只是复制操作
         var paste = !isAltPressed;
@@ -1093,7 +1124,8 @@ public partial class HistoryViewModel : ObservableObject
     /// </summary>
     private bool ShouldChangePosition(HistoryRecordVM vm, int currentIndex)
     {
-        if (allHistoryItems.Count == 0) return false;
+        if (allHistoryItems.Count == 0)
+            return false;
 
         var t = SortByLastAccessed ? vm.LastAccessed : vm.Timestamp;
 

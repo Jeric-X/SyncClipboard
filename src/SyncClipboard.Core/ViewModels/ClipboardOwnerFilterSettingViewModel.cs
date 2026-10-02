@@ -29,7 +29,8 @@ public partial class ClipboardOwnerFilterSettingViewModel(
         var enabling = FilterConfig.FilterMode == "" && value.Key != "";
         UpdateFilterList();
         FilterConfig = FilterConfig with { FilterMode = value.Key };
-        if (enabling) permissions.CheckAndRequestAccessibilityPermission();
+        if (enabling)
+            permissions.CheckAndRequestAccessibilityPermission();
     }
 
     [ObservableProperty]
@@ -89,7 +90,8 @@ public partial class ClipboardOwnerFilterSettingViewModel(
 
     private void UpdateFilterList()
     {
-        if (_isUpdating) return;
+        if (_isUpdating)
+            return;
         _isUpdating = true;
 
         FilterList.Clear();
@@ -106,7 +108,8 @@ public partial class ClipboardOwnerFilterSettingViewModel(
 
     public void AddItem(WindowInfo info)
     {
-        if (FilterConfig.FilterMode == "") return;
+        if (FilterConfig.FilterMode == "")
+            return;
         FilterList.Add(new EditableWindowInfo(info));
         SaveToConfig();
     }
@@ -127,7 +130,8 @@ public partial class ClipboardOwnerFilterSettingViewModel(
 
     public void SaveToConfig()
     {
-        if (_isUpdating) return;
+        if (_isUpdating)
+            return;
         _isUpdating = true;
 
         var list = FilterList
@@ -169,14 +173,16 @@ public partial class ClipboardOwnerFilterSettingViewModel(
 
     public void StartListening()
     {
-        if (IsListening) return;
+        if (IsListening)
+            return;
         IsListening = true;
         _clipboardChangingListener.Changed += OnClipboardChanged;
     }
 
     public void StopListening()
     {
-        if (!IsListening) return;
+        if (!IsListening)
+            return;
         IsListening = false;
         _clipboardChangingListener.Changed -= OnClipboardChanged;
     }

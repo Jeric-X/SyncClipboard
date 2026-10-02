@@ -510,7 +510,8 @@ public class UploadService : ClipboardHander
     {
         if (_hotkeyManager.HotkeyStatusMap.TryGetValue(cmdId, out var status))
         {
-            if (status.Hotkey is not null) _keyboard.ReleaseKeys(status.Hotkey);
+            if (status.Hotkey is not null)
+                _keyboard.ReleaseKeys(status.Hotkey);
         }
     }
 

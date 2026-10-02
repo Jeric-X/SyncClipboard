@@ -43,7 +43,8 @@ public partial class CurrentNetworkStatusViewModel : ObservableObject
 
     public void Activate()
     {
-        if (_active) return;
+        if (_active)
+            return;
         _active = true;
         _service.StatusChanged += OnServiceStatusChanged;
         _service.AddNetworkMonitoringDemand();
@@ -53,7 +54,8 @@ public partial class CurrentNetworkStatusViewModel : ObservableObject
 
     public void Deactivate()
     {
-        if (!_active) return;
+        if (!_active)
+            return;
         _active = false;
         _service.RemoveNetworkMonitoringDemand();
         _service.StatusChanged -= OnServiceStatusChanged;
@@ -67,7 +69,8 @@ public partial class CurrentNetworkStatusViewModel : ObservableObject
         try
         {
             await _service.RefreshAsync();
-            if (_active) await _dispatcher.RunOnMainThreadAsync(UpdateSnapshot);
+            if (_active)
+                await _dispatcher.RunOnMainThreadAsync(UpdateSnapshot);
         }
         catch (OperationCanceledException) when (!_active) { }
     }
@@ -75,7 +78,8 @@ public partial class CurrentNetworkStatusViewModel : ObservableObject
     private void OnServiceStatusChanged(object? sender, EventArgs e) =>
         _ = _dispatcher.RunOnMainThreadAsync(() =>
         {
-            if (_active) UpdateSnapshot();
+            if (_active)
+                UpdateSnapshot();
         });
 
     private void UpdateSnapshot()

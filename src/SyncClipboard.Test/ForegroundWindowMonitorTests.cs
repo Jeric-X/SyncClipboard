@@ -13,8 +13,12 @@ public class ForegroundWindowMonitorTests
         var watcher = new FakeWatcher();
         using var monitor = CreateMonitor(watcher, new FakeProvider());
 
-        static void First(WindowDetail? _) { }
-        static void Second(WindowDetail? _) { }
+        static void First(WindowDetail? _)
+        {
+        }
+        static void Second(WindowDetail? _)
+        {
+        }
 
         monitor.ForegroundWindowChanged += First;
         monitor.ForegroundWindowChanged += Second;

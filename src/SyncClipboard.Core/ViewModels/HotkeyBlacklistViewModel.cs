@@ -25,7 +25,8 @@ public partial class HotkeyBlacklistViewModel : ObservableObject
         if (!_isLoading)
         {
             SaveConfig();
-            if (value) _permissions.CheckAndRequestAccessibilityPermission();
+            if (value)
+                _permissions.CheckAndRequestAccessibilityPermission();
         }
     }
 

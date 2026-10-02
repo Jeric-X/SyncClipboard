@@ -29,6 +29,7 @@ internal sealed class AvaloniaClipboardWriter(IClipboard clipboard) : IClipboard
         await clipboard.SetDataAsync(transfer).WaitAsync(token);
 
         _lastTransfer = new(transfer);
-        if (!ReferenceEquals(previous, transfer)) previous?.Dispose();
+        if (!ReferenceEquals(previous, transfer))
+            previous?.Dispose();
     }
 }
