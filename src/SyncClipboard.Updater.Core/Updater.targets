@@ -1,0 +1,51 @@
+<Project>
+  <!-- Publish in a separate process so the application's framework, output paths and
+       runtime packaging properties cannot leak into this independent NativeAOT tool. -->
+  <PropertyGroup>
+    <_UpdaterProjectName>SyncClipboard.Updater.Avalonia</_UpdaterProjectName>
+    <_UpdaterProjectName Condition="'$(MSBuildProjectName)' == 'SyncClipboard.WinUI3'">SyncClipboard.Updater.WinUI</_UpdaterProjectName>
+    <_UpdaterProjectDirectory>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../$(_UpdaterProjectName)'))</_UpdaterProjectDirectory>
+    <_UpdaterDotNet Condition="'$(DotNetHostPath)' != ''">$(DotNetHostPath)</_UpdaterDotNet>
+    <_UpdaterDotNet Condition="'$(_UpdaterDotNet)' == ''">dotnet</_UpdaterDotNet>
+  </PropertyGroup>
+
+  <Target Name="BuildUpdater" BeforeTargets="PrepareForBuild;_CollectBundleResources;ComputeFilesToPublish"
+          DependsOnTargets="ResolveUpdaterConfiguration;PublishUpdaterExecutable"
+          Condition="'$(DesignTimeBuild)' != 'true' And '$(IsCrossTargetingBuild)' != 'true'" />
+
+  <Target Name="ResolveUpdaterConfiguration">
+    <PropertyGroup>
+      <_UpdaterRid>$(RuntimeIdentifier)</_UpdaterRid>
+      <_UpdaterRid Condition="'$(_UpdaterRid)' == ''">$(NETCoreSdkRuntimeIdentifier)</_UpdaterRid>
+      <!-- IDE solution configurations may select an architecture without setting a RID. -->
+      <_UpdaterRid Condition="'$(RuntimeIdentifier)' == '' And '$(Platform)' != '' And '$(Platform)' != 'AnyCPU' And '$(Platform)' != 'Any CPU'">$([System.Text.RegularExpressions.Regex]::Replace('$(_UpdaterRid)', '[^-]+$', '$(Platform.ToLowerInvariant())'))</_UpdaterRid>
+      <_UpdaterFileName>SyncClipboard.Updater</_UpdaterFileName>
+      <_UpdaterFileName Condition="$(_UpdaterRid.StartsWith('win-'))">SyncClipboard.Updater.exe</_UpdaterFileName>
+      <!-- Each importing project/TFM owns both restore intermediates and native outputs.
+           Parallel inner builds must never publish into the updater project's shared bin/obj. -->
+      <_UpdaterArtifactsDirectory>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)', 'updater', '$(MSBuildProjectName)', '$(Configuration)', '$(TargetFramework)', '$(_UpdaterRid)'))</_UpdaterArtifactsDirectory>
+      <!-- WinUI embeds different activation manifests for local and installed Windows App SDK. -->
+      <_UpdaterSdkProperty Condition="'$(MSBuildProjectName)' == 'SyncClipboard.WinUI3'">-p:WindowsAppSDKSelfContained=$(WindowsAppSDKSelfContained)</_UpdaterSdkProperty>
+      <_UpdaterArtifactsDirectory Condition="'$(MSBuildProjectName)' == 'SyncClipboard.WinUI3'">$(_UpdaterArtifactsDirectory)/sdk-$(WindowsAppSDKSelfContained)</_UpdaterArtifactsDirectory>
+      <_UpdaterPublishDirectory>$(_UpdaterArtifactsDirectory)/delivery</_UpdaterPublishDirectory>
+      <_UpdaterExecutable>$(_UpdaterPublishDirectory)/$(_UpdaterFileName)</_UpdaterExecutable>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="PublishUpdaterExecutable">
+    <Error Condition="'$(_UpdaterRid)' != 'win-x64' And '$(_UpdaterRid)' != 'win-arm64' And '$(_UpdaterRid)' != 'linux-x64' And '$(_UpdaterRid)' != 'linux-arm64' And '$(_UpdaterRid)' != 'osx-x64' And '$(_UpdaterRid)' != 'osx-arm64'"
+           Text="The NativeAOT updater requires a supported x64/arm64 RuntimeIdentifier; got '$(_UpdaterRid)'." />
+    <!-- All packaging variants receive a NativeAOT executable. Only its Windows App SDK mode
+         follows the main app; its native dependencies are reused from the main app's output. -->
+    <Exec Command="&quot;$(_UpdaterDotNet)&quot; publish &quot;$(_UpdaterProjectDirectory)/$(_UpdaterProjectName).csproj&quot; -c &quot;$(Configuration)&quot; -r &quot;$(_UpdaterRid)&quot; --self-contained true $(_UpdaterSdkProperty) --artifacts-path &quot;$(_UpdaterArtifactsDirectory)&quot; -o &quot;$(_UpdaterPublishDirectory)&quot;" />
+    <Error Condition="!Exists('$(_UpdaterExecutable)')" Text="The NativeAOT updater executable was not produced." />
+    <ItemGroup Condition="'$(MSBuildProjectName)' != 'SyncClipboard.Desktop.MacOS'">
+      <Content Include="$(_UpdaterExecutable)" Link="$(_UpdaterFileName)"
+               CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(MSBuildProjectName)' == 'SyncClipboard.Desktop.MacOS'">
+      <!-- Let the macOS SDK include the executable before it signs the bundle. -->
+      <BundleResource Include="$(_UpdaterExecutable)" LogicalName="Updater/$(_UpdaterFileName)" />
+    </ItemGroup>
+  </Target>
+</Project>

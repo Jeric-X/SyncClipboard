@@ -11,6 +11,9 @@ namespace SyncClipboard.Test;
 public class HistoryShortcutDescriptionsTests
 {
     [TestMethod]
+    [TestCategory("PlatformWindows")]
+    [TestCategory("PlatformMacOS")]
+    [TestCategory("PlatformLinux")]
     [DataRow("en")]
     [DataRow("zh-CN")]
     public void Instructions_ReflectReassignedAndClearedShortcutsAndMouseActions(string culture)

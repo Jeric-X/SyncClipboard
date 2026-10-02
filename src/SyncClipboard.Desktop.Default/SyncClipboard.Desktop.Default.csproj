@@ -5,9 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Platforms>x86;x64;ARM64;AnyCPU</Platforms>
+    <Platforms>x64;ARM64;AnyCPU</Platforms>
     <ApplicationIcon>..\SyncClipboard.Desktop\Assets\icon.ico</ApplicationIcon>
-    <RuntimeIdentifiers>win-x86;win-x64;win-arm64;linux-x64;linux-arm64;</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-x64;win-arm64;linux-x64;linux-arm64;</RuntimeIdentifiers>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <SatelliteResourceLanguages>en;zh-Hans</SatelliteResourceLanguages>
   </PropertyGroup>
@@ -32,5 +32,7 @@
   <ItemGroup>
     <AvaloniaResource Include="Assets\**" />
   </ItemGroup>
+
+  <Import Project="../SyncClipboard.Updater.Core/Updater.targets" />
 
 </Project>

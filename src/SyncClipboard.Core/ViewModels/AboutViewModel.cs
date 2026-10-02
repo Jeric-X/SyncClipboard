@@ -113,12 +113,13 @@ public partial class AboutViewModel : ObservableObject
         [ObservableProperty]
         private string actionButtonText = string.Empty;
         public Func<CancellationToken, Task>? Action;
-        [RelayCommand]
-        private void RunAction()
+        // The action changes to Cancel while a download is running. Installation has its own handoff gate.
+        [RelayCommand(AllowConcurrentExecutions = true)]
+        private async Task RunAction()
         {
             if (Action is not null)
             {
-                Action(CancellationToken.None);
+                await Action(CancellationToken.None);
             }
         }
     }
@@ -130,7 +131,10 @@ public partial class AboutViewModel : ObservableObject
         UpdateStatus.ShowPannel = status.State != UpdaterState.Idle;
         UpdateStatus.Message = status.Message;
         UpdateStatus.ExtraMessage = string.Empty;
-        UpdateStatus.EnableProgressbar = status.State is UpdaterState.Downloading or UpdaterState.CheckingForUpdate;
+        UpdateStatus.EnableProgressbar = status.State is UpdaterState.Downloading or UpdaterState.CheckingForUpdate
+            or UpdaterState.Installing;
+        CanCheckForUpdate = status.State != UpdaterState.Installing;
+        CheckForUpdateCommand.NotifyCanExecuteChanged();
         UpdateStatus.IsIndeterminate = true;
         UpdateStatus.ProgressValue = 0;
 
@@ -160,9 +164,10 @@ public partial class AboutViewModel : ObservableObject
             UpdaterState.ReadyForDownload => Severity.Warning,
             UpdaterState.UpToDate => Severity.Success,
             UpdaterState.Downloading => Severity.Info,
-            UpdaterState.Downloaded => Severity.Warning,
+            UpdaterState.Downloaded or UpdaterState.ReadyToInstall => Severity.Warning,
             UpdaterState.Failed => Severity.Error,
             UpdaterState.Canceled => Severity.Warning,
+            UpdaterState.Installing => Severity.Info,
             _ => Severity.Error
         };
     }
@@ -182,7 +187,9 @@ public partial class AboutViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    public bool CanCheckForUpdate { get; private set; } = true;
+
+    [RelayCommand(CanExecute = nameof(CanCheckForUpdate))]
     public async Task CheckForUpdate()
     {
         await _updateChecker.RunAutoUpdateFlow();

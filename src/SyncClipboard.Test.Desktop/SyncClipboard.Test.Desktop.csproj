@@ -4,7 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Platforms>x86;x64;ARM64;AnyCPU</Platforms>
+    <Platforms>x64;ARM64;AnyCPU</Platforms>
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>

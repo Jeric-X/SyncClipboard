@@ -1447,4 +1447,16 @@ Choose whether to use the default location or select another folder.</value>
   <data name="ManualUploadFailed" xml:space="preserve">
     <value>Failed to upload manually</value>
   </data>
+  <data name="InstallUpdate" xml:space="preserve">
+    <value>Install update</value>
+  </data>
+  <data name="UpdateReadyToInstall" xml:space="preserve">
+    <value>New version downloaded</value>
+  </data>
+  <data name="InstallingUpdate" xml:space="preserve">
+    <value>Installing update. Please wait.</value>
+  </data>
+  <data name="UpdateInstallationUnsupported" xml:space="preserve">
+    <value>Automatic installation is not supported. Install the downloaded package manually.</value>
+  </data>
 </root>

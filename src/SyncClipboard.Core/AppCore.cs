@@ -393,6 +393,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<IInputPermissionProvider, InputPermissionProvider>();
             services.AddSingleton<VirtualKeyboard>();
             services.AddSingleton<UpdateChecker>();
+            services.AddSingleton<IUpdateInstallerFactory, UpdateInstallerFactory>();
             services.AddSingleton<HistorySyncer>();
             services.AddSingleton<HistoryManager>();
             services.AddSingleton<HistorySyncer>();

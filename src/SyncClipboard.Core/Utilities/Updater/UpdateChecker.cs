@@ -28,10 +28,6 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         get
         {
             var versionFolder = Path.Combine(Env.UpdateFolder, GithubRelease?.TagName ?? "latest");
-            if (!Directory.Exists(versionFolder))
-            {
-                Directory.CreateDirectory(versionFolder);
-            }
             return Path.Combine(versionFolder, updateInfo.PackageName);
         }
     }
@@ -42,6 +38,9 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
     private readonly LocalClipboardSetter localClipboardSetter;
     private readonly IMainWindow mainWindow;
     private readonly ConfigManager configManager;
+    private readonly IUpdateInstaller? updateInstaller;
+    private readonly Lock installationGate = new();
+    private bool installing;
 
     private readonly INotificationManager notificationManager;
     private readonly UpdateInfoConfig updateInfo;
@@ -59,6 +58,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         INotificationManager notification,
         IMainWindow mainWindow,
         ConfigManager configManager,
+        IUpdateInstallerFactory updateInstallerFactory,
         [FromKeyedServices(Env.UpdateInfoFile)] ConfigBase updateInfoConfig)
     {
         this.githubUpdater = githubUpdater;
@@ -69,6 +69,19 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         this.notificationManager = notification;
         this.mainWindow = mainWindow;
         updateInfo = updateInfoConfig.GetConfig<UpdateInfoConfig>();
+        updateInstaller = updateInstallerFactory.Create(updateInfo);
+        var autoDownload = configManager.GetConfig<ProgramConfig>().AutoDownloadUpdate;
+        configManager.ListenConfig<ProgramConfig>(config =>
+        {
+            lock (installationGate)
+            {
+                if (autoDownload == config.AutoDownloadUpdate)
+                    return;
+                autoDownload = config.AutoDownloadUpdate;
+                if (GithubRelease?.TagName is { } version)
+                    notifiedVersion.Remove(version);
+            }
+        });
         SetStatus(UpdaterState.Idle);
         logger.WriteAsync(updateInfo.ToString());
     }
@@ -79,7 +92,13 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         {
             try
             {
-                await singletonTask.Run(task, token);
+                Task operation;
+                lock (installationGate)
+                {
+                    if (installing) return;
+                    operation = singletonTask.Run(task, token);
+                }
+                await operation;
             }
             catch (OperationCanceledException)
             {
@@ -93,6 +112,39 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         };
     }
 
+    private async Task InstallUpdate(CancellationToken token)
+    {
+        Task operation;
+        lock (installationGate)
+        {
+            if (installing || CurrentState.State != UpdaterState.ReadyToInstall) return;
+            installing = true;
+            operation = singletonTask.Run(InstallUpdateCore, token);
+        }
+        try { await operation; }
+        finally { lock (installationGate) installing = false; }
+    }
+
+    private async Task InstallUpdateCore(CancellationToken token)
+    {
+        try
+        {
+            SetStatus(UpdaterState.Installing);
+            if (updateInstaller is null) throw new NotSupportedException(I18n.Strings.UpdateInstallationUnsupported);
+            var request = new UpdateInstallRequest(DownloadPath, GithubAsset!.Digest!);
+            await updateInstaller.StartAsync(request, token);
+        }
+        catch (OperationCanceledException)
+        {
+            SetDownloadedStatus();
+        }
+        catch (Exception ex)
+        {
+            await logger.WriteAsync(ex.ToString());
+            SetErrorState(ex.Message);
+        }
+    }
+
     private readonly HashSet<string> notifiedVersion = [];
     private void SendNotification()
     {
@@ -100,30 +152,24 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
             or UpdaterState.UpdateAvailableAt3rdPartySrc
             or UpdaterState.UpdateAvailableAtMarket
             or UpdaterState.UpdateAvailable
-            or UpdaterState.Downloaded))
+            or UpdaterState.Downloaded
+            or UpdaterState.ReadyToInstall))
         {
             return;
         }
-        if (string.IsNullOrEmpty(GithubRelease?.TagName) || notifiedVersion.Add(GithubRelease.TagName) is false)
+        lock (installationGate)
         {
-            return;
+            if (string.IsNullOrEmpty(GithubRelease?.TagName) || !notifiedVersion.Add(GithubRelease.TagName))
+                return;
         }
 
         var stateText = GetStateText(CurrentState.State);
-        List<ActionButton> buttons = [
-            new ActionButton(I18n.Strings.GoToAboutPage, () => mainWindow.OpenPage(PageDefinition.About, null))
-        ];
-
-        /*与特定state关联的按钮可能过时，需要在state改变时清除这个按钮
-
-        var action = GetStateAction();
-        if (action is not null)
-        {
-            var (actionText, manualAction) = action.Value;
-            buttons.Add(new Button(actionText, () => manualAction(CancellationToken.None)));
-        }*/
-
-        notificationManager.ShowText(stateText, I18n.Strings.CheckOnAboutPage, buttons);
+        var readyToInstall = CurrentState.State == UpdaterState.ReadyToInstall;
+        var button = readyToInstall
+            ? new ActionButton(I18n.Strings.InstallUpdate, async () => await InstallUpdate(CancellationToken.None))
+            : new ActionButton(I18n.Strings.GoToAboutPage, () => mainWindow.OpenPage(PageDefinition.About, null));
+        var message = readyToInstall ? updateInfo.PackageName : I18n.Strings.CheckOnAboutPage;
+        notificationManager.ShowText(stateText, message, [button]);
     }
 
     public Task RunAutoUpdateFlow(CancellationToken token = default)
@@ -152,7 +198,6 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
             return;
         }
 
-        var autoDownloadUpdate = configManager.GetConfig<ProgramConfig>().AutoDownloadUpdate;
         if (isAutoUpdate && configManager.GetConfig<ProgramConfig>().AutoDownloadUpdate is false)
         {
             return;
@@ -210,6 +255,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         }
 
         var downloadUrl = GithubAsset.BrowserDownloadUrl!;
+        Directory.CreateDirectory(Path.GetDirectoryName(DownloadPath)!);
 
         if (Directory.Exists(DownloadPath))
         {
@@ -229,7 +275,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
             }
             else
             {
-                SetStatus(UpdaterState.Downloaded);
+                SetDownloadedStatus();
                 return;
             }
         }
@@ -256,7 +302,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
             throw new InvalidOperationException(I18n.Strings.HashMismatch);
         }
 
-        SetStatus(UpdaterState.Downloaded);
+        SetDownloadedStatus();
     }
 
     private GitHubAsset? GetGithubAsset()
@@ -330,12 +376,17 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
             UpdaterState.UpdateAvailable => I18n.Strings.FoundNewVersion + GithubRelease!.TagName,
             UpdaterState.Downloading => $"{I18n.Strings.Downloading} {updateInfo.PackageName}",
             UpdaterState.Downloaded => I18n.Strings.NewVersionDownloaded,
+            UpdaterState.ReadyToInstall => I18n.Strings.UpdateReadyToInstall,
+            UpdaterState.Installing => I18n.Strings.InstallingUpdate,
             UpdaterState.Failed => I18n.Strings.Error,
             UpdaterState.UpdateAvailableAtGitHubExtra => I18n.Strings.FoundNewVersion + GithubRelease!.TagName
                 + string.Format(I18n.Strings.CurrentPackageDownloadManually, updateInfo.PackageName),
             _ => "Unknown state"
         };
     }
+
+    private void SetDownloadedStatus()
+        => SetStatus(updateInstaller is not null ? UpdaterState.ReadyToInstall : UpdaterState.Downloaded);
 
     private (string, CancelableTask)? GetStateAction(UpdaterState state)
     {
@@ -352,6 +403,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
             UpdaterState.UpdateAvailable => (I18n.Strings.OpenUpdatePage, OpenUpdatePage),
             UpdaterState.UpdateAvailableAtGitHubExtra => (I18n.Strings.OpenUpdatePage, OpenUpdatePage),
             UpdaterState.Downloading => (I18n.Strings.Cancel, SingletonTask(CancelUpdate)),
+            UpdaterState.ReadyToInstall => (I18n.Strings.InstallUpdate, InstallUpdate),
             UpdaterState.Downloaded => (I18n.Strings.OpenFolder, SingletonTask(OpenInFileManager)),
             // UpdaterState.Failed => null,
             _ => null

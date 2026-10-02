@@ -11,6 +11,10 @@ jobs:
         dotnet_runtime: [self-contained, no-self-contained]
         win_app_sdk: ['win_app_sdk', 'no_win_app_sdk']
         include:
+          - cpu: x64
+            runner: windows-2025-vs2026
+          - cpu: arm64
+            runner: windows-11-arm
           - dotnet_runtime: 'self-contained'
             if_self: 'true'
             dotnet_runtime_filename: ''
@@ -24,8 +28,7 @@ jobs:
             if_app_sdk: 'false'
             win_app_sdk_filename: '_no-win-app-sdk'
 
-    runs-on: windows-2025-vs2026    # For a list of available runner types, refer to
-                             # https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjob_idruns-on
+    runs-on: ${{ matrix.runner }}
 
     steps:
     - name: Checkout

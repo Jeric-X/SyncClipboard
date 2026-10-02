@@ -56,7 +56,7 @@ jobs:
           - package-type: rpm
             cpu: arm64
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: build
     steps:
       - name: Checkout
@@ -78,6 +78,9 @@ jobs:
         with:
           name: linux-${{ matrix.cpu }}-${{ matrix.type }}
           path: linux-bin/
+
+      - name: Restore updater executable permission
+        run: chmod +x linux-bin/SyncClipboard.Updater
 
       - name: set update info
         run: |
