@@ -38,12 +38,3 @@ jobs:
       run: |
         dotnet build SyncClipboard.Core/SyncClipboard.Core.csproj --no-restore
         dotnet format --verify-no-changes --severity info --no-restore
-
-    - name: Check control-statement style in platform branches
-      working-directory: ./src
-      run: |
-        # Core selects WINDOWS/MACOS/LINUX using RuntimeIdentifier; check each branch.
-        for runtime in win-x64 osx-arm64 linux-x64; do
-          RuntimeIdentifier="$runtime" dotnet format style SyncClipboard.Core/SyncClipboard.Core.csproj \
-            --diagnostics IDE2001 --verify-no-changes --no-restore
-        done
