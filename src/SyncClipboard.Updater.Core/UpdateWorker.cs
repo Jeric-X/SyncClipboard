@@ -58,7 +58,7 @@ internal static class UpdateWorker
             dmg = await InstallAsync(update, interaction, macReplacement, appImageReplacement, token);
             targetLock?.Dispose();
             targetLock = null;
-            await RestartAsync(update);
+            await RestartAsync(update, updateCompleted: true);
             return await CleanupAndReportAsync(update, interaction, macReplacement, dmg, appImageReplacement);
         }
         catch (Exception error)
@@ -376,7 +376,7 @@ internal static class UpdateWorker
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             await WaitForProcessAsync(update.ProcessId, update.ProcessStartTime, timeout.Token);
-            await RestartAsync(update);
+            await RestartAsync(update, updateCompleted: false);
         }
         catch (Exception error)
         {
@@ -384,12 +384,18 @@ internal static class UpdateWorker
         }
     }
 
-    internal static async Task RestartAsync(UpdateArguments update)
+    internal static async Task RestartAsync(UpdateArguments update, bool updateCompleted)
     {
+        var argument = updateCompleted ? "--update-completed" : null;
         if (OperatingSystem.IsMacOS())
-            await MacCommand.RunAsync("/usr/bin/open", ["-n", update.Target], CancellationToken.None);
+        {
+            List<string> arguments = ["-n", update.Target];
+            if (argument is not null)
+                arguments.AddRange(["--args", argument]);
+            await MacCommand.RunAsync("/usr/bin/open", [.. arguments], CancellationToken.None);
+        }
         else if (OperatingSystem.IsWindows())
-            WindowsProcessLauncher.Start(WindowsZipPackage.GetExecutablePath(update.Target), update.Target, update.AppElevated);
+            WindowsProcessLauncher.Start(WindowsZipPackage.GetExecutablePath(update.Target), update.Target, update.AppElevated, argument);
         else if (OperatingSystem.IsLinux())
         {
             var start = new ProcessStartInfo(update.Target)
@@ -397,6 +403,8 @@ internal static class UpdateWorker
                 UseShellExecute = false,
                 WorkingDirectory = Path.GetDirectoryName(update.Target)!
             };
+            if (argument is not null)
+                start.ArgumentList.Add(argument);
             using var process = Process.Start(start) ?? throw new IOException(UpdaterText.Current.RestartError + update.Target);
         }
         else

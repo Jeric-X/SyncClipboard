@@ -207,6 +207,17 @@ namespace SyncClipboard.Core
             ShowMainWindow(configManager, mainWindow);
             RunStartUpCommands();
             Job.SetUpSchedulerJobs(Services);
+            if (Environment.GetCommandLineArgs().Contains(StartArguments.UpdateCompleted))
+            {
+                try
+                {
+                    NotificationManager.ShowText(Env.SoftName, string.Format(Strings.UpdatedToVersion, Env.AppVersion));
+                }
+                catch (Exception error)
+                {
+                    Logger.Write(LOG_TAG, $"Failed to show update completion notification: {error}");
+                }
+            }
         }
 
         private void RunStartUpCommands()

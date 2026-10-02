@@ -3,6 +3,7 @@
 public static class StartArguments
 {
     public const string ShutdownPrivious = "--shutdown-previous";
+    public const string UpdateCompleted = "--update-completed";
     public const string CommandPrefix = "--command-";
     public const string ModifyStartupTask = "--modify-startup-task";
     public const string StartupTaskEnabledPrefix = "--startup-task-enabled=";

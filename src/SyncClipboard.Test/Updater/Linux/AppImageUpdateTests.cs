@@ -1,3 +1,4 @@
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Updater;
 using SyncClipboard.Updater.AppImage;
@@ -215,8 +216,10 @@ public class AppImageUpdateTests
     }
 
     [TestMethod]
+    [DataRow(true)]
+    [DataRow(false)]
     [DoNotParallelize]
-    public async Task AppImageInstallation_RestartsNewApplicationAndRemovesWorkspace()
+    public async Task AppImageInstallation_RestartsNewApplicationAndRemovesWorkspace(bool updateCompleted)
     {
         var tool = Environment.GetEnvironmentVariable("SYNC_CLIPBOARD_APPIMAGE_TEST_TOOL");
         if (string.IsNullOrEmpty(tool))
@@ -236,14 +239,15 @@ public class AppImageUpdateTests
         {
             // Exercise the real AppImage runtime without requiring a FUSE mount in CI.
             Environment.SetEnvironmentVariable("APPIMAGE_EXTRACT_AND_RUN", "1");
-            await UpdateWorker.RestartAsync(update);
+            await UpdateWorker.RestartAsync(update, updateCompleted);
             var marker = Path.Combine(directory, "restarted");
             var wait = Stopwatch.StartNew();
             while (!File.Exists(marker) && wait.Elapsed < TimeSpan.FromSeconds(10))
             {
                 await Task.Delay(100, Token);
             }
-            Assert.AreEqual("new", File.ReadAllText(marker).Trim());
+            string[] expected = updateCompleted ? ["new", StartArguments.UpdateCompleted] : ["new"];
+            CollectionAssert.AreEqual(expected, File.ReadAllLines(marker));
             CollectionAssert.AreEqual(File.ReadAllBytes(package), File.ReadAllBytes(target));
             Assert.IsTrue(File.GetUnixFileMode(target).HasFlag(UnixFileMode.UserExecute));
             Assert.AreEqual(0, await UpdateWorker.CleanupAndReportAsync(update, interaction, appImageReplacement: replacement));
@@ -260,7 +264,7 @@ public class AppImageUpdateTests
     private async Task<string> CreateAppImageAsync(string tool, string version)
     {
         var appDir = Directory.CreateDirectory(Path.Combine(directory, version + ".AppDir")).FullName;
-        File.WriteAllText(Path.Combine(appDir, "AppRun"), $"#!/bin/sh\nprintf '%s\\n' {version} > \"$(dirname \"$APPIMAGE\")/restarted\"\n");
+        File.WriteAllText(Path.Combine(appDir, "AppRun"), $"#!/bin/sh\nprintf '%s\\n' {version} \"$@\" > \"$(dirname \"$APPIMAGE\")/restarted\"\n");
         if (!OperatingSystem.IsWindows())
             File.SetUnixFileMode(Path.Combine(appDir, "AppRun"), UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         File.WriteAllText(Path.Combine(appDir, "test.desktop"), "[Desktop Entry]\nType=Application\nName=Updater Test\nExec=AppRun\nIcon=test\nCategories=Utility;\n");

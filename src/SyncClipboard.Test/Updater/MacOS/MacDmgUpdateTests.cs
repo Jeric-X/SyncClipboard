@@ -1,3 +1,4 @@
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Updater.Dmg;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Updater;
@@ -255,7 +256,9 @@ public class MacDmgUpdateTests
     }
 
     [TestMethod]
-    public async Task DmgInstallation_RestartsNewApplicationAndRemovesWorkspace()
+    [DataRow(true)]
+    [DataRow(false)]
+    public async Task DmgInstallation_RestartsNewApplicationAndRemovesWorkspace(bool updateCompleted)
     {
         var update = await CreateUpdateAsync();
         var workspace = Directory.CreateDirectory(Path.Combine(directory, "SyncClipboard-updates", Guid.NewGuid().ToString("N"))).FullName;
@@ -269,7 +272,7 @@ public class MacDmgUpdateTests
         try
         {
             await replacement.ApplyAsync(package.BundlePath, interaction, Token);
-            await UpdateWorker.RestartAsync(update);
+            await UpdateWorker.RestartAsync(update, updateCompleted);
             Assert.AreEqual(0, await UpdateWorker.CleanupAndReportAsync(update, interaction, replacement, package));
             detached = true;
             Assert.AreEqual(0, interaction.Result!.ExitCode);
@@ -284,7 +287,8 @@ public class MacDmgUpdateTests
             {
                 await Task.Delay(100, launchTimeout.Token);
             }
-            Assert.AreEqual("new", File.ReadAllText(marker));
+            string[] expected = updateCompleted ? ["new", StartArguments.UpdateCompleted] : ["new"];
+            CollectionAssert.AreEqual(expected, File.ReadAllLines(marker));
         }
         finally
         {
@@ -419,9 +423,14 @@ public class MacDmgUpdateTests
         var marker = Path.Combine(directory, "restarted").Replace("\\", "\\\\").Replace("\"", "\\\"");
         File.WriteAllText(source, $$"""
             #include <stdio.h>
-            int main(void) {
+            int main(int argc, char **argv) {
                 FILE *f = fopen("{{marker}}", "w");
-                if (f) { fputs("{{version}}", f); fclose(f); }
+                if (f) {
+                    fprintf(f, "%s\n", "{{version}}");
+                    for (int i = 1; i < argc; i++)
+                        fprintf(f, "%s\n", argv[i]);
+                    fclose(f);
+                }
                 return 0;
             }
             """);

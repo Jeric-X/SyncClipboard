@@ -1459,4 +1459,7 @@ Choose whether to use the default location or select another folder.</value>
   <data name="UpdateInstallationUnsupported" xml:space="preserve">
     <value>Automatic installation is not supported. Install the downloaded package manually.</value>
   </data>
+  <data name="UpdatedToVersion" xml:space="preserve">
+    <value>Updated to version {0}.</value>
+  </data>
 </root>
