@@ -1,5 +1,8 @@
+using Moq;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.I18n;
+using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Shared.Profiles;
 
 namespace SyncClipboard.Test;
@@ -11,11 +14,35 @@ public class ProfileActionBuilderTest
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
-    public async Task PlainTextHasNoContentAction()
+    public async Task PlainTextContentActionCopiesText()
     {
-        var action = await _builder.GetPrimaryAction(new TextProfile("plain text"), CancellationToken.None);
+        var token = TestContext.CancellationTokenSource.Token;
+        var copied = new TaskCompletionSource<ClipboardMetaInfomation>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var clipboardSetter = new Mock<IClipboardSetter<TextProfile>>();
+        clipboardSetter.Setup(setter => setter.SetLocalClipboard(
+                It.IsAny<ClipboardMetaInfomation>(), It.IsAny<CancellationToken>()))
+            .Callback<ClipboardMetaInfomation, CancellationToken>((metadata, _) => copied.TrySetResult(metadata))
+            .Returns(Task.CompletedTask);
+        var services = new Mock<IServiceProvider>();
+        services.Setup(provider => provider.GetService(typeof(IClipboardSetter<TextProfile>)))
+            .Returns(clipboardSetter.Object);
+        var dispatcher = new Mock<IThreadDispatcher>();
+        dispatcher.Setup(instance => instance.RunOnMainThreadAsync(It.IsAny<Func<Task>>()))
+            .Returns<Func<Task>>(callback => callback());
+        var profileEnv = new TestProfileEnv();
+        var setter = new LocalClipboardSetter(services.Object, dispatcher.Object, profileEnv);
+        var builder = new ProfileActionBuilder(setter, profileEnv);
+        var action = await builder.GetPrimaryAction(new TextProfile("plain text"), token);
 
-        Assert.IsNull(action);
+        Assert.AreEqual(Strings.Copy, action?.Text);
+        Assert.IsNotNull(action?.Action);
+
+        action.Action();
+
+        var metadata = await copied.Task.WaitAsync(TimeSpan.FromSeconds(5), token);
+        Assert.AreEqual("plain text", metadata.Text);
+        clipboardSetter.Verify(instance => instance.SetLocalClipboard(
+            It.IsAny<ClipboardMetaInfomation>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [TestMethod]
