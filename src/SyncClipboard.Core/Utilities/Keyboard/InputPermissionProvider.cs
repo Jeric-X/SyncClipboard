@@ -141,18 +141,20 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
                     Strings.AccessibilityPermissionRequestMessage, Strings.RequestPermission, Strings.Cancel)) return;
                 if (GetPermissionState(_isAccessibilityEnabled) == InputPermissionState.Available) return;
 
-                await _resetAccessibilityPermission();
-                _openAccessibilitySettings();
+                // Count the entire confirmed attempt, including reset/settings failures, once per app run.
+                Volatile.Write(ref _accessibilityRequested, 1);
+                OnPropertyChanged(nameof(HasRequestedAccessibilityPermission));
                 try
                 {
-                    _requestAccessibilityPermission();
+                    await _resetAccessibilityPermission();
                 }
-                finally
+                catch (Exception ex)
                 {
-                    // A native request attempt counts even if it fails; canceling the dialog does not.
-                    Volatile.Write(ref _accessibilityRequested, 1);
-                    OnPropertyChanged(nameof(HasRequestedAccessibilityPermission));
+                    _logger.Write(nameof(InputPermissionProvider), $"Failed to reset accessibility permission: {ex.Message}");
                 }
+
+                _openAccessibilitySettings();
+                _requestAccessibilityPermission();
             });
         }
         catch (Exception ex)

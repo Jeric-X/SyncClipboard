@@ -43,7 +43,7 @@ public class InputPermissionTests
         InputPermissionProvider? provider = null;
         provider = CreatePermissionProvider(Mock.Of<ILogger>(), () =>
         {
-            Assert.IsFalse(provider!.HasRequestedAccessibilityPermission);
+            Assert.IsTrue(provider!.HasRequestedAccessibilityPermission);
             events.Add("request");
         }, isAccessibilityEnabled: () => false, confirm: () =>
         {
@@ -51,7 +51,7 @@ public class InputPermissionTests
             return confirmation.Task;
         }, openSettings: () =>
         {
-            Assert.IsFalse(provider!.HasRequestedAccessibilityPermission);
+            Assert.IsTrue(provider!.HasRequestedAccessibilityPermission);
             events.Add("settings");
         }, resetPermission: () =>
         {
@@ -76,7 +76,7 @@ public class InputPermissionTests
         confirmation.SetResult(true);
         Assert.IsTrue(provider.HasRequestedAccessibilityPermission);
         Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
-        string[] expected = ["dialog", "dialog", "reset", "settings", "request", "requested"];
+        string[] expected = ["dialog", "dialog", "requested", "reset", "settings", "request"];
         CollectionAssert.AreEqual(expected, events);
     }
 
@@ -120,21 +120,20 @@ public class InputPermissionTests
         var reset = new TaskCompletionSource();
         var requested = new TaskCompletionSource();
         var events = new List<string>();
-        var provider = CreatePermissionProvider(Mock.Of<ILogger>(), () => events.Add("request"),
-            isAccessibilityEnabled: () => false, openSettings: () => events.Add("settings"), resetPermission: () =>
-            {
-                events.Add("reset");
-                return reset.Task;
-            });
-        provider.PropertyChanged += (_, e) =>
+        var provider = CreatePermissionProvider(Mock.Of<ILogger>(), () =>
         {
-            if (e.PropertyName == nameof(provider.HasRequestedAccessibilityPermission)) requested.SetResult();
-        };
+            events.Add("request");
+            requested.SetResult();
+        }, isAccessibilityEnabled: () => false, openSettings: () => events.Add("settings"), resetPermission: () =>
+        {
+            events.Add("reset");
+            return reset.Task;
+        });
 
         Parallel.For(0, 10, _ => Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission()));
         string[] resettingEvents = ["reset"];
         CollectionAssert.AreEqual(resettingEvents, events);
-        Assert.IsFalse(provider.HasRequestedAccessibilityPermission);
+        Assert.IsTrue(provider.HasRequestedAccessibilityPermission);
 
         reset.SetResult();
         await requested.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
@@ -144,45 +143,55 @@ public class InputPermissionTests
     }
 
     [TestMethod]
-    public void AccessibilityResetFailure_IsLogged_AndAllowsRetryBeforeRequesting()
+    [DataRow("failure")]
+    [DataRow("timeout")]
+    [DataRow("start")]
+    public void AccessibilityResetFailure_IsLogged_AndContinuesRequestOnlyOnce(string failure)
     {
-        var resets = 0;
-        var requests = 0;
-        var settings = 0;
+        var events = new List<string>();
         var logger = new Mock<ILogger>();
-        var provider = CreatePermissionProvider(logger.Object, () => requests++,
-            isAccessibilityEnabled: () => false, openSettings: () => settings++, resetPermission: () =>
+        var provider = CreatePermissionProvider(logger.Object, () => events.Add("request"),
+            isAccessibilityEnabled: () => false, confirm: () =>
             {
-                resets++;
-                return resets == 1 ? Task.FromException(new InvalidOperationException("Reset failed")) : Task.CompletedTask;
+                events.Add("dialog");
+                return Task.FromResult(true);
+            }, openSettings: () => events.Add("settings"), resetPermission: () =>
+            {
+                events.Add("reset");
+                if (failure == "start") throw new InvalidOperationException("Reset failed to start");
+                return Task.FromException(failure == "timeout"
+                    ? new TimeoutException("Reset timed out") : new InvalidOperationException("Reset failed"));
             });
-
-        Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
-        Assert.IsFalse(provider.HasRequestedAccessibilityPermission);
-        Assert.AreEqual(0, settings);
-        Assert.AreEqual(0, requests);
-        logger.Verify(x => x.Write(nameof(InputPermissionProvider), It.Is<string>(message => message.Contains("Reset failed"))),
-            Times.Once);
+        provider.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(provider.HasRequestedAccessibilityPermission)) events.Add("requested");
+        };
 
         Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
         Assert.IsTrue(provider.HasRequestedAccessibilityPermission);
-        Assert.AreEqual(2, resets);
-        Assert.AreEqual(1, settings);
-        Assert.AreEqual(1, requests);
+        Parallel.For(0, 10, _ => Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission()));
+        string[] expected = ["dialog", "requested", "reset", "settings", "request"];
+        CollectionAssert.AreEqual(expected, events);
+        logger.Verify(x => x.Write(nameof(InputPermissionProvider),
+            It.Is<string>(message => message.StartsWith("Failed to reset accessibility permission:"))), Times.Once);
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public void AccessibilityRequest_NotifiesOnce_AndDoesNotRepeatAfterFailure(bool requestFails)
+    [DataRow("none")]
+    [DataRow("settings")]
+    [DataRow("request")]
+    public void AccessibilityRequest_NotifiesOnce_AndDoesNotRepeatAfterFailure(string failure)
     {
         var requests = 0;
         var logger = new Mock<ILogger>();
         var provider = InputPermissionTests.CreatePermissionProvider(logger.Object, () =>
         {
             requests++;
-            if (requestFails) throw new InvalidOperationException("Request failed");
-        }, isAccessibilityEnabled: () => false);
+            if (failure == "request") throw new InvalidOperationException("Request failed");
+        }, isAccessibilityEnabled: () => false, openSettings: () =>
+        {
+            if (failure == "settings") throw new InvalidOperationException("Settings failed");
+        });
         var requestStateChanges = 0;
         provider.PropertyChanged += (_, e) =>
         {
@@ -193,10 +202,10 @@ public class InputPermissionTests
         Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
         Assert.IsTrue(provider.HasRequestedAccessibilityPermission);
         Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
-        Assert.AreEqual(1, requests);
+        Assert.AreEqual(failure == "settings" ? 0 : 1, requests);
         Assert.AreEqual(1, requestStateChanges);
         logger.Verify(x => x.Write(nameof(InputPermissionProvider), It.IsAny<string>()),
-            requestFails ? Times.Once() : Times.Never());
+            failure == "none" ? Times.Never() : Times.Once());
     }
 
     [TestMethod]
