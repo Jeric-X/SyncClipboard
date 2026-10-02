@@ -1459,4 +1459,7 @@ Shift + 左键：选中连续范围</value>
   <data name="UpdateInstallationUnsupported" xml:space="preserve">
     <value>暂不支持自动安装更新，请手动安装已下载的安装包。</value>
   </data>
+  <data name="UpdatedToVersion" xml:space="preserve">
+    <value>已更新到 {0} 版本</value>
+  </data>
 </root>

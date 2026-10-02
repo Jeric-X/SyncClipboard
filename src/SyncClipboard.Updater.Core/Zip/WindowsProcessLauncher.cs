@@ -10,12 +10,12 @@ namespace SyncClipboard.Updater.Zip;
 [SupportedOSPlatform("windows")]
 internal static class WindowsProcessLauncher
 {
-    public static void Start(string executable, string workingDirectory, bool elevated)
+    public static void Start(string executable, string workingDirectory, bool elevated, string? argument)
     {
         using var identity = WindowsIdentity.GetCurrent();
         if (!elevated && new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator))
         {
-            StartAsDesktopUser(executable, workingDirectory);
+            StartAsDesktopUser(executable, workingDirectory, argument);
             return;
         }
 
@@ -25,10 +25,12 @@ internal static class WindowsProcessLauncher
             WorkingDirectory = workingDirectory,
             Verb = elevated ? "runas" : string.Empty
         };
+        if (argument is not null)
+            start.ArgumentList.Add(argument);
         using var process = Process.Start(start) ?? throw new IOException(UpdaterText.Current.RestartFailed);
     }
 
-    private static void StartAsDesktopUser(string executable, string workingDirectory)
+    private static void StartAsDesktopUser(string executable, string workingDirectory, string? argument)
     {
         var shell = GetShellWindow();
         if (shell == 0 || GetWindowThreadProcessId(shell, out var processId) == 0)
@@ -59,11 +61,19 @@ internal static class WindowsProcessLauncher
             {
                 var startup = new StartupInfo { Size = Marshal.SizeOf<StartupInfo>() };
                 // A null environment uses the desktop user's profile, not the elevated updater's environment.
-                if (!CreateProcessWithTokenW(primaryToken, 0, executable, 0, 0, 0,
-                    workingDirectory, ref startup, out var created))
-                    throw new Win32Exception(Marshal.GetLastWin32Error());
-                CloseHandle(created.Thread);
-                CloseHandle(created.Process);
+                var commandLine = Marshal.StringToHGlobalUni($"\"{executable}\" {argument}");
+                try
+                {
+                    if (!CreateProcessWithTokenW(primaryToken, 0, executable, commandLine, 0, 0,
+                        workingDirectory, ref startup, out var created))
+                        throw new Win32Exception(Marshal.GetLastWin32Error());
+                    CloseHandle(created.Thread);
+                    CloseHandle(created.Process);
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(commandLine);
+                }
             }
         }
     }

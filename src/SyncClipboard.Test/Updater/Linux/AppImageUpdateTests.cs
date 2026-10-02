@@ -1,3 +1,4 @@
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Updater;
 using SyncClipboard.Updater.AppImage;
@@ -215,13 +216,16 @@ public class AppImageUpdateTests
     }
 
     [TestMethod]
+    [DataRow(true)]
+    [DataRow(false)]
     [DoNotParallelize]
-    public async Task AppImageInstallation_RestartsNewApplicationAndRemovesWorkspace()
+    public async Task AppImageInstallation_RestartsUpdatedOrRolledBackApplication(bool rollback)
     {
         var tool = Environment.GetEnvironmentVariable("SYNC_CLIPBOARD_APPIMAGE_TEST_TOOL");
         if (string.IsNullOrEmpty(tool))
             Assert.Inconclusive("Set SYNC_CLIPBOARD_APPIMAGE_TEST_TOOL to appimagetool.");
         var target = await CreateAppImageAsync(tool, "old");
+        var original = File.ReadAllBytes(target);
         var package = await CreateAppImageAsync(tool, "new");
         var workspace = Directory.CreateDirectory(Path.Combine(directory, "SyncClipboard-updates", Guid.NewGuid().ToString("N"))).FullName;
         File.WriteAllText(Path.Combine(workspace, ".syncclipboard-update"), "SyncClipboard updater workspace v1");
@@ -229,22 +233,34 @@ public class AppImageUpdateTests
         var attempt = Directory.CreateDirectory(Path.Combine(workspace, "attempt")).FullName;
         var payload = await AppImagePackage.PrepareAsync(update, attempt, Token);
         var replacement = new AppImageReplacement(target, Path.Combine(workspace, "backup", "old.AppImage"), false);
-        var interaction = new Interaction();
-        await replacement.ApplyAsync(payload, interaction, Token);
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        var interaction = new Interaction
+        {
+            OnRollbackAvailability = available =>
+            {
+                if (rollback && available)
+                    cancellation.Cancel();
+            }
+        };
+        if (rollback)
+            await Assert.ThrowsAsync<IOException>(() => replacement.ApplyAsync(payload, interaction, cancellation.Token));
+        else
+            await replacement.ApplyAsync(payload, interaction, cancellation.Token);
         var originalExtract = Environment.GetEnvironmentVariable("APPIMAGE_EXTRACT_AND_RUN");
         try
         {
             // Exercise the real AppImage runtime without requiring a FUSE mount in CI.
             Environment.SetEnvironmentVariable("APPIMAGE_EXTRACT_AND_RUN", "1");
-            await UpdateWorker.RestartAsync(update);
+            await UpdateWorker.RestartAsync(update, updateCompleted: !rollback);
             var marker = Path.Combine(directory, "restarted");
             var wait = Stopwatch.StartNew();
             while (!File.Exists(marker) && wait.Elapsed < TimeSpan.FromSeconds(10))
             {
                 await Task.Delay(100, Token);
             }
-            Assert.AreEqual("new", File.ReadAllText(marker).Trim());
-            CollectionAssert.AreEqual(File.ReadAllBytes(package), File.ReadAllBytes(target));
+            string[] expected = rollback ? ["old"] : ["new", StartArguments.UpdateCompleted];
+            CollectionAssert.AreEqual(expected, File.ReadAllLines(marker));
+            CollectionAssert.AreEqual(rollback ? original : File.ReadAllBytes(package), File.ReadAllBytes(target));
             Assert.IsTrue(File.GetUnixFileMode(target).HasFlag(UnixFileMode.UserExecute));
             Assert.AreEqual(0, await UpdateWorker.CleanupAndReportAsync(update, interaction, appImageReplacement: replacement));
             Assert.IsFalse(Directory.Exists(workspace));
@@ -260,7 +276,7 @@ public class AppImageUpdateTests
     private async Task<string> CreateAppImageAsync(string tool, string version)
     {
         var appDir = Directory.CreateDirectory(Path.Combine(directory, version + ".AppDir")).FullName;
-        File.WriteAllText(Path.Combine(appDir, "AppRun"), $"#!/bin/sh\nprintf '%s\\n' {version} > \"$(dirname \"$APPIMAGE\")/restarted\"\n");
+        File.WriteAllText(Path.Combine(appDir, "AppRun"), $"#!/bin/sh\nprintf '%s\\n' {version} \"$@\" > \"$(dirname \"$APPIMAGE\")/restarted\"\n");
         if (!OperatingSystem.IsWindows())
             File.SetUnixFileMode(Path.Combine(appDir, "AppRun"), UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         File.WriteAllText(Path.Combine(appDir, "test.desktop"), "[Desktop Entry]\nType=Application\nName=Updater Test\nExec=AppRun\nIcon=test\nCategories=Utility;\n");

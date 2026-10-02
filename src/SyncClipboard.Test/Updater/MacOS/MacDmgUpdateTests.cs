@@ -1,3 +1,4 @@
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Updater.Dmg;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Updater;
@@ -255,7 +256,9 @@ public class MacDmgUpdateTests
     }
 
     [TestMethod]
-    public async Task DmgInstallation_RestartsNewApplicationAndRemovesWorkspace()
+    [DataRow(true)]
+    [DataRow(false)]
+    public async Task DmgInstallation_RestartsUpdatedOrRolledBackApplication(bool rollback)
     {
         var update = await CreateUpdateAsync();
         var workspace = Directory.CreateDirectory(Path.Combine(directory, "SyncClipboard-updates", Guid.NewGuid().ToString("N"))).FullName;
@@ -264,12 +267,23 @@ public class MacDmgUpdateTests
         var attempt = Directory.CreateDirectory(Path.Combine(workspace, "attempt")).FullName;
         var package = await MacDmgPackage.PrepareAsync(update, attempt, Token);
         var replacement = new MacBundleReplacement(update.Target, Path.Combine(workspace, "backup", "SyncClipboard.app"), false);
-        var interaction = new Interaction();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        var interaction = new Interaction
+        {
+            OnRollbackAvailability = available =>
+            {
+                if (rollback && available)
+                    cancellation.Cancel();
+            }
+        };
         var detached = false;
         try
         {
-            await replacement.ApplyAsync(package.BundlePath, interaction, Token);
-            await UpdateWorker.RestartAsync(update);
+            if (rollback)
+                await Assert.ThrowsAsync<IOException>(() => replacement.ApplyAsync(package.BundlePath, interaction, cancellation.Token));
+            else
+                await replacement.ApplyAsync(package.BundlePath, interaction, cancellation.Token);
+            await UpdateWorker.RestartAsync(update, updateCompleted: !rollback);
             Assert.AreEqual(0, await UpdateWorker.CleanupAndReportAsync(update, interaction, replacement, package));
             detached = true;
             Assert.AreEqual(0, interaction.Result!.ExitCode);
@@ -284,7 +298,8 @@ public class MacDmgUpdateTests
             {
                 await Task.Delay(100, launchTimeout.Token);
             }
-            Assert.AreEqual("new", File.ReadAllText(marker));
+            string[] expected = rollback ? ["old"] : ["new", StartArguments.UpdateCompleted];
+            CollectionAssert.AreEqual(expected, File.ReadAllLines(marker));
         }
         finally
         {
@@ -419,9 +434,14 @@ public class MacDmgUpdateTests
         var marker = Path.Combine(directory, "restarted").Replace("\\", "\\\\").Replace("\"", "\\\"");
         File.WriteAllText(source, $$"""
             #include <stdio.h>
-            int main(void) {
+            int main(int argc, char **argv) {
                 FILE *f = fopen("{{marker}}", "w");
-                if (f) { fputs("{{version}}", f); fclose(f); }
+                if (f) {
+                    fprintf(f, "%s\n", "{{version}}");
+                    for (int i = 1; i < argc; i++)
+                        fprintf(f, "%s\n", argv[i]);
+                    fclose(f);
+                }
                 return 0;
             }
             """);
