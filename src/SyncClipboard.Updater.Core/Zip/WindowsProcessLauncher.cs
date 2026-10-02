@@ -19,11 +19,6 @@ internal static class WindowsProcessLauncher
             return;
         }
 
-        StartWithShell(executable, workingDirectory, elevated, argument);
-    }
-
-    private static void StartWithShell(string executable, string workingDirectory, bool elevated, string? argument)
-    {
         var start = new ProcessStartInfo(executable)
         {
             UseShellExecute = true,
@@ -64,27 +59,22 @@ internal static class WindowsProcessLauncher
                 throw new Win32Exception(Marshal.GetLastWin32Error());
             using (primaryToken)
             {
-                StartWithToken(executable, workingDirectory, argument, primaryToken);
+                var startup = new StartupInfo { Size = Marshal.SizeOf<StartupInfo>() };
+                // A null environment uses the desktop user's profile, not the elevated updater's environment.
+                var commandLine = Marshal.StringToHGlobalUni($"\"{executable}\" {argument}");
+                try
+                {
+                    if (!CreateProcessWithTokenW(primaryToken, 0, executable, commandLine, 0, 0,
+                        workingDirectory, ref startup, out var created))
+                        throw new Win32Exception(Marshal.GetLastWin32Error());
+                    CloseHandle(created.Thread);
+                    CloseHandle(created.Process);
+                }
+                finally
+                {
+                    Marshal.FreeHGlobal(commandLine);
+                }
             }
-        }
-    }
-
-    private static void StartWithToken(string executable, string workingDirectory, string? argument, SafeAccessTokenHandle primaryToken)
-    {
-        var startup = new StartupInfo { Size = Marshal.SizeOf<StartupInfo>() };
-        // A null environment uses the desktop user's profile, not the elevated updater's environment.
-        var commandLine = Marshal.StringToHGlobalUni($"\"{executable}\" {argument}");
-        try
-        {
-            if (!CreateProcessWithTokenW(primaryToken, 0, executable, commandLine, 0, 0,
-                workingDirectory, ref startup, out var created))
-                throw new Win32Exception(Marshal.GetLastWin32Error());
-            CloseHandle(created.Thread);
-            CloseHandle(created.Process);
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(commandLine);
         }
     }
 

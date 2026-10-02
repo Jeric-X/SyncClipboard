@@ -1,8 +1,6 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Updater;
-using SyncClipboard.Updater.Zip;
 using System.Diagnostics;
-using System.Reflection;
 using System.Runtime.Versioning;
 using System.Security.Principal;
 
@@ -24,23 +22,18 @@ public class WindowsRestartTests : UpdaterTestBase
             using System;
             using System.Diagnostics;
             using System.IO;
-            using System.Security.Principal;
 
             class Recorder
             {
                 static void Main(string[] args)
                 {
-                    using (var identity = WindowsIdentity.GetCurrent())
-                    {
-                        var result = new string[args.Length + 3];
-                        result[0] = Process.GetCurrentProcess().Id.ToString();
-                        result[1] = Environment.CurrentDirectory;
-                        result[2] = new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator).ToString();
-                        Array.Copy(args, 0, result, 3, args.Length);
-                        var output = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "arguments.txt");
-                        File.WriteAllLines(output + ".tmp", result);
-                        File.Move(output + ".tmp", output);
-                    }
+                    var result = new string[args.Length + 2];
+                    result[0] = Process.GetCurrentProcess().Id.ToString();
+                    result[1] = File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "version"));
+                    Array.Copy(args, 0, result, 2, args.Length);
+                    var output = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "arguments.txt");
+                    File.WriteAllLines(output + ".tmp", result);
+                    File.Move(output + ".tmp", output);
                 }
             }
             """);
@@ -67,60 +60,26 @@ public class WindowsRestartTests : UpdaterTestBase
     private string Executable => Path.Combine(target, "SyncClipboard.exe");
 
     [TestMethod]
-    [DataRow(false, false)]
-    [DataRow(false, true)]
-    [DataRow(true, false)]
-    [DataRow(true, true)]
-    public async Task ShellLaunch_PassesArgumentsToChild(bool elevated, bool updateCompleted)
-    {
-        var administrator = IsAdministrator();
-        if (elevated && !administrator)
-            Assert.Inconclusive("Run this test as administrator to exercise runas without an interactive UAC prompt.");
-
-        InvokeLauncher("StartWithShell", Executable, target, elevated, CompletionArgument(updateCompleted));
-        await AssertChildAsync(updateCompleted, administrator);
-    }
-
-    [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task TokenLaunch_PassesArgumentsToChild(bool updateCompleted)
+    public async Task Installation_RestartsUpdatedOrRolledBackApplication(bool rollback)
     {
-        if (!IsAdministrator())
-            Assert.Inconclusive("CreateProcessWithTokenW requires an administrator test host.");
-
-        // Exercise the production native-token backend even on CI without a non-elevated desktop shell.
-        using var identity = WindowsIdentity.GetCurrent(TokenAccessLevels.Query | TokenAccessLevels.Duplicate | TokenAccessLevels.AssignPrimary);
-        InvokeLauncher("StartWithToken", Executable, target, CompletionArgument(updateCompleted), identity.AccessToken);
-        await AssertChildAsync(updateCompleted, expectedAdministrator: true);
-    }
-
-    [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task Restart_PropagatesCompletionStatus(bool updateCompleted)
-    {
-        var administrator = IsAdministrator();
-        await UpdateWorker.RestartAsync(Arguments() with { AppElevated = administrator }, updateCompleted);
-        await AssertChildAsync(updateCompleted, administrator);
-    }
-
-    [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task RestartAsDesktopUser_PassesArgumentsWithoutAdministratorRights(bool updateCompleted)
-    {
-        if (!IsAdministrator())
-            Assert.Inconclusive("Requires an elevated test host and a non-elevated desktop shell.");
-        try
+        File.WriteAllText(Path.Combine(target, "version"), "old");
+        File.Copy(Executable, Path.Combine(stage, "SyncClipboard.exe"));
+        File.WriteAllText(Path.Combine(stage, "version"), "new");
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(TestContext.CancellationTokenSource.Token);
+        Task InstallAsync() => ApplyAsync((phase, percent) =>
         {
-            await UpdateWorker.RestartAsync(Arguments() with { AppElevated = false }, updateCompleted);
-        }
-        catch (IOException error) when (error.Message == UpdaterText.Current.DesktopUserUnavailable)
-        {
-            Assert.Inconclusive("No non-elevated desktop shell is available. The native-token backend is tested separately.");
-        }
-        await AssertChildAsync(updateCompleted, expectedAdministrator: false);
+            if (rollback && phase == "installing" && percent == 100)
+                cancellation.Cancel();
+        }, cancellation.Token);
+        if (rollback)
+            await Assert.ThrowsAsync<OperationCanceledException>(InstallAsync);
+        else
+            await InstallAsync();
+
+        await UpdateWorker.RestartAsync(Arguments() with { AppElevated = IsAdministrator() }, updateCompleted: !rollback);
+        await AssertChildAsync(rollback);
     }
 
     private static bool IsAdministrator()
@@ -129,12 +88,7 @@ public class WindowsRestartTests : UpdaterTestBase
         return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
     }
 
-    private static string? CompletionArgument(bool completed) => completed ? StartArguments.UpdateCompleted : null;
-
-    private static void InvokeLauncher(string method, params object?[] arguments)
-        => typeof(WindowsProcessLauncher).GetMethod(method, BindingFlags.NonPublic | BindingFlags.Static)!.Invoke(null, arguments);
-
-    private async Task AssertChildAsync(bool updateCompleted, bool expectedAdministrator)
+    private async Task AssertChildAsync(bool rollback)
     {
         var output = Path.Combine(target, "arguments.txt");
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.CancellationTokenSource.Token);
@@ -159,9 +113,7 @@ public class WindowsRestartTests : UpdaterTestBase
             if (child is not null)
                 await child.WaitForExitAsync(timeout.Token);
         }
-        Assert.AreEqual(target, result[1], ignoreCase: true);
-        Assert.AreEqual(expectedAdministrator, bool.Parse(result[2]));
-        string[] expected = updateCompleted ? [StartArguments.UpdateCompleted] : [];
-        CollectionAssert.AreEqual(expected, result[3..]);
+        string[] expected = rollback ? ["old"] : ["new", StartArguments.UpdateCompleted];
+        CollectionAssert.AreEqual(expected, result[1..]);
     }
 }

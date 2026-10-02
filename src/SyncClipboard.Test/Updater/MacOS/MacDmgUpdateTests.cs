@@ -258,7 +258,7 @@ public class MacDmgUpdateTests
     [TestMethod]
     [DataRow(true)]
     [DataRow(false)]
-    public async Task DmgInstallation_RestartsNewApplicationAndRemovesWorkspace(bool updateCompleted)
+    public async Task DmgInstallation_RestartsUpdatedOrRolledBackApplication(bool rollback)
     {
         var update = await CreateUpdateAsync();
         var workspace = Directory.CreateDirectory(Path.Combine(directory, "SyncClipboard-updates", Guid.NewGuid().ToString("N"))).FullName;
@@ -267,12 +267,23 @@ public class MacDmgUpdateTests
         var attempt = Directory.CreateDirectory(Path.Combine(workspace, "attempt")).FullName;
         var package = await MacDmgPackage.PrepareAsync(update, attempt, Token);
         var replacement = new MacBundleReplacement(update.Target, Path.Combine(workspace, "backup", "SyncClipboard.app"), false);
-        var interaction = new Interaction();
+        using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        var interaction = new Interaction
+        {
+            OnRollbackAvailability = available =>
+            {
+                if (rollback && available)
+                    cancellation.Cancel();
+            }
+        };
         var detached = false;
         try
         {
-            await replacement.ApplyAsync(package.BundlePath, interaction, Token);
-            await UpdateWorker.RestartAsync(update, updateCompleted);
+            if (rollback)
+                await Assert.ThrowsAsync<IOException>(() => replacement.ApplyAsync(package.BundlePath, interaction, cancellation.Token));
+            else
+                await replacement.ApplyAsync(package.BundlePath, interaction, cancellation.Token);
+            await UpdateWorker.RestartAsync(update, updateCompleted: !rollback);
             Assert.AreEqual(0, await UpdateWorker.CleanupAndReportAsync(update, interaction, replacement, package));
             detached = true;
             Assert.AreEqual(0, interaction.Result!.ExitCode);
@@ -287,7 +298,7 @@ public class MacDmgUpdateTests
             {
                 await Task.Delay(100, launchTimeout.Token);
             }
-            string[] expected = updateCompleted ? ["new", StartArguments.UpdateCompleted] : ["new"];
+            string[] expected = rollback ? ["old"] : ["new", StartArguments.UpdateCompleted];
             CollectionAssert.AreEqual(expected, File.ReadAllLines(marker));
         }
         finally
