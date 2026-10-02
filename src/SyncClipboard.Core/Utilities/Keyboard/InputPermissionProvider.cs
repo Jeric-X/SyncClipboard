@@ -19,6 +19,7 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
     private readonly IGlobalDialog _dialog;
     private readonly Action _openAccessibilitySettings;
     private readonly Action _requestAccessibilityPermission;
+    private readonly Func<Task> _resetAccessibilityPermission;
     private readonly bool _isMacOS;
     private readonly Func<bool> _isAccessibilityEnabled;
     private int _accessibilityRequested;
@@ -34,11 +35,11 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
             {
                 UseShellExecute = true
             });
-        }, RequestNativeAccessibilityPermission, OperatingSystem.IsMacOS())
+        }, RequestNativeAccessibilityPermission, ResetNativeAccessibilityPermissionAsync, OperatingSystem.IsMacOS())
     { }
 
     internal InputPermissionProvider(ILogger logger, IThreadDispatcher dispatcher, IGlobalDialog dialog,
-        Action openAccessibilitySettings, Action requestAccessibilityPermission,
+        Action openAccessibilitySettings, Action requestAccessibilityPermission, Func<Task> resetAccessibilityPermission,
         bool isMacOS = true, Func<bool>? isAccessibilityEnabled = null)
     {
         _logger = logger;
@@ -46,6 +47,7 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
         _dialog = dialog;
         _openAccessibilitySettings = openAccessibilitySettings;
         _requestAccessibilityPermission = requestAccessibilityPermission;
+        _resetAccessibilityPermission = resetAccessibilityPermission;
         _isMacOS = isMacOS;
         _isAccessibilityEnabled = isAccessibilityEnabled ?? AXIsProcessTrusted;
     }
@@ -64,6 +66,37 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
 
     [DllImport(ApplicationServicesLibrary)]
     private static extern void CFRelease(nint value);
+
+    private static async Task ResetNativeAccessibilityPermissionAsync()
+    {
+        // Scope the reset to this app; omitting the bundle ID would reset every app's authorization.
+        using var process = Process.Start(new ProcessStartInfo("/usr/bin/tccutil")
+        {
+            ArgumentList = { "reset", "Accessibility", "xyz.jericx.desktop.syncclipboard" },
+            UseShellExecute = false,
+            RedirectStandardError = true,
+            RedirectStandardOutput = true
+        }) ?? throw new InvalidOperationException("Failed to start accessibility permission reset.");
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        var error = process.StandardError.ReadToEndAsync(timeout.Token);
+        var output = process.StandardOutput.ReadToEndAsync(timeout.Token);
+        try
+        {
+            await process.WaitForExitAsync(timeout.Token);
+            await Task.WhenAll(error, output);
+        }
+        catch (OperationCanceledException)
+        {
+            if (!process.HasExited) process.Kill();
+            await process.WaitForExitAsync(CancellationToken.None);
+            throw new TimeoutException("Accessibility permission reset timed out.");
+        }
+
+        if (process.ExitCode != 0)
+        {
+            throw new InvalidOperationException($"Accessibility permission reset failed ({process.ExitCode}): {await error}");
+        }
+    }
 
     private static void RequestNativeAccessibilityPermission()
     {
@@ -106,18 +139,22 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
                 if (HasRequestedAccessibilityPermission) return;
                 if (!await _dialog.ShowConfirmationAsync(Strings.AccessibilityPermission,
                     Strings.AccessibilityPermissionRequestMessage, Strings.RequestPermission, Strings.Cancel)) return;
+                if (GetPermissionState(_isAccessibilityEnabled) == InputPermissionState.Available) return;
 
-                _openAccessibilitySettings();
+                // Count the entire confirmed attempt, including reset/settings failures, once per app run.
+                Volatile.Write(ref _accessibilityRequested, 1);
+                OnPropertyChanged(nameof(HasRequestedAccessibilityPermission));
                 try
                 {
-                    _requestAccessibilityPermission();
+                    await _resetAccessibilityPermission();
                 }
-                finally
+                catch (Exception ex)
                 {
-                    // A native request attempt counts even if it fails; canceling the dialog does not.
-                    Volatile.Write(ref _accessibilityRequested, 1);
-                    OnPropertyChanged(nameof(HasRequestedAccessibilityPermission));
+                    _logger.Write(nameof(InputPermissionProvider), $"Failed to reset accessibility permission: {ex.Message}");
                 }
+
+                _openAccessibilitySettings();
+                _requestAccessibilityPermission();
             });
         }
         catch (Exception ex)
