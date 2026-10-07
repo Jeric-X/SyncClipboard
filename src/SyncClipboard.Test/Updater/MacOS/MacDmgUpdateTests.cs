@@ -389,21 +389,30 @@ public class MacDmgUpdateTests
         var source = Path.Combine(directory, "image");
         await CreateBundleAsync(Path.Combine(source, "SyncClipboard.app"), "new");
         var target = await CreateBundleAsync(Path.Combine(directory, "installed", "SyncClipboard.app"), "old");
+        var createdImage = Path.Combine(directory, "created.dmg");
         var package = Path.Combine(directory, "update.dmg");
-        await MacCommand.RunAsync("/usr/bin/hdiutil", ["create", "-srcfolder", source, "-format", "UDZO", package], Token);
-        TestContext.WriteLine("Checking DMG file usage before reading: " + package);
-        try
-        {
-            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-            TestContext.WriteLine(await MacCommand.RunAsync("/usr/sbin/lsof", ["-nP", "--", package], timeout.Token));
-        }
-        catch (Exception diagnosticError)
-        {
-            TestContext.WriteLine("lsof diagnostic failed: " + diagnosticError.Message);
-        }
+        await MacCommand.RunAsync("/usr/bin/hdiutil", ["create", "-srcfolder", source, "-format", "UDZO", createdImage], Token);
+        // Native cp can read through advisory locks left by diskimages-helper; the copy has its own inode.
+        await MacCommand.RunAsync("/bin/cp", [createdImage, package], Token);
+        await LogCommandAsync("/usr/sbin/lsof", ["-nP", "+c", "0", "--", createdImage, package]);
+        await LogCommandAsync("/usr/bin/hdiutil", ["info"]);
         var digest = await ReadPackageDigestAsync(package);
         return new UpdateArguments(package, digest, target,
             int.MaxValue, "en", [], directory);
+    }
+
+    private async Task LogCommandAsync(string executable, string[] arguments)
+    {
+        TestContext.WriteLine("DMG diagnostic: " + executable + " " + string.Join(" ", arguments));
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            TestContext.WriteLine(await MacCommand.RunAsync(executable, arguments, timeout.Token));
+        }
+        catch (Exception diagnosticError)
+        {
+            TestContext.WriteLine("DMG diagnostic failed: " + diagnosticError.Message);
+        }
     }
 
     private async Task<string> ReadPackageDigestAsync(string package)
@@ -418,7 +427,7 @@ public class MacDmgUpdateTests
             }
             catch (IOException) when (elapsed.Elapsed < TimeSpan.FromSeconds(30))
             {
-                // The newly created DMG can remain briefly locked after hdiutil exits.
+                // Retry transient I/O failures while reading the test package.
                 await Task.Delay(200, Token);
             }
         }
