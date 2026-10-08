@@ -46,8 +46,8 @@ if [[ "$kind" == AppImage ]]; then
     APPIMAGE_UPDATES=true bash "$scripts/appimage/package-appimage.sh" "$source_dir" "$cpu" "$output"
 else
     # PupNet's post-publish script resolves paths from this directory.
-    cd "$scripts"
-    bash "$scripts/package-pupnet.sh" -k "$kind" -r "$rid" -s "$source_dir"
+    cd "$scripts/pupnet"
+    bash "$scripts/pupnet/package-pupnet.sh" -k "$kind" -r "$rid" -s "$source_dir"
     case "$kind:$cpu" in
         rpm:x64) tail=.x86_64 ;;
         rpm:arm64) tail=.arm64 ;;

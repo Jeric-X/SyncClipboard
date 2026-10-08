@@ -15,11 +15,12 @@ work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 appdir="$work/SyncClipboard.AppDir"
 bin="$appdir/usr/bin"
-mkdir -p "$bin" "$appdir/usr/share/applications" "$appdir/usr/lib"
+mkdir -p "$bin" "$appdir/usr/share/applications" "$appdir/usr/share/metainfo" "$appdir/usr/lib"
 cp -a "$source_dir/." "$bin/"
 chmod +x "$bin/SyncClipboard.Desktop.Default" "$bin/SyncClipboard.Updater"
 cp "$scripts/../icons/icon.svg" "$appdir/xyz.jericx.desktop.syncclipboard.svg"
 cp "$scripts/../../../LICENSE" "$appdir/LICENSE"
+cp "$scripts/../metainfo.xml" "$appdir/usr/share/metainfo/xyz.jericx.desktop.syncclipboard.metainfo.xml"
 desktop="$appdir/usr/share/applications/xyz.jericx.desktop.syncclipboard.desktop"
 sed -e 's|${APP_FRIENDLY_NAME}|SyncClipboard|g' \
     -e 's|${APP_ID}|xyz.jericx.desktop.syncclipboard|g' \

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>xyz.jericx.desktop.syncclipboard</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <name>SyncClipboard</name>
+  <summary>Sync your clipboard across devices and manage clipboard history</summary>
+  <summary xml:lang="zh-CN">跨设备同步剪贴板并管理剪贴板历史记录</summary>
+  <description>
+    <p>
+      SyncClipboard synchronizes clipboard content across Windows, macOS, Linux
+      and compatible mobile clients. Share text, images and files between your
+      devices, and browse or search your clipboard history.
+    </p>
+    <p>
+      Connect to a SyncClipboard server, use the server built into the desktop
+      client, or sync through WebDAV and S3-compatible storage.
+    </p>
+    <p xml:lang="zh-CN">
+      SyncClipboard 可在 Windows、macOS、Linux 和兼容的移动端客户端之间同步剪贴板。
+      在设备间共享文本、图片和文件，并浏览或搜索剪贴板历史记录。
+    </p>
+    <p xml:lang="zh-CN">
+      支持连接 SyncClipboard 服务器、使用桌面客户端内置服务器，
+      或通过 WebDAV 和 S3 兼容存储同步。
+    </p>
+  </description>
+  <developer id="xyz.jericx">
+    <name>JericX</name>
+  </developer>
+  <launchable type="desktop-id">xyz.jericx.desktop.syncclipboard.desktop</launchable>
+  <url type="homepage">https://github.com/Jeric-X/SyncClipboard</url>
+  <url type="bugtracker">https://github.com/Jeric-X/SyncClipboard/issues</url>
+  <url type="vcs-browser">https://github.com/Jeric-X/SyncClipboard</url>
+  <categories>
+    <category>Utility</category>
+  </categories>
+  <keywords>
+    <keyword>clipboard</keyword>
+    <keyword>sync</keyword>
+    <keyword>history</keyword>
+    <keyword xml:lang="zh-CN">剪贴板</keyword>
+    <keyword xml:lang="zh-CN">同步</keyword>
+    <keyword xml:lang="zh-CN">历史记录</keyword>
+  </keywords>
+  <screenshots>
+    <screenshot type="default">
+      <caption>Clipboard synchronization settings</caption>
+      <caption xml:lang="zh-CN">剪贴板同步设置</caption>
+      <image type="source" width="936" height="655">https://raw.githubusercontent.com/Jeric-X/SyncClipboard/master/docs/image/screenshot/linux_home.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Clipboard history with search and image preview</caption>
+      <caption xml:lang="zh-CN">剪贴板历史记录、搜索与图片预览</caption>
+      <image type="source" width="901" height="623">https://raw.githubusercontent.com/Jeric-X/SyncClipboard/master/docs/image/screenshot/linux_history.png</image>
+    </screenshot>
+  </screenshots>
+</component>

@@ -4,7 +4,7 @@ set -e
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 BIN_DIR=$SCRIPT_DIR/build_bin
 CONF_PATH=$SCRIPT_DIR/linux.pupnet.conf
-CHANGES_MD=$SCRIPT_DIR/../../Changes.md
+CHANGES_MD=$SCRIPT_DIR/../../../Changes.md
 
 chmod +x $SCRIPT_DIR/PostPublish.sh
 
@@ -48,7 +48,7 @@ fi
 
 case "${package_kind,,}" in
     deb|rpm) package_kind="${package_kind,,}" ;;
-    *) echo 'Supported package kinds: deb, rpm. Use appimage/package-appimage.sh for AppImage.' >&2; exit 1 ;;
+    *) echo 'Supported package kinds: deb, rpm. Use ../appimage/package-appimage.sh for AppImage.' >&2; exit 1 ;;
 esac
 
 if [[ ! -d $bin_source_dir ]]; then

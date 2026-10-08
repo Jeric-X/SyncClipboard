@@ -463,7 +463,7 @@ build/featuretemp.txt
 /src/SyncClipboard.Core/I18n/Strings.Designer.cs
 .VSCodeCounter/
 /src/NewReport1.upgrade.json
-build/linux/build_bin/
+build/linux/pupnet/build_bin/
 TODO.md
 docs/image/todo/FluentAvaloniaContentDialog.png
 build/temp/
