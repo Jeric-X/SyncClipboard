@@ -56,9 +56,10 @@ public class HistoryWindow : Desktop.Views.HistoryWindow
         if (this.TryGetPlatformHandle() is { HandleDescriptor: "NSWindow" } platformHandle)
         {
             var nsWindow = Runtime.GetNSObject<NSWindow>(platformHandle.Handle);
-            // 设置窗口的 collectionBehavior，使其在所有虚拟桌面显示
-            // CanJoinAllSpaces: 窗口在所有 Space 中可见
-            nsWindow?.CollectionBehavior = NSWindowCollectionBehavior.CanJoinAllSpaces;
+            // 按临时面板管理窗口，使其在全屏 Space 销毁后重新显示时恢复 Space 归属。
+            nsWindow?.CollectionBehavior = NSWindowCollectionBehavior.CanJoinAllSpaces
+                | NSWindowCollectionBehavior.Transient
+                | NSWindowCollectionBehavior.FullScreenAuxiliary;
         }
     }
 }
