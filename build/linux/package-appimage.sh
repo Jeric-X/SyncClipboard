@@ -21,20 +21,20 @@ chmod +x "$bin/SyncClipboard.Desktop.Default" "$bin/SyncClipboard.Updater"
 cp "$scripts/icons/icon.svg" "$appdir/xyz.jericx.desktop.syncclipboard.svg"
 cp "$scripts/../../LICENSE" "$appdir/LICENSE"
 desktop="$appdir/usr/share/applications/xyz.jericx.desktop.syncclipboard.desktop"
-cat > "$desktop" <<'EOF'
-[Desktop Entry]
-Type=Application
-Name=SyncClipboard
-Icon=xyz.jericx.desktop.syncclipboard
-Comment=A clipboard syncing tool
-Exec=SyncClipboard.Desktop.Default
-Terminal=false
-Categories=Utility;
-StartupWMClass=SyncClipboard.Desktop.Default
-EOF
+sed -e 's|${APP_FRIENDLY_NAME}|SyncClipboard|g' \
+    -e 's|${APP_ID}|xyz.jericx.desktop.syncclipboard|g' \
+    -e 's|${APP_SHORT_SUMMARY}|A clipboard syncing tool|g' \
+    -e 's|${INSTALL_EXEC}|SyncClipboard.Desktop.Default|g' \
+    -e 's|${DESKTOP_NODISPLAY}|false|g' \
+    -e 's|${DESKTOP_INTEGRATE}|true|g' \
+    -e 's|${DESKTOP_TERMINAL}|false|g' \
+    -e 's|${PRIME_CATEGORY}|Utility;|g' \
+    -e 's|${APP_BASE_NAME}|SyncClipboard.Desktop.Default|g' \
+    "$scripts/app.desktop" > "$desktop"
 # The app's launcher integration replaces this absolute placeholder with the
 # installed AppImage path. Keep its embedded template beside the managed files.
-sed 's|^Exec=.*|Exec=/usr/bin/SyncClipboard.Desktop.Default|' "$desktop" > "$bin/xyz.jericx.desktop.syncclipboard.desktop"
+sed -E 's#^(Exec|TryExec)=.*#\1=/usr/bin/SyncClipboard.Desktop.Default#' \
+    "$desktop" > "$bin/xyz.jericx.desktop.syncclipboard.desktop"
 
 for library in libicuuc.so.74 libicui18n.so.74 libicudata.so.74 libssl.so.3 libcrypto.so.3 \
     libfontconfig.so.1 libX11.so.6 libICE.so.6 libSM.so.6 libXrandr.so.2 libXi.so.6 \
