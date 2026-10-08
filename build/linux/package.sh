@@ -43,7 +43,7 @@ chmod +x "$source_dir/SyncClipboard.Updater"
 bash "$scripts/../SetUpdateSource.sh" -m manual -s github -o "$source_dir" -n "$name"
 
 if [[ "$kind" == AppImage ]]; then
-    APPIMAGE_UPDATES=true bash "$scripts/package-appimage.sh" "$source_dir" "$cpu" "$output"
+    APPIMAGE_UPDATES=true bash "$scripts/appimage/package-appimage.sh" "$source_dir" "$cpu" "$output"
 else
     # PupNet's post-publish script resolves paths from this directory.
     cd "$scripts"

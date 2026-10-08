@@ -18,8 +18,8 @@ bin="$appdir/usr/bin"
 mkdir -p "$bin" "$appdir/usr/share/applications" "$appdir/usr/lib"
 cp -a "$source_dir/." "$bin/"
 chmod +x "$bin/SyncClipboard.Desktop.Default" "$bin/SyncClipboard.Updater"
-cp "$scripts/icons/icon.svg" "$appdir/xyz.jericx.desktop.syncclipboard.svg"
-cp "$scripts/../../LICENSE" "$appdir/LICENSE"
+cp "$scripts/../icons/icon.svg" "$appdir/xyz.jericx.desktop.syncclipboard.svg"
+cp "$scripts/../../../LICENSE" "$appdir/LICENSE"
 desktop="$appdir/usr/share/applications/xyz.jericx.desktop.syncclipboard.desktop"
 sed -e 's|${APP_FRIENDLY_NAME}|SyncClipboard|g' \
     -e 's|${APP_ID}|xyz.jericx.desktop.syncclipboard|g' \
@@ -30,7 +30,7 @@ sed -e 's|${APP_FRIENDLY_NAME}|SyncClipboard|g' \
     -e 's|${DESKTOP_TERMINAL}|false|g' \
     -e 's|${PRIME_CATEGORY}|Utility;|g' \
     -e 's|${APP_BASE_NAME}|SyncClipboard.Desktop.Default|g' \
-    "$scripts/app.desktop" > "$desktop"
+    "$scripts/../app.desktop" > "$desktop"
 # The app's launcher integration replaces this absolute placeholder with the
 # installed AppImage path. Keep its embedded template beside the managed files.
 sed -E 's#^(Exec|TryExec)=.*#\1=/usr/bin/SyncClipboard.Desktop.Default#' \

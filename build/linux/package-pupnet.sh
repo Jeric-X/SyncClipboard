@@ -48,7 +48,7 @@ fi
 
 case "${package_kind,,}" in
     deb|rpm) package_kind="${package_kind,,}" ;;
-    *) echo 'Supported package kinds: deb, rpm. Use package-appimage.sh for AppImage.' >&2; exit 1 ;;
+    *) echo 'Supported package kinds: deb, rpm. Use appimage/package-appimage.sh for AppImage.' >&2; exit 1 ;;
 esac
 
 if [[ ! -d $bin_source_dir ]]; then
