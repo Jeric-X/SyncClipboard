@@ -48,6 +48,37 @@ rm -f "$bin/libcoreclrtraceptprovider.so"
 go-appimagetool -s deploy "$desktop"
 bash "$scripts/prepare-portable-appdir.sh" "$appdir"
 
+# Exercise only the generated updater payload, away from the main AppDir.
+# Trace loaded libraries so host libraries cannot hide an incomplete manifest.
+updater="$work/updater"
+mkdir "$updater"
+updater=$(realpath "$updater")
+while IFS= read -r name; do
+    cp -p "$bin/$name" "$updater/$name"
+done < "$bin/appimage-updater.files"
+(
+    cd "$updater"
+    xvfb-run -a timeout 30s env -u APPDIR -u APPIMAGE -u ARGV0 -u OWD \
+        -u LD_LIBRARY_PATH -u LD_PRELOAD -u LD_AUDIT \
+        LANG=C.UTF-8 LD_DEBUG=files LD_DEBUG_OUTPUT="$work/updater-loader" \
+        ./SyncClipboard.Updater --smoke-test
+) | tee "$work/updater-smoke.log"
+grep -Fxq 'GUI_SMOKE=PASS' "$work/updater-smoke.log"
+for trace in "$work"/updater-loader.*; do
+    while IFS= read -r line; do
+        case "$line" in
+            *'calling init: '*)
+                library="${line#*calling init: }"
+                library=$(cd "$updater" && realpath -- "$library")
+                if [[ "$library" != "$updater/"* ]]; then
+                    echo "Updater loaded a library outside its workspace: $library" >&2
+                    exit 1
+                fi
+                ;;
+        esac
+    done < "$trace"
+done
+
 image="$output/SyncClipboard_linux_$cpu.AppImage"
 args=()
 if [[ "${APPIMAGE_UPDATES:-false}" == true ]]; then
