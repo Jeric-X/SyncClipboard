@@ -58,7 +58,7 @@ public class AppImageUpdateTests
             start.Environment["APPIMAGE"] = Path.Combine(directory, "original.AppImage");
             start.Environment["LD_LIBRARY_PATH"] = Path.Combine(directory, "usr/lib") + ":/usr/lib";
             start.Environment["PATH"] = Path.Combine(directory, "usr/bin") + ":/usr/bin";
-            FileReplacementPackageInstaller.LinuxUpdaterFiles.ConfigureEnvironment(start);
+            FileReplacementPackageInstaller.LinuxUpdaterFiles.ConfigureStartInfo(start);
             Assert.AreEqual("/usr/lib", start.Environment["LD_LIBRARY_PATH"]);
             Assert.AreEqual("/usr/bin", start.Environment["PATH"]);
             Assert.IsFalse(start.Environment.ContainsKey("APPDIR"));
@@ -68,6 +68,49 @@ public class AppImageUpdateTests
         {
             Directory.Delete(workspace, true);
         }
+    }
+
+    [TestMethod]
+    public async Task Handoff_CopiesPortableRuntimeWithExecutablePermissions()
+    {
+        string[] names = ["SyncClipboard.Updater", "appimage-ld.so", "libSkiaSharp.so", "libHarfBuzzSharp.so", "libc.so.6"];
+        foreach (var name in names)
+        {
+            File.WriteAllText(Path.Combine(directory, name), name);
+        }
+        File.SetUnixFileMode(Path.Combine(directory, "appimage-ld.so"), UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        File.WriteAllLines(Path.Combine(directory, FileReplacementPackageInstaller.LinuxUpdaterFiles.RuntimeManifest),
+            ["appimage-ld.so", "libc.so.6"]);
+        var workspace = await FileReplacementPackageInstaller.PrepareUnixUpdaterAsync(
+            FileReplacementPackageInstaller.LinuxUpdaterFiles.GetFiles(directory), Token);
+        try
+        {
+            foreach (var name in names)
+            {
+                Assert.AreEqual(name, File.ReadAllText(Path.Combine(workspace, name)));
+            }
+            Assert.IsTrue(File.GetUnixFileMode(Path.Combine(workspace, "appimage-ld.so")).HasFlag(UnixFileMode.UserExecute));
+            Assert.IsTrue(File.Exists(Path.Combine(workspace, FileReplacementPackageInstaller.LinuxUpdaterFiles.RuntimeManifest)));
+        }
+        finally
+        {
+            Directory.Delete(workspace, true);
+        }
+    }
+
+    [TestMethod]
+    [DataRow("../outside.so")]
+    [DataRow("/tmp/outside.so")]
+    [DataRow("missing.so")]
+    public void Handoff_RejectsIncompleteOrEscapingPortableRuntime(string library)
+    {
+        foreach (var name in new[] { "SyncClipboard.Updater", "appimage-ld.so", "libSkiaSharp.so", "libHarfBuzzSharp.so" })
+        {
+            File.WriteAllText(Path.Combine(directory, name), name);
+        }
+        File.WriteAllLines(Path.Combine(directory, FileReplacementPackageInstaller.LinuxUpdaterFiles.RuntimeManifest),
+            ["appimage-ld.so", library]);
+        Assert.IsEmpty(FileReplacementPackageInstaller.LinuxUpdaterFiles.GetFiles(directory));
     }
 
     [TestMethod]

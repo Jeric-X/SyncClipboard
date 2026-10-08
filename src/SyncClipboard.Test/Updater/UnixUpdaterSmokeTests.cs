@@ -35,7 +35,7 @@ public class UnixUpdaterSmokeTests
             };
             start.ArgumentList.Add("--smoke-test");
             if (OperatingSystem.IsLinux())
-                FileReplacementPackageInstaller.LinuxUpdaterFiles.ConfigureEnvironment(start);
+                FileReplacementPackageInstaller.LinuxUpdaterFiles.ConfigureStartInfo(start);
             using var process = Process.Start(start)!;
             var output = process.StandardOutput.ReadToEndAsync(token);
             var errors = process.StandardError.ReadToEndAsync(token);
