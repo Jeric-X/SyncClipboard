@@ -1,96 +1,64 @@
-#!/bin/bash
-set -e
-
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-BIN_DIR=$SCRIPT_DIR/build_bin
-CONF_PATH=$SCRIPT_DIR/linux.pupnet.conf
-CHANGES_MD=$SCRIPT_DIR/../../Changes.md
-
-chmod +x $SCRIPT_DIR/PostPublish.sh
-
-package_kind=''
+#!/usr/bin/env bash
+set -euo pipefail
+scripts=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+kind=''
 rid=''
-bin_source_dir=''
-
-function arg_info() {
-    echo "Args:"
-    echo "-k <package_kind>             package kind in deb/rpm/AppImage"
-    echo "-r <rid>                      .NET Runtime IDentifier"
-    echo "-s <bin_source_dir>           source directory of the binaries"
-}
-
-while getopts "k:r:s:" option;
-do
+source_dir=''
+build_type=self-contained
+while getopts "k:r:s:t:" option; do
     case "$option" in
-        k)
-            package_kind=$OPTARG
-            echo "package_kind : $package_kind";;
-        r)
-            rid=$OPTARG
-            echo "rid : $rid";;
-        s)
-            bin_source_dir=$OPTARG
-            echo "bin_source_dir : $bin_source_dir";;
-        \?)
-            arg_info
-            exit 1;;
+        k) kind="$OPTARG" ;;
+        r) rid="$OPTARG" ;;
+        s) source_dir="$OPTARG" ;;
+        t) build_type="$OPTARG" ;;
+        *) exit 1 ;;
     esac
 done
-
-if [[ "$package_kind" == ""
-        || "$rid" == ""
-        || "$bin_source_dir" == ""
-    ]]; then
-    echo A required parameter is needed but not set
-    arg_info
+if [[ -z "$kind" || -z "$rid" || -z "$source_dir" ]]; then
+    echo 'Usage: package.sh -k <AppImage|deb|rpm> -r <linux-x64|linux-arm64> -s <binaries> [-t <self-contained|no-self-contained>]' >&2
     exit 1
 fi
-
-if [[ ! -d $bin_source_dir ]]; then
-    echo "bin_source_dir $bin_source_dir is not a directory or not exist"
+case "$kind" in
+    AppImage|appimage) kind=AppImage ;;
+    deb|rpm) ;;
+    *) echo "Unsupported package kind: $kind" >&2; exit 1 ;;
+esac
+case "$rid" in
+    linux-x64|linux-arm64) cpu="${rid#linux-}" ;;
+    *) echo "Unsupported runtime: $rid" >&2; exit 1 ;;
+esac
+case "$build_type" in
+    self-contained) suffix='' ;;
+    no-self-contained) suffix=_no-dotnet-runtime ;;
+    *) echo "Unsupported build type: $build_type" >&2; exit 1 ;;
+esac
+if [[ "$kind" == AppImage && "$build_type" != self-contained ]]; then
+    echo 'AppImage requires self-contained binaries.' >&2
     exit 1
 fi
-bin_source_dir=$(readlink -f $bin_source_dir)
-echo "bin_source_dir full path : $bin_source_dir"
-ls -l $bin_source_dir
+source_dir=$(realpath "$source_dir")
+output="$scripts/output"
+name="SyncClipboard_linux_$cpu$suffix.$kind"
+chmod +x "$source_dir/SyncClipboard.Updater"
+bash "$scripts/../SetUpdateSource.sh" -m manual -s github -o "$source_dir" -n "$name"
 
-if [[ $bin_source_dir != $BIN_DIR ]]; then
-    if [ -e $BIN_DIR ]; then
-        rm -rf $BIN_DIR
-    fi
-    mkdir $BIN_DIR
-    cp -r $bin_source_dir/* $BIN_DIR/
-fi
-
-read -r version < $CHANGES_MD
-
-beta_version='10000'
-if [[ $version == *"-beta"* ]]; then
-    beta_version=$(echo "$version" | sed -nE 's/.*-beta([0-9]+).*/\1/p')
-    base_version=$(echo $version | sed -E 's/^v|(-beta[0-9]+)//g')
+if [[ "$kind" == AppImage ]]; then
+    APPIMAGE_UPDATES=true bash "$scripts/appimage/package-appimage.sh" "$source_dir" "$cpu" "$output"
 else
-    base_version=$(echo $version | sed -E 's/^v//g')
+    # PupNet's post-publish script resolves paths from this directory.
+    cd "$scripts/pupnet"
+    bash "$scripts/pupnet/package-pupnet.sh" -k "$kind" -r "$rid" -s "$source_dir"
+    case "$kind:$cpu" in
+        rpm:x64) tail=.x86_64 ;;
+        rpm:arm64) tail=.arm64 ;;
+        deb:x64) tail=_amd64 ;;
+        deb:arm64) tail=_arm64 ;;
+    esac
+    mv "$output"/syncclipboard_*-*"$tail.$kind" "$output/$name"
 fi
-version=$base_version\[$beta_version\]
-
-echo "beta_version : $beta_version"
-echo "base_version : $base_version"
-echo "version : $version"
-
-if [[ "$package_kind" == "AppImage" || "$package_kind" == "appimage" ]]; then
-    # Render beside the source configuration so relative paths keep working.
-    runtime_conf=$(mktemp "$SCRIPT_DIR/.appimage.XXXXXX.pupnet.conf")
-    trap 'rm -f "$runtime_conf"' EXIT
-    if [[ "${APPIMAGE_UPDATES:-false}" == "true" ]]; then
-        sed "s#@UPDATE_ARCH@#${rid#linux-}#g" "$CONF_PATH" > "$runtime_conf"
-        if [[ -n "${GITHUB_ENV:-}" ]]; then
-            update_info=$(sed -n 's/^AppImageArgs = -u "\(.*\)"$/\1/p' "$runtime_conf")
-            echo "APPIMAGE_UPDATE_INFORMATION=$update_info" >> "$GITHUB_ENV"
-        fi
-    else
-        sed 's/^AppImageArgs = .*/AppImageArgs =/' "$CONF_PATH" > "$runtime_conf"
+if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+    echo "artifact-name=$name" >> "$GITHUB_OUTPUT"
+    if [[ "$kind" == AppImage ]]; then
+        echo "update-artifact-name=$name.zsync" >> "$GITHUB_OUTPUT"
     fi
-    CONF_PATH=$runtime_conf
 fi
-
-pupnet "$CONF_PATH" --app-version "$version" --kind "$package_kind" -r "$rid" -y

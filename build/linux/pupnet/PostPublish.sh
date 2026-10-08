@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 # This is a dummy bash script used for demonstration and test. It outputs a few variables
 # and creates a dummy file in the application directory which will be detected by the program.
 
@@ -22,24 +23,15 @@ echo Copying files
 build_bin_dir=$(readlink -f './build_bin')
 echo build_bin_dir full path : $bin_source_dir
 
-cp -r ./build_bin/* ${BUILD_APP_BIN}/
+cp -r ./build_bin/* "${BUILD_APP_BIN}/"
 
-cat > "${BUILD_APP_BIN}/xyz.jericx.desktop.syncclipboard.desktop" <<EOF
-[Desktop Entry]
-Type=Application
-Name=${APP_FRIENDLY_NAME}
-Icon=${APP_ID}
-Comment=${APP_SHORT_SUMMARY}
-Exec=${INSTALL_EXEC}
-TryExec=${INSTALL_EXEC}
-NoDisplay=${DESKTOP_NODISPLAY}
-X-AppImage-Integrate=${DESKTOP_INTEGRATE}
-Terminal=${DESKTOP_TERMINAL}
-Categories=${PRIME_CATEGORY}
-StartupWMClass=${APP_BASE_NAME}
-MimeType=
-Keywords=
-EOF
+scripts=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+desktop=$(<"$scripts/../app.desktop")
+for variable in APP_FRIENDLY_NAME APP_ID APP_SHORT_SUMMARY INSTALL_EXEC \
+    DESKTOP_NODISPLAY DESKTOP_INTEGRATE DESKTOP_TERMINAL PRIME_CATEGORY APP_BASE_NAME; do
+    desktop=${desktop//\$\{$variable\}/"${!variable}"}
+done
+printf '%s\n' "$desktop" > "${BUILD_APP_BIN}/xyz.jericx.desktop.syncclipboard.desktop"
 
 set +x #echo off
 

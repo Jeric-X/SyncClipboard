@@ -74,7 +74,13 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
         {
             var executable = Path.Combine(workspace, "SyncClipboard.Updater");
             if (!OperatingSystem.IsWindows())
+            {
+                foreach (var file in files)
+                {
+                    File.SetUnixFileMode(Path.Combine(workspace, Path.GetFileName(file)), File.GetUnixFileMode(file));
+                }
                 File.SetUnixFileMode(executable, File.GetUnixFileMode(files[0]) | UnixFileMode.UserExecute);
+            }
             return workspace;
         }
         catch
@@ -99,7 +105,7 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
         using var currentProcess = Process.GetCurrentProcess();
         var start = new ProcessStartInfo(updaterPath) { UseShellExecute = false, WorkingDirectory = workspace };
         if (OperatingSystem.IsLinux())
-            LinuxUpdaterFiles.ConfigureEnvironment(start);
+            LinuxUpdaterFiles.ConfigureStartInfo(start);
         // The updater waits for this process to exit, then owns staging, verification, replacement, and cleanup.
         string[] arguments =
         [
@@ -134,16 +140,32 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
     internal static class LinuxUpdaterFiles
     {
         internal static readonly string[] Libraries = ["libSkiaSharp.so", "libHarfBuzzSharp.so"];
+        internal const string RuntimeManifest = "appimage-updater.files";
 
         public static string[] GetFiles(string programDirectory)
         {
             string[] names = ["SyncClipboard.Updater", .. Libraries];
-            var files = names.Select(name => Path.Combine(programDirectory, name)).ToArray();
+            var manifest = Path.Combine(programDirectory, RuntimeManifest);
+            if (File.Exists(manifest))
+            {
+                var nativeFiles = File.ReadAllLines(manifest);
+                if (!nativeFiles.Contains("appimage-ld.so") || nativeFiles.Any(name => string.IsNullOrWhiteSpace(name)
+                    || name != Path.GetFileName(name) || name is "." or ".."))
+                    return [];
+                names = [.. names, RuntimeManifest, .. nativeFiles];
+            }
+            var files = names.Distinct().Select(name => Path.Combine(programDirectory, name)).ToArray();
             return files.All(File.Exists) ? files : [];
         }
 
-        public static void ConfigureEnvironment(ProcessStartInfo start)
+        public static void ConfigureStartInfo(ProcessStartInfo start)
         {
+            var directory = Path.GetDirectoryName(start.FileName);
+            if (directory is not null && File.Exists(Path.Combine(directory, RuntimeManifest)))
+            {
+                // The bundled updater's ELF interpreter is relative to this directory.
+                start.WorkingDirectory = directory;
+            }
             start.Environment.TryGetValue("APPDIR", out var appDir);
             if (!string.IsNullOrEmpty(appDir))
             {
