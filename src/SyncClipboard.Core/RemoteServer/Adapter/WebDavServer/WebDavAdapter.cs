@@ -92,6 +92,7 @@ public sealed class WebDavAdapter : IServerAdapter<WebDavConfig>, IStorageBasedS
 
     public async Task SetProfileAsync(ProfileDto profileDto, CancellationToken cancellationToken = default)
     {
+        profileDto.SyncedAt ??= DateTimeOffset.Now;
         await _webDav.PutJson(RemoteProfilePath, profileDto, cancellationToken);
     }
 
@@ -100,6 +101,7 @@ public sealed class WebDavAdapter : IServerAdapter<WebDavConfig>, IStorageBasedS
         string? expectedVersion,
         CancellationToken cancellationToken = default)
     {
+        profileDto.SyncedAt ??= DateTimeOffset.Now;
         return _webDav.PutJsonIfVersion(
             RemoteProfilePath,
             profileDto,

@@ -351,7 +351,8 @@ PUT /SyncClipboard.json
   "text": "string",           // required
   "hasData": true,            // or false, required  
   "dataName": "string",       // if hasData is true, required
-  "size": 0                   // optional
+  "size": 0,                  // optional
+  "syncedAt": "2026-10-09T15:30:00+08:00" // optional, nullable
 }
 ```
 
@@ -365,6 +366,10 @@ PUT /SyncClipboard.json
   - 当`hash`值存在时，接收方应验证`hash`信息与剪贴板内容的一致性，在不一致时执行错误处理流程
   - 当`hash`为空时，或处于无法计算`hash`的环境，可以使用`type`/`text`的组合简单判断剪贴板内容的相等性
 - `size`标识复制文件的总字节大小，或Text类型剪贴板完整字符串的长度，仅用于展示
+- `syncedAt`记录当前远端剪贴板的提交时间，使用带 UTC 偏移量的 ISO 8601 时间；缺失或为 `null` 表示未知，不参与内容 Hash 和去重
+  - 官方服务器每次保存当前剪贴板时，使用服务器本地时间覆盖该字段
+  - WebDAV/S3 由客户端在写入时管理：为空则填入客户端本地时间，已有值则保留；元数据补全也遵循此规则，因此旧数据补上的时间是补写时间
+  - 读取端可转换为自己的本地时间显示；客户端时钟可能不同，该字段不用于判断并发写入顺序，也不表示所有客户端都已完成同步
 
 ### S3 同步协议规范
 

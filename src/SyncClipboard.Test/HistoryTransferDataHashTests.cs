@@ -446,6 +446,50 @@ public class HistoryTransferDataHashTests
     }
 
     [TestMethod]
+    [DataRow(false, false)]
+    [DataRow(false, true)]
+    [DataRow(true, false)]
+    [DataRow(true, true)]
+    public async Task PutSyncProfile_AssignsServerSyncTimeToSavedAndPublishedProfile(bool existingProfile, bool suppliedTime)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var fixture = await TestFixture.CreateAsync(token);
+        var hubContext = new TestHubContext();
+        using var cache = new MemoryCache(new MemoryCacheOptions());
+        var controller = new SyncClipboardController(hubContext, cache, fixture.ServerEnv, fixture.Service);
+        var profile = new TextProfile("sync time");
+        if (existingProfile)
+        {
+            await fixture.Service.AddProfile(HistoryService.HARD_CODED_USER_ID, profile, token);
+        }
+        var dto = await profile.ToProfileDto(token);
+        dto.SyncedAt = suppliedTime
+            ? new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.FromHours(-7))
+            : null;
+        var before = DateTimeOffset.Now;
+
+        var result = await controller.PutSyncProfile(dto, token);
+
+        var after = DateTimeOffset.Now;
+        Assert.IsInstanceOfType<OkResult>(result);
+        var syncedAt = hubContext.Client.LastProfile?.SyncedAt;
+        Assert.IsNotNull(syncedAt);
+        Assert.IsTrue(syncedAt >= before && syncedAt <= after);
+        Assert.AreEqual(TimeZoneInfo.Local.GetUtcOffset(syncedAt.Value), syncedAt.Value.Offset);
+
+        var cachedResult = await controller.GetSyncProfile(token);
+        var cached = (ProfileDto)((OkObjectResult)cachedResult.Result!).Value!;
+        Assert.IsTrue(syncedAt.Value.EqualsExact(cached.SyncedAt!.Value));
+
+        // A fresh cache exercises the persisted JSON, as after a server restart.
+        using var freshCache = new MemoryCache(new MemoryCacheOptions());
+        var restarted = new SyncClipboardController(hubContext, freshCache, fixture.ServerEnv, fixture.Service);
+        var savedResult = await restarted.GetSyncProfile(token);
+        var saved = (ProfileDto)((OkObjectResult)savedResult.Result!).Value!;
+        Assert.IsTrue(syncedAt.Value.EqualsExact(saved.SyncedAt!.Value));
+    }
+
+    [TestMethod]
     public async Task PutSyncProfile_GroupWithMatchingArchiveHashStillRequiresSemanticValidation()
     {
         var token = TestContext.CancellationTokenSource.Token;

@@ -325,7 +325,8 @@ PUT /SyncClipboard.json
   "text": "string",           // required
   "hasData": true,            // or false, required  
   "dataName": "string",       // if hasData is true, required
-  "size": 0                   // optional
+  "size": 0,                  // optional
+  "syncedAt": "2026-10-09T15:30:00+08:00" // optional, nullable
 }
 ```
 
@@ -339,6 +340,10 @@ PUT /SyncClipboard.json
   - When the `hash` value exists, the receiver should verify the consistency between the `hash` information and the clipboard content, and execute the error handling process when inconsistent
   - When `hash` is empty, or in an environment where `hash` cannot be calculated, you can use the combination of `type`/`text` to simply determine the equality of clipboard content
 - `size` indicates the total byte size of the copied file, or the length of the complete string for Text type clipboard
+- `syncedAt` records when the current remote clipboard was submitted, as an ISO 8601 timestamp with a UTC offset. Missing or `null` means unknown; it does not affect content hashes or deduplication.
+  - The official server overwrites this field with its local time whenever it saves the current clipboard.
+  - For WebDAV/S3, the client fills a missing or null value with its local time when writing, and preserves an existing value. Metadata backfills follow the same rule, so a timestamp added to legacy data records the backfill time.
+  - Readers can convert it to their own local time. Client clocks may differ, so this field must not determine concurrent write ordering or imply that all clients have finished syncing.
 
 ### S3 Sync Protocol Specification
 
