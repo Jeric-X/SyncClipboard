@@ -55,33 +55,31 @@ public class DownloadService : Service
     private bool ClientSwitchOn => _syncConfig.SyncSwitchOn && _remoteClipboardServerFactory.HasActiveServer;
 
     #region Hotkey
-    private static readonly string QuickDownloadAndPasteGuid = "8a4a033e-31da-1b87-76ea-548885866b66";
-
     private UniqueCommandCollection CommandCollection => new(PageDefinition.SyncSetting.Title, PageDefinition.SyncSetting.FontIcon!)
     {
         Commands = {
             new UniqueCommand(
                 I18n.Strings.SwitchClipboardSyncing,
-                "26D8A39E-F50D-CC71-FE15-647F67FDB2F9",
+                CommandIds.SwitchClipboardSyncing,
                 () => SwitchClipboardSyncing(!_syncConfig.SyncSwitchOn)
             ),
             new UniqueCommand(
                 I18n.Strings.SwitchBuiltInServer,
-                "145740F4-03F7-6F6C-5B93-B027C7C49C59",
+                CommandIds.SwitchBuiltInServer,
                 () => SwitchBuiltInServer(!_serverConfig.SwitchOn)
             ),
             _uploadService.QuickUploadCommand,
             _uploadService.QuickUploadWithoutFilterCommand,
             new UniqueCommand(
                 I18n.Strings.DownloadOnce,
-                "95396FFF-E5FE-45D3-9D70-4A43FA34FF31",
+                CommandIds.DownloadOnce,
                 QuickDownload
             ),
             _uploadService.CopyAndQuickUploadCommand,
             _uploadService.CopyAndQuickUploadWithoutFilterCommand,
             new UniqueCommand(
                 I18n.Strings.DownloadAndPaste,
-                QuickDownloadAndPasteGuid,
+                CommandIds.DownloadAndPaste,
                 QuickDownloadAndPaste
             ),
         }
@@ -560,7 +558,7 @@ public class DownloadService : Service
 
         try
         {
-            if (paste && _hotkeyManager.HotkeyStatusMap.TryGetValue(QuickDownloadAndPasteGuid, out var status) &&
+            if (paste && _hotkeyManager.HotkeyStatusMap.TryGetValue(CommandIds.DownloadAndPaste, out var status) &&
                 status.Hotkey is not null)
             {
                 _keyboard.ReleaseKeys(status.Hotkey);

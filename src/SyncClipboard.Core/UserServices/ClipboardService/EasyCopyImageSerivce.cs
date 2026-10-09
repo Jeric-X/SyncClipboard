@@ -71,7 +71,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
         Commands = {
             new UniqueCommand(
                 I18n.Strings.SwitchEasyCopyImage,
-                "337275BE-57A2-2E97-6096-FF3D087D8A9C",
+                CommandIds.SwitchEasyCopyImage,
                 () => SwitchEasyCopyImage(!_clipboardAssistConfig.EasyCopyImageSwitchOn)
             )
         }

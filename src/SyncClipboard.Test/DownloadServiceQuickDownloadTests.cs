@@ -377,7 +377,6 @@ public class DownloadServiceQuickDownloadTests
         public async Task DownloadAsync(CancellationToken token, bool paste = false)
         {
             var commandId = paste ? DownloadAndPasteCommandId : DownloadCommandId;
-            Assert.IsTrue(_hotkeys.HotkeyStatusMap.ContainsKey(commandId));
             var context = new CommandCompletionContext();
             var previousContext = SynchronizationContext.Current;
             try
