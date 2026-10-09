@@ -120,6 +120,7 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
     public async Task SetProfileAsync(ProfileDto profileDto, CancellationToken cancellationToken = default)
     {
         ValidateConfig();
+        profileDto.SyncedAt ??= DateTimeOffset.Now;
         var json = JsonSerializer.Serialize(profileDto, JsonSerializerOptions.Web);
         var request = new PutObjectRequest
         {
@@ -143,6 +144,7 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
         }
 
         ValidateConfig();
+        profileDto.SyncedAt ??= DateTimeOffset.Now;
         var json = JsonSerializer.Serialize(profileDto, JsonSerializerOptions.Web);
         var request = new PutObjectRequest
         {

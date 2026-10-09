@@ -15,4 +15,6 @@ public record class ProfileDto
     public string? TransferDataHash { get; set; }
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public long? Size { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DateTimeOffset? SyncedAt { get; set; }
 }

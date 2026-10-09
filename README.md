@@ -346,12 +346,14 @@ PUT /SyncClipboard.json
 ### SyncClipboard.json
 ```jsonc
 {
-  "type": "Text",             // or Image/File/Group, required
-  "hash": "string",           // optional, empty string is treated as null
-  "text": "string",           // required
-  "hasData": true,            // or false, required  
-  "dataName": "string",       // if hasData is true, required
-  "size": 0                   // optional
+  "type": "Text",                          // or Image/File/Group, required
+  "hash": "string",                        // optional, empty string is treated as null
+  "text": "string",                        // required
+  "hasData": true,                         // or false, required
+  "dataName": "string",                    // if hasData is true, required
+  "transferDataHash": "string",            // optional
+  "size": 0,                               // optional
+  "syncedAt": "2026-10-09T15:30:00+08:00"  // optional
 }
 ```
 
@@ -364,7 +366,13 @@ PUT /SyncClipboard.json
   - 发送方应尽量提供`hash`信息
   - 当`hash`值存在时，接收方应验证`hash`信息与剪贴板内容的一致性，在不一致时执行错误处理流程
   - 当`hash`为空时，或处于无法计算`hash`的环境，可以使用`type`/`text`的组合简单判断剪贴板内容的相等性
+- `transferDataHash`是实际传输文件完整字节流的 SHA-256，使用 64 位大写十六进制字符串，用于校验传输文件完整性
+  - 仅在 `hasData` 为 `true` 时使用
 - `size`标识复制文件的总字节大小，或Text类型剪贴板完整字符串的长度，仅用于展示
+- `syncedAt`记录当前远端剪贴板的提交时间，使用带 UTC 偏移量的 ISO 8601 时间
+  - 官方服务器收到剪贴板推送时会使用服务器时间，忽略客户端提供的时间
+  - WebDAV/S3 由客户端在推送时设置
+  - 客户端时钟可能不同，不应使用该字段判断并发写入顺序
 
 ### S3 同步协议规范
 

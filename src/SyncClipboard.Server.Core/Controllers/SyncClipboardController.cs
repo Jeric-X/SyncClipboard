@@ -255,6 +255,7 @@ public class SyncClipboardController(
     private async Task SaveAndNotifyCurrentProfile(Profile profile, CancellationToken token)
     {
         var profileDto = await profile.ToProfileDto(token);
+        profileDto.SyncedAt = DateTimeOffset.Now;
         var dataRoot = _serverEnv.GetDataRootPath();
 
         var profilePath = Path.Combine(dataRoot, "SyncClipboard.json");
