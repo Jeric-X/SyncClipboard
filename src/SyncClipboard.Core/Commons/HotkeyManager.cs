@@ -63,9 +63,9 @@ public class HotkeyManager
     private List<UniqueCommand> DeleteHotkeyCommandMap(IEnumerable<string> ids)
     {
         List<UniqueCommand> registedCommands = [];
-        foreach (var guid in ids)
+        foreach (var id in ids)
         {
-            var status = _hotkeyCommandMap[guid];
+            var status = _hotkeyCommandMap[id];
             if (status.IsReady)
             {
                 UnRegisterFromNative(status.Hotkey!);
@@ -75,7 +75,7 @@ public class HotkeyManager
             {
                 registedCommands.Add(status.Command);
             }
-            _hotkeyCommandMap.Remove(guid);
+            _hotkeyCommandMap.Remove(id);
         }
         return registedCommands;
     }
@@ -104,9 +104,9 @@ public class HotkeyManager
 
     private void AddHotkeyCommandMap(IEnumerable<KeyValuePair<string, Hotkey>> hotkeys)
     {
-        foreach (var (guid, hotkey) in hotkeys)
+        foreach (var (id, hotkey) in hotkeys)
         {
-            SetHotkeyCommandMap(guid, hotkey);
+            SetHotkeyCommandMap(id, hotkey);
         }
     }
 
@@ -217,6 +217,7 @@ public class HotkeyManager
 
     public void RunCommand(string cmdId)
     {
+        cmdId = CommandIds.Resolve(cmdId);
         if (_hotkeyCommandMap.TryGetValue(cmdId, out HotkeyStatus? status) && status.Command is not null)
         {
             status.Command.Command.InvokeNoExcept();

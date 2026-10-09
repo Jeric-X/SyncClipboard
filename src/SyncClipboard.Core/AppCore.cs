@@ -291,22 +291,22 @@ namespace SyncClipboard.Core
                 Commands = {
                     new UniqueCommand(
                         Strings.OpenMainUI,
-                        "6DB18835-1DAD-0495-E126-45F5D2D193A7",
+                        CommandIds.OpenMainUI,
                         mainWindow.Show
                     ),
                     new UniqueCommand(
                         Strings.CompletelyExit,
-                        "2F30872E-B412-F580-7C20-F0D063A85BE0",
+                        CommandIds.CompletelyExit,
                         ExitApp
                     ),
                     new UniqueCommand(
                         Strings.OpenHistoryPanel,
-                        "OpenHistoryPanel",
+                        CommandIds.OpenHistoryPanel,
                         historyViewModel.ShowWithAutoPosition
                     ),
                     new UniqueCommand(
                         Strings.ToggleHistoryPanel,
-                        "ToggleHistoryPanel",
+                        CommandIds.ToggleHistoryPanel,
                         historyViewModel.SwitchVisible
                     )
                 }
@@ -392,6 +392,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<ConfigManager>();
             services.AddSingleton<ISyncClipboardConfigMigration, SyncClipboardConfigMigrationV0ToV1>();
             services.AddSingleton<ISyncClipboardConfigMigration, SyncClipboardConfigMigrationV1ToV2>();
+            services.AddSingleton<ISyncClipboardConfigMigration, SyncClipboardConfigMigrationV2ToV3>();
             services.AddSingleton<SyncClipboardConfigUpgrader>();
             services.AddSingleton<ConfigRecoveryService>();
             services.AddSingleton<AccountManager>();

@@ -18,28 +18,24 @@ public class UploadService : ClipboardHander
     public event ProgramEvent.ProgramEventHandler? PushStarted;
     public event ProgramEvent.ProgramEventHandler? PushStopped;
 
-    private static readonly string QuickUploadGuid = "D0EDB9A4-3409-4A76-BC2B-4C0CD80DD850";
-    private static readonly string CopyAndQuickUploadGuid = "D13672E9-D14C-4D48-847E-10B030F4B608";
-    private static readonly string QuickUploadWithoutFilterGuid = "6C5314DF-B504-25EA-074D-396E5C69BAF1";
-    private static readonly string CopyAndQuickUploadWithoutFilterGuid = "40E0B462-FCED-C4CD-7126-1F5204443DC1";
     public UniqueCommand QuickUploadCommand => new UniqueCommand(
         I18n.Strings.UploadOnce,
-        QuickUploadGuid,
+        CommandIds.UploadOnce,
         QuickUploadWithContentControl
     );
     public UniqueCommand CopyAndQuickUploadCommand => new UniqueCommand(
         I18n.Strings.CopyAndUpload,
-        CopyAndQuickUploadGuid,
+        CommandIds.CopyAndUpload,
         CopyAndQuickUploadWithContentControl
     );
     public UniqueCommand QuickUploadWithoutFilterCommand => new UniqueCommand(
         I18n.Strings.UploadWithoutFilter,
-        QuickUploadWithoutFilterGuid,
+        CommandIds.UploadWithoutFilter,
         QuickUploadIgnoreContentControl
     );
     public UniqueCommand CopyAndQuickUploadWithoutFilterCommand => new UniqueCommand(
         I18n.Strings.CopyAndUploadWithoutFilter,
-        CopyAndQuickUploadWithoutFilterGuid,
+        CommandIds.CopyAndUploadWithoutFilter,
         CopyAndQuickUploadIgnoreContentControl
     );
 
@@ -515,6 +511,6 @@ public class UploadService : ClipboardHander
         }
     }
 
-    private void CopyAndQuickUploadWithContentControl() => CopyAndQuickUpload(true, CopyAndQuickUploadGuid);
-    private void CopyAndQuickUploadIgnoreContentControl() => CopyAndQuickUpload(false, CopyAndQuickUploadWithoutFilterGuid);
+    private void CopyAndQuickUploadWithContentControl() => CopyAndQuickUpload(true, CommandIds.CopyAndUpload);
+    private void CopyAndQuickUploadIgnoreContentControl() => CopyAndQuickUpload(false, CommandIds.CopyAndUploadWithoutFilter);
 }
