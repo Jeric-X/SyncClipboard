@@ -1549,4 +1549,52 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryExportRequestedCount" xml:space="preserve">
     <value>请求导出 {0} 条记录</value>
   </data>
+  <data name="HistoryImport" xml:space="preserve">
+    <value>导入历史记录</value>
+  </data>
+  <data name="HistoryImportChooseFile" xml:space="preserve">
+    <value>选择备份文件</value>
+  </data>
+  <data name="HistoryImportReading" xml:space="preserve">
+    <value>正在读取备份…</value>
+  </data>
+  <data name="HistoryImportCount" xml:space="preserve">
+    <value>共 {0} 条记录</value>
+  </data>
+  <data name="HistoryImportEmpty" xml:space="preserve">
+    <value>备份中没有记录。</value>
+  </data>
+  <data name="HistoryImportStart" xml:space="preserve">
+    <value>开始导入</value>
+  </data>
+  <data name="HistoryImportProgress" xml:space="preserve">
+    <value>正在导入 {0} / {1} 条记录</value>
+  </data>
+  <data name="HistoryImportResult" xml:space="preserve">
+    <value>已导入 {0} 条记录</value>
+  </data>
+  <data name="HistoryImportExistingCount" xml:space="preserve">
+    <value>，跳过 {0} 条已有记录</value>
+  </data>
+  <data name="HistoryImportFailureCount" xml:space="preserve">
+    <value>，{0} 条记录未能导入</value>
+  </data>
+  <data name="HistoryImportReport" xml:space="preserve">
+    <value>未导入记录报告</value>
+  </data>
+  <data name="HistoryImportFailed" xml:space="preserve">
+    <value>导入失败：{0}</value>
+  </data>
+  <data name="HistoryImportCanceled" xml:space="preserve">
+    <value>导入已取消，已完成的记录已保留。</value>
+  </data>
+  <data name="HistoryImportBusy" xml:space="preserve">
+    <value>已有导入正在进行。</value>
+  </data>
+  <data name="HistoryImportDuplicates" xml:space="preserve">
+    <value>已有记录仅恢复缺失附件，保留本机属性。</value>
+  </data>
+  <data name="HistoryImportRepairedCount" xml:space="preserve">
+    <value>，已修复 {0} 条记录</value>
+  </data>
 </root>

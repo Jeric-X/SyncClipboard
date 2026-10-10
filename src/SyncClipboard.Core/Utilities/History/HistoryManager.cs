@@ -5,6 +5,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.History.HistoryExport;
+using SyncClipboard.Core.Utilities.History.HistoryImport;
 using SyncClipboard.Server.Core.Models;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
@@ -191,6 +192,106 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         await _dbContext.HistoryRecords.AddAsync(record, token);
         await _dbContext.SaveChangesAsync(token);
         HistoryAdded?.Invoke(record);
+    }
+
+    public async Task<bool> ShouldSkipImportAsync(ProfileType type, string hash, CancellationToken token)
+    {
+        await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        var existing = await Query(type, hash, token).ConfigureAwait(false);
+        return existing is not null && (existing.IsDeleted || await HasImportDataAsync(existing, token).ConfigureAwait(false));
+    }
+
+    private async Task<bool> HasImportDataAsync(HistoryRecord record, CancellationToken token)
+    {
+        try
+        {
+            var profile = Profile.Create(_profileEnv.GetHistoryPersistentDir(), new ProfilePersistentInfo
+            {
+                Type = record.Type,
+                Hash = record.Hash,
+                Text = record.Text,
+                Size = record.Size,
+                FilePaths = record.FilePath,
+                TransferDataFile = record.TransferDataFile,
+                TransferDataHash = record.TransferDataHash
+            });
+            return !profile.HasTransferData || await profile.IsDataComplete(false, token).ConfigureAwait(false);
+        }
+        catch (Exception) when (!token.IsCancellationRequested)
+        {
+            return false;
+        }
+    }
+
+    public async Task<HistoryImportOutcome> ImportRecordAsync(HistoryRecord record, CancellationToken token)
+    {
+        await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        var existing = await Query(record.Type, record.Hash, token).ConfigureAwait(false);
+        if (existing is not null)
+        {
+            if (existing.IsDeleted || await HasImportDataAsync(existing, token).ConfigureAwait(false))
+                return HistoryImportOutcome.Existing;
+            var oldPaths = existing.FilePath;
+            var oldFile = existing.TransferDataFile;
+            var oldHash = existing.TransferDataHash;
+            var oldReady = existing.IsLocalFileReady;
+            // Old records may retain lowercase hashes; absolute bindings keep the repaired files
+            // valid without changing that record's identity or other stored properties.
+            var persistentDir = _profileEnv.GetHistoryPersistentDir();
+            existing.FilePath = record.FilePath.Select(path => Profile.GetFullPath(persistentDir, record.Type, record.Hash, path)).ToArray();
+            existing.TransferDataFile = Profile.GetFullPath(persistentDir, record.Type, record.Hash, record.TransferDataFile);
+            existing.TransferDataHash = record.TransferDataHash;
+            existing.IsLocalFileReady = true;
+            try
+            {
+                await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
+            }
+            catch
+            {
+                existing.FilePath = oldPaths;
+                existing.TransferDataFile = oldFile;
+                existing.TransferDataHash = oldHash;
+                existing.IsLocalFileReady = oldReady;
+                throw;
+            }
+            NotifyImportedRecord(existing, added: false);
+            return HistoryImportOutcome.Repaired;
+        }
+        record.Hash = record.Hash.ToUpperInvariant();
+        record.ID = 0;
+        record.IsDeleted = false;
+        record.SyncStatus = HistorySyncStatus.LocalOnly;
+        record.Version = 0;
+        _dbContext.HistoryRecords.Add(record);
+        try
+        {
+            await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
+        }
+        catch
+        {
+            _dbContext.Entry(record).State = EntityState.Detached;
+            throw;
+        }
+        NotifyImportedRecord(record, added: true);
+        return HistoryImportOutcome.Imported;
+    }
+
+    private void NotifyImportedRecord(HistoryRecord record, bool added)
+    {
+        // Observer failures must not make the importer remove committed attachments.
+        try
+        {
+            if (added)
+                HistoryAdded?.Invoke(record);
+            else
+                HistoryUpdated?.Invoke(record);
+        }
+        catch (Exception ex)
+        {
+            _logger.Write("HistoryManager", $"Import notification failed: {ex.Message}");
+        }
     }
 
     public async Task<IReadOnlyList<HistoryExportRecord>> GetExportSnapshotAsync(

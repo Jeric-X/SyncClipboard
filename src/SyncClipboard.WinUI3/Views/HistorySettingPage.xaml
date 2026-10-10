@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <Page x:Class="SyncClipboard.WinUI3.Views.HistorySettingPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -44,6 +44,9 @@
                                Value="{x:Bind _viewModel.HistoryRetentionMinutes, Mode=TwoWay}"
                                SpinButtonPlacementMode="Inline"
                                SmallChange="1" />
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryImport}">
+                    <Button Content="{x:Bind i18n:Strings.HistoryImport}" Command="{x:Bind _viewModel.ImportHistoryCommand}" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryExport}">
                     <Button Content="{x:Bind i18n:Strings.HistoryExport}" Command="{x:Bind _viewModel.ExportHistoryCommand}" />
