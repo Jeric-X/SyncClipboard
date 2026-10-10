@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities.History;
@@ -31,6 +32,8 @@ public class HistoryImportTests
     {
         private readonly DirectoryInfo _root = Directory.CreateTempSubdirectory("SyncClipboard-Import-");
         private readonly SemaphoreSlim _semaphore = new(1, 1);
+        private readonly ConfigurationTestServices _configurationServices = new();
+        public ConfigManager Config { get; }
         public MemoryDb Db { get; } = new();
         public HistoryManager Manager { get; }
         public HistoryImporter Importer { get; }
@@ -47,7 +50,8 @@ public class HistoryImportTests
             SetField("_dbSemaphore", _semaphore);
             SetField("_logger", Mock.Of<ILogger>());
             SetField("_profileEnv", this);
-            Importer = new(this, Manager);
+            Config = new ConfigManager(Path.Combine(Root, "SyncClipboard.json"), _configurationServices.Upgrader);
+            Importer = new(this, Manager, Config);
         }
 
         private void SetField(string name, object value) => typeof(HistoryManager)
@@ -101,6 +105,7 @@ public class HistoryImportTests
         {
             await Db.DisposeAsync();
             _semaphore.Dispose();
+            _configurationServices.Dispose();
             _root.Delete(true);
         }
     }
@@ -443,6 +448,85 @@ public class HistoryImportTests
     }
 
     [TestMethod]
+    [DataRow(0, false)]
+    [DataRow(1, false)]
+    [DataRow(2, true)]
+    [DataRow(3, true)]
+    public async Task ConfiguredGroupEntryLimit_SkipsOnlyOversizedGroup(int limit, bool accepted)
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        Assert.AreEqual(1_000_000u, f.Config.GetConfig<HistoryImportConfig>().MaxGroupEntryCount);
+        f.Config.SetConfig(new HistoryImportConfig { MaxGroupEntryCount = (uint)limit });
+        f.Config.Reload();
+        var first = Path.Combine(f.Root, "first.txt");
+        var second = Path.Combine(f.Root, "second.txt");
+        await File.WriteAllTextAsync(first, "", Token);
+        await File.WriteAllTextAsync(second, "", Token);
+        var group = await f.RecordAsync(new GroupProfile([first, second]), Token);
+        var following = await f.RecordAsync(new TextProfile("following record"), Token);
+        var backup = await f.ExportAsync([group, following], Token);
+        var result = await f.ImportAsync(backup, Token);
+        Assert.AreEqual(accepted ? 2 : 1, result.ImportedCount);
+        Assert.IsNull(result.Error);
+        Assert.IsTrue(await f.Db.HistoryRecords.AnyAsync(record => record.Hash == following.Hash, Token));
+        if (accepted)
+        {
+            Assert.IsEmpty(result.Failures);
+            var restored = await f.Db.HistoryRecords.SingleAsync(record => record.Hash == group.Hash, Token);
+            Assert.HasCount(2, restored.FilePath);
+            foreach (var path in restored.FilePath)
+                Assert.IsTrue(File.Exists(Profile.GetFullPath(f.GetHistoryPersistentDir(), restored.Type, restored.Hash, path)));
+        }
+        else
+        {
+            Assert.Contains("file and directory limit", result.Failures.Single().Reason);
+            Assert.IsNotNull(result.ReportPath);
+            Assert.Contains("file and directory limit", await File.ReadAllTextAsync(result.ReportPath, Token));
+            Assert.IsEmpty(Directory.GetDirectories(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), group.ProfileType, group.Hash), "import-*"));
+        }
+    }
+
+    [TestMethod]
+    [DataRow(false, 5, false)]
+    [DataRow(false, 6, true)]
+    [DataRow(true, 5, false)]
+    [DataRow(true, 6, true)]
+    public async Task GroupEntryLimit_CountsImplicitParentsAndEmptyDirectoriesOnce(bool explicitParents, int limit, bool accepted)
+    {
+        await using var f = new Fixture();
+        var path = Path.Combine(f.Root, "entries.zip");
+        using (var zip = ZipFile.Open(path, ZipArchiveMode.Create))
+        {
+            zip.CreateEntry("folder/");
+            if (explicitParents)
+            {
+                zip.CreateEntry("folder/a/");
+                zip.CreateEntry("folder/a/b/");
+            }
+            zip.CreateEntry("folder/a/b/first.txt");
+            zip.CreateEntry("folder/a/b/second.txt");
+            zip.CreateEntry("folder/empty/");
+        }
+        var profile = new GroupProfile(new SyncClipboard.Shared.ProfileDto());
+        var file = new FileHashInfo(path, await Utility.CalculateFileSHA256(path, Token));
+        if (accepted)
+        {
+            await profile.SetTransferData(file, 0, (uint)limit, Token);
+            var folder = profile.Files.Single();
+            Assert.IsTrue(File.Exists(Path.Combine(folder, "a", "b", "first.txt")));
+            Assert.IsTrue(File.Exists(Path.Combine(folder, "a", "b", "second.txt")));
+            Assert.IsTrue(Directory.Exists(Path.Combine(folder, "empty")));
+            Assert.AreEqual(0L, await profile.GetSize(Token));
+        }
+        else
+        {
+            await Assert.ThrowsExactlyAsync<InvalidDataException>(() => profile.SetTransferData(file, 0, (uint)limit, Token));
+            Assert.IsEmpty(Directory.GetDirectories(f.Root, "entries.*"));
+        }
+    }
+
+    [TestMethod]
     public async Task GroupExtraction_RejectsUnderstatedEntryLengthWhileStreaming()
     {
         await using var f = new Fixture();
@@ -460,7 +544,7 @@ public class HistoryImportTests
         await File.WriteAllBytesAsync(path, bytes, Token);
         var profile = new GroupProfile(new SyncClipboard.Shared.ProfileDto { Hash = new string('0', 64) });
         var hash = await Utility.CalculateFileSHA256(path, Token);
-        await Assert.ThrowsExactlyAsync<InvalidDataException>(() => profile.SetTransferData(new FileHashInfo(path, hash), 1, Token));
+        await Assert.ThrowsExactlyAsync<InvalidDataException>(() => profile.SetTransferData(new FileHashInfo(path, hash), 1, 1_000_000, Token));
         Assert.IsEmpty(Directory.GetDirectories(f.Root, "forged.*"));
     }
 
@@ -525,7 +609,7 @@ public class HistoryImportTests
         var backup = await f.ExportAsync([first with { Timestamp = attachment.Timestamp.AddDays(1) },
             attachment, later with { Timestamp = attachment.Timestamp.AddDays(-1) }], Token);
         var checks = 0;
-        var importer = new HistoryImporter(f, f.Manager, _ => ++checks == 1 && group ? long.MaxValue : 0);
+        var importer = new HistoryImporter(f, f.Manager, f.Config, _ => ++checks == 1 && group ? long.MaxValue : 0);
         using var plan = await HistoryImporter.PrepareAsync(backup, Token);
         var result = await importer.ImportAsync(plan, null, Token);
         Assert.AreEqual(1, result.ImportedCount);

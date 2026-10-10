@@ -643,32 +643,55 @@ public class GroupProfile : Profile
             .ToArray();
     }
 
-    private static async Task<string[]> ExtractArchiveEntriesAsync(
-        ZipArchive archive, string extractPath, long? maxExtractedBytes, CancellationToken token)
+    private static void ValidateArchiveEntries(
+        ZipArchive archive, string extractPath, long? maxExtractedBytes, uint? maxExtractedEntries, CancellationToken token)
     {
+        if (maxExtractedEntries is { } limit && archive.Entries.Count > limit)
+            throw new InvalidDataException($"Group transfer data exceeds the file and directory limit ({limit}).");
         var remaining = maxExtractedBytes ?? long.MaxValue;
+        var comparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        HashSet<string>? paths = maxExtractedEntries.HasValue ? new(comparer) : null;
+        var root = Path.TrimEndingDirectorySeparator(extractPath);
         foreach (var entry in archive.Entries)
         {
+            token.ThrowIfCancellationRequested();
             if (entry.Length > remaining)
                 throw new InvalidDataException("Group transfer data exceeds the extraction budget.");
             remaining -= entry.Length;
+            var path = Path.TrimEndingDirectorySeparator(GetArchiveEntryPath(entry, extractPath));
+            // Implicit parent directories also consume filesystem entries; count shared parents once.
+            while (paths is not null && !comparer.Equals(path, root) && paths.Add(path))
+            {
+                if (paths.Count > maxExtractedEntries!.Value)
+                    throw new InvalidDataException($"Group transfer data exceeds the file and directory limit ({maxExtractedEntries}).");
+                path = Path.GetDirectoryName(path)!;
+            }
         }
-        remaining = maxExtractedBytes ?? long.MaxValue;
+    }
+
+    private static string GetArchiveEntryPath(ZipArchiveEntry entry, string extractPath)
+    {
+        var path = Path.GetFullPath(Path.Combine(extractPath, entry.FullName.Replace('/', Path.DirectorySeparatorChar)));
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        if (!path.StartsWith(extractPath, comparison))
+            throw new InvalidOperationException($"Transfer data is invalid with entry: {entry.FullName}");
+        return path;
+    }
+
+    private static async Task<string[]> ExtractArchiveEntriesAsync(
+        ZipArchive archive, string extractPath, long? maxExtractedBytes, uint? maxExtractedEntries, CancellationToken token)
+    {
+        extractPath = Path.GetFullPath(extractPath + Path.DirectorySeparatorChar);
+        ValidateArchiveEntries(archive, extractPath, maxExtractedBytes, maxExtractedEntries, token);
+        var remaining = maxExtractedBytes ?? long.MaxValue;
         var buffer = new byte[81920];
         var topLevelFiles = new List<string>();
-        extractPath = Path.GetFullPath(extractPath + Path.DirectorySeparatorChar);
-        var comparision = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         foreach (var entry in archive.Entries)
         {
             token.ThrowIfCancellationRequested();
             var entryName = entry.FullName;
             var isDirectory = entryName.EndsWith('/');
-            var rawDestPath = Path.Combine(extractPath, entryName.Replace('/', Path.DirectorySeparatorChar));
-            var destPath = Path.GetFullPath(rawDestPath);
-            if (!destPath.StartsWith(extractPath, comparision))
-            {
-                throw new InvalidOperationException($"Transfer data is invalid with entry: {entryName}");
-            }
+            var destPath = GetArchiveEntryPath(entry, extractPath);
 
             if (isDirectory)
             {
@@ -719,14 +742,14 @@ public class GroupProfile : Profile
         return SetTransferDataCore(file.Path, file.Hash, verify, token);
     }
 
-    public Task SetTransferData(FileHashInfo file, long maxExtractedBytes, CancellationToken token)
+    public Task SetTransferData(FileHashInfo file, long maxExtractedBytes, uint maxExtractedEntries, CancellationToken token)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(maxExtractedBytes);
-        return SetTransferDataCore(file.Path, file.Hash, true, token, maxExtractedBytes);
+        return SetTransferDataCore(file.Path, file.Hash, true, token, maxExtractedBytes, maxExtractedEntries);
     }
 
     private async Task<string?> SetTransferDataCore(
-        string path, string? transferDataHash, bool verify, CancellationToken token, long? maxExtractedBytes = null)
+        string path, string? transferDataHash, bool verify, CancellationToken token, long? maxExtractedBytes = null, uint? maxExtractedEntries = null)
     {
         if (transferDataHash is not null)
         {
@@ -739,7 +762,7 @@ public class GroupProfile : Profile
         string? extractDir = null;
         if (verify)
         {
-            extractDir = await ExtractTransferData(path, true, token, maxExtractedBytes);
+            extractDir = await ExtractTransferData(path, true, token, maxExtractedBytes, maxExtractedEntries);
         }
         else
         {
@@ -781,7 +804,8 @@ public class GroupProfile : Profile
         return extractDir;
     }
 
-    private async Task<string> ExtractTransferData(string path, bool verifyProfileHash, CancellationToken token, long? maxExtractedBytes = null)
+    private async Task<string> ExtractTransferData(
+        string path, bool verifyProfileHash, CancellationToken token, long? maxExtractedBytes = null, uint? maxExtractedEntries = null)
     {
         var extractDir = ValidateTransferDataPath(path);
         extractDir = $"{extractDir}.{Guid.NewGuid():N}";
@@ -789,7 +813,7 @@ public class GroupProfile : Profile
 
         try
         {
-            await ExtractTransferData(extractDir, path, verifyProfileHash, token, maxExtractedBytes);
+            await ExtractTransferData(extractDir, path, verifyProfileHash, token, maxExtractedBytes, maxExtractedEntries);
             return extractDir;
         }
         catch
@@ -800,11 +824,11 @@ public class GroupProfile : Profile
     }
 
     private async Task ExtractTransferData(
-        string extractDir, string path, bool verifyProfileHash, CancellationToken token, long? maxExtractedBytes = null)
+        string extractDir, string path, bool verifyProfileHash, CancellationToken token, long? maxExtractedBytes = null, uint? maxExtractedEntries = null)
     {
         await using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
         using var archive = new ZipArchive(fs, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: Encoding.UTF8);
-        var topLevelFiles = await ExtractArchiveEntriesAsync(archive, extractDir, maxExtractedBytes, token).ConfigureAwait(false);
+        var topLevelFiles = await ExtractArchiveEntriesAsync(archive, extractDir, maxExtractedBytes, maxExtractedEntries, token).ConfigureAwait(false);
         if (topLevelFiles.Length == 0)
         {
             throw new InvalidDataException("Group transfer data contains no entries.");

@@ -12,14 +12,17 @@ public sealed class HistoryImporter
     private readonly IProfileEnv profileEnv;
     private readonly HistoryManager manager;
     private readonly Func<string, long> availableSpace;
+    private readonly ConfigManager configManager;
 
-    public HistoryImporter(IProfileEnv profileEnv, HistoryManager manager)
-        : this(profileEnv, manager, path => new DriveInfo(path).AvailableFreeSpace) { }
+    public HistoryImporter(IProfileEnv profileEnv, HistoryManager manager, ConfigManager configManager)
+        : this(profileEnv, manager, configManager, path => new DriveInfo(path).AvailableFreeSpace) { }
 
-    internal HistoryImporter(IProfileEnv profileEnv, HistoryManager manager, Func<string, long> availableSpace)
+    internal HistoryImporter(
+        IProfileEnv profileEnv, HistoryManager manager, ConfigManager configManager, Func<string, long> availableSpace)
     {
         this.profileEnv = profileEnv;
         this.manager = manager;
+        this.configManager = configManager;
         this.availableSpace = availableSpace;
     }
 
@@ -88,6 +91,7 @@ public sealed class HistoryImporter
         HistoryImportPlan plan, IProgress<int>? progress, CancellationToken token)
     {
         var result = new HistoryImportResult();
+        var maxGroupEntries = configManager.GetConfig<HistoryImportConfig>().MaxGroupEntryCount;
         for (var i = 0; i < plan.Records.Count; i++)
         {
             if (token.IsCancellationRequested)
@@ -110,7 +114,7 @@ public sealed class HistoryImporter
                 var root = Profile.CreateWorkingDir(profileEnv.GetHistoryPersistentDir(), type, item.Hash.ToUpperInvariant());
                 directory = Path.Combine(root, "import-" + Guid.NewGuid().ToString("N"));
                 Directory.CreateDirectory(directory);
-                var record = await RestoreRecordAsync(plan, item, type, directory, token).ConfigureAwait(false);
+                var record = await RestoreRecordAsync(plan, item, type, directory, maxGroupEntries, token).ConfigureAwait(false);
                 var outcome = await manager.ImportRecordAsync(record, directory, token).ConfigureAwait(false);
                 saved = outcome != HistoryImportOutcome.Existing;
                 switch (outcome)
@@ -166,7 +170,7 @@ public sealed class HistoryImporter
     }
 
     private async Task<HistoryRecord> RestoreRecordAsync(
-        HistoryImportPlan plan, HistoryExportRecord item, ProfileType type, string directory, CancellationToken token)
+        HistoryImportPlan plan, HistoryExportRecord item, ProfileType type, string directory, uint maxGroupEntries, CancellationToken token)
     {
         var transfer = item.TransferData;
         var dto = new ProfileDto
@@ -194,7 +198,7 @@ public sealed class HistoryImporter
             if (profile is GroupProfile group)
             {
                 FileSys.EnsureAvailableSpace(item.Size, availableSpace(directory));
-                await group.SetTransferData(file, item.Size, token).ConfigureAwait(false);
+                await group.SetTransferData(file, item.Size, maxGroupEntries, token).ConfigureAwait(false);
             }
             else
                 await profile.SetTransferData(file, verify: true, token).ConfigureAwait(false);
