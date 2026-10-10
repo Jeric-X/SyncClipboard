@@ -165,7 +165,7 @@ public sealed class HistoryImporter
         if (result.ImportedCount + result.RepairedCount > 0)
             manager.NotifyHistoryImported();
         if (result.Failures.Count > 0)
-            await HistoryImportReportWriter.WriteAsync(plan.Path, result).ConfigureAwait(false);
+            await HistoryImportReportWriter.WriteAsync(plan.Path, result, token).ConfigureAwait(false);
         return result;
     }
 

@@ -791,6 +791,31 @@ public class HistoryImportTests
     }
 
     [TestMethod]
+    [DataRow("folder/../extra")]
+    [DataRow("./extra")]
+    [DataRow("./declared.txt")]
+    [DataRow("folder/./extra")]
+    [DataRow("folder/../extra/")]
+    public async Task GroupExtraction_RejectsDotSegmentsEvenInsideRoot(string entryName)
+    {
+        await using var f = new Fixture();
+        var declared = Path.Combine(f.Root, "declared.txt");
+        await File.WriteAllTextAsync(declared, "", Token);
+        var hash = await new GroupProfile([declared]).GetHash(Token);
+        var path = Path.Combine(f.Root, "group.zip");
+        using (var archive = ZipFile.Open(path, ZipArchiveMode.Create))
+        {
+            archive.CreateEntry("declared.txt");
+            archive.CreateEntry(entryName);
+        }
+        var profile = new GroupProfile(new SyncClipboard.Shared.ProfileDto { Hash = hash });
+        var transfer = new FileHashInfo(path, await Utility.CalculateFileSHA256(path, Token));
+        var error = await Assert.ThrowsExactlyAsync<InvalidDataException>(() => profile.SetTransferData(transfer, 0, 100, Token));
+        Assert.Contains("dot path segment", error.Message);
+        Assert.IsEmpty(Directory.GetDirectories(f.Root));
+    }
+
+    [TestMethod]
     public async Task GroupExtraction_RejectsUnderstatedEntryLengthWhileStreaming()
     {
         await using var f = new Fixture();

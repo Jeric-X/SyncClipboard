@@ -671,6 +671,8 @@ public class GroupProfile : Profile
 
     private static string GetArchiveEntryPath(ZipArchiveEntry entry, string extractPath)
     {
+        if (entry.FullName.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Any(part => part is "." or ".."))
+            throw new InvalidDataException($"Transfer data contains a dot path segment: {entry.FullName}");
         var path = Path.GetFullPath(Path.Combine(extractPath, entry.FullName.Replace('/', Path.DirectorySeparatorChar)));
         var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         if (!path.StartsWith(extractPath, comparison))

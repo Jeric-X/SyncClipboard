@@ -142,7 +142,7 @@ public class ProfileLocalizationTests
             await CreateArchive(path, "../outside.txt", token);
             var profile = new GroupProfile([], string.Empty, path);
 
-            await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => profile.Localize(directory, token));
+            await Assert.ThrowsExactlyAsync<InvalidDataException>(() => profile.Localize(directory, token));
 
             Assert.IsFalse(File.Exists(Path.Combine(directory, "outside.txt")));
             Assert.IsFalse(Directory.EnumerateDirectories(directory).Any());
@@ -208,7 +208,6 @@ public class ProfileLocalizationTests
 
     [TestMethod]
     [DataRow("data.txt")]
-    [DataRow("./data.txt")]
     [DataRow("DATA.txt")]
     public async Task Group_LocalizeRejectsDestinationFileCollisions(string secondEntryName)
     {
