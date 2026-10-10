@@ -262,6 +262,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                     Directory.Delete(movedDirectory, recursive: true);
                 throw;
             }
+            CleanupReplacedImportData(existing, oldPaths, oldFile);
             return HistoryImportOutcome.Repaired;
         }
         record.Hash = record.Hash.ToUpperInvariant();
@@ -280,6 +281,24 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             throw;
         }
         return HistoryImportOutcome.Imported;
+    }
+
+    private void CleanupReplacedImportData(HistoryRecord record, string[] oldPaths, string? oldTransfer)
+    {
+        try
+        {
+            var persistentDir = _profileEnv.GetHistoryPersistentDir();
+            string Resolve(string path) => Profile.GetFullPath(persistentDir, record.Type, record.Hash, path);
+            var previous = oldPaths.Concat(oldTransfer is null ? [] : [oldTransfer]).Select(Resolve);
+            var current = record.FilePath.Concat(record.TransferDataFile is null ? [] : [record.TransferDataFile]).Select(Resolve);
+            HistoryImportAttachmentCleanup.RemoveObsolete(
+                Profile.QueryGetWorkingDir(persistentDir, record.Type, record.Hash), previous, current);
+        }
+        catch (Exception ex)
+        {
+            // The database update has already committed; cleanup must not turn it into a failed import.
+            _logger.Write("HistoryManager", $"Obsolete import attachment cleanup failed: {ex.Message}");
+        }
     }
 
     private string MoveImportedData(HistoryRecord record, string targetHash, string importDirectory)

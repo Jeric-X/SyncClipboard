@@ -439,6 +439,51 @@ public class HistoryImportTests
     }
 
     [TestMethod]
+    [DataRow(false, false)]
+    [DataRow(true, false)]
+    [DataRow(false, true)]
+    public async Task RepairCleansObsoleteOwnedAttachmentsOnlyAfterCommit(bool group, bool rejectCommit)
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var source = Path.Combine(f.Root, "data.txt");
+        await File.WriteAllTextAsync(source, "payload", Token);
+        var item = await f.RecordAsync(group ? new GroupProfile([source]) : new FileProfile(source), Token);
+        var backup = await f.ExportAsync([item], Token);
+        var root = Profile.CreateWorkingDir(f.GetHistoryPersistentDir(), item.ProfileType, item.Hash);
+        var oldDirectory = Directory.CreateDirectory(Path.Combine(root, "old")).FullName;
+        var obsolete = Path.Combine(oldDirectory, "data.txt");
+        await File.WriteAllTextAsync(obsolete, "corrupt", Token);
+        var oldTransfer = Path.Combine(root, "corrupt-transfer.bin");
+        await File.WriteAllTextAsync(oldTransfer, "corrupt archive", Token);
+        var external = Path.Combine(f.Root, "external.txt");
+        await File.WriteAllTextAsync(external, "preserve", Token);
+        var local = new HistoryRecord
+        {
+            Type = item.ProfileType,
+            Hash = item.Hash,
+            Text = item.Text,
+            Size = item.Size,
+            FilePath = [group ? oldDirectory : obsolete, external],
+            TransferDataFile = oldTransfer,
+            IsLocalFileReady = false
+        };
+        f.Db.HistoryRecords.Add(local);
+        await f.Db.SaveChangesAsync(Token);
+        if (rejectCommit)
+            await f.Db.Database.ExecuteSqlRawAsync("CREATE TRIGGER reject_repair BEFORE UPDATE ON HistoryRecords BEGIN SELECT RAISE(ABORT, 'rejected'); END;", Token);
+        var result = await f.ImportAsync(backup, Token);
+        Assert.AreEqual(rejectCommit ? 0 : 1, result.RepairedCount);
+        Assert.AreEqual(rejectCommit ? 1 : 0, result.Failures.Count);
+        Assert.AreEqual(rejectCommit, File.Exists(obsolete));
+        Assert.AreEqual(rejectCommit, File.Exists(oldTransfer));
+        Assert.AreEqual(rejectCommit, Directory.Exists(oldDirectory));
+        Assert.AreEqual("preserve", await File.ReadAllTextAsync(external, Token));
+        if (!rejectCommit)
+            Assert.IsTrue(File.Exists(Profile.GetFullPath(f.GetHistoryPersistentDir(), local.Type, local.Hash, local.TransferDataFile)));
+    }
+
+    [TestMethod]
     public async Task DatabaseFailure_DoesNotLeaveImportedAttachments()
     {
         await using var f = new Fixture();

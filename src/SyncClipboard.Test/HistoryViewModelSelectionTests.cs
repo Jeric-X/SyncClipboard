@@ -1,3 +1,5 @@
+using ObservableCollections;
+using SyncClipboard.Core.ViewModels.Sub;
 using Moq;
 using SyncClipboard.Core.Interfaces;
 using System.Reflection;
@@ -22,6 +24,35 @@ public class HistoryViewModelSelectionTests
             viewModel.OnLostFocus();
             window.Verify(value => value.Hide(), Times.Never);
         }
+    }
+
+    [TestMethod]
+    public async Task ReloadWaitsForCanceledPageBeforeResettingTheList()
+    {
+        var viewModel = (HistoryViewModel)RuntimeHelpers.GetUninitializedObject(typeof(HistoryViewModel));
+        void SetField(string name, object value) => typeof(HistoryViewModel)
+            .GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(viewModel, value);
+        var previousLoad = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var previousCancellation = new CancellationTokenSource();
+        var records = new ObservableList<HistoryRecordVM> { (HistoryRecordVM)RuntimeHelpers.GetUninitializedObject(typeof(HistoryRecordVM)) };
+        SetField("_activePageLoad", previousLoad.Task);
+        SetField("_loadCts", previousCancellation);
+        SetField("allHistoryItems", records);
+        SetField("selectedIndex", -1);
+        var reload = (Task)typeof(HistoryViewModel).GetMethod("Reload", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(viewModel, null)!;
+        Assert.IsTrue(previousCancellation.IsCancellationRequested);
+        Assert.IsFalse(reload.IsCompleted);
+        Assert.HasCount(1, records);
+        previousLoad.SetResult();
+        await reload.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
+        Assert.IsEmpty(records);
+        var cancellation = (CancellationTokenSource)typeof(HistoryViewModel)
+            .GetField("_loadCts", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(viewModel)!;
+        cancellation.Cancel();
+        await ((Task)typeof(HistoryViewModel).GetField("_queueConsumerTask", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(viewModel)!).WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
+        cancellation.Dispose();
     }
 
     [TestMethod]
@@ -56,4 +87,6 @@ public class HistoryViewModelSelectionTests
 
         Assert.AreEqual(3, targetIndex);
     }
+
+    public TestContext TestContext { get; set; }
 }
