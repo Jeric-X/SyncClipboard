@@ -329,6 +329,35 @@ public class HistoryImportTests
     }
 
     [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task NullManifestRecord_IsReportedAndOtherRecordsStillImport(bool zip)
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var valid = await f.RecordAsync(new TextProfile("valid content"), Token);
+        var document = new HistoryExportDocument("syncclipboard-history", 1, "test", DateTime.UtcNow, [null!, valid]);
+        var path = Path.Combine(f.Root, zip ? "backup.zip" : "backup.json");
+        if (zip)
+        {
+            using var archive = ZipFile.Open(path, ZipArchiveMode.Create);
+            await using var output = archive.CreateEntry("history.json").Open();
+            await JsonSerializer.SerializeAsync(output, document, HistoryExporter.JsonOptions, Token);
+        }
+        else
+        {
+            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(document, HistoryExporter.JsonOptions), Token);
+        }
+        var result = await f.ImportAsync(path, Token);
+        Assert.AreEqual(1, result.ImportedCount);
+        Assert.HasCount(1, result.Failures);
+        Assert.AreEqual(1, result.Failures[0].Index);
+        Assert.AreEqual(valid.Hash, (await f.Db.HistoryRecords.SingleAsync(Token)).Hash);
+        Assert.IsNotNull(result.ReportPath);
+        Assert.Contains(result.Failures[0].Reason, await File.ReadAllTextAsync(result.ReportPath, Token));
+    }
+
+    [TestMethod]
     public async Task InvalidInlineHash_IsNotPersisted()
     {
         await using var f = new Fixture();

@@ -17,7 +17,7 @@ public sealed class HistoryImportPlan(string path, FileStream source, ZipArchive
         foreach (var record in records)
         {
             token.ThrowIfCancellationRequested();
-            if (record.TransferData is { } transfer)
+            if (record?.TransferData is { } transfer)
                 referencedPaths.Add(transfer.Path);
         }
 
