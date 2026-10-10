@@ -81,7 +81,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         if (string.IsNullOrEmpty(record.Hash))
             return null;
 
-        var persistentDir = _profileEnv.GetPersistentDir();
+        var persistentDir = _profileEnv.GetHistoryPersistentDir();
         var workingDir = Profile.QueryGetWorkingDir(persistentDir, record.Type, record.Hash);
 
         return workingDir;
@@ -224,7 +224,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         }
     }
 
-    public async Task<HistoryImportOutcome> ImportRecordAsync(HistoryRecord record, CancellationToken token)
+    public async Task<HistoryImportOutcome> ImportRecordAsync(HistoryRecord record, string importDirectory, CancellationToken token)
     {
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
@@ -237,15 +237,16 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             var oldFile = existing.TransferDataFile;
             var oldHash = existing.TransferDataHash;
             var oldReady = existing.IsLocalFileReady;
-            // Old records may retain lowercase hashes; absolute bindings keep the repaired files
-            // valid without changing that record's identity or other stored properties.
-            var persistentDir = _profileEnv.GetHistoryPersistentDir();
-            existing.FilePath = record.FilePath.Select(path => Profile.GetFullPath(persistentDir, record.Type, record.Hash, path)).ToArray();
-            existing.TransferDataFile = Profile.GetFullPath(persistentDir, record.Type, record.Hash, record.TransferDataFile);
-            existing.TransferDataHash = record.TransferDataHash;
-            existing.IsLocalFileReady = true;
+            string? movedDirectory = null;
             try
             {
+                // Deletion derives the directory from the stored hash, including its original casing.
+                if (record.Hash != existing.Hash)
+                    movedDirectory = MoveImportedData(record, existing.Hash, importDirectory);
+                existing.FilePath = record.FilePath;
+                existing.TransferDataFile = record.TransferDataFile;
+                existing.TransferDataHash = record.TransferDataHash;
+                existing.IsLocalFileReady = true;
                 await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
             }
             catch
@@ -254,6 +255,8 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                 existing.TransferDataFile = oldFile;
                 existing.TransferDataHash = oldHash;
                 existing.IsLocalFileReady = oldReady;
+                if (movedDirectory is not null)
+                    Directory.Delete(movedDirectory, recursive: true);
                 throw;
             }
             NotifyImportedRecord(existing, added: false);
@@ -276,6 +279,26 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         }
         NotifyImportedRecord(record, added: true);
         return HistoryImportOutcome.Imported;
+    }
+
+    private string MoveImportedData(HistoryRecord record, string targetHash, string importDirectory)
+    {
+        var persistentDir = _profileEnv.GetHistoryPersistentDir();
+        var targetRoot = Profile.CreateWorkingDir(persistentDir, record.Type, targetHash);
+        var target = Path.Combine(targetRoot, "import-" + Guid.NewGuid().ToString("N"));
+        string? Remap(string? path)
+        {
+            if (path is null)
+                return null;
+            var source = Profile.GetFullPath(persistentDir, record.Type, record.Hash, path);
+            return Path.GetRelativePath(targetRoot, Path.Combine(target, Path.GetRelativePath(importDirectory, source)));
+        }
+        var paths = record.FilePath.Select(path => Remap(path)!).ToArray();
+        var transfer = Remap(record.TransferDataFile);
+        Directory.Move(importDirectory, target);
+        record.FilePath = paths;
+        record.TransferDataFile = transfer;
+        return target;
     }
 
     private void NotifyImportedRecord(HistoryRecord record, bool added)

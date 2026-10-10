@@ -14,6 +14,8 @@ internal static class HistoryImportReportWriter
             text += string.Format(Strings.HistoryImportExistingCount, result.ExistingCount);
         if (result.Failures.Count > 0)
             text += string.Format(Strings.HistoryImportFailureCount, result.Failures.Count);
+        if (result.Error is not null)
+            text += "\n" + string.Format(Strings.HistoryImportFailed, result.Error);
         return text;
     }
 

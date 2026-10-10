@@ -97,7 +97,7 @@ public sealed class HistoryImporter(IProfileEnv profileEnv, HistoryManager manag
                 directory = Path.Combine(root, "import-" + Guid.NewGuid().ToString("N"));
                 Directory.CreateDirectory(directory);
                 var record = await RestoreRecordAsync(plan, item, type, directory, token).ConfigureAwait(false);
-                var outcome = await manager.ImportRecordAsync(record, token).ConfigureAwait(false);
+                var outcome = await manager.ImportRecordAsync(record, directory, token).ConfigureAwait(false);
                 saved = outcome != HistoryImportOutcome.Existing;
                 switch (outcome)
                 {
@@ -114,6 +114,11 @@ public sealed class HistoryImporter(IProfileEnv profileEnv, HistoryManager manag
             catch (Exception ex)
             {
                 result.Failures.Add(new(i + 1, $"{item?.Type}-{item?.Hash}", ex.Message));
+                if (FileSys.IsDiskFull(ex))
+                {
+                    result.Error = ex.Message;
+                    break;
+                }
             }
             finally
             {
@@ -155,7 +160,7 @@ public sealed class HistoryImporter(IProfileEnv profileEnv, HistoryManager manag
             Type = type,
             Hash = item.Hash.ToUpperInvariant(),
             Text = item.Text,
-            Size = item.Size,
+            Size = null,
             HasData = transfer is not null,
             DataName = transfer?.Name,
             TransferDataHash = transfer?.Sha256
@@ -171,10 +176,16 @@ public sealed class HistoryImporter(IProfileEnv profileEnv, HistoryManager manag
         if (transfer is not null)
         {
             var path = await RestoreTransferAsync(plan, item, directory, token).ConfigureAwait(false);
-            await profile.SetTransferData(new FileHashInfo(path, transfer.Sha256), verify: true, token).ConfigureAwait(false);
+            var file = new FileHashInfo(path, transfer.Sha256);
+            if (profile is GroupProfile group)
+                await group.SetTransferData(file, item.Size, token).ConfigureAwait(false);
+            else
+                await profile.SetTransferData(file, verify: true, token).ConfigureAwait(false);
         }
         if (!await profile.IsDataComplete(false, token).ConfigureAwait(false))
             throw new InvalidDataException("Record content does not match its hash.");
+        if (await profile.GetSize(token).ConfigureAwait(false) != item.Size)
+            throw new InvalidDataException("Record size does not match its content.");
         var data = await profile.Persist(profileEnv.GetHistoryPersistentDir(), token).ConfigureAwait(false);
         return new HistoryRecord
         {

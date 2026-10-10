@@ -5,6 +5,7 @@ using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.History.HistoryExport;
 using SyncClipboard.Core.Utilities.History.HistoryImport;
+using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Profiles.Models;
 using SyncClipboard.Shared.Utilities;
@@ -35,7 +36,9 @@ public class HistoryImportTests
         public HistoryImporter Importer { get; }
         public string Root => _root.FullName;
         public string GetPersistentDir() => Path.Combine(Root, "source");
-        public string GetHistoryPersistentDir() => Path.Combine(Root, "restored");
+        public Exception? StorageError { get; set; }
+        public string GetHistoryPersistentDir() => StorageError is { } error
+            ? throw error : Path.Combine(Root, "restored");
 
         public Fixture()
         {
@@ -304,6 +307,10 @@ public class HistoryImportTests
         Assert.IsTrue(local.IsLocalFileReady);
         var restored = Profile.GetFullPath(f.GetHistoryPersistentDir(), local.Type, local.Hash, local.TransferDataFile)!;
         Assert.AreEqual("payload", await File.ReadAllTextAsync(restored, Token));
+        Assert.AreEqual(item.Hash.ToLowerInvariant(), local.Hash);
+        await f.Manager.RemoveHistory(local, Token);
+        Assert.IsFalse(File.Exists(restored));
+        Assert.IsEmpty(await f.Db.HistoryRecords.ToListAsync(Token));
     }
 
     [TestMethod]
@@ -375,6 +382,111 @@ public class HistoryImportTests
         Assert.AreEqual(0, result.ImportedCount);
         Assert.HasCount(1, result.Failures);
         Assert.IsEmpty(await f.Db.HistoryRecords.ToListAsync(Token));
+    }
+
+    [TestMethod]
+    [DataRow("Text")]
+    [DataRow("LongText")]
+    [DataRow("File")]
+    [DataRow("Image")]
+    [DataRow("Group")]
+    public async Task IncorrectRecordSize_IsNotPersisted(string type)
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var file = Path.Combine(f.Root, "data.txt");
+        await File.WriteAllTextAsync(file, "payload", Token);
+        Profile profile = type switch
+        {
+            "Text" => new TextProfile("hello"),
+            "LongText" => new TextProfile(new string('文', 12000)),
+            "File" => new FileProfile(file),
+            "Image" => new ImageProfile(file),
+            _ => new GroupProfile([file])
+        };
+        var backup = await f.ExportAsync([await f.RecordAsync(profile, Token)], Token);
+        await ChangeRecordSizeAsync(backup, size => size + 1, Token);
+        var result = await f.ImportAsync(backup, Token);
+        Assert.AreEqual(0, result.ImportedCount);
+        Assert.HasCount(1, result.Failures);
+        Assert.IsEmpty(await f.Db.HistoryRecords.ToListAsync(Token));
+    }
+
+    [TestMethod]
+    public async Task CompressedGroup_RejectsExtractionBeyondDeclaredSize()
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var file = Path.Combine(f.Root, "zeros.bin");
+        await File.WriteAllBytesAsync(file, new byte[1024 * 1024], Token);
+        var item = await f.RecordAsync(new GroupProfile([file]), Token);
+        var backup = await f.ExportAsync([item], Token);
+        await ChangeRecordSizeAsync(backup, _ => 1, Token);
+        var result = await f.ImportAsync(backup, Token);
+        Assert.AreEqual(0, result.ImportedCount);
+        Assert.Contains("extraction budget", result.Failures.Single().Reason);
+        Assert.IsEmpty(await f.Db.HistoryRecords.ToListAsync(Token));
+        Assert.IsEmpty(Directory.GetDirectories(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), item.ProfileType, item.Hash), "import-*"));
+    }
+
+    [TestMethod]
+    public async Task GroupExtraction_RejectsUnderstatedEntryLengthWhileStreaming()
+    {
+        await using var f = new Fixture();
+        var path = Path.Combine(f.Root, "forged.zip");
+        using (var zip = ZipFile.Open(path, ZipArchiveMode.Create))
+        {
+            await using var entry = zip.CreateEntry("large.bin", CompressionLevel.Optimal).Open();
+            await entry.WriteAsync(new byte[1024 * 1024], Token);
+        }
+        var bytes = await File.ReadAllBytesAsync(path, Token);
+        // Central-directory uncompressed size claims one byte; the deflate stream contains 1 MiB.
+        var offset = bytes.AsSpan().IndexOf(new byte[] { 0x50, 0x4b, 0x01, 0x02 });
+        Assert.IsGreaterThanOrEqualTo(0, offset);
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(offset + 24, 4), 1);
+        await File.WriteAllBytesAsync(path, bytes, Token);
+        var profile = new GroupProfile(new SyncClipboard.Shared.ProfileDto { Hash = new string('0', 64) });
+        var hash = await Utility.CalculateFileSHA256(path, Token);
+        await Assert.ThrowsExactlyAsync<InvalidDataException>(() => profile.SetTransferData(new FileHashInfo(path, hash), 1, Token));
+        Assert.IsEmpty(Directory.GetDirectories(f.Root, "forged.*"));
+    }
+
+    [TestMethod]
+    public async Task DiskFull_StopsAfterCurrentRecordAndPreservesCommittedRecords()
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        HistoryExportRecord[] records = [await f.RecordAsync(new TextProfile("first"), Token),
+            await f.RecordAsync(new TextProfile("second"), Token), await f.RecordAsync(new TextProfile("third"), Token)];
+        var backup = await f.ExportAsync(records, Token);
+        var error = new IOException("Disk full", unchecked((int)0x80070070));
+        var result = await f.ImportAsync(backup, Token, new InlineProgress(_ => f.StorageError = error));
+        Assert.AreEqual(1, result.ImportedCount);
+        Assert.AreEqual("Disk full", result.Error);
+        Assert.HasCount(1, result.Failures);
+        Assert.HasCount(1, await f.Db.HistoryRecords.ToListAsync(Token));
+        Assert.IsFalse(result.Canceled);
+        Assert.Contains("Disk full", await File.ReadAllTextAsync(result.ReportPath!, Token));
+    }
+
+    private static async Task ChangeRecordSizeAsync(string path, Func<long, long> change, CancellationToken token)
+    {
+        if (Path.GetExtension(path) == ".json")
+        {
+            var document = JsonSerializer.Deserialize<HistoryExportDocument>(await File.ReadAllTextAsync(path, token), HistoryExporter.JsonOptions)!;
+            document = document with { Records = document.Records.Select(item => item with { Size = change(item.Size) }).ToArray() };
+            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(document, HistoryExporter.JsonOptions), token);
+            return;
+        }
+        using var archive = ZipFile.Open(path, ZipArchiveMode.Update);
+        var manifest = archive.GetEntry("history.json")!;
+        HistoryExportDocument content;
+        using (var input = manifest.Open())
+            content = (await JsonSerializer.DeserializeAsync<HistoryExportDocument>(input, HistoryExporter.JsonOptions, token))!;
+        content = content with { Records = content.Records.Select(item => item with { Size = change(item.Size) }).ToArray() };
+        manifest.Delete();
+        await using var output = archive.CreateEntry("history.json").Open();
+        await JsonSerializer.SerializeAsync(output, content, HistoryExporter.JsonOptions, token);
     }
 
     private sealed class InlineProgress(Action<int> callback) : IProgress<int>
