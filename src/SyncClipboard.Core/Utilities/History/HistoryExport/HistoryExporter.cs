@@ -280,12 +280,7 @@ public sealed class HistoryExporter(IProfileEnv profileEnv)
         }
         catch (NotSupportedException) when (Utility.IsValidSHA256(item.TransferDataHash) && item.TransferDataFile is not null)
         {
-            var fallback = new FileHashInfo(Profile.GetFullPath(profileEnv.GetHistoryPersistentDir(), item.ProfileType,
-                item.Hash, item.TransferDataFile), item.TransferDataHash);
-            var actual = await Utility.CalculateFileSHA256(fallback.Path, token).ConfigureAwait(false);
-            if (!Utility.SHA256Same(actual, fallback.Hash))
-                throw new InvalidDataException("Transfer data hash mismatch.");
-            return WithTransferData(item, fallback);
+            return WithTransferData(item, await FindUnknownTransferAsync(item, token).ConfigureAwait(false));
         }
         if (!await profile.IsDataComplete(true, token).ConfigureAwait(false))
             throw new FileNotFoundException("Local content is missing.");
@@ -293,6 +288,34 @@ public sealed class HistoryExporter(IProfileEnv profileEnv)
         if (profile.HasTransferData && transfer is null)
             throw new FileNotFoundException("Transfer data is missing.");
         return WithTransferData(item with { Size = await profile.GetSize(token).ConfigureAwait(false) }, transfer);
+    }
+
+    private async Task<FileHashInfo> FindUnknownTransferAsync(HistoryExportRecord item, CancellationToken token)
+    {
+        var root = profileEnv.GetHistoryPersistentDir();
+        var path = Profile.GetFullPath(root, item.ProfileType, item.Hash, item.TransferDataFile)!;
+        IEnumerable<string> candidates = [path];
+        if (!Path.IsPathRooted(item.TransferDataFile!) && !File.Exists(path) && !Enum.IsDefined(item.ProfileType))
+        {
+            ValidateSegment(item.ProfileId);
+            // A newer client used the enum name, which an older client only knows as a number.
+            candidates = Directory.EnumerateDirectories(root)
+                .Where(directory => Path.GetFileName(directory).EndsWith("_" + item.Hash, StringComparison.OrdinalIgnoreCase))
+                .Select(directory => Profile.GetFullPath(directory, item.TransferDataFile)!)
+                .Where(File.Exists);
+        }
+        var invalid = false;
+        foreach (var candidate in candidates)
+        {
+            token.ThrowIfCancellationRequested();
+            var actual = await Utility.CalculateFileSHA256(candidate, token).ConfigureAwait(false);
+            if (Utility.SHA256Same(actual, item.TransferDataHash!))
+                return new(candidate, item.TransferDataHash!);
+            invalid = true;
+        }
+        if (invalid)
+            throw new InvalidDataException("Transfer data hash mismatch.");
+        throw new FileNotFoundException("Transfer data is missing.", path);
     }
 
     private static HistoryExportRecord WithTransferData(HistoryExportRecord item, FileHashInfo? transfer)

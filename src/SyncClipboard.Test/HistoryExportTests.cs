@@ -340,6 +340,44 @@ public class HistoryExportTests
     }
 
     [TestMethod]
+    [DataRow(true, true)]
+    [DataRow(true, false)]
+    [DataRow(false, true)]
+    public async Task UnknownTypeRelativeTransfer_RequiresMatchingRecordAndTransferHashes(bool matchingRecord, bool matchingTransfer)
+    {
+        using var fixture = new Fixture();
+        var known = await fixture.SaveAsync(new TextProfile("future metadata"), Token);
+        var hash = matchingRecord ? known.Hash.ToLowerInvariant() : new string('0', 64);
+        var directory = Directory.CreateDirectory(Path.Combine(fixture.GetHistoryPersistentDir(), "FutureType_" + hash));
+        var path = Path.Combine(directory.FullName, "future.bin");
+        await File.WriteAllBytesAsync(path, matchingTransfer ? [1, 2, 3] : [4, 5, 6], Token);
+        var item = known with
+        {
+            Type = "99",
+            TransferDataFile = "future.bin",
+            TransferDataHash = Convert.ToHexString(SHA256.HashData([1, 2, 3]))
+        };
+        var plan = await fixture.Exporter.EstimateAsync([item], null, Token);
+        var result = await fixture.Exporter.ExportAsync(plan, fixture.Output, null, Token);
+        if (matchingRecord && matchingTransfer)
+        {
+            Assert.AreEqual(1, result.ExportedCount);
+            using var archive = ZipFile.OpenRead(result.ArchivePath!);
+            await using var transfer = archive.GetEntry(plan.Items.Single().TransferData!.Path)!.Open();
+            using var bytes = new MemoryStream();
+            await transfer.CopyToAsync(bytes, Token);
+            CollectionAssert.AreEqual(new byte[] { 1, 2, 3 }, bytes.ToArray());
+        }
+        else
+        {
+            Assert.AreEqual(0, result.ExportedCount);
+            Assert.IsNull(result.ArchivePath);
+            Assert.AreEqual(matchingRecord ? HistoryExportFailure.InvalidData : HistoryExportFailure.MissingFile,
+                result.Skipped.Single().Reason);
+        }
+    }
+
+    [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
     public async Task UnknownTypeInvalidAttachmentIsExcludedDuringEstimate(bool missing)

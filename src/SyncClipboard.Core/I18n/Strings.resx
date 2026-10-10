@@ -1481,7 +1481,7 @@ Choose whether to use the default location or select another folder.</value>
     <value>Estimating export size…</value>
   </data>
   <data name="HistoryExportEstimate" xml:space="preserve">
-    <value>{0} records ready to export · about {1}</value>
+    <value>{0} records requested for export · about {1}</value>
   </data>
   <data name="HistoryExportProgress" xml:space="preserve">
     <value>Processed {0}/{1} records · written {2}</value>
