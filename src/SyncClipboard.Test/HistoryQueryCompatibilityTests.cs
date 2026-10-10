@@ -78,6 +78,7 @@ public class HistoryQueryCompatibilityTests
         var record = await fixture.Db.HistoryRecords.SingleAsync(record => record.Hash == "text", token);
         record.FilePath = ["original.txt"];
         record.Stared = true;
+        record.Size = 123;
         await fixture.Db.SaveChangesAsync(token);
         var timestamp = record.LastAccessed;
         var all = await fixture.Manager.GetExportSnapshotAsync(null, token);
@@ -87,8 +88,14 @@ public class HistoryQueryCompatibilityTests
             [new(ProfileType.Text, "TEXT"), new(ProfileType.Image, "text"), new(ProfileType.Text, "deleted")], token);
         Assert.HasCount(1, selected);
         Assert.IsTrue(selected[0].Starred);
-        Assert.AreEqual(timestamp, selected[0].LastAccessed);
-        selected[0].Content.FilePaths[0] = "changed.txt";
+        Assert.AreEqual("Text", selected[0].Type);
+        Assert.AreEqual("TEXT", selected[0].Hash);
+        Assert.AreEqual(123L, selected[0].Size);
+        Assert.AreEqual(DateTimeKind.Utc, selected[0].Timestamp.Kind);
+        Assert.AreEqual(DateTimeKind.Utc, selected[0].LastModified.Kind);
+        Assert.AreEqual(DateTimeKind.Utc, selected[0].LastAccessed.Kind);
+        Assert.AreEqual(timestamp.ToUniversalTime(), selected[0].LastAccessed);
+        selected[0].FilePaths[0] = "changed.txt";
         await fixture.Db.Entry(record).ReloadAsync(token);
         Assert.AreEqual("original.txt", record.FilePath[0]);
         Assert.AreEqual(timestamp, record.LastAccessed);

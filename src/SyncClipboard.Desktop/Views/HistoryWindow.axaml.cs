@@ -65,8 +65,7 @@ public partial class HistoryWindow : Window, IWindow
         this.Activated += (_, _) =>
         {
             _viewModel.OnGotFocus();
-            if (!_viewModel.HasModalOperation)
-                _SearchTextBox.Focus();
+            _SearchTextBox.Focus();
         };
 
         Height = _viewModel.Height;
@@ -119,13 +118,6 @@ public partial class HistoryWindow : Window, IWindow
 
         MinWidth = _FilterSelectorBar.DesiredSize.Width + (_ButtonArea.DesiredSize.Width * 2);
         MinHeight = _FilterSelectorBar.DesiredSize.Height + _SearchTextBox.DesiredSize.Height;
-    }
-
-    private async void ExportSelectedClick(object? sender, RoutedEventArgs e)
-    {
-        if (_viewModel.CanExportSelected)
-            await App.Current.Services.GetRequiredService<IHistoryExportDialog>()
-                .ShowAsync(_viewModel.GetExportSelection(), fromHistoryWindow: true);
     }
 
     private void HistoryWindow_KeyDown(object? sender, KeyEventArgs e)

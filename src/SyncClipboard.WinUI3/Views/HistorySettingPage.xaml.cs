@@ -3,7 +3,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml.Controls;
 using SyncClipboard.Core.ViewModels;
-using SyncClipboard.Core.Interfaces;
 
 namespace SyncClipboard.WinUI3.Views;
 
@@ -14,11 +13,6 @@ public sealed partial class HistorySettingPage : Page
     {
         InitializeComponent();
         _viewModel = App.Current.Services.GetRequiredService<HistorySettingViewModel>();
-    }
-
-    private async void ExportHistoryClick(object? _, RoutedEventArgs _1)
-    {
-        await App.Current.Services.GetRequiredService<IHistoryExportDialog>().ShowAsync();
     }
 
     private async void EditShortcutClick(object sender, RoutedEventArgs _)

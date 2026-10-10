@@ -10,24 +10,18 @@ namespace SyncClipboard.Test;
 public class HistoryViewModelSelectionTests
 {
     [TestMethod]
-    public void ExportModalKeepsHistoryVisibleAcrossFocusAndGlobalShortcutChanges()
+    public void ExportModalKeepsHistoryVisibleAcrossFocusChanges()
     {
         var viewModel = (HistoryViewModel)RuntimeHelpers.GetUninitializedObject(typeof(HistoryViewModel));
         var window = new Mock<IWindow>();
-        window.SetupGet(value => value.IsVisible).Returns(true);
         typeof(HistoryViewModel).GetField("window", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(viewModel, window.Object);
         using (viewModel.HoldForModalOperation())
         {
             viewModel.OnGotFocus();
             viewModel.OnLostFocus();
-            viewModel.SwitchVisible();
-            viewModel.ShowWithAutoPosition();
             window.Verify(value => value.Hide(), Times.Never);
-            window.Verify(value => value.FocusSearch(), Times.Never);
         }
-        viewModel.SwitchVisible();
-        window.Verify(value => value.Hide(), Times.Once);
     }
 
     [TestMethod]

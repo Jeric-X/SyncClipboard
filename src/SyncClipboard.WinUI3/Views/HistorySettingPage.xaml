@@ -46,7 +46,7 @@
                                SmallChange="1" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryExport}">
-                    <Button Content="{x:Bind i18n:Strings.HistoryExport}" Click="ExportHistoryClick" />
+                    <Button Content="{x:Bind i18n:Strings.HistoryExport}" Command="{x:Bind _viewModel.ExportHistoryCommand}" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.ClearLocalHistory}" Description="{x:Bind i18n:Strings.ClearLocalHistoryDescription}">
                     <Button Content="{x:Bind i18n:Strings.ClearLocalHistory}" Command="{x:Bind _viewModel.ClearLocalHistoryCommand}" />

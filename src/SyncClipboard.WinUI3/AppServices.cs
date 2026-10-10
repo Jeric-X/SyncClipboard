@@ -33,7 +33,7 @@ public class AppServices
 
         services.AddSingleton<IGlobalDialog, Services.WinUIGlobalDialog>();
         services.AddSingleton<IMainWindowDialog, Services.WinUIDialog>();
-        services.AddSingleton<IHistoryExportDialog, Utilities.HistoryExportDialogPresenter>();
+        services.AddSingleton<IHistoryExportDialog, HistoryExportDialogPresenter>();
         services.AddKeyedSingleton<IMainWindowDialog>(nameof(HistoryWindow), (sp, key) =>
         {
             var historyWindow = sp.GetRequiredKeyedService<IWindow>(nameof(HistoryWindow)) as HistoryWindow;

@@ -36,7 +36,7 @@ public class HistoryShortcutSettingTests
         factory = new RemoteClipboardServerFactory(services);
         // Clearing history is outside these settings tests, so no history database is required.
         dialog = new Mock<IMainWindowDialog>();
-        viewModel = new HistorySettingViewModel(config, null!, dialog.Object, factory);
+        viewModel = new HistorySettingViewModel(config, null!, dialog.Object, factory, Mock.Of<IHistoryExportDialog>());
     }
 
     [TestCleanup]

@@ -102,8 +102,7 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
             {
                 _isActive = true;
                 _viewModel.OnGotFocus();
-                if (!_viewModel.HasModalOperation)
-                    _SearchTextBox.Focus(FocusState.Programmatic);
+                _SearchTextBox.Focus(FocusState.Programmatic);
             }
         };
 
@@ -453,13 +452,6 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         {
             await _viewModel.HandleCopyButtonAsync(record, false);
         }
-    }
-
-    private async void ExportSelectedClick(object? _, RoutedEventArgs _1)
-    {
-        if (_viewModel.CanExportSelected)
-            await App.Current.Services.GetRequiredService<IHistoryExportDialog>()
-                .ShowAsync(_viewModel.GetExportSelection(), fromHistoryWindow: true);
     }
 
     private void Grid_KeyDown(object _, KeyRoutedEventArgs e)

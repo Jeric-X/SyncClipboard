@@ -278,8 +278,7 @@ public class GroupProfile : Profile
         }
     }
 
-    public override async Task<FileHashInfo?> PrepareTransferData(
-        string persistentDir, CancellationToken token, Action<string>? onFileCreated = null)
+    public override async Task<FileHashInfo?> PrepareTransferData(string persistentDir, CancellationToken token)
     {
         var expectedHash = await GetHash(token);
         var transferDataPath = _transferDataPath;
@@ -322,7 +321,6 @@ public class GroupProfile : Profile
 
             var transferDataHash = await Utility.CalculateFileSHA256(tempFilePath, token).ConfigureAwait(false);
             File.Move(tempFilePath, filePath);
-            onFileCreated?.Invoke(filePath);
             _transferDataName = fileName;
             _transferDataPath = filePath;
             TransferDataHash = transferDataHash;

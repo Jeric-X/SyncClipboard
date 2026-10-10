@@ -58,8 +58,7 @@ public class UnknownProfile : Profile
         throw new NotImplementedException();
     }
 
-    public override Task<FileHashInfo?> PrepareTransferData(
-        string persistentDir, CancellationToken token, Action<string>? onFileCreated = null)
+    public override Task<FileHashInfo?> PrepareTransferData(string persistentDir, CancellationToken token)
     {
         throw new NotImplementedException();
     }

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.HistoryExport;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Server.Core.Models;
 using System.Diagnostics.CodeAnalysis;
@@ -192,7 +193,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         HistoryAdded?.Invoke(record);
     }
 
-    public async Task<IReadOnlyList<HistoryExportItem>> GetExportSnapshotAsync(
+    public async Task<IReadOnlyList<HistoryExportRecord>> GetExportSnapshotAsync(
         IReadOnlyList<HistoryRecordKey>? selected, CancellationToken token)
     {
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
@@ -203,7 +204,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             .ToListAsync(token).ConfigureAwait(false);
         var keys = selected?.Select(key => new HistoryRecordKey(key.Type, key.Hash.ToUpperInvariant())).ToHashSet();
         return records.Where(record => keys is null || keys.Contains(new(record.Type, record.Hash.ToUpperInvariant())))
-            .Select(HistoryExportItem.FromRecord).ToArray();
+            .Select(HistoryExportRecord.FromRecord).ToArray();
     }
 
     public async Task<List<HistoryRecord>> GetHistory(CancellationToken? token = null)

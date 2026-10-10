@@ -1,5 +1,6 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.HistoryExport;
 using System.Buffers;
 using System.IO.Compression;
 using System.Security.Cryptography;
@@ -17,7 +18,7 @@ public sealed class HistoryExporter(IProfileEnv profileEnv)
         ? new ScopeGuard(() => Interlocked.Exchange(ref _sessionActive, 0)) : null;
 
     public async Task<HistoryExportPlan> EstimateAsync(
-        IReadOnlyList<HistoryExportItem> items, IReadOnlyList<HistoryRecordKey>? selected, CancellationToken token)
+        IReadOnlyList<HistoryExportRecord> items, IReadOnlyList<HistoryRecordKey>? selected, CancellationToken token)
     {
         var ordered = items.OrderByDescending(item => item.Timestamp)
             .ThenBy(item => item.ProfileId, StringComparer.Ordinal).ToArray();
@@ -25,39 +26,27 @@ public sealed class HistoryExporter(IProfileEnv profileEnv)
         var removed = selected?.Select(key => Profile.GetProfileId(key.Type, key.Hash.ToUpperInvariant()))
             .Distinct().Where(id => !existing.Contains(id))
             .Select(id => new HistoryExportSkipped(id, null, HistoryExportFailure.RecordRemoved)).ToArray() ?? [];
-        List<HistoryExportItem> prepared = [];
+        List<HistoryExportRecord> prepared = [];
         List<HistoryExportSkipped> skipped = [.. removed];
-        var plan = new HistoryExportPlan(prepared, skipped, 0);
         long size = 1024;
-        try
+        foreach (var item in ordered)
         {
-            foreach (var item in ordered)
+            token.ThrowIfCancellationRequested();
+            try
             {
-                token.ThrowIfCancellationRequested();
-                try
-                {
-                    var transfer = await PrepareTransferAsync(item, plan, token).ConfigureAwait(false);
-                    var transferSize = transfer is null ? 0 : new FileInfo(transfer.Path).Length;
-                    var recordSize = Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(ToRecord(item, null), JsonOptions)) + 512;
-                    // Retain prepared data in this plan without changing the database snapshot.
-                    prepared.Add(transfer is null ? item : item with
-                    {
-                        Content = item.Content with { TransferDataFile = transfer.Path, TransferDataHash = transfer.Hash }
-                    });
-                    size += recordSize + transferSize;
-                }
-                catch (Exception ex) when (!token.IsCancellationRequested && IsSourceError(ex))
-                {
-                    skipped.Add(new(item.ProfileId, item, Classify(ex), ex.Message));
-                }
+                var record = await PrepareTransferAsync(item, token).ConfigureAwait(false);
+                var transferSize = record.TransferData?.Size ?? 0;
+                var recordSize = Encoding.UTF8.GetByteCount(JsonSerializer.Serialize(record, JsonOptions)) + 512;
+                // Retain prepared data in this plan without changing the database snapshot.
+                prepared.Add(record);
+                size += recordSize + transferSize;
             }
-            return plan with { EstimatedBytes = prepared.Count > 0 ? size : 0 };
+            catch (Exception ex) when (!token.IsCancellationRequested && IsSourceError(ex))
+            {
+                skipped.Add(new(item.ProfileId, item, Classify(ex), ex.Message));
+            }
         }
-        catch
-        {
-            plan.Dispose();
-            throw;
-        }
+        return new(prepared, skipped, prepared.Count > 0 ? size : 0);
     }
 
     public async Task<HistoryExportResult> ExportAsync(
@@ -65,121 +54,53 @@ public sealed class HistoryExporter(IProfileEnv profileEnv)
     {
         var result = new HistoryExportResult();
         result.Skipped.AddRange(plan.Skipped);
-        var records = new List<HistoryExportRecord>();
-        var processed = new HashSet<string>(StringComparer.Ordinal);
         var basename = $"SyncClipboard-history-{DateTime.Now:yyyyMMdd-HHmmss}";
+        await WriteArchiveAsync(plan.Items, directory, basename, result, progress, token).ConfigureAwait(false);
+        MarkUnexportedRecords(plan, result);
+        if (result.Skipped.Count > 0)
+        {
+            var reportBase = result.ArchivePath is { } path ? Path.GetFileNameWithoutExtension(path) : basename;
+            await HistoryExportReportWriter.WriteAsync(result, directory, reportBase, profileEnv.GetHistoryPersistentDir()).ConfigureAwait(false);
+        }
+        return result;
+    }
+
+    private static async Task WriteArchiveAsync(
+        IReadOnlyList<HistoryExportRecord> items, string directory, string basename, HistoryExportResult result,
+        IProgress<HistoryExportProgress>? progress, CancellationToken token)
+    {
         var partial = Path.Combine(directory, $".{basename}-{Guid.NewGuid():N}.partial");
         var ownsPartial = false;
+        FileStream? output = null;
+        ZipArchive? archive = null;
         FileStream OpenOutput()
         {
             var stream = CreateOutput(partial);
             ownsPartial = true;
             return stream;
         }
-        FileStream? output = null;
-        ZipArchive? archive = null;
-        long written = 0;
-        var lastProgress = System.Diagnostics.Stopwatch.StartNew();
+        ZipArchive OpenArchive()
+        {
+            output ??= OpenOutput();
+            return archive ??= new ZipArchive(output, ZipArchiveMode.Create, leaveOpen: true);
+        }
         try
         {
-            foreach (var item in plan.Items)
-            {
-                token.ThrowIfCancellationRequested();
-                if (processed.Contains(item.ProfileId))
-                    throw new InvalidDataException($"Duplicate Profile ID: {item.ProfileId}");
-                FileHashInfo? transfer = null;
-                FileStream? source = null;
-                long sourceLength = 0;
-                try
-                {
-                    ValidateSegment(item.ProfileId);
-                    transfer = await PrepareTransferAsync(item, plan, token).ConfigureAwait(false);
-                    if (transfer is not null)
-                    {
-                        source = new FileStream(transfer.Path, FileMode.Open, FileAccess.Read, FileShare.Read,
-                            81920, FileOptions.Asynchronous | FileOptions.SequentialScan);
-                        // Validate the opened handle before creating a ZIP entry. Recheck bytes during the copy.
-                        var actual = Convert.ToHexString(await SHA256.HashDataAsync(source, token).ConfigureAwait(false));
-                        if (!Utility.SHA256Same(actual, transfer.Hash))
-                            throw new InvalidDataException("Transfer data changed before export.");
-                        source.Position = 0;
-                        sourceLength = source.Length;
-                    }
-                }
-                catch (Exception ex) when (!token.IsCancellationRequested && IsSourceError(ex))
-                {
-                    source?.Dispose();
-                    result.Skipped.Add(new(item.ProfileId, item, Classify(ex), ex.Message));
-                    processed.Add(item.ProfileId);
-                    progress?.Report(new(processed.Count, plan.Items.Count, written));
-                    continue;
-                }
-                catch
-                {
-                    source?.Dispose();
-                    throw;
-                }
-
-                await using (source)
-                {
-                    HistoryExportTransferData? data = null;
-                    if (source is not null && transfer is not null)
-                    {
-                        output ??= OpenOutput();
-                        archive ??= new ZipArchive(output, ZipArchiveMode.Create, leaveOpen: true);
-                        var name = Path.GetFileName(transfer.Path);
-                        var entryPath = $"files/{item.ProfileId}/{SafeFileName(name)}";
-                        var entry = archive.CreateEntry(entryPath, CompressionLevel.NoCompression);
-                        await using var destination = entry.Open();
-                        void SourceFailed(Exception ex) =>
-                            result.Skipped.Add(new(item.ProfileId, item, Classify(ex), ex.Message));
-                        var copied = await CopyVerifiedAsync(source, destination, transfer.Hash, count =>
-                        {
-                            written += count;
-                            if (lastProgress.ElapsedMilliseconds >= 100)
-                            {
-                                progress?.Report(new(processed.Count, plan.Items.Count, written));
-                                lastProgress.Restart();
-                            }
-                        }, token, SourceFailed).ConfigureAwait(false);
-                        if (copied != sourceLength)
-                        {
-                            var error = new InvalidDataException("Transfer data length changed during export.");
-                            SourceFailed(error);
-                            throw error;
-                        }
-                        data = new(name, entryPath, copied, transfer.Hash.ToUpperInvariant());
-                    }
-                    records.Add(ToRecord(item, data));
-                    processed.Add(item.ProfileId);
-                    progress?.Report(new(processed.Count, plan.Items.Count, written));
-                }
-            }
-
+            var records = await WriteRecordsAsync(items, OpenArchive, result, progress, token).ConfigureAwait(false);
             token.ThrowIfCancellationRequested();
-            if (records.Count > 0)
-            {
-                var document = new HistoryExportDocument("syncclipboard-history", 1, Env.AppVersion, DateTime.UtcNow, records);
-                var extension = archive is null ? ".json" : ".zip";
-                if (archive is not null)
-                {
-                    await using var json = archive.CreateEntry("history.json").Open();
-                    await JsonSerializer.SerializeAsync(json, document, JsonOptions, token).ConfigureAwait(false);
-                }
-                else
-                {
-                    output = OpenOutput();
-                    await JsonSerializer.SerializeAsync(output, document, JsonOptions, token).ConfigureAwait(false);
-                }
-                archive?.Dispose();
-                archive = null;
-                await output!.FlushAsync(token).ConfigureAwait(false);
-                await output.DisposeAsync().ConfigureAwait(false);
-                output = null;
-                token.ThrowIfCancellationRequested();
-                result.ArchivePath = Commit(partial, directory, basename, extension);
-                result.ExportedCount = records.Count;
-            }
+            if (records.Count == 0)
+                return;
+            output ??= OpenOutput();
+            await WriteDocumentAsync(records, archive, output, token).ConfigureAwait(false);
+            var extension = archive is null ? ".json" : ".zip";
+            archive?.Dispose();
+            archive = null;
+            await output.FlushAsync(token).ConfigureAwait(false);
+            await output.DisposeAsync().ConfigureAwait(false);
+            output = null;
+            token.ThrowIfCancellationRequested();
+            result.ArchivePath = Commit(partial, directory, basename, extension);
+            result.ExportedCount = records.Count;
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
@@ -191,90 +112,207 @@ public sealed class HistoryExporter(IProfileEnv profileEnv)
         }
         finally
         {
-            try
+            await CleanupOutputAsync(archive, output, ownsPartial ? partial : null, result).ConfigureAwait(false);
+        }
+    }
+
+    private static async Task<List<HistoryExportRecord>> WriteRecordsAsync(
+        IReadOnlyList<HistoryExportRecord> items, Func<ZipArchive> openArchive, HistoryExportResult result,
+        IProgress<HistoryExportProgress>? progress, CancellationToken token)
+    {
+        var records = new List<HistoryExportRecord>();
+        var processed = new HashSet<string>(StringComparer.Ordinal);
+        long written = 0;
+        var lastProgress = System.Diagnostics.Stopwatch.StartNew();
+        void ReportProgress() => progress?.Report(new(processed.Count, items.Count, written));
+        void ReportBytes(int count)
+        {
+            written += count;
+            if (lastProgress.ElapsedMilliseconds >= 100)
             {
-                archive?.Dispose();
-            }
-            catch (Exception ex)
-            {
-                result.Error ??= ex.Message;
-            }
-            try
-            {
-                if (output is not null)
-                    await output.DisposeAsync().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                result.Error ??= ex.Message;
-            }
-            try
-            {
-                if (ownsPartial)
-                    File.Delete(partial);
-            }
-            catch (Exception ex)
-            {
-                result.Error = $"{result.Error}\n{partial}: {ex.Message}";
+                ReportProgress();
+                lastProgress.Restart();
             }
         }
+        foreach (var item in items)
+        {
+            token.ThrowIfCancellationRequested();
+            if (processed.Contains(item.ProfileId))
+                throw new InvalidDataException($"Duplicate Profile ID: {item.ProfileId}");
+            FileStream? source;
+            try
+            {
+                source = await OpenTransferAsync(item, token).ConfigureAwait(false);
+            }
+            catch (Exception ex) when (!token.IsCancellationRequested && IsSourceError(ex))
+            {
+                result.Skipped.Add(new(item.ProfileId, item, Classify(ex), ex.Message));
+                processed.Add(item.ProfileId);
+                ReportProgress();
+                continue;
+            }
+            await using (source)
+            {
+                if (source is not null)
+                    await WriteTransferAsync(item, source, openArchive(), result, ReportBytes, token).ConfigureAwait(false);
+                records.Add(item);
+                processed.Add(item.ProfileId);
+                ReportProgress();
+            }
+        }
+        return records;
+    }
 
+    private static async Task<FileStream?> OpenTransferAsync(HistoryExportRecord item, CancellationToken token)
+    {
+        ValidateSegment(item.ProfileId);
+        if (item.TransferData is not { } transfer)
+            return null;
+        var source = new FileStream(item.TransferDataFile ?? throw new FileNotFoundException("Transfer data is missing."),
+            FileMode.Open, FileAccess.Read, FileShare.Read, 81920, FileOptions.Asynchronous | FileOptions.SequentialScan);
         try
         {
-            plan.Dispose();
+            if (source.Length != transfer.Size)
+                throw new InvalidDataException("Transfer data length changed before export.");
+            // Validate the opened handle before creating a ZIP entry. Recheck bytes during the copy.
+            var actual = Convert.ToHexString(await SHA256.HashDataAsync(source, token).ConfigureAwait(false));
+            if (!Utility.SHA256Same(actual, transfer.Sha256))
+                throw new InvalidDataException("Transfer data changed before export.");
+            source.Position = 0;
+            return source;
+        }
+        catch
+        {
+            source.Dispose();
+            throw;
+        }
+    }
+
+    private static async Task WriteTransferAsync(
+        HistoryExportRecord item, Stream source, ZipArchive archive, HistoryExportResult result,
+        Action<int> progress, CancellationToken token)
+    {
+        var transfer = item.TransferData!;
+        var entry = archive.CreateEntry(transfer.Path, CompressionLevel.NoCompression);
+        await using var destination = entry.Open();
+        void SourceFailed(Exception ex) => result.Skipped.Add(new(item.ProfileId, item, Classify(ex), ex.Message));
+        var copied = await CopyVerifiedAsync(source, destination, transfer.Sha256, progress, token, SourceFailed).ConfigureAwait(false);
+        if (copied != transfer.Size)
+        {
+            var error = new InvalidDataException("Transfer data length changed during export.");
+            SourceFailed(error);
+            throw error;
+        }
+    }
+
+    private static async Task WriteDocumentAsync(
+        List<HistoryExportRecord> records, ZipArchive? archive, Stream output, CancellationToken token)
+    {
+        var document = new HistoryExportDocument("syncclipboard-history", 1, Env.AppVersion, DateTime.UtcNow, records);
+        if (archive is not null)
+        {
+            await using var json = archive.CreateEntry("history.json").Open();
+            await JsonSerializer.SerializeAsync(json, document, JsonOptions, token).ConfigureAwait(false);
+        }
+        else
+        {
+            await JsonSerializer.SerializeAsync(output, document, JsonOptions, token).ConfigureAwait(false);
+        }
+    }
+
+    private static async Task CleanupOutputAsync(
+        ZipArchive? archive, FileStream? output, string? partial, HistoryExportResult result)
+    {
+        try
+        {
+            archive?.Dispose();
         }
         catch (Exception ex)
         {
-            result.Error = $"{result.Error}\n{ex.Message}".Trim();
+            result.Error ??= ex.Message;
         }
-
-        if (result.ArchivePath is null && (result.Canceled || result.Error is not null))
+        try
         {
-            var skipped = result.Skipped.Select(item => item.ProfileId).ToHashSet();
-            foreach (var item in plan.Items.Where(item => !skipped.Contains(item.ProfileId)))
-                result.Skipped.Add(new(item.ProfileId, item,
-                    result.Canceled ? HistoryExportFailure.Canceled : HistoryExportFailure.ArchiveFailed, result.Error));
+            if (output is not null)
+                await output.DisposeAsync().ConfigureAwait(false);
         }
-        if (result.Skipped.Count > 0)
+        catch (Exception ex)
         {
-            var reportBase = result.ArchivePath is { } path ? Path.GetFileNameWithoutExtension(path) : basename;
-            await HistoryExportReportWriter.WriteAsync(result, directory, reportBase, profileEnv.GetHistoryPersistentDir()).ConfigureAwait(false);
+            result.Error ??= ex.Message;
         }
-        return result;
+        try
+        {
+            if (partial is not null)
+                File.Delete(partial);
+        }
+        catch (Exception ex)
+        {
+            result.Error = $"{result.Error}\n{partial}: {ex.Message}";
+        }
     }
 
-    private Profile CreateProfile(HistoryExportItem item) => Profile.Create(profileEnv.GetHistoryPersistentDir(), item.Content);
+    private static void MarkUnexportedRecords(HistoryExportPlan plan, HistoryExportResult result)
+    {
+        if (result.ArchivePath is not null || (!result.Canceled && result.Error is null))
+            return;
+        var skipped = result.Skipped.Select(item => item.ProfileId).ToHashSet();
+        foreach (var item in plan.Items.Where(item => !skipped.Contains(item.ProfileId)))
+            result.Skipped.Add(new(item.ProfileId, item,
+                result.Canceled ? HistoryExportFailure.Canceled : HistoryExportFailure.ArchiveFailed, result.Error));
+    }
 
-    private async Task<FileHashInfo?> PrepareTransferAsync(
-        HistoryExportItem item, HistoryExportPlan plan, CancellationToken token)
+    private Profile CreateProfile(HistoryExportRecord item) => Profile.Create(profileEnv.GetHistoryPersistentDir(), new ProfilePersistentInfo
+    {
+        Type = item.ProfileType,
+        Hash = item.Hash,
+        Text = item.Text,
+        Size = item.Size,
+        FilePaths = item.FilePaths,
+        TransferDataFile = item.TransferDataFile,
+        TransferDataHash = item.TransferDataHash
+    });
+
+    private async Task<HistoryExportRecord> PrepareTransferAsync(HistoryExportRecord item, CancellationToken token)
     {
         Profile profile;
         try
         {
             profile = CreateProfile(item);
         }
-        catch (NotSupportedException) when (Utility.IsValidSHA256(item.Content.TransferDataHash) && item.Content.TransferDataFile is not null)
+        catch (NotSupportedException) when (Utility.IsValidSHA256(item.TransferDataHash) && item.TransferDataFile is not null)
         {
-            var fallback = new FileHashInfo(Profile.GetFullPath(profileEnv.GetHistoryPersistentDir(), item.Content.Type,
-                item.Content.Hash, item.Content.TransferDataFile), item.Content.TransferDataHash);
+            var fallback = new FileHashInfo(Profile.GetFullPath(profileEnv.GetHistoryPersistentDir(), item.ProfileType,
+                item.Hash, item.TransferDataFile), item.TransferDataHash);
             var actual = await Utility.CalculateFileSHA256(fallback.Path, token).ConfigureAwait(false);
             if (!Utility.SHA256Same(actual, fallback.Hash))
                 throw new InvalidDataException("Transfer data hash mismatch.");
-            return fallback;
+            return WithTransferData(item, fallback);
         }
         if (!await profile.IsDataComplete(true, token).ConfigureAwait(false))
             throw new FileNotFoundException("Local content is missing.");
-        var transfer = await profile.PrepareTransferData(
-            profileEnv.GetHistoryPersistentDir(), token, plan.TrackGeneratedFile).ConfigureAwait(false);
+        var transfer = await profile.PrepareTransferData(profileEnv.GetHistoryPersistentDir(), token).ConfigureAwait(false);
         if (profile.HasTransferData && transfer is null)
             throw new FileNotFoundException("Transfer data is missing.");
-        return transfer;
+        return WithTransferData(item with { Size = await profile.GetSize(token).ConfigureAwait(false) }, transfer);
     }
 
-    private static HistoryExportRecord ToRecord(HistoryExportItem item, HistoryExportTransferData? data) => new(
-        item.Content.Type.ToString(), item.Content.Hash.ToUpperInvariant(), item.Content.Text,
-        item.Timestamp.ToUniversalTime(), item.LastModified.ToUniversalTime(), item.LastAccessed.ToUniversalTime(),
-        item.Starred, item.Pinned, item.From, data is not null, data);
+    private static HistoryExportRecord WithTransferData(HistoryExportRecord item, FileHashInfo? transfer)
+    {
+        ValidateSegment(item.ProfileId);
+        HistoryExportTransferData? data = null;
+        if (transfer is not null)
+        {
+            var name = Path.GetFileName(transfer.Path);
+            data = new(name, $"files/{item.ProfileId}/{SafeFileName(name)}",
+                new FileInfo(transfer.Path).Length, transfer.Hash.ToUpperInvariant());
+        }
+        return item with
+        {
+            TransferData = data,
+            TransferDataFile = transfer?.Path,
+            TransferDataHash = data?.Sha256
+        };
+    }
 
     internal static bool IsSourceError(Exception ex) => !IsDiskFull(ex) &&
         ex is IOException or InvalidDataException or UnauthorizedAccessException or NotSupportedException or ArgumentException;

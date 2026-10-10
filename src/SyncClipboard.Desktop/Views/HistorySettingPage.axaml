@@ -72,7 +72,7 @@
                 </ui:FASettingsExpanderItem>
                 <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.HistoryExport}">
                     <ui:FASettingsExpanderItem.Footer>
-                        <Button Content="{x:Static i18n:Strings.HistoryExport}" Click="ExportHistoryClick" />
+                        <Button Content="{x:Static i18n:Strings.HistoryExport}" Command="{Binding ExportHistoryCommand}" />
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
                 <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ClearLocalHistory}" Description="{x:Static i18n:Strings.ClearLocalHistoryDescription}">

@@ -1,4 +1,5 @@
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.HistoryExport;
 using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Profiles.Models;
@@ -28,16 +29,31 @@ public class HistoryExportTests
         public string GetPersistentDir() => _root.FullName;
         public string GetHistoryPersistentDir() => Path.Combine(_root.FullName, "history");
         public void Dispose() => _root.Delete(true);
-        public async Task<HistoryExportItem> SaveAsync(Profile profile, CancellationToken token)
+        public async Task<HistoryExportRecord> SaveAsync(Profile profile, CancellationToken token)
         {
             var content = await profile.Persist(GetHistoryPersistentDir(), token);
             var timestamp = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
-            return new(content, timestamp, timestamp.AddHours(1), timestamp.AddHours(2), true, true, "test device");
+            return HistoryExportRecord.FromRecord(new HistoryRecord
+            {
+                Type = content.Type,
+                Hash = content.Hash,
+                Text = content.Text,
+                Size = content.Size,
+                FilePath = content.FilePaths,
+                TransferDataFile = content.TransferDataFile,
+                TransferDataHash = content.TransferDataHash,
+                Timestamp = timestamp,
+                LastModified = timestamp.AddHours(1),
+                LastAccessed = timestamp.AddHours(2),
+                Stared = true,
+                Pinned = true,
+                From = "test device"
+            });
         }
-        public async Task<HistoryExportResult> ExportAsync(HistoryExportItem[] items, CancellationToken token,
+        public async Task<HistoryExportResult> ExportAsync(HistoryExportRecord[] items, CancellationToken token,
             IProgress<HistoryExportProgress>? progress = null)
         {
-            using var plan = await Exporter.EstimateAsync(items, null, token);
+            var plan = await Exporter.EstimateAsync(items, null, token);
             return await Exporter.ExportAsync(plan, Output, progress, token);
         }
     }
@@ -63,7 +79,8 @@ public class HistoryExportTests
         Assert.AreEqual(1, document.FormatVersion);
         var record = document.Records.Single();
         Assert.AreEqual(text, record.Text);
-        Assert.AreEqual(item.Content.Hash.ToUpperInvariant(), record.Hash);
+        Assert.AreEqual((long)text.Length, record.Size);
+        Assert.AreEqual(item.Hash.ToUpperInvariant(), record.Hash);
         Assert.AreEqual(item.Timestamp, record.Timestamp);
         Assert.AreEqual(item.LastModified, record.LastModified);
         Assert.AreEqual(item.LastAccessed, record.LastAccessed);
@@ -81,7 +98,7 @@ public class HistoryExportTests
         await File.WriteAllTextAsync(path, "file contents", Token);
         Profile[] profiles = [new TextProfile("short"), new TextProfile(new string('文', 12000)),
             new FileProfile(path), new ImageProfile(path), new GroupProfile([path])];
-        var items = new List<HistoryExportItem>();
+        var items = new List<HistoryExportRecord>();
         var expected = new Dictionary<string, byte[]>();
         foreach (var profile in profiles)
         {
@@ -100,7 +117,23 @@ public class HistoryExportTests
         Assert.AreEqual(".zip", Path.GetExtension(result.ArchivePath));
         using var zip = ZipFile.OpenRead(result.ArchivePath!);
         await using var manifest = zip.GetEntry("history.json")!.Open();
-        var document = await ReadDocumentAsync(manifest, Token);
+        using var reader = new StreamReader(manifest);
+        var json = await reader.ReadToEndAsync(Token);
+        var document = JsonSerializer.Deserialize<HistoryExportDocument>(json, HistoryExporter.JsonOptions)!;
+        using var serialized = JsonDocument.Parse(json);
+        foreach (var record in serialized.RootElement.GetProperty("records").EnumerateArray())
+        {
+            Assert.IsFalse(record.TryGetProperty("filePaths", out _));
+            Assert.IsFalse(record.TryGetProperty("transferDataFile", out _));
+            Assert.IsFalse(record.TryGetProperty("transferDataHash", out _));
+            Assert.IsFalse(record.TryGetProperty("profileId", out _));
+            Assert.IsFalse(record.TryGetProperty("profileType", out _));
+        }
+        foreach (var record in document.Records)
+            Assert.AreEqual(items.Single(item => item.ProfileId == record.ProfileId).Size, record.Size);
+        var longText = document.Records.Single(record => record.Type == "Text" && record.HasTransferData);
+        Assert.AreEqual(12000L, longText.Size);
+        Assert.IsGreaterThan(longText.Size, longText.TransferData!.Size);
         Assert.HasCount(5, document.Records);
         Assert.HasCount(5, zip.Entries);
         foreach (var record in document.Records.Where(record => record.HasTransferData))
@@ -121,12 +154,31 @@ public class HistoryExportTests
     }
 
     [TestMethod]
+    public async Task FileSizeUsesPreparedProfileValueInsteadOfStaleStoredSize()
+    {
+        using var fixture = new Fixture();
+        var path = Path.Combine(fixture.GetPersistentDir(), "source.txt");
+        await File.WriteAllTextAsync(path, "file contents", Token);
+        var item = await fixture.SaveAsync(new FileProfile(path), Token);
+        var stale = item with { Size = 1 };
+        var plan = await fixture.Exporter.EstimateAsync([stale], null, Token);
+        var expectedSize = new FileInfo(path).Length;
+        Assert.AreEqual(expectedSize, plan.Items.Single().Size);
+        Assert.AreEqual(1L, stale.Size);
+        var result = await fixture.Exporter.ExportAsync(plan, fixture.Output, null, Token);
+        Assert.IsNull(result.Error);
+        using var zip = ZipFile.OpenRead(result.ArchivePath!);
+        await using var manifest = zip.GetEntry("history.json")!.Open();
+        Assert.AreEqual(expectedSize, (await ReadDocumentAsync(manifest, Token)).Records.Single().Size);
+    }
+
+    [TestMethod]
     public async Task MissingLongText_IsSkippedWithReportAndRemainingInlineTextUsesJson()
     {
         using var fixture = new Fixture();
         var missing = await fixture.SaveAsync(new TextProfile(new string('T', 12000)), Token);
-        var source = Profile.GetFullPath(fixture.GetHistoryPersistentDir(), missing.Content.Type,
-            missing.Content.Hash, missing.Content.TransferDataFile)!;
+        var source = Profile.GetFullPath(fixture.GetHistoryPersistentDir(), missing.ProfileType,
+            missing.Hash, missing.TransferDataFile)!;
         File.Delete(source);
         var inline = await fixture.SaveAsync(new TextProfile("keep"), Token);
         var result = await fixture.ExportAsync([missing, inline], Token);
@@ -148,8 +200,8 @@ public class HistoryExportTests
     {
         using var fixture = new Fixture();
         var item = await fixture.SaveAsync(new TextProfile(new string('T', 12000)), Token);
-        File.Delete(Profile.GetFullPath(fixture.GetHistoryPersistentDir(), item.Content.Type,
-            item.Content.Hash, item.Content.TransferDataFile)!);
+        File.Delete(Profile.GetFullPath(fixture.GetHistoryPersistentDir(), item.ProfileType,
+            item.Hash, item.TransferDataFile)!);
         var result = await fixture.ExportAsync([item], Token);
         Assert.IsNull(result.ArchivePath);
         Assert.IsNull(result.Error);
@@ -272,17 +324,20 @@ public class HistoryExportTests
         var known = await fixture.SaveAsync(new TextProfile("metadata"), Token);
         var item = known with
         {
-            Content = known.Content with
-            {
-                Type = (ProfileType)99,
-                TransferDataFile = path,
-                TransferDataHash = Convert.ToHexString(SHA256.HashData([1, 2, 3]))
-            }
+            Type = "99",
+            Size = 12345,
+            TransferDataFile = path,
+            TransferDataHash = Convert.ToHexString(SHA256.HashData([1, 2, 3]))
         };
         var result = await fixture.ExportAsync([item], Token);
         Assert.IsNull(result.Error);
         Assert.AreEqual(1, result.ExportedCount);
         Assert.AreEqual(".zip", Path.GetExtension(result.ArchivePath));
+        using var zip = ZipFile.OpenRead(result.ArchivePath!);
+        await using var manifest = zip.GetEntry("history.json")!.Open();
+        var record = (await ReadDocumentAsync(manifest, Token)).Records.Single();
+        Assert.AreEqual(12345L, record.Size);
+        Assert.AreEqual(3L, record.TransferData!.Size);
     }
 
     [TestMethod]
@@ -296,16 +351,13 @@ public class HistoryExportTests
         var known = await fixture.SaveAsync(new TextProfile("metadata"), Token);
         var item = known with
         {
-            Content = known.Content with
-            {
-                Type = (ProfileType)99,
-                TransferDataFile = path,
-                TransferDataHash = Convert.ToHexString(SHA256.HashData([1, 2, 3]))
-            }
+            Type = "99",
+            TransferDataFile = path,
+            TransferDataHash = Convert.ToHexString(SHA256.HashData([1, 2, 3]))
         };
         if (missing)
             File.Delete(path);
-        using var plan = await fixture.Exporter.EstimateAsync([item], null, Token);
+        var plan = await fixture.Exporter.EstimateAsync([item], null, Token);
         Assert.IsEmpty(plan.Items);
         Assert.AreEqual(0L, plan.EstimatedBytes);
         Assert.AreEqual(missing ? HistoryExportFailure.MissingFile : HistoryExportFailure.InvalidData,
@@ -337,24 +389,72 @@ public class HistoryExportTests
         var path = Path.Combine(fixture.GetPersistentDir(), "source.txt");
         await File.WriteAllTextAsync(path, "original", Token);
         var item = await fixture.SaveAsync(new GroupProfile([path]), Token);
-        HistoryRecordKey[] selected = [new(item.Content.Type, item.Content.Hash), new(ProfileType.Text, new string('A', 64))];
-        var before = Directory.GetFiles(fixture.GetHistoryPersistentDir(), "*", SearchOption.AllDirectories);
-        using var plan = await fixture.Exporter.EstimateAsync([item], selected, Token);
-        var prepared = plan.Items.Single().Content.TransferDataFile!;
+        HistoryRecordKey[] selected = [new(item.ProfileType, item.Hash), new(ProfileType.Text, new string('A', 64))];
+        var plan = await fixture.Exporter.EstimateAsync([item], selected, Token);
+        var prepared = plan.Items.Single().TransferDataFile!;
         Assert.IsTrue(File.Exists(prepared));
         Assert.IsGreaterThan(new FileInfo(prepared).Length, plan.EstimatedBytes);
         var preparedBytes = await File.ReadAllBytesAsync(prepared, Token);
+        var transferData = plan.Items.Single().TransferData!;
+        Assert.AreEqual((long)preparedBytes.Length, transferData.Size);
+        Assert.AreEqual(Convert.ToHexString(SHA256.HashData(preparedBytes)), transferData.Sha256);
         Assert.AreEqual(HistoryExportFailure.RecordRemoved, plan.Skipped.Single().Reason);
+        // Changes to the original files do not alter the already prepared transfer archive.
+        await File.WriteAllTextAsync(path, "changed after preparation", Token);
         var result = await fixture.Exporter.ExportAsync(plan, fixture.Output, null, Token);
         Assert.AreEqual(1, result.ExportedCount);
         Assert.AreEqual(1, result.OtherCount);
-        CollectionAssert.AreEquivalent(before, Directory.GetFiles(fixture.GetHistoryPersistentDir(), "*", SearchOption.AllDirectories));
         using var zip = ZipFile.OpenRead(result.ArchivePath!);
         var attachment = zip.Entries.Single(entry => entry.FullName.StartsWith("files/", StringComparison.Ordinal));
         await using var source = attachment.Open();
         using var bytes = new MemoryStream();
         await source.CopyToAsync(bytes, Token);
         CollectionAssert.AreEqual(preparedBytes, bytes.ToArray());
+        await using var manifest = zip.GetEntry("history.json")!.Open();
+        Assert.AreEqual(transferData, (await ReadDocumentAsync(manifest, Token)).Records.Single().TransferData);
+    }
+
+    [TestMethod]
+    public async Task MissingPreparedGroupTransfer_IsReportedAndRemainingTextIsExported()
+    {
+        using var fixture = new Fixture();
+        var path = Path.Combine(fixture.GetPersistentDir(), "source.txt");
+        await File.WriteAllTextAsync(path, "original", Token);
+        var group = await fixture.SaveAsync(new GroupProfile([path]), Token);
+        var text = await fixture.SaveAsync(new TextProfile("keep"), Token);
+        var plan = await fixture.Exporter.EstimateAsync([group, text], null, Token);
+        var prepared = plan.Items.Single(item => item.ProfileId == group.ProfileId).TransferDataFile!;
+        File.Delete(prepared);
+        var result = await fixture.Exporter.ExportAsync(plan, fixture.Output, null, Token);
+        Assert.IsNull(result.Error);
+        Assert.AreEqual(1, result.ExportedCount);
+        Assert.AreEqual(1, result.MissingCount);
+        Assert.AreEqual(group.ProfileId, result.Skipped.Single().ProfileId);
+        Assert.AreEqual(".json", Path.GetExtension(result.ArchivePath));
+        await using var manifest = File.OpenRead(result.ArchivePath!);
+        Assert.AreEqual("keep", (await ReadDocumentAsync(manifest, Token)).Records.Single().Text);
+        var report = await File.ReadAllTextAsync(result.ReportPath!, Token);
+        Assert.Contains(prepared, report);
+        Assert.Contains("MissingFile", report);
+        Assert.AreEqual("original", await File.ReadAllTextAsync(path, Token));
+    }
+
+    [TestMethod]
+    public async Task ChangedPreparedTransfer_IsReportedAsInvalidData()
+    {
+        using var fixture = new Fixture();
+        var item = await fixture.SaveAsync(new TextProfile(new string('T', 12000)), Token);
+        var plan = await fixture.Exporter.EstimateAsync([item], null, Token);
+        var prepared = plan.Items.Single().TransferDataFile!;
+        var bytes = await File.ReadAllBytesAsync(prepared, Token);
+        bytes[^1] ^= 1;
+        await File.WriteAllBytesAsync(prepared, bytes, Token);
+        var result = await fixture.Exporter.ExportAsync(plan, fixture.Output, null, Token);
+        Assert.IsNull(result.Error);
+        Assert.IsNull(result.ArchivePath);
+        Assert.AreEqual(0, result.ExportedCount);
+        Assert.AreEqual(HistoryExportFailure.InvalidData, result.Skipped.Single().Reason);
+        Assert.Contains("InvalidData", await File.ReadAllTextAsync(result.ReportPath!, Token));
     }
 
     [TestMethod]
@@ -362,9 +462,9 @@ public class HistoryExportTests
     {
         using var fixture = new Fixture();
         var saved = await fixture.SaveAsync(new TextProfile(new string('文', 12000)), Token);
-        var legacy = saved with { Content = saved.Content with { TransferDataFile = null, TransferDataHash = null } };
-        using var currentPlan = await fixture.Exporter.EstimateAsync([saved], null, Token);
-        using var legacyPlan = await fixture.Exporter.EstimateAsync([legacy], null, Token);
+        var legacy = saved with { TransferDataFile = null, TransferDataHash = null };
+        var currentPlan = await fixture.Exporter.EstimateAsync([saved], null, Token);
+        var legacyPlan = await fixture.Exporter.EstimateAsync([legacy], null, Token);
         Assert.AreEqual(currentPlan.EstimatedBytes, legacyPlan.EstimatedBytes);
         Assert.IsGreaterThan(36000L, legacyPlan.EstimatedBytes);
     }
@@ -374,8 +474,8 @@ public class HistoryExportTests
     {
         using var fixture = new Fixture();
         var item = await fixture.SaveAsync(new TextProfile(new string('T', 12000)), Token);
-        using var plan = await fixture.Exporter.EstimateAsync([item], null, Token);
-        File.Delete(plan.Items.Single().Content.TransferDataFile!);
+        var plan = await fixture.Exporter.EstimateAsync([item], null, Token);
+        File.Delete(plan.Items.Single().TransferDataFile!);
         var result = await fixture.Exporter.ExportAsync(plan, fixture.Output, null, Token);
         Assert.AreEqual(0, result.ExportedCount);
         Assert.AreEqual(1, result.MissingCount);
@@ -389,16 +489,16 @@ public class HistoryExportTests
         using var fixture = new Fixture();
         var valid = await fixture.SaveAsync(new TextProfile("keep"), Token);
         var missing = await fixture.SaveAsync(new TextProfile(new string('T', 12000)), Token);
-        var missingPath = Profile.GetFullPath(fixture.GetHistoryPersistentDir(), missing.Content.Type,
-            missing.Content.Hash, missing.Content.TransferDataFile)!;
+        var missingPath = Profile.GetFullPath(fixture.GetHistoryPersistentDir(), missing.ProfileType,
+            missing.Hash, missing.TransferDataFile)!;
         var missingBytes = await File.ReadAllBytesAsync(missingPath, Token);
         File.Delete(missingPath);
         var path = Path.Combine(fixture.GetPersistentDir(), "source.txt");
         await File.WriteAllTextAsync(path, "original", Token);
         var corrupt = await fixture.SaveAsync(new FileProfile(path), Token);
         await File.WriteAllTextAsync(path, "modified", Token);
-        using var baseline = await fixture.Exporter.EstimateAsync([valid], null, Token);
-        using var plan = await fixture.Exporter.EstimateAsync([missing, valid, corrupt], null, Token);
+        var baseline = await fixture.Exporter.EstimateAsync([valid], null, Token);
+        var plan = await fixture.Exporter.EstimateAsync([missing, valid, corrupt], null, Token);
         Assert.AreEqual(valid.ProfileId, plan.Items.Single().ProfileId);
         Assert.AreEqual(baseline.EstimatedBytes, plan.EstimatedBytes);
         Assert.AreEqual(HistoryExportFailure.MissingFile, plan.Skipped.Single(x => x.ProfileId == missing.ProfileId).Reason);
@@ -419,43 +519,15 @@ public class HistoryExportTests
     }
 
     [TestMethod]
-    public async Task RepeatedGroupEstimatesAndExportsDoNotAccumulateTransferFiles()
-    {
-        using var fixture = new Fixture();
-        var path = Path.Combine(fixture.GetPersistentDir(), "source.txt");
-        await File.WriteAllTextAsync(path, "original", Token);
-        var group = await fixture.SaveAsync(new GroupProfile([path]), Token);
-        var existing = await fixture.SaveAsync(new TextProfile(new string('T', 12000)), Token);
-        var before = Directory.GetFiles(fixture.GetHistoryPersistentDir(), "*", SearchOption.AllDirectories);
-        for (var i = 0; i < 2; i++)
-        {
-            // Closing the estimate without exporting must release only newly created files.
-            using (var plan = await fixture.Exporter.EstimateAsync([group, existing], null, Token))
-            {
-                Assert.AreEqual(before.Length + 1,
-                    Directory.GetFiles(fixture.GetHistoryPersistentDir(), "*", SearchOption.AllDirectories).Length);
-            }
-            CollectionAssert.AreEquivalent(before,
-                Directory.GetFiles(fixture.GetHistoryPersistentDir(), "*", SearchOption.AllDirectories));
-            var result = await fixture.ExportAsync([group, existing], Token);
-            Assert.IsNull(result.Error);
-            Assert.AreEqual(2, result.ExportedCount);
-            CollectionAssert.AreEquivalent(before,
-                Directory.GetFiles(fixture.GetHistoryPersistentDir(), "*", SearchOption.AllDirectories));
-        }
-    }
-
-    [TestMethod]
     [DataRow(true)]
     [DataRow(false)]
-    public async Task InterruptedExportRemovesGeneratedTransferFiles(bool cancel)
+    public async Task InterruptedExportDoesNotPublishArchive(bool cancel)
     {
         using var fixture = new Fixture();
         var path = Path.Combine(fixture.GetPersistentDir(), "source.txt");
         await File.WriteAllTextAsync(path, "original", Token);
         var item = await fixture.SaveAsync(new GroupProfile([path]), Token);
-        var before = Directory.GetFiles(fixture.GetHistoryPersistentDir(), "*", SearchOption.AllDirectories);
-        using var plan = await fixture.Exporter.EstimateAsync([item], null, Token);
+        var plan = await fixture.Exporter.EstimateAsync([item], null, Token);
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Token);
         if (cancel)
             cancellation.Cancel();
@@ -465,8 +537,6 @@ public class HistoryExportTests
         Assert.AreEqual(0, result.ExportedCount);
         Assert.IsNull(result.ArchivePath);
         Assert.IsTrue(result.Canceled || result.Error is not null);
-        CollectionAssert.AreEquivalent(before,
-            Directory.GetFiles(fixture.GetHistoryPersistentDir(), "*", SearchOption.AllDirectories));
     }
 
     [TestMethod]

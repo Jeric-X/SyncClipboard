@@ -1508,7 +1508,7 @@ Choose whether to use the default location or select another folder.</value>
     <value>Backup file</value>
   </data>
   <data name="HistoryExportNoArchive" xml:space="preserve">
-    <value>No export file was created.</value>
+    <value>No backup file was created.</value>
   </data>
   <data name="HistoryExportReportFailed" xml:space="preserve">
     <value>Could not save the report: {0}</value>

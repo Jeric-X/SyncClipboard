@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.HistoryExport;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.History;
 
@@ -10,7 +11,6 @@ namespace SyncClipboard.Core.ViewModels;
 public sealed partial class HistoryExportViewModel(HistoryManager manager, HistoryExporter exporter) : ObservableObject, IDisposable
 {
     private CancellationTokenSource? _cancellation;
-    private bool _disposed;
     private HistoryExportPlan? _plan;
     private Func<Task<string?>>? _pickDirectory;
     private IReadOnlyList<HistoryRecordKey>? _selected;
@@ -71,7 +71,6 @@ public sealed partial class HistoryExportViewModel(HistoryManager manager, Histo
         _cancellation = cancellation;
         try
         {
-            _plan?.Dispose();
             _plan = null;
             _plan = await Task.Run(async () =>
             {
@@ -96,8 +95,6 @@ public sealed partial class HistoryExportViewModel(HistoryManager manager, Histo
         {
             _cancellation = null;
             IsBusy = false;
-            if (_disposed)
-                _plan?.Dispose();
         }
     }
 
@@ -149,8 +146,6 @@ public sealed partial class HistoryExportViewModel(HistoryManager manager, Histo
             _cancellation = null;
             IsFinished = true;
             IsBusy = false;
-            if (_disposed)
-                _plan?.Dispose();
         }
     }
 
@@ -197,11 +192,5 @@ public sealed partial class HistoryExportViewModel(HistoryManager manager, Histo
     private static string FormatSize(long size) => size >= 1024 * 1024
         ? $"{size / (1024d * 1024):0.##} MiB" : $"{size / 1024d:0.##} KiB";
 
-    public void Dispose()
-    {
-        _disposed = true;
-        Cancel();
-        if (!IsBusy)
-            _plan?.Dispose();
-    }
+    public void Dispose() => Cancel();
 }

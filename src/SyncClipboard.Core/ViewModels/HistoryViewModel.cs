@@ -809,9 +809,6 @@ public partial class HistoryViewModel : ObservableObject
 
     public void ShowWithAutoPosition()
     {
-        if (HasModalOperation)
-            return;
-
         OnBeforeShownWindow();
 
         var wasVisible = window.IsVisible;
@@ -832,9 +829,6 @@ public partial class HistoryViewModel : ObservableObject
 
     public void SwitchVisible()
     {
-        if (HasModalOperation)
-            return;
-
         if (window.IsVisible)
         {
             window.Hide();

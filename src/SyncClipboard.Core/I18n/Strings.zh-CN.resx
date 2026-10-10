@@ -1496,10 +1496,10 @@ Shift + 左键：选中连续范围</value>
     <value>已导出 {0} 条记录</value>
   </data>
   <data name="HistoryExportMissingCount" xml:space="preserve">
-    <value>，文件缺失 {0} 条记录</value>
+    <value>，{0} 条记录因文件缺失未导出</value>
   </data>
   <data name="HistoryExportOtherCount" xml:space="preserve">
-    <value>，其他失败 {0} 条记录</value>
+    <value>，{0} 条记录因其他原因未导出</value>
   </data>
   <data name="HistoryExportReport" xml:space="preserve">
     <value>未导出记录报告</value>
@@ -1508,7 +1508,7 @@ Shift + 左键：选中连续范围</value>
     <value>备份文件</value>
   </data>
   <data name="HistoryExportNoArchive" xml:space="preserve">
-    <value>未生成导出文件。</value>
+    <value>未生成备份文件。</value>
   </data>
   <data name="HistoryExportReportFailed" xml:space="preserve">
     <value>未导出报告保存失败：{0}</value>
