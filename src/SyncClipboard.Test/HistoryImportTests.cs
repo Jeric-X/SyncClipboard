@@ -625,6 +625,47 @@ public class HistoryImportTests
     }
 
     [TestMethod]
+    [DataRow(true)]
+    [DataRow(false)]
+    public async Task NonCanonicalTextAttachment_IsRejectedWithoutBlockingOtherRecords(bool bom)
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var text = new string('文', 12000);
+        var item = await f.RecordAsync(new TextProfile(text), Token);
+        var other = await f.RecordAsync(new TextProfile("valid"), Token);
+        var backup = await f.ExportAsync([item, other], Token);
+        byte[] prefix = bom ? [0xEF, 0xBB, 0xBF] : [0xFF];
+        byte[] bytes = [.. prefix, .. System.Text.Encoding.UTF8.GetBytes(text)];
+        var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes));
+        var decoded = bom ? text : "\uFFFD" + text;
+        using (var zip = ZipFile.Open(backup, ZipArchiveMode.Update))
+        {
+            var manifest = zip.GetEntry("history.json")!;
+            HistoryExportDocument document;
+            using (var input = manifest.Open())
+                document = (await JsonSerializer.DeserializeAsync<HistoryExportDocument>(input, HistoryExporter.JsonOptions, Token))!;
+            var original = document.Records.Single(record => record.Hash == item.Hash);
+            var changed = original with { Hash = hash, Text = new TextProfile(decoded).DisplayText, Size = decoded.Length };
+            var transfer = original.TransferData!;
+            var path = $"files/{changed.ProfileId}/{FileSys.SafeFileName(transfer.Name)}";
+            zip.GetEntry(transfer.Path)!.Delete();
+            await using (var output = zip.CreateEntry(path).Open())
+                await output.WriteAsync(bytes, Token);
+            changed = changed with { TransferData = transfer with { Path = path, Sha256 = hash, Size = bytes.Length } };
+            document = document with { Records = document.Records.Select(record => record == original ? changed : record).ToArray() };
+            manifest.Delete();
+            await using var manifestOutput = zip.CreateEntry("history.json").Open();
+            await JsonSerializer.SerializeAsync(manifestOutput, document, HistoryExporter.JsonOptions, Token);
+        }
+        var result = await f.ImportAsync(backup, Token);
+        Assert.AreEqual(1, result.ImportedCount);
+        Assert.Contains("Decoded text", result.Failures.Single().Reason);
+        Assert.AreEqual(other.Hash, (await f.Db.HistoryRecords.SingleAsync(Token)).Hash);
+        Assert.IsEmpty(Directory.GetDirectories(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), ProfileType.Text, hash), "import-*"));
+    }
+
+    [TestMethod]
     public async Task AlteredLongTextPreview_IsRejectedWithoutBlockingOtherRecords()
     {
         await using var f = new Fixture();

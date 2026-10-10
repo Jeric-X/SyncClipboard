@@ -211,7 +211,10 @@ public sealed class HistoryImporter
         if (profile is TextProfile && transfer is not null)
         {
             var content = await profile.Localize(directory!, token).ConfigureAwait(false);
-            if (new TextProfile(content.Text).DisplayText != item.Text)
+            var decodedProfile = new TextProfile(content.Text);
+            if (!Utility.SHA256Same(await decodedProfile.GetHash(token).ConfigureAwait(false), item.Hash))
+                throw new InvalidDataException("Decoded text does not match its hash.");
+            if (decodedProfile.DisplayText != item.Text)
                 throw new InvalidDataException("Text preview does not match its content.");
         }
         if (type != ProfileType.Text && profile.DisplayText != item.Text)
