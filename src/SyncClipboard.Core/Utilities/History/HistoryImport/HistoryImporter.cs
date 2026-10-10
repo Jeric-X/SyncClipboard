@@ -188,9 +188,19 @@ public sealed class HistoryImporter
             throw new InvalidDataException("Unsupported record type.");
         if (!Utility.IsValidSHA256(item.Hash) || item.Text is null || item.From is null || item.Size < 0)
             throw new InvalidDataException("Invalid record metadata.");
+        if (!IsValidTimestamp(item.Timestamp) || !IsValidTimestamp(item.LastModified) || !IsValidTimestamp(item.LastAccessed))
+            throw new InvalidDataException("Missing or invalid record timestamp.");
         if (type != ProfileType.Text && item.TransferData is null)
             throw new InvalidDataException("Transfer data is missing.");
         return type;
+    }
+
+    private static bool IsValidTimestamp(DateTime value)
+    {
+        if (value == DateTime.MinValue || value == DateTime.MaxValue)
+            return false;
+        var utc = value.ToUniversalTime();
+        return utc != DateTime.MinValue && utc != DateTime.MaxValue;
     }
 
     private async Task<HistoryRecord> RestoreRecordAsync(

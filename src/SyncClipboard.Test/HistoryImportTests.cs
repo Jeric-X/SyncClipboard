@@ -14,6 +14,7 @@ using System.IO.Compression;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 
 namespace SyncClipboard.Test;
 
@@ -287,6 +288,44 @@ public class HistoryImportTests
         await File.WriteAllTextAsync(path, JsonSerializer.Serialize(document, HistoryExporter.JsonOptions), Token);
         await Assert.ThrowsExactlyAsync<InvalidDataException>(() => HistoryImporter.PrepareAsync(path, Token));
         Assert.IsEmpty(await f.Db.HistoryRecords.ToListAsync(Token));
+    }
+
+    [TestMethod]
+    [DataRow("timestamp", "missing")]
+    [DataRow("lastModified", "missing")]
+    [DataRow("lastAccessed", "missing")]
+    [DataRow("timestamp", "min")]
+    [DataRow("lastModified", "min")]
+    [DataRow("lastAccessed", "min")]
+    [DataRow("timestamp", "max")]
+    [DataRow("lastModified", "max")]
+    [DataRow("lastAccessed", "max")]
+    public async Task MissingOrInvalidTimestamp_IsReportedAndOtherRecordsStillImport(string field, string mode)
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var invalid = await f.RecordAsync(new TextProfile("invalid metadata"), Token);
+        var valid = await f.RecordAsync(new TextProfile("valid metadata"), Token);
+        var document = new HistoryExportDocument("syncclipboard-history", 1, "test", DateTime.UtcNow, [invalid, valid]);
+        var json = JsonSerializer.SerializeToNode(document, HistoryExporter.JsonOptions)!;
+        var record = json["records"]![0]!.AsObject();
+        if (mode == "missing")
+            Assert.IsTrue(record.Remove(field));
+        else
+            record[field] = JsonValue.Create(mode == "min" ? DateTime.MinValue : DateTime.MaxValue);
+        var path = Path.Combine(f.Root, "invalid.json");
+        await File.WriteAllTextAsync(path, json.ToJsonString(), Token);
+        var result = await f.ImportAsync(path, Token);
+        Assert.HasCount(1, result.Failures);
+        Assert.AreEqual(1, result.ImportedCount);
+        Assert.Contains("timestamp", result.Failures[0].Reason);
+        Assert.IsNotNull(result.ReportPath);
+        Assert.Contains("timestamp", await File.ReadAllTextAsync(result.ReportPath, Token));
+        var restored = await f.Db.HistoryRecords.SingleAsync(Token);
+        Assert.AreEqual(valid.Hash, restored.Hash);
+        Assert.AreEqual(valid.Timestamp, restored.Timestamp.ToUniversalTime());
+        Assert.AreEqual(valid.LastModified, restored.LastModified.ToUniversalTime());
+        Assert.AreEqual(valid.LastAccessed, restored.LastAccessed.ToUniversalTime());
     }
 
     [TestMethod]
