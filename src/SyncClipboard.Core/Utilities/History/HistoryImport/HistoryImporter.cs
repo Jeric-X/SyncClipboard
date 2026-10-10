@@ -111,9 +111,12 @@ public sealed class HistoryImporter
                     progress?.Report(i + 1);
                     continue;
                 }
-                var root = Profile.CreateWorkingDir(profileEnv.GetHistoryPersistentDir(), type, item.Hash.ToUpperInvariant());
-                directory = Path.Combine(root, "import-" + Guid.NewGuid().ToString("N"));
-                Directory.CreateDirectory(directory);
+                if (item.TransferData is not null)
+                {
+                    var root = Profile.CreateWorkingDir(profileEnv.GetHistoryPersistentDir(), type, item.Hash.ToUpperInvariant());
+                    directory = Path.Combine(root, "import-" + Guid.NewGuid().ToString("N"));
+                    Directory.CreateDirectory(directory);
+                }
                 var record = await RestoreRecordAsync(plan, item, type, directory, maxGroupEntries, token).ConfigureAwait(false);
                 var outcome = await manager.ImportRecordAsync(record, directory, token).ConfigureAwait(false);
                 saved = outcome != HistoryImportOutcome.Existing;
@@ -170,14 +173,14 @@ public sealed class HistoryImporter
     }
 
     private async Task<HistoryRecord> RestoreRecordAsync(
-        HistoryImportPlan plan, HistoryExportRecord item, ProfileType type, string directory, uint maxGroupEntries, CancellationToken token)
+        HistoryImportPlan plan, HistoryExportRecord item, ProfileType type, string? directory, uint maxGroupEntries, CancellationToken token)
     {
         var transfer = item.TransferData;
         var dto = new ProfileDto
         {
             Type = type,
             Hash = item.Hash.ToUpperInvariant(),
-            Text = item.Text,
+            Text = type == ProfileType.Group ? "" : item.Text,
             Size = null,
             HasData = transfer is not null,
             DataName = transfer?.Name,
@@ -193,11 +196,11 @@ public sealed class HistoryImporter
         };
         if (transfer is not null)
         {
-            var path = await RestoreTransferAsync(plan, item, directory, token).ConfigureAwait(false);
+            var path = await RestoreTransferAsync(plan, item, directory!, token).ConfigureAwait(false);
             var file = new FileHashInfo(path, transfer.Sha256);
             if (profile is GroupProfile group)
             {
-                FileSys.EnsureAvailableSpace(item.Size, availableSpace(directory));
+                FileSys.EnsureAvailableSpace(item.Size, availableSpace(directory!));
                 await group.SetTransferData(file, item.Size, maxGroupEntries, token).ConfigureAwait(false);
             }
             else
@@ -207,10 +210,12 @@ public sealed class HistoryImporter
             throw new InvalidDataException("Record content does not match its hash.");
         if (profile is TextProfile && transfer is not null)
         {
-            var content = await profile.Localize(directory, token).ConfigureAwait(false);
+            var content = await profile.Localize(directory!, token).ConfigureAwait(false);
             if (new TextProfile(content.Text).DisplayText != item.Text)
                 throw new InvalidDataException("Text preview does not match its content.");
         }
+        if (type != ProfileType.Text && profile.DisplayText != item.Text)
+            throw new InvalidDataException("Record display text does not match its content.");
         if (await profile.GetSize(token).ConfigureAwait(false) != item.Size)
             throw new InvalidDataException("Record size does not match its content.");
         var data = await profile.Persist(profileEnv.GetHistoryPersistentDir(), token).ConfigureAwait(false);

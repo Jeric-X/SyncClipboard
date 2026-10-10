@@ -567,6 +567,64 @@ public class HistoryImportTests
     }
 
     [TestMethod]
+    [DataRow("File")]
+    [DataRow("Image")]
+    [DataRow("Group")]
+    public async Task AlteredFileDisplayText_IsRejectedWithoutBlockingOtherRecords(string type)
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var path = Path.Combine(f.Root, "data.png");
+        await File.WriteAllTextAsync(path, "payload", Token);
+        Profile profile = type switch
+        {
+            "File" => new FileProfile(path),
+            "Image" => new ImageProfile(path),
+            _ => new GroupProfile([path])
+        };
+        var item = await f.RecordAsync(profile, Token);
+        var other = await f.RecordAsync(new TextProfile("valid record"), Token);
+        var backup = await f.ExportAsync([item, other], Token);
+        using (var zip = ZipFile.Open(backup, ZipArchiveMode.Update))
+        {
+            var entry = zip.GetEntry("history.json")!;
+            HistoryExportDocument document;
+            using (var input = entry.Open())
+                document = (await JsonSerializer.DeserializeAsync<HistoryExportDocument>(input, HistoryExporter.JsonOptions, Token))!;
+            document = document with
+            {
+                Records = document.Records.Select(record => record.Hash == item.Hash ? record with { Text = "unrelated.png" } : record).ToArray()
+            };
+            entry.Delete();
+            await using var output = zip.CreateEntry("history.json").Open();
+            await JsonSerializer.SerializeAsync(output, document, HistoryExporter.JsonOptions, Token);
+        }
+        var result = await f.ImportAsync(backup, Token);
+        Assert.AreEqual(1, result.ImportedCount);
+        Assert.Contains("display text", result.Failures.Single().Reason);
+        Assert.AreEqual(other.Hash, (await f.Db.HistoryRecords.SingleAsync(Token)).Hash);
+        Assert.IsEmpty(Directory.GetDirectories(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), item.ProfileType, item.Hash), "import-*"));
+    }
+
+    [TestMethod]
+    public async Task InlineTextImport_DoesNotCreateAttachmentDirectories()
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        HistoryExportRecord[] records = [await f.RecordAsync(new TextProfile("first"), Token),
+            await f.RecordAsync(new TextProfile("second"), Token), await f.RecordAsync(new TextProfile("third"), Token)];
+        var backup = await f.ExportAsync(records, Token);
+        Assert.AreEqual(".json", Path.GetExtension(backup));
+        var result = await f.ImportAsync(backup, Token);
+        Assert.AreEqual(3, result.ImportedCount);
+        Assert.IsEmpty(result.Failures);
+        var restored = await f.Db.HistoryRecords.ToListAsync(Token);
+        CollectionAssert.AreEquivalent(records.Select(record => record.Hash).ToArray(), restored.Select(record => record.Hash).ToArray());
+        Assert.IsTrue(restored.All(record => record.FilePath.Length == 0 && record.TransferDataFile is null));
+        Assert.IsFalse(Directory.Exists(f.GetHistoryPersistentDir()));
+    }
+
+    [TestMethod]
     public async Task AlteredLongTextPreview_IsRejectedWithoutBlockingOtherRecords()
     {
         await using var f = new Fixture();

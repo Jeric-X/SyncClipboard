@@ -225,7 +225,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         }
     }
 
-    public async Task<HistoryImportOutcome> ImportRecordAsync(HistoryRecord record, string importDirectory, CancellationToken token)
+    public async Task<HistoryImportOutcome> ImportRecordAsync(HistoryRecord record, string? importDirectory, CancellationToken token)
     {
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
@@ -242,7 +242,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             try
             {
                 // Deletion derives the directory from the stored hash, including its original casing.
-                if (record.Hash != existing.Hash)
+                if (record.Hash != existing.Hash && importDirectory is not null)
                     movedDirectory = MoveImportedData(record, existing.Hash, importDirectory);
                 existing.FilePath = record.FilePath;
                 existing.TransferDataFile = record.TransferDataFile;
