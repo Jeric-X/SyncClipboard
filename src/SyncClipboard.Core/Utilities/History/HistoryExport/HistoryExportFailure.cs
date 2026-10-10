@@ -1,4 +1,4 @@
-namespace SyncClipboard.Core.Models.HistoryExport;
+namespace SyncClipboard.Core.Utilities.History.HistoryExport;
 
 public enum HistoryExportFailure
 {

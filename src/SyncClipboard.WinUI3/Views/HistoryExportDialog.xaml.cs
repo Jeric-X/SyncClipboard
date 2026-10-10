@@ -14,7 +14,11 @@ public sealed partial class HistoryExportDialog : ContentDialog
     public HistoryExportDialog(HistoryExportViewModel viewModel, Func<Task> initialize) : this()
     {
         DataContext = viewModel;
-        Opened += async (_, _) => await initialize?.Invoke();
+        Opened += async (_, _) =>
+        {
+            if (initialize != null)
+                await initialize();
+        };
         Closing += (_, args) =>
         {
             if (!viewModel.IsBusy)

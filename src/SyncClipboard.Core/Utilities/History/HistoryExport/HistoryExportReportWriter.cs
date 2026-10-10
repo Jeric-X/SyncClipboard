@@ -1,8 +1,7 @@
 using SyncClipboard.Core.I18n;
-using SyncClipboard.Core.Models.HistoryExport;
 using System.Text;
 
-namespace SyncClipboard.Core.Utilities.History;
+namespace SyncClipboard.Core.Utilities.History.HistoryExport;
 
 internal static class HistoryExportReportWriter
 {

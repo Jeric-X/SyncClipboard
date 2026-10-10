@@ -1,13 +1,12 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Models.HistoryExport;
 using System.Buffers;
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-namespace SyncClipboard.Core.Utilities.History;
+namespace SyncClipboard.Core.Utilities.History.HistoryExport;
 
 public sealed class HistoryExporter(IProfileEnv profileEnv)
 {

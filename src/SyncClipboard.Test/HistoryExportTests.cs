@@ -1,6 +1,5 @@
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Models.HistoryExport;
-using SyncClipboard.Core.Utilities.History;
+using SyncClipboard.Core.Utilities.History.HistoryExport;
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Profiles.Models;
 using System.IO.Compression;

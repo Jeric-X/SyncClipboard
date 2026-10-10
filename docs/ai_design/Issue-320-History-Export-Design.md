@@ -267,9 +267,9 @@ Group 的传输 ZIP 是外层导出 ZIP 中的一个普通文件，不展开为�
 
 | 新增或调整项 | 职责 |
 | --- | --- |
-| Core `Models/HistoryExport/` | 每个类型独立文件：统一的快照/导出记录、预估计划、文档、传输数据、进度、未导出原因和报告结果 |
-| Core `Utilities/History/HistoryExporter.cs` | 预估、统一传输读取、流式输出、格式判定、取消和提交 |
-| Core `Utilities/History/HistoryExportReportWriter.cs` | 报告命名、防覆盖、在已选目录写入并返回实际路径 |
+| Core `Utilities/History/HistoryExport/` | 导出专用的记录、预估计划、文档、进度、未导出原因和结果；通常每个类型独立文件，传输数据与记录同文件，不占用全应用通用的 `Models` 目录 |
+| Core `Utilities/History/HistoryExport/HistoryExporter.cs` | 预估、统一传输读取、流式输出、格式判定、取消和提交 |
+| Core `Utilities/History/HistoryExport/HistoryExportReportWriter.cs` | 报告命名、防覆盖、在已选目录写入并返回实际路径 |
 | Profile 传输准备和验证能力 | 验证或生成各类型传输文件，复用原有位置并保留文件，不建立导出副本 |
 | `HistoryManager` 导出快照方法 | 在现有数据库同步边界内读取并复制记录 |
 | Core `ViewModels/HistoryExportViewModel.cs` | 位置选择、预估、开始、取消、数量、归档与报告路径展示 |

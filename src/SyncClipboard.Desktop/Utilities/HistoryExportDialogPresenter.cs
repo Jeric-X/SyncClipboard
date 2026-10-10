@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Utilities.History;
+using SyncClipboard.Core.Utilities.History.HistoryExport;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Desktop.Views;
 using SyncClipboard.Desktop.Services;

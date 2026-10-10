@@ -2,9 +2,9 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Models.HistoryExport;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.History;
+using SyncClipboard.Core.Utilities.History.HistoryExport;
 
 namespace SyncClipboard.Core.ViewModels;
 

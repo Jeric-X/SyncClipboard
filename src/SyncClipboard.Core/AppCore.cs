@@ -25,6 +25,7 @@ using SyncClipboard.Core.UserServices.ServerService;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.FileCacheManager;
 using SyncClipboard.Core.Utilities.History;
+using SyncClipboard.Core.Utilities.History.HistoryExport;
 using SyncClipboard.Core.Utilities.Job;
 using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.Utilities.Network;

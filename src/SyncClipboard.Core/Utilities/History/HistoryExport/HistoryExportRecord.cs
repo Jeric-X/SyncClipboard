@@ -1,6 +1,7 @@
+using SyncClipboard.Core.Models;
 using System.Text.Json.Serialization;
 
-namespace SyncClipboard.Core.Models.HistoryExport;
+namespace SyncClipboard.Core.Utilities.History.HistoryExport;
 
 public sealed record HistoryExportRecord(
     string Type, string Hash, string Text, long Size,

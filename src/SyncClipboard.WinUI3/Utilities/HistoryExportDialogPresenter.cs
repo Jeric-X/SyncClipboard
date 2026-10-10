@@ -4,7 +4,7 @@ using Microsoft.Windows.Storage.Pickers;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Utilities.History;
+using SyncClipboard.Core.Utilities.History.HistoryExport;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.WinUI3.Views;
 using SyncClipboard.WinUI3.Services;
