@@ -415,6 +415,50 @@ public class HistoryImportTests
     [TestMethod]
     [TestCategory("PlatformMacOS")]
     [TestCategory("PlatformLinux")]
+    [TestCategory("PlatformWindows")]
+    public async Task OrphanCleanupWaitsForCommitAndPreservesItsAttachments()
+    {
+        if (!OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux() && !OperatingSystem.IsWindows())
+            Assert.Inconclusive("Requires a supported filesystem.");
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var record = new HistoryRecord { Type = ProfileType.File, Hash = new string('A', 64) };
+        var root = Profile.CreateWorkingDir(f.GetHistoryPersistentDir(), record.Type, record.Hash);
+        var orphan = Directory.CreateDirectory(Path.Combine(f.GetHistoryPersistentDir(), "unused")).FullName;
+        Directory.SetCreationTime(root, DateTime.Now.AddDays(-10));
+        Directory.SetCreationTime(orphan, DateTime.Now.AddDays(-10));
+        if (Directory.GetCreationTime(root) > DateTime.Now.AddDays(-7) || Directory.GetCreationTime(orphan) > DateTime.Now.AddDays(-7))
+            Assert.Inconclusive("Filesystem cannot set directory creation time.");
+        var attachment = Path.Combine(root, "data.txt");
+        await File.WriteAllTextAsync(attachment, "imported data", Token);
+        record.FilePath = ["data.txt"];
+        await f.DbSemaphore.WaitAsync(Token);
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cleanup = Task.Run(() =>
+        {
+            started.SetResult();
+            f.Manager.CleanupOrphanedHistoryFolders(Token);
+        }, Token);
+        try
+        {
+            await started.Task.WaitAsync(Token);
+            await Task.Delay(100, Token);
+            Assert.IsFalse(cleanup.IsCompleted, "Cleanup must wait for the in-flight database commit.");
+            f.Db.HistoryRecords.Add(record);
+            await f.Db.SaveChangesAsync(Token);
+        }
+        finally
+        {
+            f.DbSemaphore.Release();
+        }
+        await cleanup.WaitAsync(Token);
+        Assert.IsTrue(File.Exists(attachment));
+        Assert.IsFalse(Directory.Exists(orphan), "Old directories without a record still need cleanup.");
+    }
+
+    [TestMethod]
+    [TestCategory("PlatformMacOS")]
+    [TestCategory("PlatformLinux")]
     [DataRow(false)]
     [DataRow(true)]
     public async Task UnixBackslashFileName_RoundTrips(bool image)

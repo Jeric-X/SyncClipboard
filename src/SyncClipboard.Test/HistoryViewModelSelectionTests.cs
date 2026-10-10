@@ -88,5 +88,5 @@ public class HistoryViewModelSelectionTests
         Assert.AreEqual(3, targetIndex);
     }
 
-    public TestContext TestContext { get; set; }
+    public TestContext TestContext { get; set; } = null!;
 }

@@ -42,8 +42,18 @@ public sealed class HistoryImporter
             if (string.Equals(Path.GetExtension(path), ".zip", StringComparison.OrdinalIgnoreCase))
             {
                 archive = new ZipArchive(source, ZipArchiveMode.Read, leaveOpen: true);
-                var manifest = archive.Entries.SingleOrDefault(entry => entry.FullName == "history.json")
-                    ?? throw new InvalidDataException("history.json is missing.");
+                ZipArchiveEntry? manifest = null;
+                foreach (var entry in archive.Entries)
+                {
+                    token.ThrowIfCancellationRequested();
+                    if (entry.FullName != "history.json")
+                        continue;
+                    if (manifest is not null)
+                        throw new InvalidDataException("Duplicate history.json.");
+                    manifest = entry;
+                }
+                if (manifest is null)
+                    throw new InvalidDataException("history.json is missing.");
                 if (manifest.Length > MaxManifestBytes)
                     throw new InvalidDataException("The backup manifest is too large.");
                 await using var stream = manifest.Open();
@@ -61,7 +71,7 @@ public sealed class HistoryImporter
             }
             if (document is null || document.Format != "syncclipboard-history" || document.FormatVersion != 1 || document.Records is null)
                 throw new InvalidDataException("Unsupported or invalid backup format.");
-            return new(path, source, archive, document);
+            return new(path, source, archive, document, token);
         }
         catch
         {
