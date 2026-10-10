@@ -1004,6 +1004,7 @@ public partial class HistoryViewModel : ObservableObject
         }
         historyManager.HistoryAdded += RecordEntityUpdated;
         historyManager.HistoryUpdated += RecordEntityUpdated;
+        historyManager.HistoryImported += RecordEntityUpdated;
         historyManager.HistoryRemoved += OnHistoryRemoved;
 
         await Reload();

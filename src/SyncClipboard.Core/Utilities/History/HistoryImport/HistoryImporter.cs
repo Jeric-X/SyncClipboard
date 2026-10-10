@@ -7,8 +7,22 @@ using System.Text.Json;
 
 namespace SyncClipboard.Core.Utilities.History.HistoryImport;
 
-public sealed class HistoryImporter(IProfileEnv profileEnv, HistoryManager manager)
+public sealed class HistoryImporter
 {
+    private readonly IProfileEnv profileEnv;
+    private readonly HistoryManager manager;
+    private readonly Func<string, long> availableSpace;
+
+    public HistoryImporter(IProfileEnv profileEnv, HistoryManager manager)
+        : this(profileEnv, manager, path => new DriveInfo(path).AvailableFreeSpace) { }
+
+    internal HistoryImporter(IProfileEnv profileEnv, HistoryManager manager, Func<string, long> availableSpace)
+    {
+        this.profileEnv = profileEnv;
+        this.manager = manager;
+        this.availableSpace = availableSpace;
+    }
+
     private const long MaxManifestBytes = 64 * 1024 * 1024;
     private int _sessionActive;
 
@@ -178,12 +192,21 @@ public sealed class HistoryImporter(IProfileEnv profileEnv, HistoryManager manag
             var path = await RestoreTransferAsync(plan, item, directory, token).ConfigureAwait(false);
             var file = new FileHashInfo(path, transfer.Sha256);
             if (profile is GroupProfile group)
+            {
+                FileSys.EnsureAvailableSpace(item.Size, availableSpace(directory));
                 await group.SetTransferData(file, item.Size, token).ConfigureAwait(false);
+            }
             else
                 await profile.SetTransferData(file, verify: true, token).ConfigureAwait(false);
         }
         if (!await profile.IsDataComplete(false, token).ConfigureAwait(false))
             throw new InvalidDataException("Record content does not match its hash.");
+        if (profile is TextProfile && transfer is not null)
+        {
+            var content = await profile.Localize(directory, token).ConfigureAwait(false);
+            if (new TextProfile(content.Text).DisplayText != item.Text)
+                throw new InvalidDataException("Text preview does not match its content.");
+        }
         if (await profile.GetSize(token).ConfigureAwait(false) != item.Size)
             throw new InvalidDataException("Record size does not match its content.");
         var data = await profile.Persist(profileEnv.GetHistoryPersistentDir(), token).ConfigureAwait(false);
@@ -207,7 +230,7 @@ public sealed class HistoryImporter(IProfileEnv profileEnv, HistoryManager manag
         };
     }
 
-    private static async Task<string> RestoreTransferAsync(
+    private async Task<string> RestoreTransferAsync(
         HistoryImportPlan plan, HistoryExportRecord item, string directory, CancellationToken token)
     {
         var data = item.TransferData!;
@@ -222,6 +245,7 @@ public sealed class HistoryImporter(IProfileEnv profileEnv, HistoryManager manag
             ?? throw new FileNotFoundException("Transfer data is missing.", data.Path);
         if (entry.Length != data.Size)
             throw new InvalidDataException("Transfer size mismatch.");
+        FileSys.EnsureAvailableSpace(data.Size, availableSpace(directory));
         var path = Path.Combine(directory, data.Name);
         await using (var source = entry.Open())
         await using (var output = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, useAsync: true))

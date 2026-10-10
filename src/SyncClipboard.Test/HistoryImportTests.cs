@@ -120,9 +120,16 @@ public class HistoryImportTests
         foreach (var profile in profiles)
             records.Add(await f.RecordAsync(profile, Token));
         var backup = await f.ExportAsync([.. records], Token);
+        var uiNotifications = new List<HistoryRecord>();
+        var syncNotifications = new List<HistoryRecord>();
+        f.Manager.HistoryImported += uiNotifications.Add;
+        f.Manager.HistoryAdded += syncNotifications.Add;
+        f.Manager.HistoryUpdated += syncNotifications.Add;
         var result = await f.ImportAsync(backup, Token);
         Assert.IsEmpty(result.Failures);
         Assert.AreEqual(5, result.ImportedCount);
+        Assert.HasCount(5, uiNotifications);
+        Assert.IsEmpty(syncNotifications);
         Assert.IsNull(result.ReportPath);
         File.Delete(file);
         Directory.Delete(folder, true);
@@ -294,8 +301,14 @@ public class HistoryImportTests
         f.Db.HistoryRecords.Add(local);
         await f.Db.SaveChangesAsync(Token);
         var snapshot = (local.Timestamp, local.LastModified, local.LastAccessed);
+        var uiNotifications = new List<HistoryRecord>();
+        var syncNotifications = new List<HistoryRecord>();
+        f.Manager.HistoryImported += uiNotifications.Add;
+        f.Manager.HistoryUpdated += syncNotifications.Add;
         var result = await f.ImportAsync(backup, Token);
         Assert.AreEqual(1, result.RepairedCount);
+        Assert.AreEqual(local, uiNotifications.Single());
+        Assert.IsEmpty(syncNotifications);
         Assert.AreEqual(0, result.ImportedCount);
         Assert.IsEmpty(result.Failures);
         Assert.AreEqual(snapshot, (local.Timestamp, local.LastModified, local.LastAccessed));
@@ -340,7 +353,7 @@ public class HistoryImportTests
         await File.WriteAllTextAsync(file, "payload", Token);
         var item = await f.RecordAsync(new FileProfile(file), Token);
         var backup = await f.ExportAsync([item], Token);
-        f.Manager.HistoryAdded += _ => throw new InvalidOperationException("observer failure");
+        f.Manager.HistoryImported += _ => throw new InvalidOperationException("observer failure");
         var result = await f.ImportAsync(backup, Token);
         Assert.AreEqual(1, result.ImportedCount);
         Assert.IsEmpty(result.Failures);
@@ -467,6 +480,61 @@ public class HistoryImportTests
         Assert.HasCount(1, await f.Db.HistoryRecords.ToListAsync(Token));
         Assert.IsFalse(result.Canceled);
         Assert.Contains("Disk full", await File.ReadAllTextAsync(result.ReportPath!, Token));
+    }
+
+    [TestMethod]
+    public async Task AlteredLongTextPreview_IsRejectedWithoutBlockingOtherRecords()
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var item = await f.RecordAsync(new TextProfile(new string('文', 12000)), Token);
+        var other = await f.RecordAsync(new TextProfile("valid"), Token);
+        var backup = await f.ExportAsync([item, other], Token);
+        using (var zip = ZipFile.Open(backup, ZipArchiveMode.Update))
+        {
+            var entry = zip.GetEntry("history.json")!;
+            HistoryExportDocument document;
+            using (var input = entry.Open())
+                document = (await JsonSerializer.DeserializeAsync<HistoryExportDocument>(input, HistoryExporter.JsonOptions, Token))!;
+            document = document with
+            {
+                Records = document.Records.Select(record => record.Hash == item.Hash ? record with { Text = "unrelated preview" } : record).ToArray()
+            };
+            entry.Delete();
+            await using var output = zip.CreateEntry("history.json").Open();
+            await JsonSerializer.SerializeAsync(output, document, HistoryExporter.JsonOptions, Token);
+        }
+        var result = await f.ImportAsync(backup, Token);
+        Assert.AreEqual(1, result.ImportedCount);
+        Assert.Contains("preview", result.Failures.Single().Reason);
+        Assert.AreEqual(other.Hash, (await f.Db.HistoryRecords.SingleAsync(Token)).Hash);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task InsufficientDiskSpace_StopsBeforeCopyOrExtraction(bool group)
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var file = Path.Combine(f.Root, "large.bin");
+        await File.WriteAllBytesAsync(file, new byte[1024 * 1024], Token);
+        var first = await f.RecordAsync(new TextProfile("already committed"), Token);
+        var attachment = await f.RecordAsync(group ? new GroupProfile([file]) : new FileProfile(file), Token);
+        var later = await f.RecordAsync(new TextProfile("not processed"), Token);
+        var backup = await f.ExportAsync([first with { Timestamp = attachment.Timestamp.AddDays(1) },
+            attachment, later with { Timestamp = attachment.Timestamp.AddDays(-1) }], Token);
+        var checks = 0;
+        var importer = new HistoryImporter(f, f.Manager, _ => ++checks == 1 && group ? long.MaxValue : 0);
+        using var plan = await HistoryImporter.PrepareAsync(backup, Token);
+        var result = await importer.ImportAsync(plan, null, Token);
+        Assert.AreEqual(1, result.ImportedCount);
+        Assert.IsNotNull(result.Error);
+        Assert.Contains("disk space", result.Error);
+        Assert.HasCount(1, result.Failures);
+        Assert.AreEqual(first.Hash, (await f.Db.HistoryRecords.SingleAsync(Token)).Hash);
+        Assert.AreEqual(group ? 2 : 1, checks);
+        Assert.IsEmpty(Directory.GetDirectories(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), attachment.ProfileType, attachment.Hash), "import-*"));
     }
 
     private static async Task ChangeRecordSizeAsync(string path, Func<long, long> change, CancellationToken token)

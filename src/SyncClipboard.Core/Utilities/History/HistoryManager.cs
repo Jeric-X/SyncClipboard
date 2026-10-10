@@ -19,6 +19,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     public event Action<HistoryRecord>? HistoryAdded;
     public event Action<HistoryRecord>? HistoryRemoved;
     public event Action<HistoryRecord>? HistoryUpdated;
+    public event Action<HistoryRecord>? HistoryImported;
 
     private HistoryConfig _historyConfig = new();
     private RuntimeHistoryConfig _runtimeHistoryConfig = new();
@@ -259,7 +260,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                     Directory.Delete(movedDirectory, recursive: true);
                 throw;
             }
-            NotifyImportedRecord(existing, added: false);
+            NotifyImportedRecord(existing);
             return HistoryImportOutcome.Repaired;
         }
         record.Hash = record.Hash.ToUpperInvariant();
@@ -277,7 +278,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             _dbContext.Entry(record).State = EntityState.Detached;
             throw;
         }
-        NotifyImportedRecord(record, added: true);
+        NotifyImportedRecord(record);
         return HistoryImportOutcome.Imported;
     }
 
@@ -301,15 +302,12 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         return target;
     }
 
-    private void NotifyImportedRecord(HistoryRecord record, bool added)
+    private void NotifyImportedRecord(HistoryRecord record)
     {
         // Observer failures must not make the importer remove committed attachments.
         try
         {
-            if (added)
-                HistoryAdded?.Invoke(record);
-            else
-                HistoryUpdated?.Invoke(record);
+            HistoryImported?.Invoke(record);
         }
         catch (Exception ex)
         {
