@@ -303,7 +303,7 @@ public sealed class HistoryExporter(IProfileEnv profileEnv)
         if (transfer is not null)
         {
             var name = Path.GetFileName(transfer.Path);
-            data = new(name, $"files/{item.ProfileId}/{SafeFileName(name)}",
+            data = new(name, $"files/{item.ProfileId}/{FileSys.SafeFileName(name)}",
                 new FileInfo(transfer.Path).Length, transfer.Hash.ToUpperInvariant());
         }
         return item with
@@ -314,11 +314,8 @@ public sealed class HistoryExporter(IProfileEnv profileEnv)
         };
     }
 
-    internal static bool IsSourceError(Exception ex) => !IsDiskFull(ex) &&
+    internal static bool IsSourceError(Exception ex) => !FileSys.IsDiskFull(ex) &&
         ex is IOException or InvalidDataException or UnauthorizedAccessException or NotSupportedException or ArgumentException;
-
-    private static bool IsDiskFull(Exception ex) =>
-        ex is IOException && (ex.HResult & 0xFFFF) is 28 or 39 or 112 || ex.InnerException is { } inner && IsDiskFull(inner);
 
     private static HistoryExportFailure Classify(Exception ex)
     {
@@ -355,18 +352,6 @@ public sealed class HistoryExporter(IProfileEnv profileEnv)
     {
         if (string.IsNullOrWhiteSpace(value) || value.Contains("..") || value.Any(c => !char.IsAsciiLetterOrDigit(c) && c != '-' && c != '_'))
             throw new InvalidDataException("Invalid Profile ID.");
-    }
-
-    private static string SafeFileName(string name)
-    {
-        var safe = new string(name.Select(c => c < ' ' || "<>:\"/\\|?*".Contains(c) ? '_' : c).ToArray())
-            .TrimEnd('.', ' ');
-        var stem = safe.Split('.')[0].ToUpperInvariant();
-        // Keep names usable when the archive is later extracted on Windows.
-        if (stem is "CON" or "PRN" or "AUX" or "NUL" ||
-            stem.Length == 4 && (stem.StartsWith("COM") || stem.StartsWith("LPT")) && stem[3] is >= '1' and <= '9')
-            safe = "_" + safe;
-        return safe.Length == 0 ? "data" : safe;
     }
 
     internal static async Task<long> CopyVerifiedAsync(

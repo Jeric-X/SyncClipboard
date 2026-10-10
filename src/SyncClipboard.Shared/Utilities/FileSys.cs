@@ -2,6 +2,30 @@ namespace SyncClipboard.Shared.Utilities;
 
 public static class FileSys
 {
+    private const int HResultCodeMask = 0xFFFF;
+    private const int UnixNoSpaceLeft = 28;
+    private const int WindowsHandleDiskFull = 39;
+    private const int WindowsDiskFull = 112;
+
+    public static bool IsDiskFull(Exception ex) =>
+        (ex is IOException && (ex.HResult & HResultCodeMask) is UnixNoSpaceLeft or WindowsHandleDiskFull or WindowsDiskFull)
+        || (ex.InnerException is { } inner && IsDiskFull(inner));
+
+    /// <summary>
+    /// Replaces invalid filename characters and avoids Windows reserved device names on all platforms.
+    /// Returns "data" when no usable filename remains.
+    /// </summary>
+    public static string SafeFileName(string name)
+    {
+        var safe = new string(name.Select(c => c < ' ' || "<>:\"/\\|?*".Contains(c) ? '_' : c).ToArray())
+            .TrimEnd('.', ' ');
+        var stem = safe.Split('.')[0].ToUpperInvariant();
+        if (stem is "CON" or "PRN" or "AUX" or "NUL" ||
+            (stem.Length == 4 && (stem.StartsWith("COM") || stem.StartsWith("LPT")) && stem[3] is >= '1' and <= '9'))
+            safe = "_" + safe;
+        return safe.Length == 0 ? "data" : safe;
+    }
+
     public static Task<bool> FileExistsAsync(string path)
     {
         return Task.Run(() => File.Exists(path));
