@@ -35,6 +35,7 @@ public class HistoryImportTests
         private readonly ConfigurationTestServices _configurationServices = new();
         public ConfigManager Config { get; }
         public MemoryDb Db { get; } = new();
+        public SemaphoreSlim DbSemaphore => _semaphore;
         public HistoryManager Manager { get; }
         public HistoryImporter Importer { get; }
         public string Root => _root.FullName;
@@ -125,15 +126,15 @@ public class HistoryImportTests
         foreach (var profile in profiles)
             records.Add(await f.RecordAsync(profile, Token));
         var backup = await f.ExportAsync([.. records], Token);
-        var uiNotifications = new List<HistoryRecord>();
+        var uiNotifications = 0;
         var syncNotifications = new List<HistoryRecord>();
-        f.Manager.HistoryImported += uiNotifications.Add;
+        f.Manager.HistoryImported += () => uiNotifications++;
         f.Manager.HistoryAdded += syncNotifications.Add;
         f.Manager.HistoryUpdated += syncNotifications.Add;
         var result = await f.ImportAsync(backup, Token);
         Assert.IsEmpty(result.Failures);
         Assert.AreEqual(5, result.ImportedCount);
-        Assert.HasCount(5, uiNotifications);
+        Assert.AreEqual(1, uiNotifications);
         Assert.IsEmpty(syncNotifications);
         Assert.IsNull(result.ReportPath);
         File.Delete(file);
@@ -258,9 +259,16 @@ public class HistoryImportTests
         await using var f = new Fixture();
         await f.InitializeAsync(Token);
         var backup = await f.ExportAsync([await f.RecordAsync(new TextProfile("one"), Token), await f.RecordAsync(new TextProfile("two"), Token)], Token);
+        var notifications = 0;
+        f.Manager.HistoryImported += () => notifications++;
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Token);
-        var result = await f.ImportAsync(backup, cancellation.Token, new InlineProgress(_ => cancellation.Cancel()));
+        var result = await f.ImportAsync(backup, cancellation.Token, new InlineProgress(_ =>
+        {
+            Assert.AreEqual(0, notifications);
+            cancellation.Cancel();
+        }));
         Assert.IsTrue(result.Canceled);
+        Assert.AreEqual(1, notifications);
         Assert.AreEqual(1, result.ImportedCount);
         Assert.HasCount(1, await f.Db.HistoryRecords.ToListAsync(Token));
     }
@@ -324,13 +332,13 @@ public class HistoryImportTests
         f.Db.HistoryRecords.Add(local);
         await f.Db.SaveChangesAsync(Token);
         var snapshot = (local.Timestamp, local.LastModified, local.LastAccessed);
-        var uiNotifications = new List<HistoryRecord>();
+        var uiNotifications = 0;
         var syncNotifications = new List<HistoryRecord>();
-        f.Manager.HistoryImported += uiNotifications.Add;
+        f.Manager.HistoryImported += () => uiNotifications++;
         f.Manager.HistoryUpdated += syncNotifications.Add;
         var result = await f.ImportAsync(backup, Token);
         Assert.AreEqual(1, result.RepairedCount);
-        Assert.AreEqual(local, uiNotifications.Single());
+        Assert.AreEqual(1, uiNotifications);
         Assert.IsEmpty(syncNotifications);
         Assert.AreEqual(0, result.ImportedCount);
         Assert.IsEmpty(result.Failures);
@@ -347,6 +355,87 @@ public class HistoryImportTests
         await f.Manager.RemoveHistory(local, Token);
         Assert.IsFalse(File.Exists(restored));
         Assert.IsEmpty(await f.Db.HistoryRecords.ToListAsync(Token));
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task AttachmentDeletedWhileWaitingForCommit_IsNotReportedAsImported(bool removeRecord)
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var source = Path.Combine(f.Root, "data.txt");
+        await File.WriteAllTextAsync(source, "payload", Token);
+        var sourceProfile = new FileProfile(source);
+        var hash = await sourceProfile.GetHash(Token);
+        var root = Profile.CreateWorkingDir(f.GetHistoryPersistentDir(), ProfileType.File, hash);
+        var directory = Directory.CreateDirectory(Path.Combine(root, "import-staged")).FullName;
+        var staged = Path.Combine(directory, "data.txt");
+        File.Copy(source, staged);
+        var profile = new FileProfile(staged);
+        var data = await profile.Persist(f.GetHistoryPersistentDir(), Token);
+        var record = new HistoryRecord
+        {
+            Type = ProfileType.File,
+            Hash = data.Hash,
+            Text = data.Text,
+            Size = data.Size,
+            FilePath = data.FilePaths,
+            TransferDataFile = data.TransferDataFile,
+            TransferDataHash = data.TransferDataHash,
+            IsLocalFileReady = true
+        };
+        var local = new HistoryRecord { Type = ProfileType.File, Hash = hash, FilePath = ["missing.txt"], IsLocalFileReady = false };
+        f.Db.HistoryRecords.Add(local);
+        await f.Db.SaveChangesAsync(Token);
+        Assert.IsTrue(await profile.IsDataComplete(false, Token));
+        await f.DbSemaphore.WaitAsync(Token);
+        Task<HistoryImportOutcome> commit;
+        try
+        {
+            commit = f.Manager.ImportRecordAsync(record, directory, Token);
+            Directory.Delete(root, recursive: true);
+            if (removeRecord)
+            {
+                f.Db.HistoryRecords.Remove(local);
+                await f.Db.SaveChangesAsync(Token);
+            }
+        }
+        finally
+        {
+            f.DbSemaphore.Release();
+        }
+        await Assert.ThrowsExactlyAsync<FileNotFoundException>(() => commit);
+        var rows = await f.Db.HistoryRecords.ToListAsync(Token);
+        Assert.AreEqual(removeRecord ? 0 : 1, rows.Count);
+        Assert.IsFalse(local.IsLocalFileReady);
+        Assert.IsFalse(f.Db.ChangeTracker.HasChanges());
+    }
+
+    [TestMethod]
+    [TestCategory("PlatformMacOS")]
+    [TestCategory("PlatformLinux")]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task UnixBackslashFileName_RoundTrips(bool image)
+    {
+        if (!OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
+            Assert.Inconclusive("Requires a Unix filesystem.");
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var file = Path.Combine(f.Root, @"report\2026.txt");
+        await File.WriteAllTextAsync(file, "payload", Token);
+        var original = await f.RecordAsync(image ? new ImageProfile(file) : new FileProfile(file), Token);
+        var backup = await f.ExportAsync([original], Token);
+        var result = await f.ImportAsync(backup, Token);
+        Assert.AreEqual(1, result.ImportedCount);
+        Assert.IsEmpty(result.Failures);
+        var record = await f.Db.HistoryRecords.SingleAsync(Token);
+        Assert.AreEqual(original.Hash, record.Hash);
+        Assert.AreEqual(Path.GetFileName(file), record.Text);
+        var restored = Profile.GetFullPath(f.GetHistoryPersistentDir(), record.Type, record.Hash, record.TransferDataFile)!;
+        Assert.AreEqual(Path.GetFileName(file), Path.GetFileName(restored));
+        Assert.AreEqual("payload", await File.ReadAllTextAsync(restored, Token));
     }
 
     [TestMethod]
@@ -376,7 +465,7 @@ public class HistoryImportTests
         await File.WriteAllTextAsync(file, "payload", Token);
         var item = await f.RecordAsync(new FileProfile(file), Token);
         var backup = await f.ExportAsync([item], Token);
-        f.Manager.HistoryImported += _ => throw new InvalidOperationException("observer failure");
+        f.Manager.HistoryImported += () => throw new InvalidOperationException("observer failure");
         var result = await f.ImportAsync(backup, Token);
         Assert.AreEqual(1, result.ImportedCount);
         Assert.IsEmpty(result.Failures);

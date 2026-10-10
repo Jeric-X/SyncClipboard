@@ -152,6 +152,8 @@ public sealed class HistoryImporter
             }
             progress?.Report(i + 1);
         }
+        if (result.ImportedCount + result.RepairedCount > 0)
+            manager.NotifyHistoryImported();
         if (result.Failures.Count > 0)
             await HistoryImportReportWriter.WriteAsync(plan.Path, result).ConfigureAwait(false);
         return result;
@@ -256,14 +258,14 @@ public sealed class HistoryImporter
     {
         var data = item.TransferData!;
         if (string.IsNullOrWhiteSpace(data.Name) || data.Name is "." or ".." ||
-            data.Name.IndexOfAny(['/', '\\']) >= 0 || data.Name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
+            data.Name.IndexOfAny([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar]) >= 0 ||
+            data.Name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
             data.Size < 0 || !Utility.IsValidSHA256(data.Sha256))
             throw new InvalidDataException("Invalid transfer metadata.");
         var expectedPath = $"files/{item.ProfileId}/{FileSys.SafeFileName(data.Name)}";
-        if (data.Path != expectedPath || plan.Archive is null)
+        if (data.Path != expectedPath)
             throw new InvalidDataException("Invalid transfer path.");
-        var entry = plan.Archive.Entries.SingleOrDefault(entry => entry.FullName == data.Path)
-            ?? throw new FileNotFoundException("Transfer data is missing.", data.Path);
+        var entry = plan.GetTransferEntry(data.Path);
         if (entry.Length != data.Size)
             throw new InvalidDataException("Transfer size mismatch.");
         FileSys.EnsureAvailableSpace(data.Size, availableSpace(directory));

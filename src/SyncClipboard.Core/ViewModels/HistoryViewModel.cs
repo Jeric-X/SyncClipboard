@@ -1004,12 +1004,24 @@ public partial class HistoryViewModel : ObservableObject
         }
         historyManager.HistoryAdded += RecordEntityUpdated;
         historyManager.HistoryUpdated += RecordEntityUpdated;
-        historyManager.HistoryImported += RecordEntityUpdated;
+        historyManager.HistoryImported += OnHistoryImported;
         historyManager.HistoryRemoved += OnHistoryRemoved;
 
         await Reload();
 
         remoteServerFactory.CurrentServerChanged += OnCurrentServerChanged;
+    }
+
+    private async void OnHistoryImported()
+    {
+        try
+        {
+            await _threadDispatcher.RunOnMainThreadAsync(Reload);
+        }
+        catch (Exception ex)
+        {
+            await logger.WriteAsync("Failed to reload imported history:", ex.Message);
+        }
     }
 
     private async void RecordEntityUpdated(HistoryRecord record)

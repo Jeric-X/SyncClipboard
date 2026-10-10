@@ -19,7 +19,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     public event Action<HistoryRecord>? HistoryAdded;
     public event Action<HistoryRecord>? HistoryRemoved;
     public event Action<HistoryRecord>? HistoryUpdated;
-    public event Action<HistoryRecord>? HistoryImported;
+    public event Action? HistoryImported;
 
     private HistoryConfig _historyConfig = new();
     private RuntimeHistoryConfig _runtimeHistoryConfig = new();
@@ -230,10 +230,12 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
         var existing = await Query(record.Type, record.Hash, token).ConfigureAwait(false);
+        if (existing is not null && (existing.IsDeleted || await HasImportDataAsync(existing, token).ConfigureAwait(false)))
+            return HistoryImportOutcome.Existing;
+        if (importDirectory is not null && !await HasImportDataAsync(record, token).ConfigureAwait(false))
+            throw new FileNotFoundException("Import attachments are no longer available or valid.");
         if (existing is not null)
         {
-            if (existing.IsDeleted || await HasImportDataAsync(existing, token).ConfigureAwait(false))
-                return HistoryImportOutcome.Existing;
             var oldPaths = existing.FilePath;
             var oldFile = existing.TransferDataFile;
             var oldHash = existing.TransferDataHash;
@@ -260,7 +262,6 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                     Directory.Delete(movedDirectory, recursive: true);
                 throw;
             }
-            NotifyImportedRecord(existing);
             return HistoryImportOutcome.Repaired;
         }
         record.Hash = record.Hash.ToUpperInvariant();
@@ -278,7 +279,6 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             _dbContext.Entry(record).State = EntityState.Detached;
             throw;
         }
-        NotifyImportedRecord(record);
         return HistoryImportOutcome.Imported;
     }
 
@@ -302,12 +302,12 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         return target;
     }
 
-    private void NotifyImportedRecord(HistoryRecord record)
+    internal void NotifyHistoryImported()
     {
         // Observer failures must not make the importer remove committed attachments.
         try
         {
-            HistoryImported?.Invoke(record);
+            HistoryImported?.Invoke();
         }
         catch (Exception ex)
         {
