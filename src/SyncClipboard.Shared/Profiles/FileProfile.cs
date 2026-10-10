@@ -109,7 +109,8 @@ public class FileProfile : Profile
         return (hash, contentSha256Hex);
     }
 
-    public override async Task<FileHashInfo?> PrepareTransferData(string _, CancellationToken token)
+    public override async Task<FileHashInfo?> PrepareTransferData(
+        string _, CancellationToken token, Action<string>? onFileCreated = null)
     {
         var path = GetAvailableTransferDataPath();
         (string ProfileHash, string TransferDataHash) hashes;

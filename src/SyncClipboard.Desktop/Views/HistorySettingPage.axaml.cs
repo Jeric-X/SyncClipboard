@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.ViewModels;
+using SyncClipboard.Core.Interfaces;
 
 namespace SyncClipboard.Desktop.Views;
 
@@ -13,6 +14,11 @@ public partial class HistorySettingPage : UserControl
         InitializeComponent();
         _viewModel = App.Current.Services.GetRequiredService<HistorySettingViewModel>();
         DataContext = _viewModel;
+    }
+
+    private async void ExportHistoryClick(object? sender, RoutedEventArgs e)
+    {
+        await App.Current.Services.GetRequiredService<IHistoryExportDialog>().ShowAsync();
     }
 
     private async void EditShortcutClick(object? sender, RoutedEventArgs e)

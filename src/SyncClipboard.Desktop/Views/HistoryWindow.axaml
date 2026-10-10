@@ -409,6 +409,10 @@
                                     <TextBlock Text="{x:Static i18n:Strings.HistoryMultiSelectStar}" />
                                 </StackPanel>
                             </Button>
+                            <Button Classes="MultiSelectAction"
+                                    Content="{x:Static i18n:Strings.HistoryExportSelected}"
+                                    IsEnabled="{Binding CanExportSelected}"
+                                    Click="ExportSelectedClick" />
                             <Button Classes="MultiSelectAction" ToolTip.Tip="{x:Static i18n:Strings.HistoryMultiSelectExit}" Command="{Binding ExitMultiSelectCommand}">
                                 <StackPanel Orientation="Horizontal" Spacing="4">
                                     <ui:FAFontIcon Glyph="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" />

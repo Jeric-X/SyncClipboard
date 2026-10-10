@@ -93,7 +93,9 @@ public abstract class Profile
     /// <summary>
     /// 验证并准备传输文件，返回文件路径及对应的 SHA-256；无需传输文件时返回 null。
     /// </summary>
-    public abstract Task<FileHashInfo?> PrepareTransferData(string persistentDir, CancellationToken token);
+    /// <param name="onFileCreated">可选回调，仅报告本次新生成的传输文件，供调用方管理其生命周期；不报告复用文件。</param>
+    public abstract Task<FileHashInfo?> PrepareTransferData(
+        string persistentDir, CancellationToken token, Action<string>? onFileCreated = null);
     public abstract Task SetTransferData(string path, bool verify, CancellationToken token);
 
     /// <summary>

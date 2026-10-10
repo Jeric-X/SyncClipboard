@@ -1462,4 +1462,91 @@ Choose whether to use the default location or select another folder.</value>
   <data name="UpdatedToVersion" xml:space="preserve">
     <value>Updated to version {0}.</value>
   </data>
+  <data name="HistoryExport" xml:space="preserve">
+    <value>Export history</value>
+  </data>
+  <data name="HistoryExportSelected" xml:space="preserve">
+    <value>Export</value>
+  </data>
+  <data name="HistoryExportChooseDirectory" xml:space="preserve">
+    <value>Choose export folder</value>
+  </data>
+  <data name="HistoryExportChangeDirectory" xml:space="preserve">
+    <value>Change location</value>
+  </data>
+  <data name="HistoryExportStart" xml:space="preserve">
+    <value>Start export</value>
+  </data>
+  <data name="HistoryExportEstimating" xml:space="preserve">
+    <value>Estimating export size…</value>
+  </data>
+  <data name="HistoryExportEstimate" xml:space="preserve">
+    <value>{0} records ready to export · about {1}</value>
+  </data>
+  <data name="HistoryExportProgress" xml:space="preserve">
+    <value>Processed {0}/{1} records · written {2}</value>
+  </data>
+  <data name="HistoryExportEmpty" xml:space="preserve">
+    <value>No records to export.</value>
+  </data>
+  <data name="HistoryExportBusy" xml:space="preserve">
+    <value>An export is already in progress.</value>
+  </data>
+  <data name="HistoryExportResult" xml:space="preserve">
+    <value>Exported: {0}</value>
+  </data>
+  <data name="HistoryExportMissingCount" xml:space="preserve">
+    <value> · missing files: {0}</value>
+  </data>
+  <data name="HistoryExportOtherCount" xml:space="preserve">
+    <value> · other failures: {0}</value>
+  </data>
+  <data name="HistoryExportReport" xml:space="preserve">
+    <value>Records not exported</value>
+  </data>
+  <data name="HistoryExportArchive" xml:space="preserve">
+    <value>Backup file</value>
+  </data>
+  <data name="HistoryExportNoArchive" xml:space="preserve">
+    <value>No export file was created.</value>
+  </data>
+  <data name="HistoryExportReportFailed" xml:space="preserve">
+    <value>Could not save the report: {0}</value>
+  </data>
+  <data name="HistoryExportMissing" xml:space="preserve">
+    <value>Complete local content is missing.</value>
+  </data>
+  <data name="HistoryExportInvalid" xml:space="preserve">
+    <value>Content validation failed.</value>
+  </data>
+  <data name="HistoryExportReadFailed" xml:space="preserve">
+    <value>Could not read the source file.</value>
+  </data>
+  <data name="HistoryExportRemoved" xml:space="preserve">
+    <value>The selected record no longer exists.</value>
+  </data>
+  <data name="HistoryExportUnsupported" xml:space="preserve">
+    <value>This record cannot be verified or prepared.</value>
+  </data>
+  <data name="HistoryExportCanceled" xml:space="preserve">
+    <value>Export canceled; this record was not saved.</value>
+  </data>
+  <data name="HistoryExportNotSaved" xml:space="preserve">
+    <value>The archive was not committed; this record was not saved.</value>
+  </data>
+  <data name="HistoryExportFailed" xml:space="preserve">
+    <value>Export failed: {0}</value>
+  </data>
+  <data name="HistoryExportClose" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="HistoryExportAll" xml:space="preserve">
+    <value>All history records</value>
+  </data>
+  <data name="HistoryExportSelectionCount" xml:space="preserve">
+    <value>{0} selected records</value>
+  </data>
+  <data name="HistoryExportRequestedCount" xml:space="preserve">
+    <value>{0} records requested</value>
+  </data>
 </root>

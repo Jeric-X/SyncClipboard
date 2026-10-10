@@ -1462,4 +1462,91 @@ Shift + 左键：选中连续范围</value>
   <data name="UpdatedToVersion" xml:space="preserve">
     <value>已更新到 {0} 版本</value>
   </data>
+  <data name="HistoryExport" xml:space="preserve">
+    <value>导出历史记录</value>
+  </data>
+  <data name="HistoryExportSelected" xml:space="preserve">
+    <value>导出</value>
+  </data>
+  <data name="HistoryExportChooseDirectory" xml:space="preserve">
+    <value>选择导出位置</value>
+  </data>
+  <data name="HistoryExportChangeDirectory" xml:space="preserve">
+    <value>更换位置</value>
+  </data>
+  <data name="HistoryExportStart" xml:space="preserve">
+    <value>开始导出</value>
+  </data>
+  <data name="HistoryExportEstimating" xml:space="preserve">
+    <value>正在估算导出大小…</value>
+  </data>
+  <data name="HistoryExportEstimate" xml:space="preserve">
+    <value>预计导出 {0} 条记录，大小约 {1}</value>
+  </data>
+  <data name="HistoryExportProgress" xml:space="preserve">
+    <value>已处理 {0}/{1} 条记录，已写入 {2}</value>
+  </data>
+  <data name="HistoryExportEmpty" xml:space="preserve">
+    <value>没有可导出的历史记录。</value>
+  </data>
+  <data name="HistoryExportBusy" xml:space="preserve">
+    <value>已有导出正在进行。</value>
+  </data>
+  <data name="HistoryExportResult" xml:space="preserve">
+    <value>已导出 {0} 条记录</value>
+  </data>
+  <data name="HistoryExportMissingCount" xml:space="preserve">
+    <value>，文件缺失 {0} 条记录</value>
+  </data>
+  <data name="HistoryExportOtherCount" xml:space="preserve">
+    <value>，其他失败 {0} 条记录</value>
+  </data>
+  <data name="HistoryExportReport" xml:space="preserve">
+    <value>未导出记录报告</value>
+  </data>
+  <data name="HistoryExportArchive" xml:space="preserve">
+    <value>备份文件</value>
+  </data>
+  <data name="HistoryExportNoArchive" xml:space="preserve">
+    <value>未生成导出文件。</value>
+  </data>
+  <data name="HistoryExportReportFailed" xml:space="preserve">
+    <value>未导出报告保存失败：{0}</value>
+  </data>
+  <data name="HistoryExportMissing" xml:space="preserve">
+    <value>本地文件缺失，无法取得完整内容。</value>
+  </data>
+  <data name="HistoryExportInvalid" xml:space="preserve">
+    <value>内容校验不通过。</value>
+  </data>
+  <data name="HistoryExportReadFailed" xml:space="preserve">
+    <value>无法读取源文件。</value>
+  </data>
+  <data name="HistoryExportRemoved" xml:space="preserve">
+    <value>选中的记录已不存在。</value>
+  </data>
+  <data name="HistoryExportUnsupported" xml:space="preserve">
+    <value>无法验证或准备此记录。</value>
+  </data>
+  <data name="HistoryExportCanceled" xml:space="preserve">
+    <value>导出已取消，此记录未保存。</value>
+  </data>
+  <data name="HistoryExportNotSaved" xml:space="preserve">
+    <value>归档未能提交，此记录未保存。</value>
+  </data>
+  <data name="HistoryExportFailed" xml:space="preserve">
+    <value>导出失败：{0}</value>
+  </data>
+  <data name="HistoryExportClose" xml:space="preserve">
+    <value>关闭</value>
+  </data>
+  <data name="HistoryExportAll" xml:space="preserve">
+    <value>全部历史记录</value>
+  </data>
+  <data name="HistoryExportSelectionCount" xml:space="preserve">
+    <value>选中的 {0} 条记录</value>
+  </data>
+  <data name="HistoryExportRequestedCount" xml:space="preserve">
+    <value>请求导出 {0} 条记录</value>
+  </data>
 </root>

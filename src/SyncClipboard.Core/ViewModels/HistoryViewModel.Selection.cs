@@ -61,7 +61,10 @@ public partial class HistoryViewModel
     private bool isMultiSelecting;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanExportSelected))]
     private int selectedHistoryCount;
+
+    public bool CanExportSelected => SelectedHistoryCount > 0;
 
     /// <summary>The number of selected records that are currently starred.</summary>
     [ObservableProperty]

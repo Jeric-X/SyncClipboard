@@ -409,6 +409,8 @@ namespace SyncClipboard.Core
             services.AddSingleton<IUpdateInstallerFactory, UpdateInstallerFactory>();
             services.AddSingleton<HistorySyncer>();
             services.AddSingleton<HistoryManager>();
+            services.AddSingleton<HistoryExporter>();
+            services.AddTransient<HistoryExportViewModel>();
             services.AddSingleton<HistorySyncer>();
             services.AddSingleton<HistoryTransferQueue>();
 

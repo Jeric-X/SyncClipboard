@@ -215,7 +215,7 @@ public class TextProfile : Profile
     }
 
     private readonly SemaphoreSlim _persistentLock = new(1, 1);
-    private async Task WriteFullTextToFile(string persistentDir, CancellationToken token)
+    private async Task WriteFullTextToFile(string persistentDir, CancellationToken token, Action<string>? onFileCreated = null)
     {
         if (!HasTransferData || File.Exists(_transferDataPath) is true || _fullText is null)
         {
@@ -234,6 +234,7 @@ public class TextProfile : Profile
         var dataName = _transferDataName ?? $"{Type}_{Utility.CreateTimeBasedFileName()}.txt";
         var path = Path.Combine(workingDir, dataName);
         await File.WriteAllTextAsync(path, _fullText, new UTF8Encoding(false), token);
+        onFileCreated?.Invoke(path);
         _transferDataPath = path;
         _transferDataName = dataName;
         TransferDataHash = Utility.NormalizeRequiredSHA256(await GetHash(token));
@@ -261,7 +262,8 @@ public class TextProfile : Profile
         };
     }
 
-    public override async Task<FileHashInfo?> PrepareTransferData(string persistentDir, CancellationToken token)
+    public override async Task<FileHashInfo?> PrepareTransferData(
+        string persistentDir, CancellationToken token, Action<string>? onFileCreated = null)
     {
         var expectedHash = await GetHash(token);
         if (HasTransferData is false)
@@ -271,13 +273,13 @@ public class TextProfile : Profile
             return null;
         }
 
-        return await PrepareTransferFileAsync(persistentDir, expectedHash, token);
+        return await PrepareTransferFileAsync(persistentDir, expectedHash, onFileCreated, token);
     }
 
     private async Task<FileHashInfo> PrepareTransferFileAsync(
-        string persistentDir, string expectedHash, CancellationToken token)
+        string persistentDir, string expectedHash, Action<string>? onFileCreated, CancellationToken token)
     {
-        await WriteFullTextToFile(persistentDir, token);
+        await WriteFullTextToFile(persistentDir, token, onFileCreated);
         var path = GetAvailableTransferDataPath();
 
         try
