@@ -122,6 +122,9 @@ public partial class HistoryWindow : Window, IWindow
 
     private void HistoryWindow_KeyDown(object? sender, KeyEventArgs e)
     {
+        if (_viewModel.HasModalOperation)
+            return;
+
         var isShiftPressed = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         var isAltPressed = e.KeyModifiers.HasFlag(KeyModifiers.Alt);
         var isCtrlPressed = e.KeyModifiers.HasFlag(KeyModifiers.Control);

@@ -294,6 +294,10 @@
                                 <SymbolIcon x:Name="_ToggleStarIcon" Symbol="OutlineStar" />
                             </AppBarButton.Icon>
                         </AppBarButton>
+                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryExportSelected}"
+                                      Icon="Save"
+                                      LabelPosition="Default"
+                                      Command="{x:Bind _viewModel.ExportSelectedCommand}" />
                         <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectExit}"
                                       LabelPosition="Default"
                                       Icon="Cancel"

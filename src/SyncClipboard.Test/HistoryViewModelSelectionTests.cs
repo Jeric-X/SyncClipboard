@@ -1,3 +1,7 @@
+using Moq;
+using SyncClipboard.Core.Interfaces;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using SyncClipboard.Core.ViewModels;
 
 namespace SyncClipboard.Test;
@@ -5,6 +9,21 @@ namespace SyncClipboard.Test;
 [TestClass]
 public class HistoryViewModelSelectionTests
 {
+    [TestMethod]
+    public void ExportModalKeepsHistoryVisibleAcrossFocusChanges()
+    {
+        var viewModel = (HistoryViewModel)RuntimeHelpers.GetUninitializedObject(typeof(HistoryViewModel));
+        var window = new Mock<IWindow>();
+        typeof(HistoryViewModel).GetField("window", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(viewModel, window.Object);
+        using (viewModel.HoldForModalOperation())
+        {
+            viewModel.OnGotFocus();
+            viewModel.OnLostFocus();
+            window.Verify(value => value.Hide(), Times.Never);
+        }
+    }
+
     [TestMethod]
     public void RemovingSelectedRecord_SelectsRecordOriginallyAfterIt()
     {

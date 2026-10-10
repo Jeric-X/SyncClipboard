@@ -1498,7 +1498,7 @@ public partial class HistoryViewModel : ObservableObject
 
     public void OnLostFocus()
     {
-        if (!_remainWindowForViewDetail && !IsTopmost && CloseWhenLostFocus)
+        if (!HasModalOperation && !_remainWindowForViewDetail && !IsTopmost && CloseWhenLostFocus)
         {
             window.Hide();
         }

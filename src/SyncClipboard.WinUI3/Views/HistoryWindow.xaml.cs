@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using CommunityToolkit.WinUI.Converters;
 using Microsoft.UI.Input;
 using Microsoft.UI.Windowing;
@@ -455,7 +456,7 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
 
     private void Grid_KeyDown(object _, KeyRoutedEventArgs e)
     {
-        if (e.Key == VirtualKey.None)
+        if (_viewModel.HasModalOperation || e.Key == VirtualKey.None)
             return;
 
         var isCtrlPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(CoreVirtualKeyStates.Down);
