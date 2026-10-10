@@ -193,7 +193,10 @@ public class HistoryImportTests
     [DataRow("path")]
     [DataRow("name")]
     [DataRow("duplicate-entry")]
-    public async Task InvalidAttachment_IsReportedAndOtherRecordsStillImport(string mode)
+    [DataRow("missing", "empty")]
+    [DataRow("missing", "nonempty")]
+    [DataRow("hash", "concurrent")]
+    public async Task InvalidAttachment_IsReportedAndOtherRecordsStillImport(string mode, string existingRoot = "")
     {
         await using var f = new Fixture();
         await f.InitializeAsync(Token);
@@ -224,14 +227,29 @@ public class HistoryImportTests
             await using var output = archive.CreateEntry("history.json").Open();
             await JsonSerializer.SerializeAsync(output, document, HistoryExporter.JsonOptions, Token);
         }
-        var result = await f.ImportAsync(backup, Token);
+        var recordFolder = Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), item.ProfileType, item.Hash);
+        if (existingRoot is "empty" or "nonempty")
+            Directory.CreateDirectory(recordFolder);
+        var existingFile = Path.Combine(recordFolder, "existing.txt");
+        if (existingRoot == "nonempty")
+            await File.WriteAllTextAsync(existingFile, "keep", Token);
+        using var plan = await HistoryImporter.PrepareAsync(backup, Token);
+        var importer = existingRoot == "concurrent" ? new HistoryImporter(f, f.Manager, f.Config, _ =>
+        {
+            File.WriteAllText(existingFile, "keep");
+            return long.MaxValue;
+        }) : f.Importer;
+        var result = await importer.ImportAsync(plan, null, Token);
         Assert.AreEqual(1, result.ImportedCount);
         Assert.HasCount(1, result.Failures);
         Assert.IsNotNull(result.ReportPath);
         Assert.Contains(item.Hash, await File.ReadAllTextAsync(result.ReportPath, Token));
         Assert.IsFalse(File.Exists(Path.Combine(f.GetHistoryPersistentDir(), "escape.txt")));
-        var recordFolder = Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), item.ProfileType, item.Hash);
-        Assert.IsEmpty(Directory.GetFileSystemEntries(recordFolder));
+        Assert.AreEqual(existingRoot.Length != 0, Directory.Exists(recordFolder));
+        if (existingRoot is "nonempty" or "concurrent")
+            Assert.AreEqual("keep", await File.ReadAllTextAsync(existingFile, Token));
+        else if (existingRoot == "empty")
+            Assert.IsEmpty(Directory.GetFileSystemEntries(recordFolder));
     }
 
     [TestMethod]
@@ -345,7 +363,7 @@ public class HistoryImportTests
         Assert.AreEqual(0, result.ImportedCount);
         Assert.HasCount(1, result.Failures);
         Assert.IsEmpty(await f.Db.HistoryRecords.ToListAsync(Token));
-        Assert.IsEmpty(Directory.GetFileSystemEntries(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), item.ProfileType, item.Hash)));
+        Assert.IsFalse(Directory.Exists(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), item.ProfileType, item.Hash)));
         Assert.IsFalse(f.Db.ChangeTracker.HasChanges());
     }
 
@@ -444,7 +462,7 @@ public class HistoryImportTests
         Assert.AreEqual(0, result.ImportedCount);
         Assert.Contains("extraction budget", result.Failures.Single().Reason);
         Assert.IsEmpty(await f.Db.HistoryRecords.ToListAsync(Token));
-        Assert.IsEmpty(Directory.GetDirectories(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), item.ProfileType, item.Hash), "import-*"));
+        AssertNoImportDirectories(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), item.ProfileType, item.Hash));
     }
 
     [TestMethod]
@@ -483,7 +501,7 @@ public class HistoryImportTests
             Assert.Contains("file and directory limit", result.Failures.Single().Reason);
             Assert.IsNotNull(result.ReportPath);
             Assert.Contains("file and directory limit", await File.ReadAllTextAsync(result.ReportPath, Token));
-            Assert.IsEmpty(Directory.GetDirectories(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), group.ProfileType, group.Hash), "import-*"));
+            AssertNoImportDirectories(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), group.ProfileType, group.Hash));
         }
     }
 
@@ -603,7 +621,7 @@ public class HistoryImportTests
         Assert.AreEqual(1, result.ImportedCount);
         Assert.Contains("display text", result.Failures.Single().Reason);
         Assert.AreEqual(other.Hash, (await f.Db.HistoryRecords.SingleAsync(Token)).Hash);
-        Assert.IsEmpty(Directory.GetDirectories(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), item.ProfileType, item.Hash), "import-*"));
+        AssertNoImportDirectories(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), item.ProfileType, item.Hash));
     }
 
     [TestMethod]
@@ -662,7 +680,7 @@ public class HistoryImportTests
         Assert.AreEqual(1, result.ImportedCount);
         Assert.Contains("Decoded text", result.Failures.Single().Reason);
         Assert.AreEqual(other.Hash, (await f.Db.HistoryRecords.SingleAsync(Token)).Hash);
-        Assert.IsEmpty(Directory.GetDirectories(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), ProfileType.Text, hash), "import-*"));
+        Assert.IsFalse(Directory.Exists(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), ProfileType.Text, hash)));
     }
 
     [TestMethod]
@@ -717,7 +735,13 @@ public class HistoryImportTests
         Assert.HasCount(1, result.Failures);
         Assert.AreEqual(first.Hash, (await f.Db.HistoryRecords.SingleAsync(Token)).Hash);
         Assert.AreEqual(group ? 2 : 1, checks);
-        Assert.IsEmpty(Directory.GetDirectories(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), attachment.ProfileType, attachment.Hash), "import-*"));
+        AssertNoImportDirectories(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), attachment.ProfileType, attachment.Hash));
+    }
+
+    private static void AssertNoImportDirectories(string root)
+    {
+        if (Directory.Exists(root))
+            Assert.IsEmpty(Directory.GetDirectories(root, "import-*"));
     }
 
     private static async Task ChangeRecordSizeAsync(string path, Func<long, long> change, CancellationToken token)

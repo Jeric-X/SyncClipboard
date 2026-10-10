@@ -101,6 +101,7 @@ public sealed class HistoryImporter
             }
             var item = plan.Records[i];
             string? directory = null;
+            string? createdRoot = null;
             var saved = false;
             try
             {
@@ -113,7 +114,9 @@ public sealed class HistoryImporter
                 }
                 if (item.TransferData is not null)
                 {
-                    var root = Profile.CreateWorkingDir(profileEnv.GetHistoryPersistentDir(), type, item.Hash.ToUpperInvariant());
+                    var root = Profile.QueryGetWorkingDir(profileEnv.GetHistoryPersistentDir(), type, item.Hash.ToUpperInvariant());
+                    if (!Directory.Exists(root))
+                        createdRoot = root;
                     directory = Path.Combine(root, "import-" + Guid.NewGuid().ToString("N"));
                     Directory.CreateDirectory(directory);
                 }
@@ -143,21 +146,27 @@ public sealed class HistoryImporter
             }
             finally
             {
-                if (!saved && directory is not null)
-                {
-                    try
-                    {
-                        Directory.Delete(directory, recursive: true);
-                    }
-                    catch (IOException) { }
-                    catch (UnauthorizedAccessException) { }
-                }
+                if (!saved)
+                    TryDeleteDirectory(directory, recursive: true);
+                TryDeleteDirectory(createdRoot, recursive: false);
             }
             progress?.Report(i + 1);
         }
         if (result.Failures.Count > 0)
             await HistoryImportReportWriter.WriteAsync(plan.Path, result).ConfigureAwait(false);
         return result;
+    }
+
+    private static void TryDeleteDirectory(string? path, bool recursive)
+    {
+        if (path is null)
+            return;
+        try
+        {
+            Directory.Delete(path, recursive);
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     private static ProfileType ValidateRecord(HistoryExportRecord? item)
