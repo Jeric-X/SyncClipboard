@@ -13,13 +13,17 @@ public partial class HistorySettingViewModel : ObservableObject
     private readonly ConfigManager _configManager;
     private readonly HistoryManager _historyManager;
     private readonly IMainWindowDialog _dialog;
+    private readonly IHistoryExportDialog _exportDialog;
     private readonly RemoteClipboardServerFactory _remoteServerFactory;
 
-    public HistorySettingViewModel(ConfigManager configManager, HistoryManager historyManager, IMainWindowDialog dialog, RemoteClipboardServerFactory remoteServerFactory)
+    public HistorySettingViewModel(
+        ConfigManager configManager, HistoryManager historyManager, IMainWindowDialog dialog,
+        RemoteClipboardServerFactory remoteServerFactory, IHistoryExportDialog exportDialog)
     {
         _configManager = configManager;
         _historyManager = historyManager;
         _dialog = dialog;
+        _exportDialog = exportDialog;
         _remoteServerFactory = remoteServerFactory;
 
         var config = configManager.GetConfig<HistoryConfig>();
@@ -89,6 +93,9 @@ public partial class HistorySettingViewModel : ObservableObject
 
     [ObservableProperty]
     private bool serverSyncSupported;
+
+    [RelayCommand]
+    private Task ExportHistoryAsync() => _exportDialog.ShowAsync();
 
     [RelayCommand]
     private async Task ClearLocalHistoryAsync()

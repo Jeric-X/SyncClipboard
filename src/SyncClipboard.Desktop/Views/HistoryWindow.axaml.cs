@@ -122,6 +122,9 @@ public partial class HistoryWindow : Window, IWindow
 
     private void HistoryWindow_KeyDown(object? sender, KeyEventArgs e)
     {
+        if (_viewModel.HasModalOperation)
+            return;
+
         var isShiftPressed = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         var isAltPressed = e.KeyModifiers.HasFlag(KeyModifiers.Alt);
         var isCtrlPressed = e.KeyModifiers.HasFlag(KeyModifiers.Control);
@@ -568,11 +571,11 @@ public partial class HistoryWindow : Window, IWindow
         e.Handled = _viewModel.IsMultiSelecting;
     }
 
-    private void UpdateSelectAllIcon() => _SelectAllIcon.Glyph = _viewModel.IsCurrentFilterFullySelected == true
+    private void UpdateSelectAllIcon() => _SelectAllIcon.Text = _viewModel.IsCurrentFilterFullySelected == true
         ? "\uE73A"
         : "\uE739";
 
-    private void UpdateToggleStarIcon() => _ToggleStarIcon.Glyph = _viewModel.AreSelectedRecordsStarred
+    private void UpdateToggleStarIcon() => _ToggleStarIcon.Text = _viewModel.AreSelectedRecordsStarred
         ? "\uE735"
         : "\uE734";
 

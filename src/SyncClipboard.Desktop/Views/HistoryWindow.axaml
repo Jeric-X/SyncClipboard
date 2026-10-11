@@ -42,40 +42,6 @@
                     <Setter Property="BoxShadow" Value="none" />
                 </Style>
             </ControlTheme>
-            <ControlTheme x:Key="MultiSelectCommandBarButtonTheme" TargetType="Button">
-                <Setter Property="Background" Value="Transparent" />
-                <Setter Property="BorderBrush" Value="Transparent" />
-                <Setter Property="BorderThickness" Value="0" />
-                <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
-                <Setter Property="Padding" Value="8,4" />
-                <Setter Property="MinWidth" Value="40" />
-                <Setter Property="MinHeight" Value="40" />
-                <Setter Property="HorizontalContentAlignment" Value="Center" />
-                <Setter Property="VerticalContentAlignment" Value="Center" />
-                <Setter Property="Focusable" Value="False" />
-                <Setter Property="Template">
-                    <ControlTemplate>
-                        <Border x:Name="PART_Border"
-                                Margin="2,3"
-                                Padding="{TemplateBinding Padding}"
-                                Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="{TemplateBinding CornerRadius}">
-                            <ContentPresenter Content="{TemplateBinding Content}"
-                                              ContentTemplate="{TemplateBinding ContentTemplate}"
-                                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
-                        </Border>
-                    </ControlTemplate>
-                </Setter>
-                <Style Selector="^:pointerover">
-                    <Setter Property="Background" Value="{DynamicResource ButtonBackgroundPointerOver}" />
-                </Style>
-                <Style Selector="^:pressed">
-                    <Setter Property="Background" Value="{DynamicResource ButtonBackgroundPressed}" />
-                </Style>
-            </ControlTheme>
             <Flyout x:Key="FontScaleFlyout">
                 <StackPanel Orientation="Horizontal" Spacing="8" Margin="4">
                     <TextBlock VerticalAlignment="Center" />
@@ -126,15 +92,18 @@
     </Window.DataTemplates>
     <Panel x:Name="_HistoryContent">
         <Panel.Styles>
-            <Style Selector="Button:not(.MultiSelectAction)">
+            <Style Selector="Button.HistoryAction">
                 <Setter Property="Theme" Value="{StaticResource DateTimeFlyoutButtonStyle}" />
                 <Setter Property="Height" Value="28" />
                 <Setter Property="Width" Value="28" />
                 <Setter Property="FontSize" Value="14" />
                 <Setter Property="Focusable" Value="False" />
             </Style>
-            <Style Selector="Button.MultiSelectAction">
-                <Setter Property="Theme" Value="{StaticResource MultiSelectCommandBarButtonTheme}" />
+            <Style Selector="CommandBarButton">
+                <Setter Property="Focusable" Value="False" />
+            </Style>
+            <Style Selector="CommandBarButton:disabled">
+                <Setter Property="Opacity" Value="0.4" />
             </Style>
             <Style Selector="ToggleButton">
                 <Setter Property="Focusable" Value="False" />
@@ -183,7 +152,8 @@
                 <ToggleButton ToolTip.Tip="{x:Static i18n:Strings.PreviewPanel}" Classes="FontIcon" IsChecked="{Binding ShowPreviewPanel, Mode=TwoWay}">
                     <ui:FAFontIcon Glyph="&#xE145;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                 </ToggleButton>
-                <Button x:Name="_MenuButton"
+                <Button Classes="HistoryAction"
+                        x:Name="_MenuButton"
                         Width="24"
                         Height="24"
                         VerticalAlignment="Center">
@@ -208,7 +178,8 @@
                         </ui:FAMenuFlyout>
                     </Button.Flyout>
                 </Button>
-                <Button Width="24"
+                <Button Classes="HistoryAction"
+                        Width="24"
                         Height="24"
                         VerticalAlignment="Center"
                         IsVisible="{OnPlatform Default=False,
@@ -225,7 +196,8 @@
                          Text="{Binding SearchText}"
                          PlaceholderText="{x:Static i18n:Strings.HistorySearchPlaceholder}" />
                 <StackPanel Grid.Column="1" VerticalAlignment="Top" Orientation="Horizontal">
-                    <Button Width="32"
+                    <Button Classes="HistoryAction"
+                            Width="32"
                             Height="32"
                             Command="{Binding RefreshCommand}"
                             ToolTip.Tip="{x:Static i18n:Strings.Refresh}">
@@ -239,7 +211,8 @@
                                                IsVisible="{Binding IsLoading}" />
                         </Grid>
                     </Button>
-                    <Button Width="32"
+                    <Button Classes="HistoryAction"
+                            Width="32"
                             Height="32"
                             Command="{Binding ScrollToTopCommand}"
                             ToolTip.Tip="{x:Static i18n:Strings.ScrollToTop}">
@@ -373,50 +346,54 @@
                         Padding="8,4"
                         Background="{DynamicResource HistoryMultiSelectBarBackground}"
                         IsVisible="{Binding IsMultiSelecting}">
-                    <Grid ColumnDefinitions="*, Auto" ColumnSpacing="12">
-                        <TextBlock Margin="8,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
-                            <TextBlock.Text>
-                                <MultiBinding StringFormat="{x:Static i18n:Strings.HistoryMultiSelectStatus}">
-                                    <Binding Path="SelectedHistoryCount" />
-                                    <Binding Path="SelectedInCurrentFilterCount" />
-                                </MultiBinding>
-                            </TextBlock.Text>
-                        </TextBlock>
-                        <WrapPanel Grid.Column="1"
-                                   Orientation="Horizontal"
-                                   HorizontalAlignment="Right"
-                                   ItemHeight="40"
-                                   ItemSpacing="2"
-                                   LineSpacing="2">
-                            <Button Classes="MultiSelectAction" ToolTip.Tip="{x:Static i18n:Strings.HistoryMultiSelectAll}" Command="{Binding ToggleCurrentFilterSelectionCommand}">
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <ui:FAFontIcon x:Name="_SelectAllIcon"
-                                                   Glyph="&#xE739;"
-                                                   FontFamily="{StaticResource SymbolThemeFontFamily}"
-                                                   FontSize="16" />
-                                    <TextBlock Text="{x:Static i18n:Strings.HistoryMultiSelectAll}" />
-                                </StackPanel>
-                            </Button>
-                            <Button Classes="MultiSelectAction" ToolTip.Tip="{x:Static i18n:Strings.HistoryMultiSelectDelete}" Command="{Binding ConfirmDeleteSelectedCommand}">
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <ui:FAFontIcon Glyph="&#xE74D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                                    <TextBlock Text="{x:Static i18n:Strings.HistoryMultiSelectDelete}" />
-                                </StackPanel>
-                            </Button>
-                            <Button Classes="MultiSelectAction" ToolTip.Tip="{x:Static i18n:Strings.HistoryMultiSelectStar}" Command="{Binding ConfirmToggleSelectedStarredCommand}">
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <ui:FAFontIcon x:Name="_ToggleStarIcon" Glyph="&#xE734;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                                    <TextBlock Text="{x:Static i18n:Strings.HistoryMultiSelectStar}" />
-                                </StackPanel>
-                            </Button>
-                            <Button Classes="MultiSelectAction" ToolTip.Tip="{x:Static i18n:Strings.HistoryMultiSelectExit}" Command="{Binding ExitMultiSelectCommand}">
-                                <StackPanel Orientation="Horizontal" Spacing="4">
-                                    <ui:FAFontIcon Glyph="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                                    <TextBlock Text="{x:Static i18n:Strings.HistoryMultiSelectExit}" />
-                                </StackPanel>
-                            </Button>
-                        </WrapPanel>
-                    </Grid>
+                    <CommandBar MinHeight="40"
+                                Background="Transparent"
+                                DefaultLabelPosition="Right"
+                                IsDynamicOverflowEnabled="True">
+                        <CommandBar.Content>
+                            <TextBlock Margin="8,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                                <TextBlock.Text>
+                                    <MultiBinding StringFormat="{x:Static i18n:Strings.HistoryMultiSelectStatus}">
+                                        <Binding Path="SelectedHistoryCount" />
+                                        <Binding Path="SelectedInCurrentFilterCount" />
+                                    </MultiBinding>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </CommandBar.Content>
+                        <CommandBar.PrimaryCommands>
+                            <CommandBarButton Label="{x:Static i18n:Strings.HistoryMultiSelectAll}" Command="{Binding ToggleCurrentFilterSelectionCommand}">
+                                <CommandBarButton.Icon>
+                                    <TextBlock x:Name="_SelectAllIcon"
+                                               Text="&#xE739;"
+                                               FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                               FontSize="16" />
+                                </CommandBarButton.Icon>
+                            </CommandBarButton>
+                            <CommandBarButton Label="{x:Static i18n:Strings.HistoryMultiSelectDelete}" Command="{Binding ConfirmDeleteSelectedCommand}">
+                                <CommandBarButton.Icon>
+                                    <TextBlock Text="&#xE74D;" FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="16" />
+                                </CommandBarButton.Icon>
+                            </CommandBarButton>
+                            <CommandBarButton Label="{x:Static i18n:Strings.HistoryMultiSelectStar}" Command="{Binding ConfirmToggleSelectedStarredCommand}">
+                                <CommandBarButton.Icon>
+                                    <TextBlock x:Name="_ToggleStarIcon"
+                                               Text="&#xE734;"
+                                               FontFamily="{StaticResource SymbolThemeFontFamily}"
+                                               FontSize="16" />
+                                </CommandBarButton.Icon>
+                            </CommandBarButton>
+                            <CommandBarButton Label="{x:Static i18n:Strings.HistoryExportSelected}" Command="{Binding ExportSelectedCommand}">
+                                <CommandBarButton.Icon>
+                                    <TextBlock Text="&#xE74E;" FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="16" />
+                                </CommandBarButton.Icon>
+                            </CommandBarButton>
+                            <CommandBarButton Label="{x:Static i18n:Strings.HistoryMultiSelectExit}" Command="{Binding ExitMultiSelectCommand}">
+                                <CommandBarButton.Icon>
+                                    <TextBlock Text="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="16" />
+                                </CommandBarButton.Icon>
+                            </CommandBarButton>
+                        </CommandBar.PrimaryCommands>
+                    </CommandBar>
                 </Border>
             </Grid>
             <ui:FAInfoBar x:Name="_InfoBar"

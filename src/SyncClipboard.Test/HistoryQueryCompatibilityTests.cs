@@ -70,6 +70,38 @@ public class HistoryQueryCompatibilityTests
         Assert.IsTrue(starred.Any(record => record.Type == ProfileType.Image && record.Hash == "image"));
     }
 
+    [TestMethod]
+    public async Task ExportSnapshot_UsesLiveCompositeKeysAndDoesNotModifyStoredMetadata()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var fixture = await Fixture.CreateAsync(token);
+        var record = await fixture.Db.HistoryRecords.SingleAsync(record => record.Hash == "text", token);
+        record.FilePath = ["original.txt"];
+        record.Stared = true;
+        record.Size = 123;
+        await fixture.Db.SaveChangesAsync(token);
+        var timestamp = record.LastAccessed;
+        var all = await fixture.Manager.GetExportSnapshotAsync(null, token);
+        Assert.HasCount(4, all);
+        Assert.IsEmpty(await fixture.Manager.GetExportSnapshotAsync([], token));
+        var selected = await fixture.Manager.GetExportSnapshotAsync(
+            [new(ProfileType.Text, "TEXT"), new(ProfileType.Image, "text"), new(ProfileType.Text, "deleted")], token);
+        Assert.HasCount(1, selected);
+        Assert.IsTrue(selected[0].Starred);
+        Assert.AreEqual("Text", selected[0].Type);
+        Assert.AreEqual("TEXT", selected[0].Hash);
+        Assert.AreEqual(123L, selected[0].Size);
+        Assert.AreEqual(DateTimeKind.Utc, selected[0].Timestamp.Kind);
+        Assert.AreEqual(DateTimeKind.Utc, selected[0].LastModified.Kind);
+        Assert.AreEqual(DateTimeKind.Utc, selected[0].LastAccessed.Kind);
+        Assert.AreEqual(timestamp.ToUniversalTime(), selected[0].LastAccessed);
+        selected[0].FilePaths[0] = "changed.txt";
+        await fixture.Db.Entry(record).ReloadAsync(token);
+        Assert.AreEqual("original.txt", record.FilePath[0]);
+        Assert.AreEqual(timestamp, record.LastAccessed);
+        Assert.IsFalse(fixture.Db.ChangeTracker.HasChanges());
+    }
+
     private sealed class MemoryHistoryDbContext : HistoryDbContext
     {
         protected override void OnConfiguring(DbContextOptionsBuilder options)

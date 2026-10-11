@@ -1,0 +1,32 @@
+﻿<ui:FAContentDialog x:Class="SyncClipboard.Desktop.Views.HistoryExportDialog"
+                    xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="using:FluentAvalonia.UI.Controls"
+                    xmlns:i18n="using:SyncClipboard.Core.I18n"
+                    xmlns:vm="using:SyncClipboard.Core.ViewModels"
+                    x:DataType="vm:HistoryExportViewModel"
+                    Title="{x:Static i18n:Strings.HistoryExport}"
+                    CloseButtonText="{x:Static i18n:Strings.HistoryExportClose}">
+    <ScrollViewer MaxHeight="540">
+        <StackPanel MinWidth="400" MaxWidth="600" Spacing="12">
+            <TextBlock Text="{Binding RangeDescription}" IsVisible="{Binding ShowSetup}" TextWrapping="Wrap" />
+            <TextBox Text="{Binding Directory, Mode=OneWay}"
+                     IsVisible="{Binding ShowSetup}"
+                     IsReadOnly="True"
+                     TextWrapping="Wrap" />
+            <Button Content="{x:Static i18n:Strings.HistoryExportChangeDirectory}" Command="{Binding ChangeDirectoryCommand}" IsVisible="{Binding ShowSetup}" />
+            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" />
+            <SelectableTextBlock Text="{Binding Status}" TextWrapping="Wrap" />
+            <Button Content="{x:Static i18n:Strings.HistoryExportStart}" Command="{Binding StartCommand}" IsVisible="{Binding ShowStart}" />
+            <StackPanel Spacing="4" IsVisible="{Binding HasArchive}">
+                <TextBlock Text="{x:Static i18n:Strings.HistoryExportArchive}" FontWeight="SemiBold" />
+                <SelectableTextBlock Text="{Binding ArchivePath}" TextWrapping="Wrap" />
+            </StackPanel>
+            <StackPanel Spacing="4" IsVisible="{Binding HasReport}">
+                <TextBlock Text="{x:Static i18n:Strings.HistoryExportReport}" FontWeight="SemiBold" />
+                <SelectableTextBlock Text="{Binding ReportPath}" TextWrapping="Wrap" />
+            </StackPanel>
+            <Button Content="{x:Static i18n:Strings.OpenFolder}" Command="{Binding OpenFolderCommand}" IsVisible="{Binding HasOutput}" />
+        </StackPanel>
+    </ScrollViewer>
+</ui:FAContentDialog>

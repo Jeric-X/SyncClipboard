@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+﻿<UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -6,15 +6,28 @@
              xmlns:vc="clr-namespace:SyncClipboard.Desktop.ValueConverters"
              xmlns:i18n="clr-namespace:SyncClipboard.Core.I18n;assembly=SyncClipboard.Core"
              xmlns:vms="clr-namespace:SyncClipboard.Core.ViewModels.Sub;assembly=SyncClipboard.Core"
-             mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="30"
+             mc:Ignorable="d"
+             d:DesignWidth="300"
+             d:DesignHeight="30"
              x:Class="SyncClipboard.Desktop.Views.RecordControlBar"
              x:Name="_RecordControlBar">
 
-    <StackPanel Orientation="Horizontal" Spacing="4"
+    <UserControl.Styles>
+        <Style Selector="Button">
+            <Setter Property="Theme" Value="{StaticResource DateTimeFlyoutButtonStyle}" />
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Width" Value="28" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Focusable" Value="False" />
+        </Style>
+    </UserControl.Styles>
+
+    <StackPanel Orientation="Horizontal"
+                Spacing="4"
                 DataContext="{Binding Record, ElementName=_RecordControlBar}"
                 x:DataType="vms:HistoryRecordVM"
                 IsVisible="{Binding ., Converter={x:Static vc:FuncConverter.NotNullToVisible}}">
-        <!-- Error button -->
+        <!--  Error button  -->
         <Button IsVisible="{Binding HasError}">
             <Button.Flyout>
                 <Flyout>
@@ -24,51 +37,51 @@
             <ui:FAFontIcon Glyph="&#xE783;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
         </Button>
 
-        <!-- Download / Upload cluster (sync buttons container) -->
+        <!--  Download / Upload cluster (sync buttons container)  -->
         <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ViewModel.EnableSyncHistory, ElementName=_RecordControlBar, FallbackValue=False}">
-            <!-- Download button -->
+            <!--  Download button  -->
             <Button Click="DownloadButtonClicked" IsVisible="{Binding ShowDownloadButton}">
                 <ui:FAFontIcon Glyph="&#xE896;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </Button>
 
-            <!-- Cancel download button with progress ring -->
+            <!--  Cancel download button with progress ring  -->
             <Button Click="CancelDownloadButtonClicked" IsVisible="{Binding ShowDownloadProgress}">
                 <ui:FAProgressRing Width="16"
-                                 Height="16"
-                                 IsIndeterminate="{Binding IsDownloadPending}"
-                                 Value="{Binding DownloadProgress}" />
+                                   Height="16"
+                                   IsIndeterminate="{Binding IsDownloadPending}"
+                                   Value="{Binding DownloadProgress}" />
             </Button>
 
-            <!-- Upload button -->
+            <!--  Upload button  -->
             <Button Click="UploadButtonClicked" IsVisible="{Binding ShowUploadButton}">
                 <ui:FAFontIcon Glyph="&#xE898;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </Button>
 
-            <!-- Cancel upload button with progress ring -->
+            <!--  Cancel upload button with progress ring  -->
             <Button Click="CancelUploadButtonClicked" IsVisible="{Binding ShowUploadProgress}">
                 <ui:FAProgressRing Width="16"
-                                 Height="16"
-                                 IsIndeterminate="{Binding IsUploadPending}"
-                                 Value="{Binding UploadProgress}" />
+                                   Height="16"
+                                   IsIndeterminate="{Binding IsUploadPending}"
+                                   Value="{Binding UploadProgress}" />
             </Button>
         </StackPanel>
 
-        <!-- Copy button -->
+        <!--  Copy button  -->
         <Button Click="CopyButtonClicked" IsVisible="{Binding IsLocalFileReady}">
             <ui:FAFontIcon Glyph="&#xE8C8;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
         </Button>
 
-        <!-- Paste button -->
+        <!--  Paste button  -->
         <Button Click="PasteButtonClicked" IsVisible="{Binding IsLocalFileReady}">
             <ui:FAFontIcon Glyph="&#xE77F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
         </Button>
 
-        <!-- Star button -->
+        <!--  Star button  -->
         <Button Click="StarButtonClicked">
             <ui:FAFontIcon Glyph="{Binding Stared, Converter={x:Static vc:FuncConverter.ToStarIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
         </Button>
 
-        <!-- Delete button -->
+        <!--  Delete button  -->
         <Button Click="DeleteButtonClicked">
             <ui:FAFontIcon Glyph="&#xE74D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
         </Button>

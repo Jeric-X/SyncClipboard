@@ -61,7 +61,11 @@ public partial class HistoryViewModel
     private bool isMultiSelecting;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSelectedRecords))]
+    [NotifyCanExecuteChangedFor(nameof(ExportSelectedCommand), nameof(ConfirmDeleteSelectedCommand), nameof(ConfirmToggleSelectedStarredCommand))]
     private int selectedHistoryCount;
+
+    public bool HasSelectedRecords => SelectedHistoryCount > 0;
 
     /// <summary>The number of selected records that are currently starred.</summary>
     [ObservableProperty]
@@ -405,10 +409,10 @@ public partial class HistoryViewModel
     private async Task ToggleCurrentFilterSelectionAsync() =>
         await SetCurrentFilterSelectionAsync(IsCurrentFilterFullySelected != true);
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasSelectedRecords))]
     private async Task ConfirmDeleteSelectedAsync()
     {
-        if (SelectedHistoryCount == 0)
+        if (!HasSelectedRecords)
             return;
 
         var dialog = _serviceProvider.GetRequiredKeyedService<IMainWindowDialog>("HistoryWindow");
@@ -443,10 +447,10 @@ public partial class HistoryViewModel
 
     private Task ToggleSelectedStarredAsync() => SetSelectedStarredAsync(!AreSelectedRecordsStarred);
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(HasSelectedRecords))]
     private async Task ConfirmToggleSelectedStarredAsync()
     {
-        if (SelectedHistoryCount == 0)
+        if (!HasSelectedRecords)
             return;
 
         var isUnstar = AreSelectedRecordsStarred;
