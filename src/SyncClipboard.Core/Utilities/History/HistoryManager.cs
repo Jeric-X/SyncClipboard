@@ -511,7 +511,8 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
             var deleted = await _historyManagerHelper.RemoveExpiredInBatchesAsync(
-                r => r.Timestamp < cutoffTime && !r.Stared && !r.Pinned && r.SyncStatus == HistorySyncStatus.LocalOnly, token);
+                r => r.LastModified < cutoffTime && r.LastAccessed < cutoffTime &&
+                    !r.Stared && !r.Pinned && r.SyncStatus == HistorySyncStatus.LocalOnly, token);
 
             if (deleted > 0)
             {
@@ -876,7 +877,8 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     public Expression<Func<HistoryRecord, bool>> QueryToDeleteByOverCount => entity => !entity.Stared &&
         !entity.Pinned && entity.SyncStatus == HistorySyncStatus.LocalOnly;
 
-    public Expression<Func<HistoryRecord, DateTime>> QueryDeleteOrderBy => entity => entity.Timestamp;
+    public Expression<Func<HistoryRecord, DateTime>> QueryDeleteOrderBy => entity =>
+        entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;
 
     public Expression<Func<HistoryRecord, bool>> QueryCount => entity => entity.SyncStatus == HistorySyncStatus.LocalOnly;
 }
