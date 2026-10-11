@@ -160,14 +160,30 @@ public class HistoryTransferQueue : IDisposable
         var profileId = await profile.GetProfileId(ct);
         var taskId = TransferTask.GetTaskId(type, profileId);
 
-        if (_activeTasks.TryGetValue(taskId, out var existingTask))
+        while (true)
         {
-            if (source == HistoryChangeSource.Import)
-                existingTask.Source = source;
-            _logger.Write($"{type} 任务 {taskId} 已存在，返回现有任务");
-            return existingTask;
-        }
+            TransferTask existingTask;
+            await ActiveTaskAddMutex.WaitAsync(ct);
+            using (var guard = new ScopeGuard(() => ActiveTaskAddMutex.Release()))
+            {
+                if (!_activeTasks.TryGetValue(taskId, out existingTask!))
+                    return await AddQueuedTaskAsync(type, profile, profileId, source, ct);
+                if (source != HistoryChangeSource.Import)
+                {
+                    _logger.Write($"{type} 任务 {taskId} 已存在，返回现有任务");
+                    return existingTask;
+                }
+            }
 
+            var status = await existingTask.CompletionSource.Task.WaitAsync(ct);
+            if (status != TransferTaskStatus.Completed)
+                return existingTask;
+        }
+    }
+
+    private async Task<TransferTask> AddQueuedTaskAsync(
+        TransferType type, Profile profile, string profileId, HistoryChangeSource source, CancellationToken ct)
+    {
         var task = new TransferTask
         {
             ProfileId = profileId,
@@ -179,10 +195,7 @@ public class HistoryTransferQueue : IDisposable
             Source = source
         };
 
-        await ActiveTaskAddMutex.WaitAsync(ct);
-        using var _ = new ScopeGuard(() => ActiveTaskAddMutex.Release());
-
-        _activeTasks.TryAdd(taskId, task);
+        _activeTasks.TryAdd(task.TaskId, task);
 
         NotifyStatusChanged(task);
         lock (_queueLock)
@@ -481,7 +494,6 @@ public class HistoryTransferQueue : IDisposable
             task.Status = TransferTaskStatus.Cancelled;
             _logger.Write($"任务 {task.TaskId} 已取消");
             NotifyStatusChanged(task);
-            task.CompletionSource.TrySetResult(TransferTaskStatus.Cancelled);
             RemoveTask(task);
             return TransferTaskStatus.Cancelled;
         }
@@ -510,7 +522,6 @@ public class HistoryTransferQueue : IDisposable
             task.CompletedTime = DateTime.Now;
             _logger.Write($"任务 {task.TaskId} 因本地文件缺失失败: {ex.Message}");
             NotifyStatusChanged(task);
-            task.CompletionSource.TrySetResult(TransferTaskStatus.Failed);
             RemoveTask(task);
             return TransferTaskStatus.Failed;
         }
@@ -528,7 +539,6 @@ public class HistoryTransferQueue : IDisposable
                 _isQueueStopped = true;
                 MarkAllQueuedTasksAsFailed();
                 _logger.Write("队列因连续失败5次已停止");
-                task.CompletionSource.TrySetResult(TransferTaskStatus.Failed);
                 RemoveTask(task);
                 NotifyStatusChanged(task);
                 return TransferTaskStatus.Failed;
@@ -569,7 +579,6 @@ public class HistoryTransferQueue : IDisposable
         task.CompletedTime = DateTime.Now;
         Interlocked.Exchange(ref _consecutiveFailures, 0);
         NotifyStatusChanged(task);
-        task.CompletionSource.TrySetResult(TransferTaskStatus.Completed);
         RemoveTask(task);
     }
 
@@ -690,10 +699,11 @@ public class HistoryTransferQueue : IDisposable
 
     private void RemoveTask(TransferTask task)
     {
-        if (_activeTasks.TryRemove(task.TaskId, out _))
+        if (_activeTasks.TryRemove(new KeyValuePair<string, TransferTask>(task.TaskId, task)))
         {
             task.CancellationSource?.Dispose();
         }
+        task.CompletionSource.TrySetResult(task.Status);
     }
 
     private void MarkAllQueuedTasksAsFailed()
@@ -705,7 +715,6 @@ public class HistoryTransferQueue : IDisposable
                 task.Status = TransferTaskStatus.Failed;
                 task.ErrorMessage = "队列已停止";
                 NotifyStatusChanged(task);
-                task.CompletionSource.TrySetResult(TransferTaskStatus.Failed);
                 RemoveTask(task);
             }
         }
@@ -741,7 +750,6 @@ public class HistoryTransferQueue : IDisposable
                 task.Status = TransferTaskStatus.Cancelled;
                 task.ErrorMessage = "同步历史记录已关闭";
                 NotifyStatusChanged(task);
-                task.CompletionSource.TrySetResult(TransferTaskStatus.Cancelled);
                 RemoveTask(task);
             }
         }

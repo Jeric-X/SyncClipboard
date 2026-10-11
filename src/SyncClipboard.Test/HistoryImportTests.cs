@@ -32,7 +32,15 @@ public class HistoryImportTests
 
     private sealed class MemoryDb : HistoryDbContext
     {
+        public Func<Task>? BeforeSave { get; set; }
         protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlite("Data Source=:memory:");
+
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            if (BeforeSave is { } beforeSave)
+                await beforeSave();
+            return await base.SaveChangesAsync(cancellationToken);
+        }
     }
 
     private sealed class Fixture : IProfileEnv, IAsyncDisposable
@@ -250,6 +258,87 @@ public class HistoryImportTests
         Assert.AreEqual(2, result.ImportedCount);
         Assert.AreEqual(0, result.FailureCount);
         Assert.AreEqual(2, notifications);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ImportUpload_WaitsForOrdinaryUploadThenRestoresRemoteRecord(bool cancelUpload)
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var profile = new TextProfile("in-flight upload");
+        var hash = await profile.GetHash(Token);
+        var stamp = DateTime.UtcNow;
+        f.Db.HistoryRecords.Add(new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = hash,
+            Text = profile.DisplayText,
+            LastAccessed = stamp,
+            LastModified = stamp,
+            Stared = true,
+            Version = 3
+        });
+        await f.Db.SaveChangesAsync(Token);
+        var runtime = new ConfigBase(Path.Combine(f.Root, "runtime.json"));
+        var remote = new Mock<IRemoteClipboardServer>();
+        var server = remote.As<IOfficialSyncServer>();
+        server.Setup(x => x.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new HistoryRecordDto { Type = ProfileType.Text, Hash = hash, IsDeleted = true, Version = 7 });
+        HistoryRecordUpdateDto? update = null;
+        server.Setup(x => x.UpdateHistoryAsync(ProfileType.Text, hash, It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
+            .Callback<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) => update = dto)
+            .Returns(Task.CompletedTask);
+        var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
+        SetPrivateField(factory, "_current", remote.Object);
+        SetPrivateField(factory, "_serverStateLock", new Lock());
+        using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), factory, f.Manager, f, f.Config, runtime);
+        var saving = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseSave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        f.Db.BeforeSave = async () =>
+        {
+            f.Db.BeforeSave = null;
+            saving.SetResult();
+            await releaseSave.Task.WaitAsync(Token);
+        };
+        try
+        {
+            var ordinary = await queue.EnqueueUpload(profile, ct: Token);
+            await saving.Task.WaitAsync(TimeSpan.FromSeconds(10), Token);
+            var importing = queue.EnqueueUpload(profile, false, HistoryChangeSource.Import, Token);
+            Assert.IsFalse(importing.IsCompleted, "An import must wait for the upload that already passed its source check.");
+            if (cancelUpload)
+                queue.CancelUpload(await profile.GetProfileId(Token));
+            releaseSave.SetResult();
+            var imported = await importing.WaitAsync(TimeSpan.FromSeconds(10), Token);
+            if (cancelUpload)
+            {
+                Assert.AreSame(ordinary, imported);
+                Assert.AreEqual(TransferTaskStatus.Cancelled, imported.Status);
+                Assert.IsNull(update);
+                server.Verify(x => x.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+                return;
+            }
+            Assert.AreNotSame(ordinary, imported);
+            Assert.AreEqual(TransferTaskStatus.Completed, await imported.CompletionSource.Task.WaitAsync(TimeSpan.FromSeconds(10), Token));
+            Assert.IsNotNull(update);
+            Assert.IsFalse(update.IsDelete);
+            Assert.IsTrue(update.Starred);
+            Assert.AreEqual(stamp, update.LastAccessed!.Value.UtcDateTime);
+            Assert.AreEqual(8, update.Version);
+            server.Verify(x => x.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
+        }
+        finally
+        {
+            releaseSave.TrySetResult();
+            var cts = (CancellationTokenSource)typeof(HistoryTransferQueue)
+                .GetField("_globalCts", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(queue)!;
+            cts.Cancel();
+            if (typeof(HistoryTransferQueue).GetField("_processingTask", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(queue) is Task processing)
+                await processing.WaitAsync(TimeSpan.FromSeconds(10), Token);
+        }
     }
 
     [TestMethod]
@@ -826,15 +915,18 @@ public class HistoryImportTests
     [TestMethod]
     [TestCategory("PlatformMacOS")]
     [TestCategory("PlatformLinux")]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task UnixBackslashFileName_RoundTrips(bool image)
+    [DataRow(false, @"report\2026.txt")]
+    [DataRow(true, @"report\2026.txt")]
+    [DataRow(false, " ")]
+    [DataRow(false, "\t")]
+    [DataRow(true, " ")]
+    public async Task UnixFileName_RoundTrips(bool image, string name)
     {
         if (!OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
             Assert.Inconclusive("Requires a Unix filesystem.");
         await using var f = new Fixture();
         await f.InitializeAsync(Token);
-        var file = Path.Combine(f.Root, @"report\2026.txt");
+        var file = Path.Combine(f.Root, name);
         await File.WriteAllTextAsync(file, "payload", Token);
         var original = await f.RecordAsync(image ? new ImageProfile(file) : new FileProfile(file), Token);
         var backup = await f.ExportAsync([original], Token);

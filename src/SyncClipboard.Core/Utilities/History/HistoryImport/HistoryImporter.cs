@@ -352,7 +352,7 @@ public sealed class HistoryImporter
         HistoryImportPlan plan, HistoryExportRecord item, string directory, CancellationToken token)
     {
         var data = item.TransferData!;
-        if (string.IsNullOrWhiteSpace(data.Name) || data.Name is "." or ".." ||
+        if (string.IsNullOrEmpty(data.Name) || data.Name is "." or ".." ||
             data.Name.IndexOfAny([Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar]) >= 0 ||
             data.Name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
             data.Size < 0 || !Utility.IsValidSHA256(data.Sha256))
