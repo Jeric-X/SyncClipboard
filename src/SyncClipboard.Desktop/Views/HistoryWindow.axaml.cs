@@ -571,11 +571,11 @@ public partial class HistoryWindow : Window, IWindow
         e.Handled = _viewModel.IsMultiSelecting;
     }
 
-    private void UpdateSelectAllIcon() => _SelectAllIcon.Glyph = _viewModel.IsCurrentFilterFullySelected == true
+    private void UpdateSelectAllIcon() => _SelectAllIcon.Text = _viewModel.IsCurrentFilterFullySelected == true
         ? "\uE73A"
         : "\uE739";
 
-    private void UpdateToggleStarIcon() => _ToggleStarIcon.Glyph = _viewModel.AreSelectedRecordsStarred
+    private void UpdateToggleStarIcon() => _ToggleStarIcon.Text = _viewModel.AreSelectedRecordsStarred
         ? "\uE735"
         : "\uE734";
 
