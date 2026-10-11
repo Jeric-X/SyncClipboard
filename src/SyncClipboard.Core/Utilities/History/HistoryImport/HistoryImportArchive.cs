@@ -96,14 +96,24 @@ internal static class HistoryImportArchive
             var eocdOffset = source.Length - tail.Length + offset;
             if (U16(tail, offset + 4) != 0 || U16(tail, offset + 6) != 0)
                 throw new InvalidDataException("Split ZIP archives are unsupported.");
-            if (U16(tail, offset + 10) == ushort.MaxValue || U32(tail, offset + 12) == uint.MaxValue ||
-                U32(tail, offset + 16) == uint.MaxValue)
+            if (U32(tail, offset + 12) == uint.MaxValue || U32(tail, offset + 16) == uint.MaxValue ||
+                (U16(tail, offset + 10) == ushort.MaxValue && await HasZip64LocatorAsync(source, eocdOffset, token).ConfigureAwait(false)))
                 return await ReadZip64DirectoryAsync(source, eocdOffset, token).ConfigureAwait(false);
             if (U16(tail, offset + 8) != U16(tail, offset + 10))
                 throw new InvalidDataException("Invalid ZIP entry count.");
             return ValidateRange(U32(tail, offset + 16), U32(tail, offset + 12), U16(tail, offset + 10), eocdOffset);
         }
         throw new InvalidDataException("ZIP directory end is missing.");
+    }
+
+    private static async Task<bool> HasZip64LocatorAsync(Stream source, long endOffset, CancellationToken token)
+    {
+        if (endOffset < 20)
+            return false;
+        source.Position = endOffset - 20;
+        var signature = new byte[4];
+        await source.ReadExactlyAsync(signature, token).ConfigureAwait(false);
+        return U32(signature, 0) == 0x07064b50;
     }
 
     private static async Task<DirectoryRange> ReadZip64DirectoryAsync(Stream source, long endOffset, CancellationToken token)

@@ -11,10 +11,12 @@ public class HistoryImportArchiveTests
 
     [TestMethod]
     [DataRow(10)]
+    [DataRow(65534, true)]
     [DataRow(66000)]
-    public async Task FilteredDirectory_ReadsReferencedPayloadInZipAndZip64(int unrelatedCount)
+    public async Task FilteredDirectory_ReadsReferencedPayloadInZipAndZip64(int unrelatedCount, bool legacy = false)
     {
-        using var source = CreateArchive(unrelatedCount);
+        using var original = CreateArchive(unrelatedCount);
+        using var source = legacy ? WithoutZip64End(original) : new MemoryStream(original.ToArray());
         using (var archive = await HistoryImportArchive.OpenAsync(source,
             new HashSet<string>(StringComparer.Ordinal) { "files/needed.txt" }, TestContext.CancellationTokenSource.Token))
         {
@@ -60,6 +62,22 @@ public class HistoryImportArchiveTests
         using var source = new MemoryStream(bytes);
         await Assert.ThrowsExactlyAsync<InvalidDataException>(() => HistoryImportArchive.OpenAsync(source,
             new HashSet<string> { "files/needed.txt" }, TestContext.CancellationTokenSource.Token));
+    }
+
+    private static MemoryStream WithoutZip64End(MemoryStream original)
+    {
+        var bytes = original.ToArray();
+        var zip64 = bytes.AsSpan().LastIndexOf(new byte[] { 0x50, 0x4b, 0x06, 0x06 });
+        if (zip64 < 0)
+            return new MemoryStream(bytes);
+        var result = new byte[zip64 + 22];
+        bytes.AsSpan(0, zip64).CopyTo(result);
+        bytes.AsSpan(bytes.Length - 22).CopyTo(result.AsSpan(zip64));
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(zip64 + 12),
+            checked((uint)System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(bytes.AsSpan(zip64 + 40))));
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(zip64 + 16),
+            checked((uint)System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(bytes.AsSpan(zip64 + 48))));
+        return new MemoryStream(result);
     }
 
     private static MemoryStream CreateArchive(int unrelatedCount)
