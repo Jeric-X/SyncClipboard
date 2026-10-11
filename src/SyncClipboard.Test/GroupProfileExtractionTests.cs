@@ -59,6 +59,36 @@ public class GroupProfileExtractionTests
     }
 
     [TestMethod]
+    [DataRow(1000, false)]
+    [DataRow(1000, true)]
+    [DataRow(66000, false)]
+    public async Task GroupEntryLimit_RejectsBeforeMaterializingDirectory(int count, bool understatedCount)
+    {
+        using var f = new Fixture();
+        var path = Path.Combine(f.Root, "many.zip");
+        using (var zip = ZipFile.Open(path, ZipArchiveMode.Create))
+        {
+            for (var i = 0; i < count; i++)
+                zip.CreateEntry($"{i}.txt");
+        }
+        var bytes = await File.ReadAllBytesAsync(path, Token);
+        // Corrupt the last directory header: eager Entries parsing would fail before checking the limit.
+        var last = bytes.AsSpan().LastIndexOf(new byte[] { 0x50, 0x4b, 0x01, 0x02 });
+        bytes[last] = 0;
+        if (understatedCount)
+        {
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(bytes.Length - 14, 2), 1);
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(bytes.Length - 12, 2), 1);
+        }
+        await File.WriteAllBytesAsync(path, bytes, Token);
+        var profile = new GroupProfile(new SyncClipboard.Shared.ProfileDto());
+        var transfer = new FileHashInfo(path, await Utility.CalculateFileSHA256(path, Token));
+        var error = await Assert.ThrowsExactlyAsync<InvalidDataException>(() => profile.SetTransferData(transfer, 0, 2, Token));
+        Assert.Contains("file and directory limit (2)", error.Message);
+        Assert.IsEmpty(Directory.GetDirectories(f.Root));
+    }
+
+    [TestMethod]
     [DataRow("folder/../extra")]
     [DataRow("./extra")]
     [DataRow("./declared.txt")]

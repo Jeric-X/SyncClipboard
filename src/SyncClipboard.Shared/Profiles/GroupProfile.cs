@@ -843,6 +843,8 @@ public class GroupProfile : Profile
         string extractDir, string path, bool verifyProfileHash, CancellationToken token, long? maxExtractedBytes = null, uint? maxExtractedEntries = null)
     {
         await using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, useAsync: true);
+        if (maxExtractedEntries is { } limit)
+            await ZipArchiveDirectory.ValidateEntryCountAsync(fs, limit, token).ConfigureAwait(false);
         using var archive = new ZipArchive(fs, ZipArchiveMode.Read, leaveOpen: false, entryNameEncoding: Encoding.UTF8);
         var topLevelFiles = await ExtractArchiveEntriesAsync(archive, extractDir, maxExtractedBytes, maxExtractedEntries, token).ConfigureAwait(false);
         if (topLevelFiles.Length == 0)
