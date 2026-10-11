@@ -61,6 +61,7 @@ public class GroupProfileExtractionTests
     [TestMethod]
     [DataRow(1000, false)]
     [DataRow(1000, true)]
+    [DataRow(65535, false)]
     [DataRow(66000, false)]
     public async Task GroupEntryLimit_RejectsBeforeMaterializingDirectory(int count, bool understatedCount)
     {
@@ -72,6 +73,8 @@ public class GroupProfileExtractionTests
                 zip.CreateEntry($"{i}.txt");
         }
         var bytes = await File.ReadAllBytesAsync(path, Token);
+        if (count == 65535)
+            bytes = WithoutZip64End(bytes);
         // Corrupt the last directory header: eager Entries parsing would fail before checking the limit.
         var last = bytes.AsSpan().LastIndexOf(new byte[] { 0x50, 0x4b, 0x01, 0x02 });
         bytes[last] = 0;
@@ -86,6 +89,40 @@ public class GroupProfileExtractionTests
         var error = await Assert.ThrowsExactlyAsync<InvalidDataException>(() => profile.SetTransferData(transfer, 0, 2, Token));
         Assert.Contains("file and directory limit (2)", error.Message);
         Assert.IsEmpty(Directory.GetDirectories(f.Root));
+    }
+
+    private static byte[] WithoutZip64End(byte[] bytes)
+    {
+        var zip64 = bytes.AsSpan().LastIndexOf(new byte[] { 0x50, 0x4b, 0x06, 0x06 });
+        if (zip64 < 0)
+            return bytes;
+        var result = new byte[zip64 + 22];
+        bytes.AsSpan(0, zip64).CopyTo(result);
+        bytes.AsSpan(bytes.Length - 22).CopyTo(result.AsSpan(zip64));
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(zip64 + 12),
+            checked((uint)System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(bytes.AsSpan(zip64 + 40))));
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(zip64 + 16),
+            checked((uint)System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(bytes.AsSpan(zip64 + 48))));
+        return result;
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task GroupExtraction_AcceptsDeflatedEmptyDirectory(bool limited)
+    {
+        using var f = new Fixture();
+        var path = Path.Combine(f.Root, "empty-directory.zip");
+        // Python zipfile fixture: the empty directory has a two-byte DEFLATE stream.
+        var bytes = Convert.FromBase64String("UEsDBBQAAAAIAICtS10AAAAAAgAAAAAAAAAHAAAAZm9sZGVyLwMAUEsDBBQAAAAIAICtS12pMMX+CQAAAAcAAAAPAAAAZm9sZGVyL2ZpbGUudHh0S87PK0nNKwEAUEsBAhQDFAAAAAgAgK1LXQAAAAACAAAAAAAAAAcAAAAAAAAAAAAQAP1BAAAAAGZvbGRlci9QSwECFAMUAAAACACArUtdqTDF/gkAAAAHAAAADwAAAAAAAAAAAAAAgAEnAAAAZm9sZGVyL2ZpbGUudHh0UEsFBgAAAAACAAIAcgAAAF0AAAAAAA==");
+        await File.WriteAllBytesAsync(path, bytes, Token);
+        var profile = new GroupProfile(new SyncClipboard.Shared.ProfileDto());
+        var transfer = new FileHashInfo(path, await Utility.CalculateFileSHA256(path, Token));
+        if (limited)
+            await profile.SetTransferData(transfer, 100, 10, Token);
+        else
+            await profile.SetTransferData(transfer, true, Token);
+        Assert.AreEqual("content", await File.ReadAllTextAsync(Path.Combine(profile.Files.Single(), "file.txt"), Token));
     }
 
     [TestMethod]
