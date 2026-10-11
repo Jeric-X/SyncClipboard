@@ -39,10 +39,10 @@ public sealed class HistoryImporter
         ZipArchive? archive = null;
         try
         {
-            HistoryExportDocument? document;
+            HistoryImportDocument? document;
             if (string.Equals(Path.GetExtension(path), ".zip", StringComparison.OrdinalIgnoreCase))
             {
-                archive = new ZipArchive(source, ZipArchiveMode.Read, leaveOpen: true);
+                archive = await HistoryImportArchive.OpenAsync(source, new HashSet<string>(StringComparer.Ordinal) { "history.json" }, token);
                 document = await ReadArchiveDocumentAsync(archive, token);
             }
             else if (string.Equals(Path.GetExtension(path), ".json", StringComparison.OrdinalIgnoreCase))
@@ -56,6 +56,12 @@ public sealed class HistoryImporter
                 throw new InvalidDataException("Unsupported backup file.");
             }
             ValidateDocument(document);
+            if (archive is not null)
+            {
+                archive.Dispose();
+                var paths = HistoryImportPlan.GetReferencedPaths(new HistoryImportRecords(document.Records), token);
+                archive = await HistoryImportArchive.OpenAsync(source, paths, token);
+            }
             return new(path, source, archive, document, token);
         }
         catch
@@ -66,7 +72,7 @@ public sealed class HistoryImporter
         }
     }
 
-    private static async Task<HistoryExportDocument?> ReadArchiveDocumentAsync(ZipArchive archive, CancellationToken token)
+    private static async Task<HistoryImportDocument?> ReadArchiveDocumentAsync(ZipArchive archive, CancellationToken token)
     {
         ZipArchiveEntry? manifest = null;
         foreach (var entry in archive.Entries)
@@ -86,13 +92,13 @@ public sealed class HistoryImporter
         return await ReadDocumentAsync(stream, token);
     }
 
-    private static void ValidateDocument([NotNull] HistoryExportDocument? document)
+    private static void ValidateDocument([NotNull] HistoryImportDocument? document)
     {
-        if (document is null || document.Format != "syncclipboard-history" || document.FormatVersion != 1 || document.Records is null)
+        if (document is null || document.Format != "syncclipboard-history" || document.FormatVersion != 1 || document.Records.ValueKind != JsonValueKind.Array)
             throw new InvalidDataException("Unsupported or invalid backup format.");
     }
 
-    private static async Task<HistoryExportDocument?> ReadDocumentAsync(Stream stream, CancellationToken token)
+    private static async Task<HistoryImportDocument?> ReadDocumentAsync(Stream stream, CancellationToken token)
     {
         // Bound decompression as well as the declared ZIP entry size.
         using var buffer = new MemoryStream();
@@ -105,7 +111,7 @@ public sealed class HistoryImporter
             await buffer.WriteAsync(bytes.AsMemory(0, read), token).ConfigureAwait(false);
         }
         buffer.Position = 0;
-        return await JsonSerializer.DeserializeAsync<HistoryExportDocument>(buffer, HistoryExporter.JsonOptions, token);
+        return await JsonSerializer.DeserializeAsync<HistoryImportDocument>(buffer, HistoryExporter.JsonOptions, token);
     }
 
     public async Task<HistoryImportResult> ImportAsync(
@@ -121,9 +127,10 @@ public sealed class HistoryImporter
                 result.Canceled = true;
                 break;
             }
-            var item = plan.Records[i];
+            HistoryExportRecord? item = null;
             try
             {
+                item = plan.Records[i];
                 var outcome = await ImportItemAsync(plan, item, maxGroupEntries, token).ConfigureAwait(false);
                 CountOutcome(result, outcome);
             }

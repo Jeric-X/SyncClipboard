@@ -342,15 +342,19 @@ public class HistoryImportTests
     }
 
     [TestMethod]
-    [DataRow(false, false, true)]
-    [DataRow(true, false, true)]
-    [DataRow(true, true, true)]
-    [DataRow(false, false, false)]
-    public async Task ImportEvent_UploadsOrUpdatesWithClipboardPullEnabled(bool remoteExists, bool localExists, bool syncEnabled)
+    [DataRow(false, false, true, false)]
+    [DataRow(true, false, true, false)]
+    [DataRow(true, true, true, false)]
+    [DataRow(false, false, false, false)]
+    [DataRow(true, false, true, true)]
+    [DataRow(true, true, true, true)]
+    public async Task ImportEvent_UploadsOrUpdatesWithClipboardPullEnabled(bool remoteExists, bool localExists, bool syncEnabled, bool attachment = false)
     {
         await using var f = new Fixture();
         await f.InitializeAsync(Token);
-        var item = await f.RecordAsync(new TextProfile("imported content"), Token);
+        var file = Path.Combine(f.Root, "imported.txt");
+        await File.WriteAllTextAsync(file, "restored attachment", Token);
+        var item = await f.RecordAsync(attachment ? new FileProfile(file) : new TextProfile("imported content"), Token);
         var backup = await f.ExportAsync([item], Token);
         if (localExists)
         {
@@ -379,16 +383,22 @@ public class HistoryImportTests
                 Type = item.ProfileType,
                 Hash = item.Hash,
                 Version = 7,
+                HasData = attachment,
                 IsDeleted = true
             } : null);
         HistoryRecordUpdateDto? update = null;
         HistoryRecordDto? upload = null;
+        FileHashInfo? uploadedData = null;
         server.Setup(x => x.UpdateHistoryAsync(item.ProfileType, item.Hash, It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
             .Callback<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) => update = dto)
             .Returns(Task.CompletedTask);
         server.Setup(x => x.UploadHistoryAsync(It.IsAny<HistoryRecordDto>(), It.IsAny<FileHashInfo?>(),
                 It.IsAny<IProgress<HttpDownloadProgress>>(), It.IsAny<CancellationToken>()))
-            .Callback<HistoryRecordDto, FileHashInfo?, IProgress<HttpDownloadProgress>, CancellationToken>((dto, _, _, _) => upload = dto)
+            .Callback<HistoryRecordDto, FileHashInfo?, IProgress<HttpDownloadProgress>, CancellationToken>((dto, data, _, _) =>
+            {
+                upload = dto;
+                uploadedData = data;
+            })
             .Returns(Task.CompletedTask);
         var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
         SetPrivateField(factory, "_current", remote.Object);
@@ -422,7 +432,7 @@ public class HistoryImportTests
             }
             var task = await completed.Task.WaitAsync(TimeSpan.FromSeconds(10), Token);
             Assert.AreEqual(TransferTaskStatus.Completed, task.Status, task.ErrorMessage);
-            if (remoteExists)
+            if (remoteExists && !attachment)
             {
                 Assert.IsNotNull(update);
                 Assert.IsFalse(update.IsDelete);
@@ -436,7 +446,14 @@ public class HistoryImportTests
                 Assert.IsNotNull(upload);
                 Assert.AreEqual(item.Timestamp, upload.CreateTime.UtcDateTime);
                 Assert.IsTrue(upload.LastAccessed >= before);
-                Assert.IsNull(update);
+                Assert.IsNull(update?.IsDelete);
+                if (attachment)
+                {
+                    Assert.IsNotNull(uploadedData);
+                    Assert.AreEqual("restored attachment", await File.ReadAllTextAsync(uploadedData.Path, Token));
+                    Assert.IsFalse(upload.IsDeleted);
+                    Assert.AreEqual(8, upload.Version);
+                }
             }
             Assert.AreEqual(HistorySyncStatus.Synced, (await f.Db.HistoryRecords.SingleAsync(Token)).SyncStatus);
         }
@@ -634,7 +651,11 @@ public class HistoryImportTests
     [DataRow("timestamp", "max")]
     [DataRow("lastModified", "max")]
     [DataRow("lastAccessed", "max")]
-    public async Task MissingOrInvalidTimestamp_IsReportedAndOtherRecordsStillImport(string field, string mode)
+    [DataRow("timestamp", "malformed")]
+    [DataRow("type", "numeric")]
+    [DataRow("timestamp", "malformed", true)]
+    [DataRow("type", "numeric", true)]
+    public async Task MissingOrInvalidTimestamp_IsReportedAndOtherRecordsStillImport(string field, string mode, bool zip = false)
     {
         await using var f = new Fixture();
         await f.InitializeAsync(Token);
@@ -645,15 +666,28 @@ public class HistoryImportTests
         var record = json["records"]![0]!.AsObject();
         if (mode == "missing")
             Assert.IsTrue(record.Remove(field));
+        else if (mode == "malformed")
+            record[field] = "not-a-date";
+        else if (mode == "numeric")
+            record[field] = 42;
         else
             record[field] = JsonValue.Create(mode == "min" ? DateTime.MinValue : DateTime.MaxValue);
-        var path = Path.Combine(f.Root, "invalid.json");
-        await File.WriteAllTextAsync(path, json.ToJsonString(), Token);
+        var path = Path.Combine(f.Root, zip ? "invalid.zip" : "invalid.json");
+        if (zip)
+        {
+            using var archive = ZipFile.Open(path, ZipArchiveMode.Create);
+            await using var output = archive.CreateEntry("history.json").Open();
+            await JsonSerializer.SerializeAsync(output, json, cancellationToken: Token);
+        }
+        else
+        {
+            await File.WriteAllTextAsync(path, json.ToJsonString(), Token);
+        }
         var result = await f.ImportAsync(path, Token);
         Assert.AreEqual(1, result.FailureCount);
         Assert.AreEqual(1, result.ImportedCount);
         Assert.IsNotNull(result.ReportPath);
-        Assert.Contains("timestamp", await File.ReadAllTextAsync(result.ReportPath, Token));
+        Assert.Contains(mode == "numeric" ? "type" : "timestamp", await File.ReadAllTextAsync(result.ReportPath, Token));
         var restored = await f.Db.HistoryRecords.SingleAsync(Token);
         Assert.AreEqual(valid.Hash, restored.Hash);
         Assert.AreEqual(valid.Timestamp, restored.Timestamp.ToUniversalTime());
@@ -728,7 +762,8 @@ public class HistoryImportTests
         var backup = await f.ExportAsync([first], Token);
         var document = new HistoryExportDocument("syncclipboard-history", 1, "test", DateTime.UtcNow, [first, null!, later]);
         using var plan = new HistoryImportPlan(Path.Combine(f.Root, "unavailable", "backup.json"),
-            File.OpenRead(backup), null, document, Token);
+            File.OpenRead(backup), null, new HistoryImportDocument(document.Format, document.FormatVersion,
+                document.AppVersion, document.ExportedAt, JsonSerializer.SerializeToElement(document.Records, HistoryExporter.JsonOptions)), Token);
         var result = await f.Importer.ImportAsync(plan, null, Token);
         Assert.AreEqual(1, result.ImportedCount);
         Assert.AreEqual(1, result.FailureCount);

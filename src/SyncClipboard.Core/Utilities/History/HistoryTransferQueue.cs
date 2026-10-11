@@ -632,7 +632,8 @@ public class HistoryTransferQueue : IDisposable
 
         // 先检查服务器上是否已存在该记录
         var existingRecord = await server.GetHistoryByProfileIdAsync(task.ProfileId, ct);
-        if (existingRecord != null)
+        var restoreAttachment = task.Source == HistoryChangeSource.Import && existingRecord is { IsDeleted: true, HasData: true };
+        if (existingRecord != null && !restoreAttachment)
         {
             if (task.Source == HistoryChangeSource.Import)
                 await UpdateImportedHistoryAsync(server, record, existingRecord, ct);
@@ -641,7 +642,9 @@ public class HistoryTransferQueue : IDisposable
             return;
         }
 
-        // 服务器不存在，执行上传
+        // 服务器不存在或需要恢复已删除的附件，执行上传
+        if (restoreAttachment)
+            record.Version = Math.Max(record.Version, existingRecord!.Version + 1);
         var transferData = await profile.PrepareTransferData(_profileEnv.GetPersistentDir(), ct);
         var persistentInfo = await profile.Persist(_profileEnv.GetPersistentDir(), ct);
         record.FilePath = persistentInfo.FilePaths;
