@@ -101,6 +101,7 @@ public sealed class HistoryImporter
         HistoryImportPlan plan, IProgress<int>? progress, CancellationToken token)
     {
         var result = new HistoryImportResult();
+        await using var report = new HistoryImportReportWriter(plan.Path, result);
         var maxGroupEntries = configManager.GetConfig<HistoryImportConfig>().MaxGroupEntryCount;
         for (var i = 0; i < plan.Records.Count; i++)
         {
@@ -147,12 +148,12 @@ public sealed class HistoryImporter
             }
             catch (Exception ex)
             {
-                result.Failures.Add(new(i + 1, $"{item?.Type}-{item?.Hash}", ex.Message));
+                result.FailureCount++;
                 if (FileSys.IsDiskFull(ex))
-                {
                     result.Error = ex.Message;
+                var reported = await report.AppendAsync(new(i + 1, $"{item?.Type}-{item?.Hash}", ex.Message), token).ConfigureAwait(false);
+                if (!reported || result.Error is not null)
                     break;
-                }
             }
             finally
             {
@@ -164,8 +165,7 @@ public sealed class HistoryImporter
         }
         if (result.ImportedCount + result.RepairedCount > 0)
             manager.NotifyHistoryImported();
-        if (result.Failures.Count > 0)
-            await HistoryImportReportWriter.WriteAsync(plan.Path, result, token).ConfigureAwait(false);
+        await report.CompleteAsync(token).ConfigureAwait(false);
         return result;
     }
 

@@ -12,11 +12,19 @@ public class HistoryImportReportWriterTests
         var directory = Directory.CreateTempSubdirectory("SyncClipboard-ImportReport-");
         try
         {
-            var result = new HistoryImportResult { ImportedCount = 1 };
-            result.Failures.Add(new(2, "invalid", "invalid metadata"));
+            var result = new HistoryImportResult
+            {
+                ImportedCount = 1,
+                FailureCount = 1
+            };
             using var cancellation = new CancellationTokenSource();
-            cancellation.Cancel();
-            await HistoryImportReportWriter.WriteAsync(Path.Combine(directory.FullName, "backup.json"), result, cancellation.Token);
+            await using (var report = new HistoryImportReportWriter(Path.Combine(directory.FullName, "backup.json"), result))
+            {
+                Assert.IsTrue(await report.AppendAsync(new(2, "invalid", "invalid metadata"), cancellation.Token));
+                Assert.HasCount(1, Directory.GetFiles(directory.FullName));
+                cancellation.Cancel();
+                await report.CompleteAsync(cancellation.Token);
+            }
             Assert.IsTrue(result.Canceled);
             Assert.IsNull(result.ReportError);
             Assert.IsNull(result.ReportPath);
@@ -41,7 +49,7 @@ public class HistoryImportReportWriterTests
                 entered.SetResult();
                 return new ValueTask(Task.Delay(Timeout.Infinite, token));
             });
-        var writing = HistoryImportReportWriter.WriteContentsAsync(stream.Object, "backup.json", new(), cancellation.Token);
+        var writing = HistoryImportReportWriter.WriteLineAsync(stream.Object, "failure detail", cancellation.Token).AsTask();
         await entered.Task;
         cancellation.Cancel();
         await Assert.ThrowsExactlyAsync<TaskCanceledException>(() => writing);

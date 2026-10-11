@@ -98,10 +98,7 @@ public sealed partial class HistoryImportViewModel(HistoryImporter importer) : O
                 Status += "\n" + Strings.HistoryImportCanceled;
             ReportPath = result.ReportPath;
             if (result.ReportError is not null)
-            {
                 Status += "\n" + string.Format(Strings.HistoryExportReportFailed, result.ReportError);
-                Status += "\n" + string.Join('\n', result.Failures.Select(item => $"{item.Index}. {item.ProfileId}: {item.Reason}"));
-            }
         }
         catch (Exception ex)
         {

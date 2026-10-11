@@ -3,8 +3,11 @@ using System.Text;
 
 namespace SyncClipboard.Core.Utilities.History.HistoryImport;
 
-internal static class HistoryImportReportWriter
+internal sealed class HistoryImportReportWriter(string backup, HistoryImportResult result) : IAsyncDisposable
 {
+    private FileStream? _stream;
+    private string? _path;
+
     public static string FormatResult(HistoryImportResult result)
     {
         var text = string.Format(Strings.HistoryImportResult, result.ImportedCount);
@@ -12,22 +15,52 @@ internal static class HistoryImportReportWriter
             text += string.Format(Strings.HistoryImportRepairedCount, result.RepairedCount);
         if (result.ExistingCount > 0)
             text += string.Format(Strings.HistoryImportExistingCount, result.ExistingCount);
-        if (result.Failures.Count > 0)
-            text += string.Format(Strings.HistoryImportFailureCount, result.Failures.Count);
+        if (result.FailureCount > 0)
+            text += string.Format(Strings.HistoryImportFailureCount, result.FailureCount);
         if (result.Error is not null)
             text += "\n" + string.Format(Strings.HistoryImportFailed, result.Error);
         return text;
     }
 
-    public static async Task WriteAsync(string backup, HistoryImportResult result, CancellationToken token)
+    public async Task<bool> AppendAsync(HistoryImportFailure failure, CancellationToken token)
     {
-        string? path = null;
+        var line = $"{failure.Index}. {SingleLine(failure.ProfileId)}: {SingleLine(failure.Reason)}";
         try
         {
-            path = Path.Combine(Path.GetDirectoryName(backup)!, $"{Path.GetFileNameWithoutExtension(backup)}-not-imported-{Guid.NewGuid():N}.txt");
-            await using (var stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read, 1, useAsync: true))
-                await WriteContentsAsync(stream, backup, result, token).ConfigureAwait(false);
-            result.ReportPath = path;
+            token.ThrowIfCancellationRequested();
+            if (_stream is null)
+            {
+                var path = Path.Combine(Path.GetDirectoryName(backup)!, $"{Path.GetFileNameWithoutExtension(backup)}-not-imported-{Guid.NewGuid():N}.txt");
+                _stream = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.Read, 1, useAsync: true);
+                _path = path;
+                await WriteLineAsync(_stream, Strings.HistoryImportReport, token).ConfigureAwait(false);
+                await WriteLineAsync(_stream, backup, token).ConfigureAwait(false);
+            }
+            await WriteLineAsync(_stream, line, token).ConfigureAwait(false);
+            return true;
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            result.Canceled = true;
+        }
+        catch (Exception ex)
+        {
+            result.ReportError = ex.Message + "\n" + line;
+        }
+        return false;
+    }
+
+    public async Task CompleteAsync(CancellationToken token)
+    {
+        if (_stream is null || result.ReportError is not null)
+            return;
+        try
+        {
+            await WriteLineAsync(_stream, FormatResult(result), token).ConfigureAwait(false);
+            await _stream.FlushAsync(token).ConfigureAwait(false);
+            await _stream.DisposeAsync().ConfigureAwait(false);
+            _stream = null;
+            result.ReportPath = _path;
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
@@ -37,13 +70,28 @@ internal static class HistoryImportReportWriter
         {
             result.ReportError = ex.Message;
         }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_stream is not null)
+                await _stream.DisposeAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            if (!result.Canceled)
+                result.ReportError ??= ex.Message;
+        }
         finally
         {
-            if (path is not null && result.ReportPath is null)
+            _stream = null;
+            if (_path is not null && result.ReportPath is null)
             {
                 try
                 {
-                    File.Delete(path);
+                    File.Delete(_path);
                 }
                 catch (IOException) { }
                 catch (UnauthorizedAccessException) { }
@@ -51,17 +99,7 @@ internal static class HistoryImportReportWriter
         }
     }
 
-    internal static async Task WriteContentsAsync(Stream stream, string backup, HistoryImportResult result, CancellationToken token)
-    {
-        await WriteLineAsync(stream, Strings.HistoryImportReport, token).ConfigureAwait(false);
-        await WriteLineAsync(stream, backup, token).ConfigureAwait(false);
-        await WriteLineAsync(stream, FormatResult(result), token).ConfigureAwait(false);
-        foreach (var failure in result.Failures)
-            await WriteLineAsync(stream, $"{failure.Index}. {SingleLine(failure.ProfileId)}: {SingleLine(failure.Reason)}", token).ConfigureAwait(false);
-        await stream.FlushAsync(token).ConfigureAwait(false);
-    }
-
-    private static ValueTask WriteLineAsync(Stream stream, string line, CancellationToken token)
+    internal static ValueTask WriteLineAsync(Stream stream, string line, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
         return stream.WriteAsync(Encoding.UTF8.GetBytes(line + Environment.NewLine), token);

@@ -7,7 +7,7 @@ public sealed class HistoryImportResult
     public int ExistingCount { get; set; }
     public string? Error { get; set; }
     public bool Canceled { get; set; }
-    public List<HistoryImportFailure> Failures { get; } = [];
+    public int FailureCount { get; set; }
     public string? ReportPath { get; set; }
     public string? ReportError { get; set; }
 }
