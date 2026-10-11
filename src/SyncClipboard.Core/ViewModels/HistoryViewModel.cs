@@ -554,6 +554,7 @@ public partial class HistoryViewModel : ObservableObject
 
     private int _isLoadTaskRunning = 0;
     private Task _activePageLoad = Task.CompletedTask;
+    private int _pendingReloadCount;
     private double _lastOffsetY = 0;
     private double _lastViewportHeight = 0;
     private double _lastExtentHeight = 0;
@@ -572,6 +573,9 @@ public partial class HistoryViewModel : ObservableObject
 
     public async Task NotifyScrollPositionAsync(double offsetY, double viewportHeight, double extentHeight)
     {
+        if (Volatile.Read(ref _pendingReloadCount) != 0)
+            return;
+
         SetScrollViewMetrics(offsetY, viewportHeight, extentHeight);
         if (IsEnd)
             return;
@@ -643,6 +647,8 @@ public partial class HistoryViewModel : ObservableObject
 
     private async Task Reload()
     {
+        Interlocked.Increment(ref _pendingReloadCount);
+        using var reloadGuard = new ScopeGuard(() => Interlocked.Decrement(ref _pendingReloadCount));
         try
         {
             _loadCts.Cancel();
