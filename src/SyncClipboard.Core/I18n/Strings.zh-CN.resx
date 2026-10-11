@@ -1481,7 +1481,7 @@ Shift + 左键：选中连续范围</value>
     <value>正在估算导出大小…</value>
   </data>
   <data name="HistoryExportEstimate" xml:space="preserve">
-    <value>预计导出 {0} 条记录，大小约 {1}</value>
+    <value>已选择 {0} 条记录，预计导出大小 {1}</value>
   </data>
   <data name="HistoryExportProgress" xml:space="preserve">
     <value>已处理 {0}/{1} 条记录，已写入 {2}</value>
