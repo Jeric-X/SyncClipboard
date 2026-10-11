@@ -1549,4 +1549,52 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryExportRequestedCount" xml:space="preserve">
     <value>{0} records requested</value>
   </data>
+  <data name="HistoryImport" xml:space="preserve">
+    <value>Import history</value>
+  </data>
+  <data name="HistoryImportChooseFile" xml:space="preserve">
+    <value>Choose a backup file</value>
+  </data>
+  <data name="HistoryImportReading" xml:space="preserve">
+    <value>Reading backup…</value>
+  </data>
+  <data name="HistoryImportCount" xml:space="preserve">
+    <value>{0} records</value>
+  </data>
+  <data name="HistoryImportEmpty" xml:space="preserve">
+    <value>No records in this backup.</value>
+  </data>
+  <data name="HistoryImportStart" xml:space="preserve">
+    <value>Start import</value>
+  </data>
+  <data name="HistoryImportProgress" xml:space="preserve">
+    <value>Importing {0} / {1} records</value>
+  </data>
+  <data name="HistoryImportResult" xml:space="preserve">
+    <value>Imported {0} records</value>
+  </data>
+  <data name="HistoryImportExistingCount" xml:space="preserve">
+    <value>, skipped {0} existing records</value>
+  </data>
+  <data name="HistoryImportFailureCount" xml:space="preserve">
+    <value>, failed to import {0} records</value>
+  </data>
+  <data name="HistoryImportReport" xml:space="preserve">
+    <value>Records not imported</value>
+  </data>
+  <data name="HistoryImportFailed" xml:space="preserve">
+    <value>Import failed: {0}</value>
+  </data>
+  <data name="HistoryImportCanceled" xml:space="preserve">
+    <value>Import canceled. Completed records have been kept.</value>
+  </data>
+  <data name="HistoryImportBusy" xml:space="preserve">
+    <value>An import is already open.</value>
+  </data>
+  <data name="HistoryImportDuplicates" xml:space="preserve">
+    <value>Missing attachments will be restored. Existing record properties will be kept.</value>
+  </data>
+  <data name="HistoryImportRepairedCount" xml:space="preserve">
+    <value>, repaired {0} records</value>
+  </data>
 </root>
