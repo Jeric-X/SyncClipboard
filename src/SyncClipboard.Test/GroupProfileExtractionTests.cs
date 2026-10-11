@@ -84,6 +84,33 @@ public class GroupProfileExtractionTests
     }
 
     [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task GroupExtraction_RejectsDirectoryPayloadAndCleansOutput(bool forgedLength)
+    {
+        using var f = new Fixture();
+        var path = Path.Combine(f.Root, "directory-data.zip");
+        using (var zip = ZipFile.Open(path, ZipArchiveMode.Create))
+        {
+            zip.CreateEntry("regular.txt");
+            await using var directory = zip.CreateEntry("folder/").Open();
+            await directory.WriteAsync(new byte[] { 1, 2, 3 }, Token);
+        }
+        if (forgedLength)
+        {
+            var bytes = await File.ReadAllBytesAsync(path, Token);
+            var offset = bytes.AsSpan().LastIndexOf(new byte[] { 0x50, 0x4b, 0x01, 0x02 });
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(offset + 24, 4), 0);
+            await File.WriteAllBytesAsync(path, bytes, Token);
+        }
+        var profile = new GroupProfile(new SyncClipboard.Shared.ProfileDto());
+        var transfer = new FileHashInfo(path, await Utility.CalculateFileSHA256(path, Token));
+        var error = await Assert.ThrowsExactlyAsync<InvalidDataException>(() => profile.SetTransferData(transfer, 100, 100, Token));
+        Assert.Contains("directory entries", error.Message);
+        Assert.IsEmpty(Directory.GetDirectories(f.Root));
+    }
+
+    [TestMethod]
     public async Task GroupExtraction_RejectsUnderstatedEntryLengthWhileStreaming()
     {
         using var f = new Fixture();

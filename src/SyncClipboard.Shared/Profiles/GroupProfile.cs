@@ -655,9 +655,7 @@ public class GroupProfile : Profile
         foreach (var entry in archive.Entries)
         {
             token.ThrowIfCancellationRequested();
-            if (entry.Length > remaining)
-                throw new InvalidDataException("Group transfer data exceeds the extraction budget.");
-            remaining -= entry.Length;
+            remaining = ValidateArchiveEntrySize(entry, remaining);
             var path = Path.TrimEndingDirectorySeparator(GetArchiveEntryPath(entry, extractPath));
             // Implicit parent directories also consume filesystem entries; count shared parents once.
             while (paths is not null && !comparer.Equals(path, root) && paths.Add(path))
@@ -667,6 +665,15 @@ public class GroupProfile : Profile
                 path = Path.GetDirectoryName(path)!;
             }
         }
+    }
+
+    private static long ValidateArchiveEntrySize(ZipArchiveEntry entry, long remaining)
+    {
+        if (entry.FullName.EndsWith('/') && (entry.Length != 0 || entry.CompressedLength != 0))
+            throw new InvalidDataException("Group directory entries cannot contain payload data.");
+        if (entry.Length > remaining)
+            throw new InvalidDataException("Group transfer data exceeds the extraction budget.");
+        return remaining - entry.Length;
     }
 
     private static string GetArchiveEntryPath(ZipArchiveEntry entry, string extractPath)
