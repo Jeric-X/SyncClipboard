@@ -23,6 +23,7 @@ public class TransferTask
     public string ProfileId { get; init; } = string.Empty;
     public string TaskId => GetTaskId(Type, ProfileId);
     public TransferType Type { get; init; }
+    public HistoryChangeSource Source { get; set; }
     public TransferTaskStatus Status { get; set; }
     public double Progress { get; set; }
     public bool IsImmediateTask { get; set; }

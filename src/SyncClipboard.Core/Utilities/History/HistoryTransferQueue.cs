@@ -5,6 +5,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer;
+using SyncClipboard.Server.Core.Models;
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 
@@ -57,12 +58,18 @@ public class HistoryTransferQueue : IDisposable
 
     public async Task<TransferTask> EnqueueDownload(Profile profile, bool forceResume = false, CancellationToken ct = default)
     {
-        return await EnqueueTask(TransferType.Download, profile, forceResume, ct);
+        return await EnqueueTask(TransferType.Download, profile, forceResume, HistoryChangeSource.Default, ct);
     }
 
-    public async Task<TransferTask> EnqueueUpload(Profile profile, bool forceResume = false, CancellationToken ct = default)
+    public Task<TransferTask> EnqueueUpload(Profile profile, bool forceResume = false, CancellationToken ct = default)
     {
-        return await EnqueueTask(TransferType.Upload, profile, forceResume, ct);
+        return EnqueueUpload(profile, forceResume, HistoryChangeSource.Default, ct);
+    }
+
+    public async Task<TransferTask> EnqueueUpload(
+        Profile profile, bool forceResume, HistoryChangeSource source, CancellationToken ct = default)
+    {
+        return await EnqueueTask(TransferType.Upload, profile, forceResume, source, ct);
     }
 
     public Task Download(Profile profile, IProgress<HttpDownloadProgress>? progress = null, CancellationToken ct = default)
@@ -141,7 +148,8 @@ public class HistoryTransferQueue : IDisposable
         }
     }
 
-    private async Task<TransferTask> EnqueueTask(TransferType type, Profile profile, bool forceResume = false, CancellationToken ct = default)
+    private async Task<TransferTask> EnqueueTask(
+        TransferType type, Profile profile, bool forceResume, HistoryChangeSource source, CancellationToken ct)
     {
         // 如果需要强制恢复且队列已停止，则恢复队列
         if (forceResume && _isQueueStopped)
@@ -154,6 +162,8 @@ public class HistoryTransferQueue : IDisposable
 
         if (_activeTasks.TryGetValue(taskId, out var existingTask))
         {
+            if (source == HistoryChangeSource.Import)
+                existingTask.Source = source;
             _logger.Write($"{type} 任务 {taskId} 已存在，返回现有任务");
             return existingTask;
         }
@@ -165,7 +175,8 @@ public class HistoryTransferQueue : IDisposable
             Profile = profile,
             CreatedTime = DateTime.Now,
             CancellationSource = new CancellationTokenSource(),
-            Status = TransferTaskStatus.Pending
+            Status = TransferTaskStatus.Pending,
+            Source = source
         };
 
         await ActiveTaskAddMutex.WaitAsync(ct);
@@ -614,7 +625,8 @@ public class HistoryTransferQueue : IDisposable
         var existingRecord = await server.GetHistoryByProfileIdAsync(task.ProfileId, ct);
         if (existingRecord != null)
         {
-            // 服务器已存在，直接标记为成功
+            if (task.Source == HistoryChangeSource.Import)
+                await UpdateImportedHistoryAsync(server, record, existingRecord, ct);
             record.SyncStatus = HistorySyncStatus.Synced;
             await _historyManager.PersistServerSyncedAsync(record, ct);
             return;
@@ -644,6 +656,30 @@ public class HistoryTransferQueue : IDisposable
             }
             record.ApplyFromServerUpdateDto(ex.ServerRecord);
             await _historyManager.PersistServerSyncedAsync(record, ct);
+        }
+    }
+
+    private static async Task UpdateImportedHistoryAsync(
+        IOfficialSyncServer server, HistoryRecord record, HistoryRecordDto existing, CancellationToken token)
+    {
+        var version = Math.Max(record.Version, existing.Version + 1);
+        var update = new HistoryRecordUpdateDto
+        {
+            Starred = record.Stared,
+            Pinned = record.Pinned,
+            IsDelete = false,
+            Version = version,
+            LastModified = new DateTimeOffset(record.LastModified.ToUniversalTime()),
+            LastAccessed = new DateTimeOffset(record.LastAccessed.ToUniversalTime())
+        };
+        try
+        {
+            await server.UpdateHistoryAsync(record.Type, record.Hash, update, token);
+            record.Version = version;
+        }
+        catch (RemoteHistoryConflictException ex) when (ex.ServerRecord is not null)
+        {
+            record.ApplyFromServerUpdateDto(ex.ServerRecord);
         }
     }
 

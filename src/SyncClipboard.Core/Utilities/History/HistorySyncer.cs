@@ -207,7 +207,7 @@ public class HistorySyncer
             {
                 Starred = record.Stared,
                 Pinned = record.Pinned,
-                IsDelete = record.IsDeleted ? true : null,
+                IsDelete = record.IsDeleted,
                 Version = record.Version,
                 LastModified = new DateTimeOffset(record.LastModified.ToUniversalTime(), TimeSpan.Zero),
                 LastAccessed = new DateTimeOffset(record.LastAccessed.ToUniversalTime(), TimeSpan.Zero)
@@ -411,14 +411,14 @@ public class HistorySyncer
         }
     }
 
-    private async void OnHistoryUpdated(HistoryRecord record)
+    private async void OnHistoryUpdated(HistoryRecord record, HistoryChangeSource source)
     {
         try
         {
-            if (record.SyncStatus == HistorySyncStatus.NeedSync)
-            {
+            if (source == HistoryChangeSource.Import)
+                await SyncImportedRecordAsync(record);
+            else if (record.SyncStatus == HistorySyncStatus.NeedSync)
                 await SyncOneAsync(record, CancellationToken.None);
-            }
         }
         catch (Exception ex)
         {
@@ -426,10 +426,15 @@ public class HistorySyncer
         }
     }
 
-    private async void OnHistoryAdded(HistoryRecord record)
+    private async void OnHistoryAdded(HistoryRecord record, HistoryChangeSource source)
     {
         try
         {
+            if (source == HistoryChangeSource.Import)
+            {
+                await SyncImportedRecordAsync(record);
+                return;
+            }
             // 如果已启用剪贴板同步且启用拉取，直接返回
             var syncConfig = _configManager.GetConfig<SyncConfig>();
             if (syncConfig.SyncSwitchOn && syncConfig.PullSwitchOn)
@@ -456,6 +461,16 @@ public class HistorySyncer
         {
             _logger.Write("HistorySyncer", $"新增记录处理失败[{record.Hash}]: {ex.Message}");
         }
+    }
+
+    private async Task SyncImportedRecordAsync(HistoryRecord record)
+    {
+        if (!_runtimeConfig.GetConfig<RuntimeHistoryConfig>().EnableSyncHistory)
+            return;
+        var profile = record.ToProfile();
+        if (!await CanUploadLocalProfileAsync(profile, CancellationToken.None))
+            return;
+        await _historyTransferQueue.EnqueueUpload(profile, forceResume: true, HistoryChangeSource.Import, CancellationToken.None);
     }
 
     private static async Task<bool> CanUploadLocalProfileAsync(Profile profile, CancellationToken token)

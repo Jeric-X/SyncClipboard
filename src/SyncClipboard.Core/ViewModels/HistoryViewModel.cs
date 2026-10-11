@@ -1036,8 +1036,10 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
-    private async void RecordEntityUpdated(HistoryRecord record)
+    private async void RecordEntityUpdated(HistoryRecord record, HistoryChangeSource source = HistoryChangeSource.Default)
     {
+        if (source == HistoryChangeSource.Import)
+            return;
         var newRecordVM = new HistoryRecordVM(record) { SortByLastAccessed = SortByLastAccessed };
         await _threadDispatcher.RunOnMainThreadAsync(() =>
         {

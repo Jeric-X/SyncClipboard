@@ -143,7 +143,7 @@ public sealed class HistoryImporter
             }
             progress?.Report(i + 1);
         }
-        if (result.ImportedCount + result.RepairedCount > 0)
+        if (result.ImportedCount + result.RepairedCount + result.ExistingCount > 0)
             manager.NotifyHistoryImported();
         await report.CompleteAsync(token).ConfigureAwait(false);
         return result;
@@ -153,7 +153,7 @@ public sealed class HistoryImporter
         HistoryImportPlan plan, HistoryExportRecord? item, uint maxGroupEntries, CancellationToken token)
     {
         var type = ValidateRecord(item);
-        if (await manager.ShouldSkipImportAsync(type, item.Hash, token).ConfigureAwait(false))
+        if (await manager.TryRefreshImportedProfileAsync(type, item.Hash, token).ConfigureAwait(false))
             return HistoryImportOutcome.Existing;
 
         string? directory = null;
@@ -170,7 +170,7 @@ public sealed class HistoryImporter
                 Directory.CreateDirectory(directory);
             }
             var record = await RestoreRecordAsync(plan, item, type, directory, maxGroupEntries, token).ConfigureAwait(false);
-            var outcome = await manager.ImportRecordAsync(record, directory, token).ConfigureAwait(false);
+            var outcome = await manager.AddImportProfile(record, directory, token).ConfigureAwait(false);
             saved = outcome != HistoryImportOutcome.Existing;
             return outcome;
         }
@@ -302,12 +302,26 @@ public sealed class HistoryImporter
             var file = new FileHashInfo(path, transfer.Sha256);
             if (profile is GroupProfile group)
             {
-                FileSys.EnsureAvailableSpace(item.Size, availableSpace(directory!));
-                await group.SetTransferData(file, item.Size, maxGroupEntries, token).ConfigureAwait(false);
+                var extractionBudget = GetGroupExtractionBudget(path, directory!, token);
+                await group.SetTransferData(file, extractionBudget, maxGroupEntries, token).ConfigureAwait(false);
             }
             else
                 await profile.SetTransferData(file, verify: true, token).ConfigureAwait(false);
         }
+    }
+
+    private long GetGroupExtractionBudget(string path, string directory, CancellationToken token)
+    {
+        var budget = availableSpace(directory);
+        var remaining = budget;
+        using var archive = ZipFile.OpenRead(path);
+        foreach (var entry in archive.Entries)
+        {
+            token.ThrowIfCancellationRequested();
+            FileSys.EnsureAvailableSpace(entry.Length, remaining);
+            remaining -= entry.Length;
+        }
+        return budget;
     }
 
     private static async Task ValidateRestoredProfileAsync(
@@ -321,8 +335,6 @@ public sealed class HistoryImporter
         }
         if (type != ProfileType.Text && profile.DisplayText != item.Text)
             throw new InvalidDataException("Record display text does not match its content.");
-        if (await profile.GetSize(token).ConfigureAwait(false) != item.Size)
-            throw new InvalidDataException("Record size does not match its content.");
     }
 
     private static async Task ValidateDecodedTextAsync(

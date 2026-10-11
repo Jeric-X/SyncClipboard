@@ -16,9 +16,9 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 {
     private const int HistoryKeyQueryBatchSize = 800;
 
-    public event Action<HistoryRecord>? HistoryAdded;
+    public event Action<HistoryRecord, HistoryChangeSource>? HistoryAdded;
     public event Action<HistoryRecord>? HistoryRemoved;
-    public event Action<HistoryRecord>? HistoryUpdated;
+    public event Action<HistoryRecord, HistoryChangeSource>? HistoryUpdated;
     public event Action? HistoryImported;
 
     private HistoryConfig _historyConfig = new();
@@ -151,7 +151,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                 entity.LastAccessed = DateTime.UtcNow;
             }
             await _dbContext.SaveChangesAsync(token);
-            HistoryUpdated?.Invoke(entity);
+            HistoryUpdated?.Invoke(entity, HistoryChangeSource.Default);
             return;
         }
 
@@ -161,7 +161,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         }
         await _dbContext.HistoryRecords.AddAsync(record, token);
         await _dbContext.SaveChangesAsync(token);
-        HistoryAdded?.Invoke(record);
+        HistoryAdded?.Invoke(record, HistoryChangeSource.Default);
     }
 
     public async Task AddRemoteProfile(Profile profile, CancellationToken token)
@@ -184,7 +184,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                 entity.TransferDataHash = null;
             }
             await _dbContext.SaveChangesAsync(token);
-            HistoryUpdated?.Invoke(entity);
+            HistoryUpdated?.Invoke(entity, HistoryChangeSource.Default);
             return;
         }
 
@@ -192,15 +192,22 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         record.SyncStatus = HistorySyncStatus.Synced;
         await _dbContext.HistoryRecords.AddAsync(record, token);
         await _dbContext.SaveChangesAsync(token);
-        HistoryAdded?.Invoke(record);
+        HistoryAdded?.Invoke(record, HistoryChangeSource.Default);
     }
 
-    public async Task<bool> ShouldSkipImportAsync(ProfileType type, string hash, CancellationToken token)
+    public async Task<bool> TryRefreshImportedProfileAsync(ProfileType type, string hash, CancellationToken token)
     {
+        HistoryRecord? existing;
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
-        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
-        var existing = await Query(type, hash, token).ConfigureAwait(false);
-        return existing is not null && (existing.IsDeleted || await HasImportDataAsync(existing, token).ConfigureAwait(false));
+        using (new ScopeGuard(() => _dbSemaphore.Release()))
+        {
+            existing = await Query(type, hash, token).ConfigureAwait(false);
+            if (existing is null || !await HasImportDataAsync(existing, token).ConfigureAwait(false))
+                return false;
+            await RefreshImportedRecordAsync(existing, token).ConfigureAwait(false);
+        }
+        NotifyImportChange(existing, added: false);
+        return true;
     }
 
     private async Task<bool> HasImportDataAsync(HistoryRecord record, CancellationToken token)
@@ -225,18 +232,65 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         }
     }
 
-    public async Task<HistoryImportOutcome> ImportRecordAsync(HistoryRecord record, string? importDirectory, CancellationToken token)
+    public async Task<HistoryImportOutcome> AddImportProfile(HistoryRecord record, string? importDirectory, CancellationToken token)
     {
+        HistoryImportOutcome outcome;
+        HistoryRecord changed;
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
-        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
-        var existing = await Query(record.Type, record.Hash, token).ConfigureAwait(false);
-        if (existing is not null && (existing.IsDeleted || await HasImportDataAsync(existing, token).ConfigureAwait(false)))
-            return HistoryImportOutcome.Existing;
-        if (importDirectory is not null && !await HasImportDataAsync(record, token).ConfigureAwait(false))
-            throw new FileNotFoundException("Import attachments are no longer available or valid.");
-        if (existing is not null)
-            return await RepairImportedRecordAsync(existing, record, importDirectory, token).ConfigureAwait(false);
-        return await AddImportedRecordAsync(record, token).ConfigureAwait(false);
+        using (new ScopeGuard(() => _dbSemaphore.Release()))
+        {
+            var existing = await Query(record.Type, record.Hash, token).ConfigureAwait(false);
+            changed = existing ?? record;
+            if (existing is not null && await HasImportDataAsync(existing, token).ConfigureAwait(false))
+            {
+                await RefreshImportedRecordAsync(existing, token).ConfigureAwait(false);
+                outcome = HistoryImportOutcome.Existing;
+            }
+            else
+            {
+                if (importDirectory is not null && !await HasImportDataAsync(record, token).ConfigureAwait(false))
+                    throw new FileNotFoundException("Import attachments are no longer available or valid.");
+                outcome = existing is null
+                    ? await AddImportedRecordAsync(record, token).ConfigureAwait(false)
+                    : await RepairImportedRecordAsync(existing, record, importDirectory, token).ConfigureAwait(false);
+            }
+        }
+        NotifyImportChange(changed, outcome == HistoryImportOutcome.Imported);
+        return outcome;
+    }
+
+    private async Task RefreshImportedRecordAsync(HistoryRecord record, CancellationToken token)
+    {
+        TouchImportedRecord(record);
+        await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
+    }
+
+    private static void TouchImportedRecord(HistoryRecord record)
+    {
+        record.IsDeleted = false;
+        record.IsLocalFileReady = true;
+        record.LastModified = record.LastAccessed = DateTime.UtcNow;
+        record.Version++;
+        if (record.SyncStatus != HistorySyncStatus.LocalOnly)
+            record.SyncStatus = HistorySyncStatus.NeedSync;
+    }
+
+    private void NotifyImportChange(HistoryRecord record, bool added)
+    {
+        var handlers = added ? HistoryAdded : HistoryUpdated;
+        if (handlers is null)
+            return;
+        foreach (Action<HistoryRecord, HistoryChangeSource> handler in handlers.GetInvocationList().Cast<Action<HistoryRecord, HistoryChangeSource>>())
+        {
+            try
+            {
+                handler(record, HistoryChangeSource.Import);
+            }
+            catch (Exception ex)
+            {
+                _logger.Write("HistoryManager", $"Import notification failed: {ex.Message}");
+            }
+        }
     }
 
     private async Task<HistoryImportOutcome> RepairImportedRecordAsync(
@@ -256,6 +310,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             existing.TransferDataFile = record.TransferDataFile;
             existing.TransferDataHash = record.TransferDataHash;
             existing.IsLocalFileReady = true;
+            TouchImportedRecord(existing);
             await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
         }
         catch
@@ -279,6 +334,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         record.IsDeleted = false;
         record.SyncStatus = HistorySyncStatus.LocalOnly;
         record.Version = 0;
+        record.LastModified = record.LastAccessed = DateTime.UtcNow;
         _dbContext.HistoryRecords.Add(record);
         try
         {
@@ -407,7 +463,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                 entity.SyncStatus = HistorySyncStatus.NeedSync;
             }
             await _dbContext.SaveChangesAsync(token);
-            HistoryUpdated?.Invoke(entity);
+            HistoryUpdated?.Invoke(entity, HistoryChangeSource.Default);
         }
     }
 
@@ -422,7 +478,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             entity.FilePath = record.FilePath;
             CopyLocalTransferDataBinding(record, entity);
             await _dbContext.SaveChangesAsync(token);
-            HistoryUpdated?.Invoke(entity);
+            HistoryUpdated?.Invoke(entity, HistoryChangeSource.Default);
         }
     }
 
@@ -449,7 +505,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         entity.TransferDataFile = null;
         entity.TransferDataHash = null;
         await _dbContext.SaveChangesAsync(token);
-        HistoryUpdated?.Invoke(entity);
+        HistoryUpdated?.Invoke(entity, HistoryChangeSource.Default);
     }
 
     /// <summary>
@@ -469,7 +525,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             CopyLocalTransferDataBinding(record, record);
             await _dbContext.HistoryRecords.AddAsync(record, token);
             await _dbContext.SaveChangesAsync(token);
-            HistoryAdded?.Invoke(record);
+            HistoryAdded?.Invoke(record, HistoryChangeSource.Default);
             return record;
         }
 
@@ -547,7 +603,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                     {
                         var newRecord = dto.ToHistoryRecord();
                         await _dbContext.HistoryRecords.AddAsync(newRecord, token).ConfigureAwait(false);
-                        HistoryAdded?.Invoke(newRecord);
+                        HistoryAdded?.Invoke(newRecord, HistoryChangeSource.Default);
                         addedRecords.Add(newRecord);
                     }
                 }
@@ -584,7 +640,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         }
         else
         {
-            HistoryUpdated?.Invoke(record);
+            HistoryUpdated?.Invoke(record, HistoryChangeSource.Default);
         }
     }
 
@@ -882,7 +938,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         }
         await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
         foreach (var record in records)
-            HistoryUpdated?.Invoke(record);
+            HistoryUpdated?.Invoke(record, HistoryChangeSource.Default);
     }
 
     /// <summary>

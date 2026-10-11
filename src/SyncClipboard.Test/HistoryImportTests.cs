@@ -1,4 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core;
+using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.RemoteServer;
+using SyncClipboard.Server.Core.Models;
 using Moq;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
@@ -19,6 +24,7 @@ using System.Text.Json.Nodes;
 namespace SyncClipboard.Test;
 
 [TestClass]
+[DoNotParallelize]
 public class HistoryImportTests
 {
     public TestContext TestContext { get; set; } = null!;
@@ -130,13 +136,13 @@ public class HistoryImportTests
         var uiNotifications = 0;
         var syncNotifications = new List<HistoryRecord>();
         f.Manager.HistoryImported += () => uiNotifications++;
-        f.Manager.HistoryAdded += syncNotifications.Add;
-        f.Manager.HistoryUpdated += syncNotifications.Add;
+        f.Manager.HistoryAdded += (record, source) => syncNotifications.Add(record);
+        f.Manager.HistoryUpdated += (record, source) => syncNotifications.Add(record);
         var result = await f.ImportAsync(backup, Token);
         Assert.AreEqual(0, result.FailureCount);
         Assert.AreEqual(5, result.ImportedCount);
         Assert.AreEqual(1, uiNotifications);
-        Assert.IsEmpty(syncNotifications);
+        Assert.HasCount(5, syncNotifications);
         Assert.IsNull(result.ReportPath);
         File.Delete(file);
         Directory.Delete(folder, true);
@@ -147,8 +153,7 @@ public class HistoryImportTests
             Assert.AreEqual(original.Size, restored.Size);
             Assert.AreEqual(original.Text, restored.Text);
             Assert.AreEqual(original.Timestamp, restored.Timestamp.ToUniversalTime());
-            Assert.AreEqual(original.LastModified, restored.LastModified.ToUniversalTime());
-            Assert.AreEqual(original.LastAccessed, restored.LastAccessed.ToUniversalTime());
+
             Assert.IsTrue(restored.Stared && restored.Pinned);
             Assert.AreEqual(original.From, restored.From);
             Assert.AreEqual(HistorySyncStatus.LocalOnly, restored.SyncStatus);
@@ -172,7 +177,199 @@ public class HistoryImportTests
     }
 
     [TestMethod]
-    public async Task InlineJson_DoesNotOverwriteExistingOrDeletedRecords()
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ImportExistingRecord_RefreshesActivityAndRestoresDeletion(bool deleted)
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var item = await f.RecordAsync(new TextProfile("existing content"), Token);
+        var backup = await f.ExportAsync([item], Token);
+        var oldTime = DateTime.UtcNow.AddDays(-90);
+        var existing = new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = item.Hash,
+            Text = "local preview",
+            From = "local device",
+            Timestamp = oldTime,
+            LastAccessed = oldTime,
+            LastModified = oldTime,
+            IsDeleted = deleted,
+            SyncStatus = HistorySyncStatus.Synced,
+            Version = 4
+        };
+        f.Db.HistoryRecords.Add(existing);
+        await f.Db.SaveChangesAsync(Token);
+        var notified = false;
+        f.Manager.HistoryUpdated += (record, source) =>
+        {
+            Assert.AreEqual(HistoryChangeSource.Import, source);
+            Assert.IsTrue(f.DbSemaphore.Wait(0, TestContext.CancellationTokenSource.Token), "Notifications must run outside the database lock.");
+            f.DbSemaphore.Release();
+            notified = true;
+        };
+        var before = DateTime.UtcNow;
+        var result = await f.ImportAsync(backup, Token);
+        Assert.AreEqual(0, result.FailureCount);
+        Assert.AreEqual(1, result.ExistingCount);
+        Assert.IsTrue(notified);
+        Assert.IsFalse(existing.IsDeleted);
+        Assert.IsTrue(existing.IsLocalFileReady);
+        Assert.AreEqual(oldTime, existing.Timestamp);
+        Assert.IsTrue(existing.LastAccessed >= before && existing.LastAccessed <= DateTime.UtcNow);
+        Assert.AreEqual(existing.LastAccessed, existing.LastModified);
+        Assert.AreEqual(5, existing.Version);
+        Assert.AreEqual(HistorySyncStatus.NeedSync, existing.SyncStatus);
+        Assert.AreEqual("local preview", existing.Text);
+        Assert.AreEqual("local device", existing.From);
+        Assert.IsFalse(existing.Stared || existing.Pinned);
+    }
+
+    [TestMethod]
+    public async Task ImportEvents_AreDeliveredAfterEachCommitAndSurviveObserverFailure()
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var records = new[] { await f.RecordAsync(new TextProfile("one"), Token), await f.RecordAsync(new TextProfile("two"), Token) };
+        var backup = await f.ExportAsync(records, Token);
+        var notifications = 0;
+        var before = DateTime.UtcNow;
+        f.Manager.HistoryAdded += (_, _) => throw new InvalidOperationException("observer failure");
+        f.Manager.HistoryAdded += (record, source) =>
+        {
+            Assert.AreEqual(HistoryChangeSource.Import, source);
+            Assert.IsTrue(f.DbSemaphore.Wait(0, TestContext.CancellationTokenSource.Token));
+            f.DbSemaphore.Release();
+            Assert.IsTrue(record.LastAccessed >= before);
+            Assert.AreEqual(record.LastAccessed, record.LastModified);
+            Assert.IsTrue(f.Db.HistoryRecords.Any(row => row.ID == record.ID));
+            notifications++;
+        };
+        var result = await f.ImportAsync(backup, Token, new InlineProgress(count => Assert.AreEqual(count, notifications)));
+        Assert.AreEqual(2, result.ImportedCount);
+        Assert.AreEqual(0, result.FailureCount);
+        Assert.AreEqual(2, notifications);
+    }
+
+    [TestMethod]
+    [DataRow(false, false, true)]
+    [DataRow(true, false, true)]
+    [DataRow(true, true, true)]
+    [DataRow(false, false, false)]
+    public async Task ImportEvent_UploadsOrUpdatesWithClipboardPullEnabled(bool remoteExists, bool localExists, bool syncEnabled)
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var item = await f.RecordAsync(new TextProfile("imported content"), Token);
+        var backup = await f.ExportAsync([item], Token);
+        if (localExists)
+        {
+            f.Db.HistoryRecords.Add(new HistoryRecord
+            {
+                Type = item.ProfileType,
+                Hash = item.Hash,
+                Text = item.Text,
+                IsDeleted = true,
+                Version = 3,
+                SyncStatus = HistorySyncStatus.Synced,
+                Timestamp = item.Timestamp,
+                LastModified = item.LastModified,
+                LastAccessed = item.LastAccessed
+            });
+            await f.Db.SaveChangesAsync(Token);
+        }
+        f.Config.SetConfig(new SyncConfig { SyncSwitchOn = true, PullSwitchOn = true });
+        var runtime = new ConfigBase(Path.Combine(f.Root, "runtime.json"));
+        runtime.SetConfig(new RuntimeHistoryConfig { EnableSyncHistory = syncEnabled });
+        var remote = new Mock<IRemoteClipboardServer>();
+        var server = remote.As<IOfficialSyncServer>();
+        server.Setup(x => x.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(remoteExists ? new HistoryRecordDto
+            {
+                Type = item.ProfileType,
+                Hash = item.Hash,
+                Version = 7,
+                IsDeleted = true
+            } : null);
+        HistoryRecordUpdateDto? update = null;
+        HistoryRecordDto? upload = null;
+        server.Setup(x => x.UpdateHistoryAsync(item.ProfileType, item.Hash, It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
+            .Callback<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) => update = dto)
+            .Returns(Task.CompletedTask);
+        server.Setup(x => x.UploadHistoryAsync(It.IsAny<HistoryRecordDto>(), It.IsAny<FileHashInfo?>(),
+                It.IsAny<IProgress<HttpDownloadProgress>>(), It.IsAny<CancellationToken>()))
+            .Callback<HistoryRecordDto, FileHashInfo?, IProgress<HttpDownloadProgress>, CancellationToken>((dto, _, _, _) => upload = dto)
+            .Returns(Task.CompletedTask);
+        var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
+        SetPrivateField(factory, "_current", remote.Object);
+        SetPrivateField(factory, "_serverStateLock", new Lock());
+        using var services = new ServiceCollection().AddSingleton(f.Config).AddSingleton<IProfileEnv>(f).BuildServiceProvider();
+        var currentField = typeof(AppCore).GetField("_current", BindingFlags.Static | BindingFlags.NonPublic)!;
+        var previousApp = currentField.GetValue(null);
+        var app = (AppCore)RuntimeHelpers.GetUninitializedObject(typeof(AppCore));
+        SetPrivateField(app, "<Services>k__BackingField", services);
+        SetPrivateField(app, "<Logger>k__BackingField", Mock.Of<ILogger>());
+        using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), factory, f.Manager, f, f.Config, runtime);
+        _ = new HistorySyncer(f.Manager, factory, Mock.Of<ILogger>(), queue, f.Config, runtime);
+        var completed = new TaskCompletionSource<TransferTask>(TaskCreationOptions.RunContinuationsAsynchronously);
+        queue.TaskStatusChanged += (_, task) =>
+        {
+            if (task.Status is TransferTaskStatus.Completed or TransferTaskStatus.Failed)
+                completed.TrySetResult(task);
+        };
+        try
+        {
+            currentField.SetValue(null, app);
+            var before = DateTime.UtcNow;
+            var result = await f.ImportAsync(backup, Token);
+            Assert.AreEqual(0, result.FailureCount);
+            if (!syncEnabled)
+            {
+                Assert.IsEmpty(await queue.GetAllActiveTasks(Token));
+                Assert.IsNull(upload);
+                Assert.IsNull(update);
+                return;
+            }
+            var task = await completed.Task.WaitAsync(TimeSpan.FromSeconds(10), Token);
+            Assert.AreEqual(TransferTaskStatus.Completed, task.Status, task.ErrorMessage);
+            if (remoteExists)
+            {
+                Assert.IsNotNull(update);
+                Assert.IsFalse(update.IsDelete);
+                Assert.AreEqual(8, update.Version);
+                Assert.IsTrue(update.LastAccessed >= before);
+                Assert.AreEqual(update.LastModified, update.LastAccessed);
+                Assert.IsNull(upload);
+            }
+            else
+            {
+                Assert.IsNotNull(upload);
+                Assert.AreEqual(item.Timestamp, upload.CreateTime.UtcDateTime);
+                Assert.IsTrue(upload.LastAccessed >= before);
+                Assert.IsNull(update);
+            }
+            Assert.AreEqual(HistorySyncStatus.Synced, (await f.Db.HistoryRecords.SingleAsync(Token)).SyncStatus);
+        }
+        finally
+        {
+            var cts = (CancellationTokenSource)typeof(HistoryTransferQueue)
+                .GetField("_globalCts", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(queue)!;
+            cts.Cancel();
+            if (typeof(HistoryTransferQueue).GetField("_processingTask", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(queue) is Task processing)
+                await processing.WaitAsync(TimeSpan.FromSeconds(10), Token);
+            currentField.SetValue(null, previousApp);
+        }
+    }
+
+    private static void SetPrivateField(object target, string name, object value)
+    {
+        target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(target, value);
+    }
+
+    [TestMethod]
+    public async Task InlineJson_PreservesExistingContent()
     {
         await using var f = new Fixture();
         await f.InitializeAsync(Token);
@@ -184,7 +381,6 @@ public class HistoryImportTests
         var result = await f.ImportAsync(backup, Token);
         Assert.AreEqual(1, result.ExistingCount);
         Assert.AreEqual("local", existing.Text);
-        Assert.IsTrue(existing.IsDeleted);
         Assert.AreEqual(0, result.FailureCount);
     }
 
@@ -323,8 +519,6 @@ public class HistoryImportTests
         var restored = await f.Db.HistoryRecords.SingleAsync(Token);
         Assert.AreEqual(valid.Hash, restored.Hash);
         Assert.AreEqual(valid.Timestamp, restored.Timestamp.ToUniversalTime());
-        Assert.AreEqual(valid.LastModified, restored.LastModified.ToUniversalTime());
-        Assert.AreEqual(valid.LastAccessed, restored.LastAccessed.ToUniversalTime());
     }
 
     [TestMethod]
@@ -422,7 +616,9 @@ public class HistoryImportTests
     }
 
     [TestMethod]
-    public async Task MissingAttachment_IsRepairedWithoutChangingLocalProperties()
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task MissingAttachment_IsRepairedWithoutChangingLocalProperties(bool deleted)
     {
         await using var f = new Fixture();
         await f.InitializeAsync(Token);
@@ -445,27 +641,31 @@ public class HistoryImportTests
             LastModified = DateTime.UtcNow.AddDays(-1),
             LastAccessed = DateTime.UtcNow,
             SyncStatus = HistorySyncStatus.Synced,
-            Version = 42
+            Version = 42,
+            IsDeleted = deleted
         };
         f.Db.HistoryRecords.Add(local);
         await f.Db.SaveChangesAsync(Token);
-        var snapshot = (local.Timestamp, local.LastModified, local.LastAccessed);
+        var (Timestamp, LastModified, LastAccessed) = (local.Timestamp, local.LastModified, local.LastAccessed);
         var uiNotifications = 0;
         var syncNotifications = new List<HistoryRecord>();
         f.Manager.HistoryImported += () => uiNotifications++;
-        f.Manager.HistoryUpdated += syncNotifications.Add;
+        f.Manager.HistoryUpdated += (record, source) => syncNotifications.Add(record);
         var result = await f.ImportAsync(backup, Token);
         Assert.AreEqual(1, result.RepairedCount);
         Assert.AreEqual(1, uiNotifications);
-        Assert.IsEmpty(syncNotifications);
+        Assert.HasCount(1, syncNotifications);
         Assert.AreEqual(0, result.ImportedCount);
         Assert.AreEqual(0, result.FailureCount);
-        Assert.AreEqual(snapshot, (local.Timestamp, local.LastModified, local.LastAccessed));
+        Assert.AreEqual(Timestamp, local.Timestamp);
         Assert.AreEqual("local text", local.Text);
         Assert.AreEqual("local device", local.From);
         Assert.IsFalse(local.Stared || local.Pinned);
-        Assert.AreEqual(42, local.Version);
-        Assert.AreEqual(HistorySyncStatus.Synced, local.SyncStatus);
+        Assert.IsFalse(local.IsDeleted);
+        Assert.IsTrue(local.LastAccessed > LastAccessed);
+        Assert.AreEqual(local.LastAccessed, local.LastModified);
+        Assert.AreEqual(43, local.Version);
+        Assert.AreEqual(HistorySyncStatus.NeedSync, local.SyncStatus);
         Assert.IsTrue(local.IsLocalFileReady);
         var restored = Profile.GetFullPath(f.GetHistoryPersistentDir(), local.Type, local.Hash, local.TransferDataFile)!;
         Assert.AreEqual("payload", await File.ReadAllTextAsync(restored, Token));
@@ -511,7 +711,7 @@ public class HistoryImportTests
         Task<HistoryImportOutcome> commit;
         try
         {
-            commit = f.Manager.ImportRecordAsync(record, directory, Token);
+            commit = f.Manager.AddImportProfile(record, directory, Token);
             Directory.Delete(root, recursive: true);
             if (removeRecord)
             {
@@ -646,6 +846,34 @@ public class HistoryImportTests
     }
 
     [TestMethod]
+    public async Task ExistingRecordSaveFailure_IsReportedWithoutNotification()
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var item = await f.RecordAsync(new TextProfile("existing"), Token);
+        var backup = await f.ExportAsync([item], Token);
+        var existing = new HistoryRecord
+        {
+            Type = item.ProfileType,
+            Hash = item.Hash,
+            Text = item.Text,
+            IsDeleted = true,
+            LastModified = item.LastModified,
+            LastAccessed = item.LastAccessed,
+            Version = 8,
+            SyncStatus = HistorySyncStatus.Synced
+        };
+        f.Db.HistoryRecords.Add(existing);
+        await f.Db.SaveChangesAsync(Token);
+        await f.Db.Database.ExecuteSqlRawAsync("CREATE TRIGGER reject_refresh BEFORE UPDATE ON HistoryRecords BEGIN SELECT RAISE(ABORT, 'rejected'); END;", Token);
+        var notifications = 0;
+        f.Manager.HistoryUpdated += (_, _) => notifications++;
+        var result = await f.ImportAsync(backup, Token);
+        Assert.AreEqual(1, result.FailureCount);
+        Assert.AreEqual(0, notifications);
+    }
+
+    [TestMethod]
     public async Task DatabaseFailure_DoesNotLeaveImportedAttachments()
     {
         await using var f = new Fixture();
@@ -672,7 +900,7 @@ public class HistoryImportTests
         await File.WriteAllTextAsync(file, "payload", Token);
         var item = await f.RecordAsync(new FileProfile(file), Token);
         var backup = await f.ExportAsync([item], Token);
-        f.Manager.HistoryImported += () => throw new InvalidOperationException("observer failure");
+        f.Manager.HistoryAdded += (_, _) => throw new InvalidOperationException("observer failure");
         var result = await f.ImportAsync(backup, Token);
         Assert.AreEqual(1, result.ImportedCount);
         Assert.AreEqual(0, result.FailureCount);
@@ -714,51 +942,6 @@ public class HistoryImportTests
         Assert.AreEqual(0, result.ImportedCount);
         Assert.AreEqual(1, result.FailureCount);
         Assert.IsEmpty(await f.Db.HistoryRecords.ToListAsync(Token));
-    }
-
-    [TestMethod]
-    [DataRow("Text")]
-    [DataRow("LongText")]
-    [DataRow("File")]
-    [DataRow("Image")]
-    [DataRow("Group")]
-    public async Task IncorrectRecordSize_IsNotPersisted(string type)
-    {
-        await using var f = new Fixture();
-        await f.InitializeAsync(Token);
-        var file = Path.Combine(f.Root, "data.txt");
-        await File.WriteAllTextAsync(file, "payload", Token);
-        Profile profile = type switch
-        {
-            "Text" => new TextProfile("hello"),
-            "LongText" => new TextProfile(new string('文', 12000)),
-            "File" => new FileProfile(file),
-            "Image" => new ImageProfile(file),
-            _ => new GroupProfile([file])
-        };
-        var backup = await f.ExportAsync([await f.RecordAsync(profile, Token)], Token);
-        await ChangeRecordSizeAsync(backup, size => size + 1, Token);
-        var result = await f.ImportAsync(backup, Token);
-        Assert.AreEqual(0, result.ImportedCount);
-        Assert.AreEqual(1, result.FailureCount);
-        Assert.IsEmpty(await f.Db.HistoryRecords.ToListAsync(Token));
-    }
-
-    [TestMethod]
-    public async Task CompressedGroup_RejectsExtractionBeyondDeclaredSize()
-    {
-        await using var f = new Fixture();
-        await f.InitializeAsync(Token);
-        var file = Path.Combine(f.Root, "zeros.bin");
-        await File.WriteAllBytesAsync(file, new byte[1024 * 1024], Token);
-        var item = await f.RecordAsync(new GroupProfile([file]), Token);
-        var backup = await f.ExportAsync([item], Token);
-        await ChangeRecordSizeAsync(backup, _ => 1, Token);
-        var result = await f.ImportAsync(backup, Token);
-        Assert.AreEqual(0, result.ImportedCount);
-        Assert.Contains("extraction budget", await File.ReadAllTextAsync(result.ReportPath!, Token));
-        Assert.IsEmpty(await f.Db.HistoryRecords.ToListAsync(Token));
-        AssertNoImportDirectories(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), item.ProfileType, item.Hash));
     }
 
     [TestMethod]
@@ -1062,26 +1245,6 @@ public class HistoryImportTests
     {
         if (Directory.Exists(root))
             Assert.IsEmpty(Directory.GetDirectories(root, "import-*"));
-    }
-
-    private static async Task ChangeRecordSizeAsync(string path, Func<long, long> change, CancellationToken token)
-    {
-        if (Path.GetExtension(path) == ".json")
-        {
-            var document = JsonSerializer.Deserialize<HistoryExportDocument>(await File.ReadAllTextAsync(path, token), HistoryExporter.JsonOptions)!;
-            document = document with { Records = document.Records.Select(item => item with { Size = change(item.Size) }).ToArray() };
-            await File.WriteAllTextAsync(path, JsonSerializer.Serialize(document, HistoryExporter.JsonOptions), token);
-            return;
-        }
-        using var archive = ZipFile.Open(path, ZipArchiveMode.Update);
-        var manifest = archive.GetEntry("history.json")!;
-        HistoryExportDocument content;
-        using (var input = manifest.Open())
-            content = (await JsonSerializer.DeserializeAsync<HistoryExportDocument>(input, HistoryExporter.JsonOptions, token))!;
-        content = content with { Records = content.Records.Select(item => item with { Size = change(item.Size) }).ToArray() };
-        manifest.Delete();
-        await using var output = archive.CreateEntry("history.json").Open();
-        await JsonSerializer.SerializeAsync(output, content, HistoryExporter.JsonOptions, token);
     }
 
     private sealed class InlineProgress(Action<int> callback) : IProgress<int>
