@@ -5,6 +5,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.History.HistoryExport;
+using SyncClipboard.Core.Utilities.History.HistoryImport;
 using SyncClipboard.Server.Core.Models;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
@@ -18,6 +19,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     public event Action<HistoryRecord>? HistoryAdded;
     public event Action<HistoryRecord>? HistoryRemoved;
     public event Action<HistoryRecord>? HistoryUpdated;
+    public event Action? HistoryImported;
 
     private HistoryConfig _historyConfig = new();
     private RuntimeHistoryConfig _runtimeHistoryConfig = new();
@@ -80,7 +82,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         if (string.IsNullOrEmpty(record.Hash))
             return null;
 
-        var persistentDir = _profileEnv.GetPersistentDir();
+        var persistentDir = _profileEnv.GetHistoryPersistentDir();
         var workingDir = Profile.QueryGetWorkingDir(persistentDir, record.Type, record.Hash);
 
         return workingDir;
@@ -191,6 +193,145 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         await _dbContext.HistoryRecords.AddAsync(record, token);
         await _dbContext.SaveChangesAsync(token);
         HistoryAdded?.Invoke(record);
+    }
+
+    public async Task<bool> ShouldSkipImportAsync(ProfileType type, string hash, CancellationToken token)
+    {
+        await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        var existing = await Query(type, hash, token).ConfigureAwait(false);
+        return existing is not null && (existing.IsDeleted || await HasImportDataAsync(existing, token).ConfigureAwait(false));
+    }
+
+    private async Task<bool> HasImportDataAsync(HistoryRecord record, CancellationToken token)
+    {
+        try
+        {
+            var profile = Profile.Create(_profileEnv.GetHistoryPersistentDir(), new ProfilePersistentInfo
+            {
+                Type = record.Type,
+                Hash = record.Hash,
+                Text = record.Text,
+                Size = record.Size,
+                FilePaths = record.FilePath,
+                TransferDataFile = record.TransferDataFile,
+                TransferDataHash = record.TransferDataHash
+            });
+            return !profile.HasTransferData || await profile.IsDataComplete(false, token).ConfigureAwait(false);
+        }
+        catch (Exception) when (!token.IsCancellationRequested)
+        {
+            return false;
+        }
+    }
+
+    public async Task<HistoryImportOutcome> ImportRecordAsync(HistoryRecord record, string? importDirectory, CancellationToken token)
+    {
+        await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        var existing = await Query(record.Type, record.Hash, token).ConfigureAwait(false);
+        if (existing is not null && (existing.IsDeleted || await HasImportDataAsync(existing, token).ConfigureAwait(false)))
+            return HistoryImportOutcome.Existing;
+        if (importDirectory is not null && !await HasImportDataAsync(record, token).ConfigureAwait(false))
+            throw new FileNotFoundException("Import attachments are no longer available or valid.");
+        if (existing is not null)
+        {
+            var oldPaths = existing.FilePath;
+            var oldFile = existing.TransferDataFile;
+            var oldHash = existing.TransferDataHash;
+            var oldReady = existing.IsLocalFileReady;
+            string? movedDirectory = null;
+            try
+            {
+                // Deletion derives the directory from the stored hash, including its original casing.
+                if (record.Hash != existing.Hash && importDirectory is not null)
+                    movedDirectory = MoveImportedData(record, existing.Hash, importDirectory);
+                existing.FilePath = record.FilePath;
+                existing.TransferDataFile = record.TransferDataFile;
+                existing.TransferDataHash = record.TransferDataHash;
+                existing.IsLocalFileReady = true;
+                await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
+            }
+            catch
+            {
+                existing.FilePath = oldPaths;
+                existing.TransferDataFile = oldFile;
+                existing.TransferDataHash = oldHash;
+                existing.IsLocalFileReady = oldReady;
+                if (movedDirectory is not null)
+                    Directory.Delete(movedDirectory, recursive: true);
+                throw;
+            }
+            CleanupReplacedImportData(existing, oldPaths, oldFile);
+            return HistoryImportOutcome.Repaired;
+        }
+        record.Hash = record.Hash.ToUpperInvariant();
+        record.ID = 0;
+        record.IsDeleted = false;
+        record.SyncStatus = HistorySyncStatus.LocalOnly;
+        record.Version = 0;
+        _dbContext.HistoryRecords.Add(record);
+        try
+        {
+            await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
+        }
+        catch
+        {
+            _dbContext.Entry(record).State = EntityState.Detached;
+            throw;
+        }
+        return HistoryImportOutcome.Imported;
+    }
+
+    private void CleanupReplacedImportData(HistoryRecord record, string[] oldPaths, string? oldTransfer)
+    {
+        try
+        {
+            var persistentDir = _profileEnv.GetHistoryPersistentDir();
+            string Resolve(string path) => Profile.GetFullPath(persistentDir, record.Type, record.Hash, path);
+            var previous = oldPaths.Concat(oldTransfer is null ? [] : [oldTransfer]).Select(Resolve);
+            var current = record.FilePath.Concat(record.TransferDataFile is null ? [] : [record.TransferDataFile]).Select(Resolve);
+            HistoryImportAttachmentCleanup.RemoveObsolete(
+                Profile.QueryGetWorkingDir(persistentDir, record.Type, record.Hash), previous, current);
+        }
+        catch (Exception ex)
+        {
+            // The database update has already committed; cleanup must not turn it into a failed import.
+            _logger.Write("HistoryManager", $"Obsolete import attachment cleanup failed: {ex.Message}");
+        }
+    }
+
+    private string MoveImportedData(HistoryRecord record, string targetHash, string importDirectory)
+    {
+        var persistentDir = _profileEnv.GetHistoryPersistentDir();
+        var targetRoot = Profile.CreateWorkingDir(persistentDir, record.Type, targetHash);
+        var target = Path.Combine(targetRoot, "import-" + Guid.NewGuid().ToString("N"));
+        string? Remap(string? path)
+        {
+            if (path is null)
+                return null;
+            var source = Profile.GetFullPath(persistentDir, record.Type, record.Hash, path);
+            return Path.GetRelativePath(targetRoot, Path.Combine(target, Path.GetRelativePath(importDirectory, source)));
+        }
+        var paths = record.FilePath.Select(path => Remap(path)!).ToArray();
+        var transfer = Remap(record.TransferDataFile);
+        Directory.Move(importDirectory, target);
+        record.FilePath = paths;
+        record.TransferDataFile = transfer;
+        return target;
+    }
+
+    internal void NotifyHistoryImported()
+    {
+        // Observer failures must not make the importer remove committed attachments.
+        try
+        {
+            HistoryImported?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            _logger.Write("HistoryManager", $"Import notification failed: {ex.Message}");
+        }
     }
 
     public async Task<IReadOnlyList<HistoryExportRecord>> GetExportSnapshotAsync(
@@ -528,13 +669,14 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     {
         try
         {
-            var historyFolder = Env.HistoryFileFolder;
+            var historyFolder = _profileEnv.GetHistoryPersistentDir();
             if (!Directory.Exists(historyFolder))
             {
                 return;
             }
 
-            using var _dbContext = new HistoryDbContext();
+            _dbSemaphore.Wait(token);
+            using var guard = new ScopeGuard(() => _dbSemaphore.Release());
             var existingDirectoryNames = _dbContext.HistoryRecords
                 .Select(r => new { r.Type, r.Hash })
                 .AsEnumerable()

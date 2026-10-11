@@ -26,6 +26,7 @@ using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.FileCacheManager;
 using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.History.HistoryExport;
+using SyncClipboard.Core.Utilities.History.HistoryImport;
 using SyncClipboard.Core.Utilities.Job;
 using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.Utilities.Network;
@@ -411,6 +412,8 @@ namespace SyncClipboard.Core
             services.AddSingleton<HistorySyncer>();
             services.AddSingleton<HistoryManager>();
             services.AddSingleton<HistoryExporter>();
+            services.AddSingleton<HistoryImporter>();
+            services.AddTransient<HistoryImportViewModel>();
             services.AddTransient<HistoryExportViewModel>();
             services.AddSingleton<HistorySyncer>();
             services.AddSingleton<HistoryTransferQueue>();

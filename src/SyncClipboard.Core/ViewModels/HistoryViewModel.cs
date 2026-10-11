@@ -553,6 +553,7 @@ public partial class HistoryViewModel : ObservableObject
     }
 
     private int _isLoadTaskRunning = 0;
+    private Task _activePageLoad = Task.CompletedTask;
     private double _lastOffsetY = 0;
     private double _lastViewportHeight = 0;
     private double _lastExtentHeight = 0;
@@ -594,7 +595,13 @@ public partial class HistoryViewModel : ObservableObject
             return;
         if (Interlocked.CompareExchange(ref _isLoadTaskRunning, 1, 0) != 0)
             return;
-        using var scopeGuard = new ScopeGuard(() => Interlocked.Exchange(ref _isLoadTaskRunning, 0));
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _activePageLoad = completed.Task;
+        using var scopeGuard = new ScopeGuard(() =>
+        {
+            Interlocked.Exchange(ref _isLoadTaskRunning, 0);
+            completed.TrySetResult();
+        });
 
         await _loader.Run(async ct =>
         {
@@ -634,7 +641,7 @@ public partial class HistoryViewModel : ObservableObject
         _ = _historyService.SyncAllAsync();
     }
 
-    private Task Reload()
+    private async Task Reload()
     {
         try
         {
@@ -643,6 +650,10 @@ public partial class HistoryViewModel : ObservableObject
         }
         catch { }
         _loadCts = new CancellationTokenSource();
+        var token = _loadCts.Token;
+        await _activePageLoad;
+        if (token.IsCancellationRequested)
+            return;
 
         _isLocalEnd = false;
 
@@ -653,15 +664,16 @@ public partial class HistoryViewModel : ObservableObject
         _lastViewportHeight = 0;
         _lastExtentHeight = 0;
         _updateTaskQueue = Channel.CreateUnbounded<TransferTask>();
-        _queueConsumerTask = Task.Run(() => _ = ConsumeUpdateTaskQueueAsync(_loadCts.Token));
+        _queueConsumerTask = Task.Run(() => _ = ConsumeUpdateTaskQueueAsync(token));
         window?.ScrollToTop();
 
         if (SelectedFilter == HistoryFilterType.Transferring)
         {
-            return LoadTransferringTasksAsync(_loadCts.Token);
+            await LoadTransferringTasksAsync(token);
+            return;
         }
 
-        return RunLoadTask(InitialPageSize, _loadCts.Token);
+        await RunLoadTask(InitialPageSize, token);
     }
 
     private async Task LoadTransferringTasksAsync(CancellationToken token)
@@ -1004,11 +1016,24 @@ public partial class HistoryViewModel : ObservableObject
         }
         historyManager.HistoryAdded += RecordEntityUpdated;
         historyManager.HistoryUpdated += RecordEntityUpdated;
+        historyManager.HistoryImported += OnHistoryImported;
         historyManager.HistoryRemoved += OnHistoryRemoved;
 
         await Reload();
 
         remoteServerFactory.CurrentServerChanged += OnCurrentServerChanged;
+    }
+
+    private async void OnHistoryImported()
+    {
+        try
+        {
+            await _threadDispatcher.RunOnMainThreadAsync(Reload);
+        }
+        catch (Exception ex)
+        {
+            await logger.WriteAsync("Failed to reload imported history:", ex.Message);
+        }
     }
 
     private async void RecordEntityUpdated(HistoryRecord record)
@@ -1115,7 +1140,7 @@ public partial class HistoryViewModel : ObservableObject
         }
         catch
         {
-            Reload();
+            _ = Reload();
         }
     }
 
