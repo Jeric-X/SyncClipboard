@@ -363,6 +363,55 @@ public class HistoryImportTests
         }
     }
 
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task OrdinaryPropertySync_DoesNotRestoreRemoteDeletion(bool deleted)
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var record = new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = new string('A', 64),
+            Text = "local text",
+            Stared = true,
+            Pinned = true,
+            IsDeleted = deleted,
+            Version = 8,
+            SyncStatus = HistorySyncStatus.NeedSync
+        };
+        f.Db.HistoryRecords.Add(record);
+        await f.Db.SaveChangesAsync(Token);
+        var remote = new Mock<IRemoteClipboardServer>();
+        var server = remote.As<IOfficialSyncServer>();
+        HistoryRecordUpdateDto? sent = null;
+        var remoteDeleted = true;
+        server.Setup(x => x.UpdateHistoryAsync(record.Type, record.Hash, It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
+            .Callback<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) =>
+            {
+                sent = dto;
+                if (dto.IsDelete.HasValue)
+                    remoteDeleted = dto.IsDelete.Value;
+            }).Returns(Task.CompletedTask);
+        var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
+        SetPrivateField(factory, "_current", remote.Object);
+        SetPrivateField(factory, "_serverStateLock", new Lock());
+        var syncer = (HistorySyncer)RuntimeHelpers.GetUninitializedObject(typeof(HistorySyncer));
+        SetPrivateField(syncer, "_historyManager", f.Manager);
+        SetPrivateField(syncer, "_remoteServerFactory", factory);
+        SetPrivateField(syncer, "_logger", Mock.Of<ILogger>());
+
+        await syncer.SyncOneAsync(record, Token);
+
+        Assert.IsNotNull(sent);
+        Assert.IsTrue(sent.Starred);
+        Assert.IsTrue(sent.Pinned);
+        Assert.AreEqual<bool?>(deleted ? true : null, sent.IsDelete);
+        Assert.IsTrue(remoteDeleted);
+        Assert.AreEqual(HistorySyncStatus.Synced, record.SyncStatus);
+    }
+
     private static void SetPrivateField(object target, string name, object value)
     {
         target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(target, value);
