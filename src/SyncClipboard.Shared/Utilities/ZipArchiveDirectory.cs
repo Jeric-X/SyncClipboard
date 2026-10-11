@@ -19,10 +19,20 @@ internal static class ZipArchiveDirectory
         while (source.Position < end)
         {
             token.ThrowIfCancellationRequested();
-            CheckEntryCount(++count, limit);
-            if (source.Position > end - header.Length)
+            if (source.Position > end - 6)
                 throw new InvalidDataException("Truncated ZIP central directory.");
-            await source.ReadExactlyAsync(header, token).ConfigureAwait(false);
+            await source.ReadExactlyAsync(header.AsMemory(0, 6), token).ConfigureAwait(false);
+            if (U32(header, 0) == 0x05054b50)
+            {
+                if (count != directory.Count || U16(header, 4) != end - source.Position)
+                    throw new InvalidDataException("Invalid ZIP directory signature.");
+                source.Position = end;
+                break;
+            }
+            CheckEntryCount(++count, limit);
+            if (source.Position > end - (header.Length - 6))
+                throw new InvalidDataException("Truncated ZIP central directory.");
+            await source.ReadExactlyAsync(header.AsMemory(6), token).ConfigureAwait(false);
             if (U32(header, 0) != 0x02014b50)
                 throw new InvalidDataException("Invalid ZIP directory entry.");
             var length = (long)U16(header, 28) + U16(header, 30) + U16(header, 32);
@@ -157,7 +167,7 @@ internal static class ZipArchiveDirectory
         for (var offset = tail.Length - 22; offset >= 0; offset--)
         {
             token.ThrowIfCancellationRequested();
-            if (U32(tail, offset) != 0x06054b50 || offset + 22 + U16(tail, offset + 20) != tail.Length)
+            if (U32(tail, offset) != 0x06054b50 || offset + 22 + U16(tail, offset + 20) > tail.Length)
                 continue;
             var eocdOffset = source.Length - tail.Length + offset;
             if (U16(tail, offset + 4) != 0 || U16(tail, offset + 6) != 0)

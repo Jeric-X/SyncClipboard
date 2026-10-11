@@ -126,6 +126,69 @@ public class GroupProfileExtractionTests
     }
 
     [TestMethod]
+    [DataRow(false, false)]
+    [DataRow(false, true)]
+    [DataRow(true, false)]
+    [DataRow(true, true)]
+    public async Task GroupExtraction_AcceptsZipMetadata(bool signature, bool limited)
+    {
+        using var f = new Fixture();
+        var path = Path.Combine(f.Root, "metadata.zip");
+        await WriteZipWithMetadataAsync(path, signature);
+        // The original reader accepts both layouts and reads the actual content.
+        using (var archive = ZipFile.OpenRead(path))
+        using (var reader = new StreamReader(archive.Entries.Single().Open()))
+            Assert.AreEqual("content", await reader.ReadToEndAsync(Token));
+        var profile = new GroupProfile(new SyncClipboard.Shared.ProfileDto());
+        var transfer = new FileHashInfo(path, await Utility.CalculateFileSHA256(path, Token));
+        if (limited)
+            await profile.SetTransferData(transfer, 100, 1, Token);
+        else
+            await profile.SetTransferData(transfer, true, Token);
+        Assert.AreEqual("content", await File.ReadAllTextAsync(profile.Files.Single(), Token));
+    }
+
+    [TestMethod]
+    public async Task GroupExtraction_RejectsTruncatedDirectorySignature()
+    {
+        using var f = new Fixture();
+        var path = Path.Combine(f.Root, "signature.zip");
+        await WriteZipWithMetadataAsync(path, true);
+        var bytes = await File.ReadAllBytesAsync(path, Token);
+        var signature = bytes.AsSpan().LastIndexOf(new byte[] { 0x50, 0x4b, 0x05, 0x05 });
+        bytes[signature + 4] = 100;
+        await File.WriteAllBytesAsync(path, bytes, Token);
+        var profile = new GroupProfile(new SyncClipboard.Shared.ProfileDto());
+        var transfer = new FileHashInfo(path, await Utility.CalculateFileSHA256(path, Token));
+        await Assert.ThrowsExactlyAsync<InvalidDataException>(() => profile.SetTransferData(transfer, 100, 1, Token));
+        Assert.IsEmpty(Directory.GetDirectories(f.Root));
+    }
+
+    private async Task WriteZipWithMetadataAsync(string path, bool signature)
+    {
+        using (var archive = ZipFile.Open(path, ZipArchiveMode.Create))
+        {
+            await using var writer = new StreamWriter(archive.CreateEntry("file.txt").Open());
+            await writer.WriteAsync("content".AsMemory(), Token);
+        }
+        var bytes = await File.ReadAllBytesAsync(path, Token);
+        var eocd = bytes.Length - 22;
+        if (signature)
+        {
+            byte[] record = [0x50, 0x4b, 0x05, 0x05, 3, 0, 1, 2, 3];
+            var length = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(eocd + 12));
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(eocd + 12), length + (uint)record.Length);
+            bytes = [.. bytes.AsSpan(0, eocd), .. record, .. bytes.AsSpan(eocd)];
+        }
+        else
+        {
+            bytes[eocd + 20] = 3; // Three comment bytes followed by application data.
+            bytes = [.. bytes, 1, 2, 3, 4, 5, 6];
+        }
+        await File.WriteAllBytesAsync(path, bytes, Token);
+    }
+
+    [TestMethod]
     [DataRow("folder/../extra")]
     [DataRow("./extra")]
     [DataRow("./declared.txt")]
