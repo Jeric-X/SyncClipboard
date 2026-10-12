@@ -80,7 +80,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         if (string.IsNullOrEmpty(record.Hash))
             return null;
 
-        var persistentDir = _profileEnv.GetPersistentDir();
+        var persistentDir = _profileEnv.GetHistoryPersistentDir();
         var workingDir = Profile.QueryGetWorkingDir(persistentDir, record.Type, record.Hash);
 
         return workingDir;
@@ -529,13 +529,14 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     {
         try
         {
-            var historyFolder = Env.HistoryFileFolder;
+            var historyFolder = _profileEnv.GetHistoryPersistentDir();
             if (!Directory.Exists(historyFolder))
             {
                 return;
             }
 
-            using var _dbContext = new HistoryDbContext();
+            _dbSemaphore.Wait(token);
+            using var guard = new ScopeGuard(() => _dbSemaphore.Release());
             var existingDirectoryNames = _dbContext.HistoryRecords
                 .Select(r => new { r.Type, r.Hash })
                 .AsEnumerable()
