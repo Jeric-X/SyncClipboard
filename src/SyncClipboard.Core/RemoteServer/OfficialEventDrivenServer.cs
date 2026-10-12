@@ -254,7 +254,7 @@ public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficia
         return syncServer.UpdateHistoryAsync(type, hash, dto, cancellationToken);
     }
 
-    public Task UploadHistoryAsync(
+    public Task<HistoryRecordDto> UploadHistoryAsync(
         HistoryRecordDto dto, FileHashInfo? file, IProgress<HttpDownloadProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {

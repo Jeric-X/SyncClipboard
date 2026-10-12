@@ -258,7 +258,7 @@ public class HistoryRetentionTests
                 Type = local.Type,
                 Hash = local.Hash,
                 IsDeleted = remoteDeleted,
-                Version = 7,
+                Version = 20,
                 HasData = true
             } : null);
         HistoryRecordDto? uploaded = null;
@@ -272,6 +272,7 @@ public class HistoryRetentionTests
                     Assert.IsNotNull(file);
                     uploadedContent = await File.ReadAllTextAsync(file.Path, token);
                     Assert.AreEqual(await Utility.CalculateFileSHA256(file.Path, token), file.Hash);
+                    return new HistoryRecordDto { Type = dto.Type, Hash = dto.Hash, Version = 21 };
                 });
         var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
         typeof(RemoteClipboardServerFactory).GetField("_current", BindingFlags.Instance | BindingFlags.NonPublic)!
@@ -294,8 +295,10 @@ public class HistoryRetentionTests
             Assert.AreEqual(modified, uploaded.LastModified.UtcDateTime);
             Assert.AreEqual("attachment content", uploadedContent);
         }
-        Assert.AreEqual(HistorySyncStatus.Synced,
-            (await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token)).SyncStatus);
+        var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
+        Assert.AreEqual(remoteExists && !remoteDeleted ? 8 : 21, saved.Version);
+        Assert.AreEqual(modified, saved.LastModified);
     }
 
     [TestMethod]

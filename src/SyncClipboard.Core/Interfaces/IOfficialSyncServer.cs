@@ -61,7 +61,8 @@ public interface IOfficialSyncServer
     /// 传输文件存在时，file.Hash 必须是已经与该文件核对过的 SHA-256。
     /// 服务器已存在记录或拒绝传输数据时抛出对应异常。
     /// </summary>
-    Task UploadHistoryAsync(
+    /// <returns>服务器最终保存的记录，包含同步后的版本号。</returns>
+    Task<HistoryRecordDto> UploadHistoryAsync(
         HistoryRecordDto dto, FileHashInfo? file, IProgress<HttpDownloadProgress>? progress = null,
         CancellationToken cancellationToken = default);
 

@@ -632,7 +632,8 @@ public class HistoryTransferQueue : IDisposable
 
         try
         {
-            await server.UploadHistoryAsync(recordDto, transferData, task.ProgressReporter, ct);
+            var serverRecord = await server.UploadHistoryAsync(recordDto, transferData, task.ProgressReporter, ct);
+            record.Version = serverRecord.Version;
             record.SyncStatus = HistorySyncStatus.Synced;
             await _historyManager.PersistServerSyncedAsync(record, ct);
         }
