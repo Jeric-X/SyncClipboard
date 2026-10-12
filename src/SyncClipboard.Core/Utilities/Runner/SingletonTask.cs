@@ -39,7 +39,7 @@ public class SingletonTask
 
         lock (_ctsLock)
         {
-            if (!cancelPrevious && _taskSemaphore.CurrentCount == 0)
+            if (!cancelPrevious && _runningTasks.Count != 0)
             {
                 return;
             }
@@ -63,6 +63,7 @@ public class SingletonTask
                 {
                     await _taskSemaphore.WaitAsync(linkedCts.Token);
                     using var scopeGuard = new ScopeGuard(() => _taskSemaphore.Release());
+                    linkedCts.Token.ThrowIfCancellationRequested();
                     await task(linkedCts.Token);
                 }
                 catch when (methodLevelToken.IsCancellationRequested) { }
