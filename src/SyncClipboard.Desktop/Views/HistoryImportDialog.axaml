@@ -1,0 +1,27 @@
+﻿<ui:FAContentDialog x:Class="SyncClipboard.Desktop.Views.HistoryImportDialog"
+                    xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="using:FluentAvalonia.UI.Controls"
+                    xmlns:vm="using:SyncClipboard.Core.ViewModels"
+                    xmlns:i18n="using:SyncClipboard.Core.I18n"
+                    x:DataType="vm:HistoryImportViewModel"
+                    Title="{x:Static i18n:Strings.HistoryImport}"
+                    CloseButtonText="{x:Static i18n:Strings.HistoryExportClose}">
+    <ScrollViewer MaxHeight="540">
+        <StackPanel MinWidth="400" MaxWidth="600" Spacing="12">
+            <StackPanel Spacing="4" IsVisible="{Binding ShowSetup}">
+                <TextBlock Text="{x:Static i18n:Strings.HistoryExportArchive}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding BackupPath}" TextWrapping="Wrap" />
+                <TextBlock Text="{x:Static i18n:Strings.HistoryImportDuplicates}" TextWrapping="Wrap" />
+            </StackPanel>
+            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" />
+            <SelectableTextBlock Text="{Binding Status}" TextWrapping="Wrap" />
+            <Button Content="{x:Static i18n:Strings.HistoryImportStart}" Command="{Binding StartCommand}" IsVisible="{Binding ShowStart}" />
+            <StackPanel Spacing="4" IsVisible="{Binding HasReport}">
+                <TextBlock Text="{x:Static i18n:Strings.HistoryImportReport}" FontWeight="SemiBold" />
+                <SelectableTextBlock Text="{Binding ReportPath}" TextWrapping="Wrap" />
+                <Button Content="{x:Static i18n:Strings.OpenFolder}" Command="{Binding OpenFolderCommand}" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</ui:FAContentDialog>

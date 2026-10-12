@@ -1,0 +1,30 @@
+﻿<ContentDialog x:Class="SyncClipboard.WinUI3.Views.HistoryImportDialog"
+               xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+               xmlns:converters="using:CommunityToolkit.WinUI.Converters"
+               xmlns:local="using:SyncClipboard.WinUI3.Views"
+               xmlns:i18n="using:SyncClipboard.Core.I18n"
+               Title="{x:Bind i18n:Strings.HistoryImport}"
+               CloseButtonText="{x:Bind i18n:Strings.HistoryExportClose}">
+    <ContentDialog.Resources>
+        <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+        <Style TargetType="local:HistoryImportDialog" BasedOn="{StaticResource DefaultContentDialogStyle}" />
+    </ContentDialog.Resources>
+    <ScrollViewer MaxHeight="540">
+        <StackPanel MinWidth="400" MaxWidth="600" Spacing="12">
+            <StackPanel Spacing="4" Visibility="{Binding ShowSetup, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock Text="{x:Bind i18n:Strings.HistoryExportArchive}" FontWeight="SemiBold" />
+                <TextBlock Text="{Binding BackupPath}" TextWrapping="Wrap" />
+                <TextBlock Text="{x:Bind i18n:Strings.HistoryImportDuplicates}" TextWrapping="Wrap" />
+            </StackPanel>
+            <ProgressBar IsIndeterminate="True" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+            <TextBlock IsTextSelectionEnabled="True" Text="{Binding Status}" TextWrapping="Wrap" />
+            <Button Content="{x:Bind i18n:Strings.HistoryImportStart}" Command="{Binding StartCommand}" Visibility="{Binding ShowStart, Converter={StaticResource BoolToVisibility}}" />
+            <StackPanel Spacing="4" Visibility="{Binding HasReport, Converter={StaticResource BoolToVisibility}}">
+                <TextBlock Text="{x:Bind i18n:Strings.HistoryImportReport}" FontWeight="SemiBold" />
+                <TextBlock IsTextSelectionEnabled="True" Text="{Binding ReportPath}" TextWrapping="Wrap" />
+                <Button Content="{x:Bind i18n:Strings.OpenFolder}" Command="{Binding OpenFolderCommand}" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</ContentDialog>
