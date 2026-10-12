@@ -403,12 +403,13 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                 }
                 else
                 {
+                    var localIsNewer = entity.IsLocalNewerThanRemote(dto);
                     if (entity.ShouldUpdateFromRemote(dto))
                     {
                         entity.ApplyChangesFromRemote(dto);
                         entity.SyncStatus = HistorySyncStatus.Synced;
                     }
-                    else if (entity.IsLocalNewerThanRemote(dto))
+                    else if (localIsNewer)
                     {
                         entity.SyncStatus = HistorySyncStatus.NeedSync;
                     }
@@ -416,7 +417,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                     {
                         entity.SyncStatus = HistorySyncStatus.Synced;
                     }
-                    entity.ApplyBasicFromRemote(dto);
+                    entity.ApplyBasicFromRemote(dto, updateActivityTimes: !localIsNewer);
                     TriggleUpdateOrDeleteEvent(entity);
                 }
                 await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
@@ -479,10 +480,9 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             await DeleteWorkingDirAsync(record, token);
         }
 
-        _dbContext.HistoryRecords.RemoveRange(deletedRecords);
         await _dbContext.SaveChangesAsync(token);
 
-        _logger.Write("HistoryManager", $"Cleared {deletedRecords.Count} deleted history records and their data");
+        _logger.Write("HistoryManager", $"Cleared attachment data for {deletedRecords.Count} deleted history records");
     }
 
     public async Task CleanupExpiredHistory(CancellationToken token = default)
