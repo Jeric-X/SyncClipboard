@@ -86,10 +86,10 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         return workingDir;
     }
 
-    private async Task DeleteWorkingDirAsync(HistoryRecord record, CancellationToken token)
+    private async Task<bool> DeleteWorkingDirAsync(HistoryRecord record, CancellationToken token)
     {
         var workingDir = GetRecordWorkingDir(record);
-        await Task.Run(() =>
+        return await Task.Run(() =>
         {
             if (!string.IsNullOrEmpty(workingDir) && Directory.Exists(workingDir))
             {
@@ -100,8 +100,10 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                 catch (Exception ex)
                 {
                     _logger.Write("HistoryManager", $"Failed to delete temp folder {workingDir}: {ex.Message}");
+                    return false;
                 }
             }
+            return true;
         }, token);
     }
 
@@ -139,17 +141,30 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             {
                 entity.Text = record.Text;
             }
+            var restored = entity.IsDeleted;
             entity.FilePath = record.FilePath;
             CopyLocalTransferDataBinding(record, entity);
             entity.IsLocalFileReady = true;
             entity.IsDeleted = false;
+            if (restored)
+            {
+                entity.Version++;
+                entity.SyncStatus = HistorySyncStatus.LocalOnly;
+            }
             entity.LastModified = DateTime.UtcNow;
             if (updateLastAccessed)
             {
                 entity.LastAccessed = DateTime.UtcNow;
             }
             await _dbContext.SaveChangesAsync(token);
-            HistoryUpdated?.Invoke(entity);
+            if (restored)
+            {
+                HistoryAdded?.Invoke(entity);
+            }
+            else
+            {
+                HistoryUpdated?.Invoke(entity);
+            }
             return;
         }
 
@@ -417,7 +432,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                     {
                         entity.SyncStatus = HistorySyncStatus.Synced;
                     }
-                    entity.ApplyBasicFromRemote(dto, updateActivityTimes: !localIsNewer);
+                    entity.ApplyBasicFromRemote(dto, updateLastModified: !localIsNewer);
                     TriggleUpdateOrDeleteEvent(entity);
                 }
                 await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
@@ -471,18 +486,23 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             return;
         }
 
+        var clearedCount = 0;
         foreach (var record in deletedRecords)
         {
+            if (!await DeleteWorkingDirAsync(record, token))
+            {
+                continue;
+            }
             record.FilePath = [];
             record.TransferDataFile = null;
             record.TransferDataHash = null;
             record.IsLocalFileReady = false;
-            await DeleteWorkingDirAsync(record, token);
+            clearedCount++;
         }
 
         await _dbContext.SaveChangesAsync(token);
 
-        _logger.Write("HistoryManager", $"Cleared attachment data for {deletedRecords.Count} deleted history records");
+        _logger.Write("HistoryManager", $"Cleared attachment data for {clearedCount} deleted history records");
     }
 
     public async Task CleanupExpiredHistory(CancellationToken token = default)

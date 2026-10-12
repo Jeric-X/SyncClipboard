@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.RemoteServer;
+using SyncClipboard.Shared.Models;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
@@ -17,6 +20,8 @@ public class HistoryRetentionTests
 {
     public TestContext TestContext { get; set; } = null!;
     private CancellationToken Token => TestContext.CancellationTokenSource.Token;
+
+    private static readonly string[] ExpectedAttachmentPaths = ["data.bin"];
 
     [TestMethod]
     public async Task Expiration_RequiresBothActivityTimesToBeOldAndPreservesProtectedRecords()
@@ -75,13 +80,16 @@ public class HistoryRetentionTests
     }
 
     [TestMethod]
-    [DataRow(10, 1, 10, true, false)]
-    [DataRow(1, 11, 10, true, false)]
-    [DataRow(-10, 11, 10, false, true)]
-    [DataRow(1, 1, 10, false, true)]
-    [DataRow(0, 10, 10, false, false)]
+    [DataRow(10, 1, 10, true, false, -1)]
+    [DataRow(10, 1, 10, true, false, 2)]
+    [DataRow(1, 11, 10, true, false, -1)]
+    [DataRow(1, 11, 10, true, false, 2)]
+    [DataRow(-10, 11, 10, false, true, -1)]
+    [DataRow(-10, 11, 10, false, true, 2)]
+    [DataRow(1, 1, 10, false, true, -1)]
+    [DataRow(0, 10, 10, false, false, -1)]
     public async Task RemoteSync_PreservesActivityTimesWhenLocalStateWins(
-        int localMinutesAhead, int localVersion, int remoteVersion, bool localWins, bool remoteWins)
+        int localMinutesAhead, int localVersion, int remoteVersion, bool localWins, bool remoteWins, int remoteAccessHours)
     {
         await using var f = await Fixture.CreateAsync(Token);
         var remoteModified = DateTime.UtcNow.AddDays(-1);
@@ -101,7 +109,7 @@ public class HistoryRetentionTests
             Text = record.Text,
             CreateTime = record.Timestamp,
             LastModified = remoteModified,
-            LastAccessed = remoteModified.AddHours(-1),
+            LastAccessed = remoteModified.AddHours(remoteAccessHours),
             Version = remoteVersion,
             IsDeleted = true
         };
@@ -110,7 +118,7 @@ public class HistoryRetentionTests
 
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
         Assert.AreEqual(localWins ? localModified : remoteModified, saved.LastModified);
-        Assert.AreEqual(localWins ? localAccessed : remote.LastAccessed.UtcDateTime, saved.LastAccessed);
+        Assert.AreEqual(remoteAccessHours > 1 ? remote.LastAccessed.UtcDateTime : localAccessed, saved.LastAccessed);
         Assert.AreEqual(localWins ? HistorySyncStatus.NeedSync : HistorySyncStatus.Synced, saved.SyncStatus);
         Assert.AreEqual(remoteWins ? remoteVersion : localVersion, saved.Version);
         Assert.AreEqual(remoteWins, saved.IsDeleted);
@@ -184,6 +192,188 @@ public class HistoryRetentionTests
 
         var remaining = await f.Db.HistoryRecords.Select(row => row.Hash).ToListAsync(Token);
         CollectionAssert.AreEquivalent(new[] { recentFile.Hash, recentText.Hash, active.Hash }, remaining);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task CopyExistingRecord_RestorationIsAddedAndPendingUpload(bool deleted)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var profile = new TextProfile("restore copied text");
+        var old = DateTime.UtcNow.AddDays(-2);
+        var record = Record(await profile.GetHash(Token), old, old);
+        record.Text = profile.DisplayText;
+        record.IsDeleted = deleted;
+        record.SyncStatus = HistorySyncStatus.Synced;
+        record.Version = 7;
+        record.Stared = true;
+        var timestamp = record.Timestamp;
+        f.Db.HistoryRecords.Add(record);
+        await f.Db.SaveChangesAsync(Token);
+        var added = new List<HistoryRecord>();
+        var updated = new List<HistoryRecord>();
+        f.Manager.HistoryAdded += added.Add;
+        f.Manager.HistoryUpdated += updated.Add;
+        var before = DateTime.UtcNow;
+
+        await f.Manager.AddLocalProfile(profile, token: Token);
+
+        var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        Assert.IsFalse(saved.IsDeleted);
+        Assert.AreEqual(deleted ? 8 : 7, saved.Version);
+        Assert.AreEqual(deleted ? HistorySyncStatus.LocalOnly : HistorySyncStatus.Synced, saved.SyncStatus);
+        Assert.IsTrue(saved.LastModified >= before);
+        Assert.IsTrue(saved.LastAccessed >= before);
+        Assert.AreEqual(timestamp, saved.Timestamp);
+        Assert.IsTrue(saved.Stared);
+        Assert.HasCount(deleted ? 1 : 0, added);
+        Assert.HasCount(deleted ? 0 : 1, updated);
+        Assert.AreEqual(saved.ID, (deleted ? added : updated).Single().ID);
+    }
+
+    [TestMethod]
+    [DataRow(false, false)]
+    [DataRow(true, false)]
+    [DataRow(true, true)]
+    public async Task Upload_OnlySkipsExistingActiveRecords(bool remoteExists, bool remoteDeleted)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var source = Path.Combine(f.GetPersistentDir(), "source.txt");
+        await File.WriteAllTextAsync(source, "attachment content", Token);
+        var profile = new FileProfile(source);
+        await f.Manager.AddLocalProfile(profile, token: Token);
+        var local = await f.Db.HistoryRecords.SingleAsync(Token);
+        local.Version = 8;
+        local.LastModified = DateTime.UtcNow.AddMinutes(-1);
+        await f.Db.SaveChangesAsync(Token);
+        var modified = local.LastModified;
+        var remote = new Mock<IRemoteClipboardServer>();
+        var server = remote.As<IOfficialSyncServer>();
+        server.Setup(x => x.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(remoteExists ? new HistoryRecordDto
+            {
+                Type = local.Type,
+                Hash = local.Hash,
+                IsDeleted = remoteDeleted,
+                Version = 7,
+                HasData = true
+            } : null);
+        HistoryRecordDto? uploaded = null;
+        string? uploadedContent = null;
+        server.Setup(x => x.UploadHistoryAsync(It.IsAny<HistoryRecordDto>(), It.IsAny<FileHashInfo?>(),
+            It.IsAny<IProgress<HttpDownloadProgress>?>(), It.IsAny<CancellationToken>()))
+            .Returns<HistoryRecordDto, FileHashInfo?, IProgress<HttpDownloadProgress>?, CancellationToken>(
+                async (dto, file, _, token) =>
+                {
+                    uploaded = dto;
+                    Assert.IsNotNull(file);
+                    uploadedContent = await File.ReadAllTextAsync(file.Path, token);
+                    Assert.AreEqual(await Utility.CalculateFileSHA256(file.Path, token), file.Hash);
+                });
+        var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
+        typeof(RemoteClipboardServerFactory).GetField("_current", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(factory, remote.Object);
+        typeof(RemoteClipboardServerFactory).GetField("_serverStateLock", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(factory, RuntimeHelpers.GetUninitializedObject(typeof(Lock)));
+        using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), factory, f.Manager, f, null!, new ConfigBase());
+
+        await queue.Upload(profile, ct: Token);
+
+        if (remoteExists && !remoteDeleted)
+        {
+            Assert.IsNull(uploaded);
+        }
+        else
+        {
+            Assert.IsNotNull(uploaded);
+            Assert.IsFalse(uploaded.IsDeleted);
+            Assert.AreEqual(8, uploaded.Version);
+            Assert.AreEqual(modified, uploaded.LastModified.UtcDateTime);
+            Assert.AreEqual("attachment content", uploadedContent);
+        }
+        Assert.AreEqual(HistorySyncStatus.Synced,
+            (await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token)).SyncStatus);
+    }
+
+    [TestMethod]
+    [TestCategory("PlatformWindows")]
+    public async Task DeletedAttachmentCleanup_RetriesAfterLockedFileIsReleased()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            Assert.Inconclusive("Windows file sharing is required to prevent deletion.");
+        }
+        await AssertDeletionRetryAsync(lockFile: true);
+    }
+
+    [TestMethod]
+    [TestCategory("PlatformMacOS")]
+    [TestCategory("PlatformLinux")]
+    public async Task DeletedAttachmentCleanup_RetriesAfterDirectoryPermissionIsRestored()
+    {
+        if (!OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
+        {
+            Assert.Inconclusive("Unix directory permissions are required to prevent deletion.");
+        }
+        await AssertDeletionRetryAsync(lockFile: false);
+    }
+
+    private async Task AssertDeletionRetryAsync(bool lockFile)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var old = DateTime.UtcNow.AddDays(-1);
+        var record = Record(new string('E', 64), old, old);
+        record.Type = ProfileType.File;
+        record.IsDeleted = true;
+        record.SyncStatus = HistorySyncStatus.Synced;
+        record.FilePath = ["data.bin"];
+        record.TransferDataFile = "data.bin";
+        record.TransferDataHash = new string('F', 64);
+        var directory = Profile.CreateWorkingDir(f.GetHistoryPersistentDir(), record.Type, record.Hash);
+        var path = Path.Combine(directory, "data.bin");
+        await File.WriteAllTextAsync(path, "content", Token);
+        f.Db.HistoryRecords.Add(record);
+        await f.Db.SaveChangesAsync(Token);
+        FileStream? held = null;
+        UnixFileMode? originalMode = null;
+        try
+        {
+            if (lockFile)
+            {
+                held = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+            }
+            else if (!OperatingSystem.IsWindows())
+            {
+                originalMode = File.GetUnixFileMode(directory);
+                File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+            }
+            await f.Manager.ClearDeletedHistoryData(Token);
+            Assert.IsTrue(Directory.Exists(directory));
+            var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+            Assert.IsTrue(saved.IsLocalFileReady);
+            CollectionAssert.AreEqual(ExpectedAttachmentPaths, saved.FilePath);
+            Assert.AreEqual("data.bin", saved.TransferDataFile);
+            Assert.AreEqual(new string('F', 64), saved.TransferDataHash);
+            Assert.IsTrue(saved.IsDeleted);
+        }
+        finally
+        {
+            held?.Dispose();
+            if (originalMode.HasValue && !OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(directory, originalMode.Value);
+            }
+        }
+        await f.Manager.ClearDeletedHistoryData(Token);
+        Assert.IsFalse(Directory.Exists(directory));
+        var cleaned = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        Assert.IsFalse(cleaned.IsLocalFileReady);
+        Assert.IsEmpty(cleaned.FilePath);
+        Assert.IsNull(cleaned.TransferDataFile);
+        Assert.IsNull(cleaned.TransferDataHash);
+        Assert.IsTrue(cleaned.IsDeleted);
+        Assert.AreEqual(old, cleaned.LastModified);
     }
 
     private static HistoryRecord Record(string hash, DateTime modified, DateTime accessed) => new()
