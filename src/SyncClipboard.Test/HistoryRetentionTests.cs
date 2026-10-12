@@ -235,10 +235,13 @@ public class HistoryRetentionTests
     }
 
     [TestMethod]
-    [DataRow(false, false)]
-    [DataRow(true, false)]
-    [DataRow(true, true)]
-    public async Task Upload_OnlySkipsExistingActiveRecords(bool remoteExists, bool remoteDeleted)
+    [DataRow(false, false, false, false)]
+    [DataRow(true, false, false, false)]
+    [DataRow(true, true, false, false)]
+    [DataRow(false, false, true, false)]
+    [DataRow(false, false, true, true)]
+    public async Task Upload_SkipsActiveRecordsOrPersistsAcceptedResponse(
+        bool remoteExists, bool remoteDeleted, bool concurrentRemoteRecord, bool remoteAccessedLater)
     {
         await using var f = await Fixture.CreateAsync(Token);
         var source = Path.Combine(f.GetPersistentDir(), "source.txt");
@@ -250,6 +253,16 @@ public class HistoryRetentionTests
         local.LastModified = DateTime.UtcNow.AddMinutes(-1);
         await f.Db.SaveChangesAsync(Token);
         var modified = local.LastModified;
+        var accessed = local.LastAccessed;
+        var accepted = local.ToHistoryRecordDto();
+        accepted.Version = 21;
+        if (concurrentRemoteRecord)
+        {
+            accepted.Starred = true;
+            accepted.Pinned = true;
+            accepted.LastModified = modified.AddMinutes(1);
+            accepted.LastAccessed = accessed.AddMinutes(remoteAccessedLater ? 1 : -1);
+        }
         var remote = new Mock<IRemoteClipboardServer>();
         var server = remote.As<IOfficialSyncServer>();
         server.Setup(x => x.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -272,7 +285,7 @@ public class HistoryRetentionTests
                     Assert.IsNotNull(file);
                     uploadedContent = await File.ReadAllTextAsync(file.Path, token);
                     Assert.AreEqual(await Utility.CalculateFileSHA256(file.Path, token), file.Hash);
-                    return new HistoryRecordDto { Type = dto.Type, Hash = dto.Hash, Version = 21 };
+                    return accepted;
                 });
         var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
         typeof(RemoteClipboardServerFactory).GetField("_current", BindingFlags.Instance | BindingFlags.NonPublic)!
@@ -298,7 +311,13 @@ public class HistoryRetentionTests
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
         Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
         Assert.AreEqual(remoteExists && !remoteDeleted ? 8 : 21, saved.Version);
-        Assert.AreEqual(modified, saved.LastModified);
+        Assert.AreEqual(concurrentRemoteRecord ? accepted.LastModified.UtcDateTime : modified, saved.LastModified);
+        Assert.AreEqual(concurrentRemoteRecord, saved.Stared);
+        Assert.AreEqual(concurrentRemoteRecord, saved.Pinned);
+        Assert.IsFalse(saved.IsDeleted);
+        Assert.AreEqual(remoteAccessedLater ? accepted.LastAccessed.UtcDateTime : accessed, saved.LastAccessed);
+        Assert.IsTrue(saved.IsLocalFileReady);
+        Assert.IsGreaterThan(0, saved.FilePath.Length);
     }
 
     [TestMethod]
