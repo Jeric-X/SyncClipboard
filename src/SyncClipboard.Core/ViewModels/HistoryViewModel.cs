@@ -573,7 +573,7 @@ public partial class HistoryViewModel : ObservableObject
         SetScrollViewMetrics(offsetY, viewportHeight, extentHeight);
         if (IsEnd)
             return;
-        if (extentHeight <= 0)
+        if (viewportHeight <= 0 || extentHeight <= 0)
             return;
 
         if (IsScrollViewerEnabled() && offsetY + viewportHeight < 0.8 * extentHeight)
@@ -593,13 +593,19 @@ public partial class HistoryViewModel : ObservableObject
         try
         {
             await DoLoadPageAsync(size, token);
-            while (!IsEnd && !token.IsCancellationRequested && _lastExtentHeight <= _lastViewportHeight)
+            while (!IsEnd && !token.IsCancellationRequested)
             {
-                await DoLoadPageAsync(size, token);
-                if (window.GetScrollViewMetrics(out var offsetY, out var viewportHeight, out var extentHeight))
+                if (!window.GetScrollViewMetrics(out var offsetY, out var viewportHeight, out var extentHeight)
+                    || viewportHeight <= 0)
                 {
-                    SetScrollViewMetrics(offsetY, viewportHeight, extentHeight);
+                    break;
                 }
+
+                SetScrollViewMetrics(offsetY, viewportHeight, extentHeight);
+                if (extentHeight > viewportHeight)
+                    break;
+
+                await DoLoadPageAsync(size, token);
                 await Task.Delay(10, token);
             }
         }
