@@ -88,6 +88,8 @@ public class HistoryRetentionTests
     [DataRow(-10, 11, 10, false, true, 2)]
     [DataRow(1, 1, 10, false, true, -1)]
     [DataRow(0, 10, 10, false, false, -1)]
+    [DataRow(1, 10, 10, false, false, -1)]
+    [DataRow(-1, 10, 10, false, false, 2)]
     public async Task RemoteSync_PreservesActivityTimesWhenLocalStateWins(
         int localMinutesAhead, int localVersion, int remoteVersion, bool localWins, bool remoteWins, int remoteAccessHours)
     {
@@ -117,7 +119,7 @@ public class HistoryRetentionTests
         await f.Manager.SyncRemoteHistoryAsync([remote], Token);
 
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
-        Assert.AreEqual(localWins ? localModified : remoteModified, saved.LastModified);
+        Assert.AreEqual(remoteWins ? remoteModified : localModified, saved.LastModified);
         Assert.AreEqual(remoteAccessHours > 1 ? remote.LastAccessed.UtcDateTime : localAccessed, saved.LastAccessed);
         Assert.AreEqual(localWins ? HistorySyncStatus.NeedSync : HistorySyncStatus.Synced, saved.SyncStatus);
         Assert.AreEqual(remoteWins ? remoteVersion : localVersion, saved.Version);
@@ -128,7 +130,7 @@ public class HistoryRetentionTests
         // The same remote response must not erase a still-pending local update on a later pull.
         await f.Manager.SyncRemoteHistoryAsync([remote], Token);
         saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
-        Assert.AreEqual(localWins ? localModified : remoteModified, saved.LastModified);
+        Assert.AreEqual(remoteWins ? remoteModified : localModified, saved.LastModified);
         Assert.AreEqual(localWins ? HistorySyncStatus.NeedSync : HistorySyncStatus.Synced, saved.SyncStatus);
     }
 

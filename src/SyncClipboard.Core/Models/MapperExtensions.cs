@@ -38,16 +38,13 @@ public static class MapperExtensions
         entity.Pinned = dto.Pinned;
         entity.Version = dto.Version;
         entity.IsDeleted = dto.IsDeleted;
+        entity.LastModified = dto.LastModified.UtcDateTime;
     }
 
-    public static void ApplyBasicFromRemote(this HistoryRecord entity, HistoryRecordDto dto, bool updateLastModified)
+    public static void ApplyBasicFromRemote(this HistoryRecord entity, HistoryRecordDto dto)
     {
         entity.Text = dto.Text;
         entity.Timestamp = dto.CreateTime.UtcDateTime;
-        if (updateLastModified)
-        {
-            entity.LastModified = dto.LastModified.UtcDateTime;
-        }
         if (dto.LastAccessed.UtcDateTime > entity.LastAccessed)
         {
             entity.LastAccessed = dto.LastAccessed.UtcDateTime;

@@ -418,13 +418,12 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                 }
                 else
                 {
-                    var localIsNewer = entity.IsLocalNewerThanRemote(dto);
                     if (entity.ShouldUpdateFromRemote(dto))
                     {
                         entity.ApplyChangesFromRemote(dto);
                         entity.SyncStatus = HistorySyncStatus.Synced;
                     }
-                    else if (localIsNewer)
+                    else if (entity.IsLocalNewerThanRemote(dto))
                     {
                         entity.SyncStatus = HistorySyncStatus.NeedSync;
                     }
@@ -432,7 +431,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                     {
                         entity.SyncStatus = HistorySyncStatus.Synced;
                     }
-                    entity.ApplyBasicFromRemote(dto, updateLastModified: !localIsNewer);
+                    entity.ApplyBasicFromRemote(dto);
                     TriggleUpdateOrDeleteEvent(entity);
                 }
                 await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
