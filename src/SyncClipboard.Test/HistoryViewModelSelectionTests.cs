@@ -34,27 +34,29 @@ public class HistoryViewModelSelectionTests
         var viewModel = (HistoryViewModel)RuntimeHelpers.GetUninitializedObject(typeof(HistoryViewModel));
         void SetField(string name, object value) => typeof(HistoryViewModel)
             .GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(viewModel, value);
-        var previousLoad = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var previousCancellation = new CancellationTokenSource();
-        var records = new ObservableList<HistoryRecordVM> { (HistoryRecordVM)RuntimeHelpers.GetUninitializedObject(typeof(HistoryRecordVM)) };
-        SetField("_activePageLoad", previousLoad.Task);
-        SetField("_loadCts", previousCancellation);
+        var runner = new SingletonTask();
+        var releasePage = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var records = new ObservableList<HistoryRecordVM>();
+        CancellationToken pageToken = default;
+        var page = runner.Run(async token =>
+        {
+            pageToken = token;
+            await releasePage.Task;
+            records.Add((HistoryRecordVM)RuntimeHelpers.GetUninitializedObject(typeof(HistoryRecordVM)));
+        });
+        SetField("_loader", runner);
+        SetField("_loadCts", new CancellationTokenSource());
         SetField("allHistoryItems", records);
         SetField("selectedIndex", -1);
         var reload = (Task)typeof(HistoryViewModel).GetMethod("Reload", BindingFlags.Instance | BindingFlags.NonPublic)!
             .Invoke(viewModel, null)!;
-        Assert.IsTrue(previousCancellation.IsCancellationRequested);
+        Assert.IsTrue(pageToken.IsCancellationRequested);
         Assert.IsFalse(reload.IsCompleted);
-        Assert.HasCount(1, records);
-        previousLoad.SetResult();
+        releasePage.SetResult();
+        await page;
         await reload.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
         Assert.IsEmpty(records);
-        var cancellation = (CancellationTokenSource)typeof(HistoryViewModel)
-            .GetField("_loadCts", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(viewModel)!;
-        cancellation.Cancel();
-        await ((Task)typeof(HistoryViewModel).GetField("_queueConsumerTask", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .GetValue(viewModel)!).WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
-        cancellation.Dispose();
+        await StopUpdateQueueAsync(viewModel);
     }
 
     [TestMethod]
@@ -65,15 +67,16 @@ public class HistoryViewModelSelectionTests
         var viewModel = (HistoryViewModel)RuntimeHelpers.GetUninitializedObject(typeof(HistoryViewModel));
         void SetField(string name, object? value) => typeof(HistoryViewModel)
             .GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(viewModel, value);
-        var previousLoad = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var runner = new SingletonTask();
+        var releasePage = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var page = runner.Run(_ => releasePage.Task);
         var records = new ObservableList<HistoryRecordVM> { (HistoryRecordVM)RuntimeHelpers.GetUninitializedObject(typeof(HistoryRecordVM)) };
         var logger = new Mock<ILogger>();
-        SetField("_activePageLoad", previousLoad.Task);
         SetField("_loadCts", new CancellationTokenSource());
         SetField("allHistoryItems", records);
         SetField("selectedIndex", -1);
         SetField("window", Mock.Of<IWindow>());
-        SetField("_loader", new SingletonTask());
+        SetField("_loader", runner);
         SetField("logger", logger.Object);
         var context = new QueuedSynchronizationContext();
         var reload = StartReload(context);
@@ -94,24 +97,28 @@ public class HistoryViewModelSelectionTests
 
         var latestContext = new QueuedSynchronizationContext();
         var latestReload = supersedeReload ? StartReload(latestContext) : reload;
-        previousLoad.SetResult();
         if (supersedeReload)
         {
             await context.ResumeNextAsync(TestContext.CancellationTokenSource.Token);
             await reload;
         }
+        releasePage.SetResult();
+        await page;
 
-        // The old page has released its running flag, but the latest reload has not reset the cursor/list.
+        // The old page has exited, but the latest reload has not reset the cursor/list.
         await viewModel.NotifyScrollPositionAsync(90, 10, 100);
         Assert.HasCount(1, records);
         logger.VerifyNoOtherCalls();
-        Assert.AreSame(previousLoad.Task, typeof(HistoryViewModel)
-            .GetField("_activePageLoad", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(viewModel));
 
         SetField("window", null);
         await (supersedeReload ? latestContext : context).ResumeNextAsync(TestContext.CancellationTokenSource.Token);
         await latestReload.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
         Assert.IsEmpty(records);
+        await StopUpdateQueueAsync(viewModel);
+    }
+
+    private async Task StopUpdateQueueAsync(HistoryViewModel viewModel)
+    {
         var cancellation = (CancellationTokenSource)typeof(HistoryViewModel)
             .GetField("_loadCts", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(viewModel)!;
         cancellation.Cancel();
