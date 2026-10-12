@@ -652,6 +652,8 @@ public class GroupProfile : Profile
         {
             token.ThrowIfCancellationRequested();
             var entryName = entry.FullName;
+            if (entryName.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Any(part => part is "." or ".."))
+                throw new InvalidDataException($"Transfer data contains a dot path segment: {entryName}");
             var isDirectory = entryName.EndsWith('/');
             var rawDestPath = Path.Combine(extractPath, entryName.Replace('/', Path.DirectorySeparatorChar));
             var destPath = Path.GetFullPath(rawDestPath);
