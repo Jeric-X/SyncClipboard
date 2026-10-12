@@ -626,40 +626,48 @@ public partial class HistoryViewModel : ObservableObject
         _ = _historyService.SyncAllAsync();
     }
 
-    private Task Reload()
+    private async Task Reload()
     {
-        return _loader.Run(async token =>
+        try
         {
-            try
+            await _loader.Run(async token =>
             {
-                _updateQueueCts.Cancel();
-                _updateQueueCts.Dispose();
-            }
-            catch { }
-            _updateQueueCts = new CancellationTokenSource();
-            var queueToken = _updateQueueCts.Token;
+                try
+                {
+                    _updateQueueCts.Cancel();
+                    _updateQueueCts.Dispose();
+                }
+                catch { }
+                _updateQueueCts = new CancellationTokenSource();
+                var queueToken = _updateQueueCts.Token;
 
-            _isLocalEnd = false;
+                _isLocalEnd = false;
 
-            _transferringLoadingTcs = null;
-            ClearSelectedItem();
-            allHistoryItems.Clear();
-            _timeCursor = null;
-            _lastViewportHeight = 0;
-            _lastExtentHeight = 0;
-            _updateTaskQueue = Channel.CreateUnbounded<TransferTask>();
-            // The update queue outlives this load and is canceled by the next reload.
-            _queueConsumerTask = Task.Run(() => ConsumeUpdateTaskQueueAsync(queueToken), CancellationToken.None);
-            window?.ScrollToTop();
+                _transferringLoadingTcs = null;
+                ClearSelectedItem();
+                allHistoryItems.Clear();
+                _timeCursor = null;
+                _lastViewportHeight = 0;
+                _lastExtentHeight = 0;
+                _updateTaskQueue = Channel.CreateUnbounded<TransferTask>();
+                // The update queue outlives this load and is canceled by the next reload.
+                _queueConsumerTask = Task.Run(() => ConsumeUpdateTaskQueueAsync(queueToken), CancellationToken.None);
+                window?.ScrollToTop();
 
-            if (SelectedFilter == HistoryFilterType.Transferring)
-            {
-                await LoadTransferringTasksAsync(token);
-                return;
-            }
+                if (SelectedFilter == HistoryFilterType.Transferring)
+                {
+                    await LoadTransferringTasksAsync(token);
+                    return;
+                }
 
-            await LoadPagesAsync(InitialPageSize, token);
-        });
+                await LoadPagesAsync(InitialPageSize, token);
+            }).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException ex) when (ex.CancellationToken.IsCancellationRequested) { }
+        catch (Exception ex)
+        {
+            await logger.WriteAsync("Failed to reload history:", ex.ToString()).ConfigureAwait(false);
+        }
     }
 
     private async Task LoadTransferringTasksAsync(CancellationToken token)

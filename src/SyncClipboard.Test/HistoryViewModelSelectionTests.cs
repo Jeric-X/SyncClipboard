@@ -114,6 +114,53 @@ public class HistoryViewModelSelectionTests
         await (supersedeReload ? latestContext : context).ResumeNextAsync(TestContext.CancellationTokenSource.Token);
         await latestReload.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
         Assert.IsEmpty(records);
+        logger.VerifyNoOtherCalls();
+        await StopUpdateQueueAsync(viewModel);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ReloadLogsFailureWithoutFaultingAndCanRetry(bool failBeforeReloadBody)
+    {
+        var viewModel = (HistoryViewModel)RuntimeHelpers.GetUninitializedObject(typeof(HistoryViewModel));
+        void SetField(string name, object? value) => typeof(HistoryViewModel)
+            .GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(viewModel, value);
+        Task Reload() => (Task)typeof(HistoryViewModel).GetMethod("Reload", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(viewModel, null)!;
+        var runner = new SingletonTask();
+        var logger = new Mock<ILogger>();
+        logger.Setup(value => value.WriteAsync(It.IsAny<string>(), It.IsAny<string>())).Returns(Task.CompletedTask);
+        var window = new Mock<IWindow>();
+        window.Setup(value => value.ScrollToTop()).Throws(new InvalidOperationException("Reset failed"));
+        SetField("_loader", runner);
+        SetField("logger", logger.Object);
+        SetField("window", window.Object);
+        SetField("_updateQueueCts", new CancellationTokenSource());
+        SetField("allHistoryItems", new ObservableList<HistoryRecordVM>());
+        SetField("selectedIndex", -1);
+        var releasePage = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var page = failBeforeReloadBody ? runner.Run(async token =>
+        {
+            using var registration = token.Register(() => throw new InvalidOperationException("Cancel callback failed"));
+            await releasePage.Task;
+        }) : Task.CompletedTask;
+
+        try
+        {
+            await Reload().WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
+            var expectedMessage = failBeforeReloadBody ? "Cancel callback failed" : "Reset failed";
+            logger.Verify(value => value.WriteAsync("Failed to reload history:",
+                It.Is<string>(message => message.Contains(expectedMessage) && message.Contains(nameof(InvalidOperationException)))), Times.Once);
+        }
+        finally
+        {
+            releasePage.TrySetResult();
+            await page.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
+        }
+
+        SetField("window", null);
+        await Reload().WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
         await StopUpdateQueueAsync(viewModel);
     }
 
