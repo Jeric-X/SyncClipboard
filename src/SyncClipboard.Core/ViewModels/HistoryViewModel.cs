@@ -60,7 +60,7 @@ public partial class HistoryViewModel : ObservableObject
 
     private readonly HistoryTransferQueue _transferQueue;
     private readonly IThreadDispatcher _threadDispatcher;
-    private CancellationTokenSource _loadCts = new();
+    private CancellationTokenSource _updateQueueCts = new();
     private TaskCompletionSource<bool>? _transferringLoadingTcs;
 
     private Channel<TransferTask> _updateTaskQueue = Channel.CreateUnbounded<TransferTask>();
@@ -632,12 +632,12 @@ public partial class HistoryViewModel : ObservableObject
         {
             try
             {
-                _loadCts.Cancel();
-                _loadCts.Dispose();
+                _updateQueueCts.Cancel();
+                _updateQueueCts.Dispose();
             }
             catch { }
-            _loadCts = new CancellationTokenSource();
-            var queueToken = _loadCts.Token;
+            _updateQueueCts = new CancellationTokenSource();
+            var queueToken = _updateQueueCts.Token;
 
             _isLocalEnd = false;
 
