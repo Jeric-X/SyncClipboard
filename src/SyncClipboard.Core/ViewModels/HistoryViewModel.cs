@@ -553,6 +553,8 @@ public partial class HistoryViewModel : ObservableObject
     }
 
     private int _isLoadTaskRunning = 0;
+    private Task _activePageLoad = Task.CompletedTask;
+    private int _pendingReloadCount;
     private double _lastOffsetY = 0;
     private double _lastViewportHeight = 0;
     private double _lastExtentHeight = 0;
@@ -571,6 +573,9 @@ public partial class HistoryViewModel : ObservableObject
 
     public async Task NotifyScrollPositionAsync(double offsetY, double viewportHeight, double extentHeight)
     {
+        if (Volatile.Read(ref _pendingReloadCount) != 0)
+            return;
+
         SetScrollViewMetrics(offsetY, viewportHeight, extentHeight);
         if (IsEnd)
             return;
@@ -594,7 +599,13 @@ public partial class HistoryViewModel : ObservableObject
             return;
         if (Interlocked.CompareExchange(ref _isLoadTaskRunning, 1, 0) != 0)
             return;
-        using var scopeGuard = new ScopeGuard(() => Interlocked.Exchange(ref _isLoadTaskRunning, 0));
+        var completed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _activePageLoad = completed.Task;
+        using var scopeGuard = new ScopeGuard(() =>
+        {
+            Interlocked.Exchange(ref _isLoadTaskRunning, 0);
+            completed.TrySetResult();
+        });
 
         await _loader.Run(async ct =>
         {
@@ -634,8 +645,10 @@ public partial class HistoryViewModel : ObservableObject
         _ = _historyService.SyncAllAsync();
     }
 
-    private Task Reload()
+    private async Task Reload()
     {
+        Interlocked.Increment(ref _pendingReloadCount);
+        using var reloadGuard = new ScopeGuard(() => Interlocked.Decrement(ref _pendingReloadCount));
         try
         {
             _loadCts.Cancel();
@@ -643,6 +656,10 @@ public partial class HistoryViewModel : ObservableObject
         }
         catch { }
         _loadCts = new CancellationTokenSource();
+        var token = _loadCts.Token;
+        await _activePageLoad;
+        if (token.IsCancellationRequested)
+            return;
 
         _isLocalEnd = false;
 
@@ -653,15 +670,16 @@ public partial class HistoryViewModel : ObservableObject
         _lastViewportHeight = 0;
         _lastExtentHeight = 0;
         _updateTaskQueue = Channel.CreateUnbounded<TransferTask>();
-        _queueConsumerTask = Task.Run(() => _ = ConsumeUpdateTaskQueueAsync(_loadCts.Token));
+        _queueConsumerTask = Task.Run(() => _ = ConsumeUpdateTaskQueueAsync(token));
         window?.ScrollToTop();
 
         if (SelectedFilter == HistoryFilterType.Transferring)
         {
-            return LoadTransferringTasksAsync(_loadCts.Token);
+            await LoadTransferringTasksAsync(token);
+            return;
         }
 
-        return RunLoadTask(InitialPageSize, _loadCts.Token);
+        await RunLoadTask(InitialPageSize, token);
     }
 
     private async Task LoadTransferringTasksAsync(CancellationToken token)
@@ -1115,7 +1133,7 @@ public partial class HistoryViewModel : ObservableObject
         }
         catch
         {
-            Reload();
+            _ = Reload();
         }
     }
 
