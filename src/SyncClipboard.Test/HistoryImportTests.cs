@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core;
+using SyncClipboard.Core.Exceptions;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer;
 using SyncClipboard.Server.Core.Models;
@@ -285,7 +286,7 @@ public class HistoryImportTests
         var remote = new Mock<IRemoteClipboardServer>();
         var server = remote.As<IOfficialSyncServer>();
         server.Setup(x => x.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HistoryRecordDto { Type = ProfileType.Text, Hash = hash, IsDeleted = true, Version = 7 });
+            .ReturnsAsync(new HistoryRecordDto { Type = ProfileType.Text, Hash = hash, IsDeleted = false, Version = 7 });
         HistoryRecordUpdateDto? update = null;
         server.Setup(x => x.UpdateHistoryAsync(ProfileType.Text, hash, It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
             .Callback<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) => update = dto)
@@ -348,7 +349,9 @@ public class HistoryImportTests
     [DataRow(false, false, false, false)]
     [DataRow(true, false, true, true)]
     [DataRow(true, true, true, true)]
-    public async Task ImportEvent_UploadsOrUpdatesWithClipboardPullEnabled(bool remoteExists, bool localExists, bool syncEnabled, bool attachment = false)
+    [DataRow(true, true, true, false, false)]
+    [DataRow(true, true, true, true, false)]
+    public async Task ImportEvent_UploadsOrUpdatesWithClipboardPullEnabled(bool remoteExists, bool localExists, bool syncEnabled, bool attachment = false, bool remoteDeleted = true)
     {
         await using var f = new Fixture();
         await f.InitializeAsync(Token);
@@ -384,7 +387,7 @@ public class HistoryImportTests
                 Hash = item.Hash,
                 Version = 7,
                 HasData = attachment,
-                IsDeleted = true
+                IsDeleted = remoteDeleted
             } : null);
         HistoryRecordUpdateDto? update = null;
         HistoryRecordDto? upload = null;
@@ -399,7 +402,11 @@ public class HistoryImportTests
                 upload = dto;
                 uploadedData = data;
             })
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync((HistoryRecordDto dto, FileHashInfo? data, IProgress<HttpDownloadProgress> progress, CancellationToken ct) =>
+            {
+                dto.Version = remoteExists ? Math.Max(dto.Version, 8) : dto.Version;
+                return dto;
+            });
         var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
         SetPrivateField(factory, "_current", remote.Object);
         SetPrivateField(factory, "_serverStateLock", new Lock());
@@ -432,7 +439,7 @@ public class HistoryImportTests
             }
             var task = await completed.Task.WaitAsync(TimeSpan.FromSeconds(10), Token);
             Assert.AreEqual(TransferTaskStatus.Completed, task.Status, task.ErrorMessage);
-            if (remoteExists && !attachment)
+            if (remoteExists && !remoteDeleted)
             {
                 Assert.IsNotNull(update);
                 Assert.IsFalse(update.IsDelete);
@@ -446,16 +453,19 @@ public class HistoryImportTests
                 Assert.IsNotNull(upload);
                 Assert.AreEqual(item.Timestamp, upload.CreateTime.UtcDateTime);
                 Assert.IsTrue(upload.LastAccessed >= before);
-                Assert.IsNull(update?.IsDelete);
+                if (update is not null)
+                    Assert.IsFalse(update.IsDelete);
                 if (attachment)
                 {
                     Assert.IsNotNull(uploadedData);
                     Assert.AreEqual("restored attachment", await File.ReadAllTextAsync(uploadedData.Path, Token));
                     Assert.IsFalse(upload.IsDeleted);
-                    Assert.AreEqual(8, upload.Version);
                 }
             }
-            Assert.AreEqual(HistorySyncStatus.Synced, (await f.Db.HistoryRecords.SingleAsync(Token)).SyncStatus);
+            var saved = await f.Db.HistoryRecords.SingleAsync(Token);
+            Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
+            if (remoteExists)
+                Assert.AreEqual(8, saved.Version);
         }
         finally
         {
@@ -470,16 +480,19 @@ public class HistoryImportTests
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task OrdinaryPropertySync_DoesNotRestoreRemoteDeletion(bool deleted)
+    [DataRow(false, 0)]
+    [DataRow(true, 0)]
+    [DataRow(false, 404)]
+    [DataRow(false, 409)]
+    public async Task OrdinaryPropertySync_ReconcilesDeletionAndHandlesServerResponse(bool deleted, int response)
     {
         await using var f = new Fixture();
         await f.InitializeAsync(Token);
         var record = new HistoryRecord
         {
             Type = ProfileType.Text,
-            Hash = new string('A', 64),
+            Hash = await Utility.CalculateSHA256("local text", Token),
+            IsLocalFileReady = true,
             Text = "local text",
             Stared = true,
             Pinned = true,
@@ -497,6 +510,15 @@ public class HistoryImportTests
             .Callback<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) =>
             {
                 sent = dto;
+                if (response == 404)
+                    throw new RemoteHistoryNotFoundException("The deleted attachment must be uploaded again.");
+                if (response == 409)
+                    throw new RemoteHistoryConflictException("Remote is newer.", new HistoryRecordUpdateDto
+                    {
+                        IsDelete = true,
+                        Version = 20,
+                        LastModified = DateTimeOffset.UtcNow
+                    });
                 if (dto.IsDelete.HasValue)
                     remoteDeleted = dto.IsDelete.Value;
             }).Returns(Task.CompletedTask);
@@ -513,9 +535,96 @@ public class HistoryImportTests
         Assert.IsNotNull(sent);
         Assert.IsTrue(sent.Starred);
         Assert.IsTrue(sent.Pinned);
-        Assert.AreEqual<bool?>(deleted ? true : null, sent.IsDelete);
-        Assert.IsTrue(remoteDeleted);
-        Assert.AreEqual(HistorySyncStatus.Synced, record.SyncStatus);
+        Assert.AreEqual<bool?>(deleted, sent.IsDelete);
+        Assert.AreEqual(response != 0 || deleted, remoteDeleted);
+        f.Db.ChangeTracker.Clear();
+        var saved = await f.Db.HistoryRecords.SingleAsync(Token);
+        Assert.AreEqual(response == 404 ? HistorySyncStatus.LocalOnly : HistorySyncStatus.Synced, saved.SyncStatus);
+        Assert.AreEqual(response == 409 || deleted, saved.IsDeleted);
+        Assert.AreEqual(response == 409 ? 20 : 8, saved.Version);
+        if (response == 404)
+        {
+            server.Setup(x => x.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((HistoryRecordDto?)null);
+            server.Setup(x => x.UploadHistoryAsync(It.IsAny<HistoryRecordDto>(), It.IsAny<FileHashInfo?>(),
+                    It.IsAny<IProgress<HttpDownloadProgress>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((HistoryRecordDto dto, FileHashInfo? data, IProgress<HttpDownloadProgress> progress, CancellationToken ct) =>
+                {
+                    Assert.IsFalse(dto.IsDeleted);
+                    dto.Version = 21;
+                    return dto;
+                });
+            var runtime = new ConfigBase(Path.Combine(f.Root, "runtime.json"));
+            using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), factory, f.Manager, f, f.Config, runtime);
+            var task = await queue.EnqueueUpload(new TextProfile(saved.Text), ct: Token);
+            Assert.AreEqual(TransferTaskStatus.Completed,
+                await task.CompletionSource.Task.WaitAsync(TimeSpan.FromSeconds(10), Token), task.ErrorMessage);
+            f.Db.ChangeTracker.Clear();
+            var uploaded = await f.Db.HistoryRecords.SingleAsync(Token);
+            Assert.AreEqual(HistorySyncStatus.Synced, uploaded.SyncStatus);
+            Assert.AreEqual(21, uploaded.Version);
+            Assert.IsFalse(uploaded.IsDeleted);
+        }
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ImportedRecord_AfterReloadingDatabaseRestoresRemoteDeletionThroughPropertySync(bool localDeleted)
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var item = await f.RecordAsync(new TextProfile("restart import"), Token);
+        var backup = await f.ExportAsync([item], Token);
+        var oldTime = DateTime.UtcNow.AddHours(-1);
+        f.Db.HistoryRecords.Add(new HistoryRecord
+        {
+            Type = item.ProfileType,
+            Hash = item.Hash,
+            Text = item.Text,
+            IsDeleted = localDeleted,
+            Version = 7,
+            LastModified = oldTime,
+            SyncStatus = HistorySyncStatus.Synced
+        });
+        await f.Db.SaveChangesAsync(Token);
+        var result = await f.ImportAsync(backup, Token);
+        Assert.AreEqual(0, result.FailureCount);
+        // No syncer observed the Import event. Resume using only the persisted record.
+        f.Db.ChangeTracker.Clear();
+        var remoteRecord = new HistoryRecordDto
+        {
+            Type = item.ProfileType,
+            Hash = item.Hash,
+            Text = item.Text,
+            IsDeleted = true,
+            Version = 7,
+            LastModified = oldTime
+        };
+        await f.Manager.SyncRemoteHistoryAsync([remoteRecord], Token);
+        var saved = await f.Db.HistoryRecords.SingleAsync(Token);
+        Assert.AreEqual(HistorySyncStatus.NeedSync, saved.SyncStatus);
+        var remote = new Mock<IRemoteClipboardServer>();
+        var server = remote.As<IOfficialSyncServer>();
+        server.Setup(x => x.UpdateHistoryAsync(item.ProfileType, item.Hash, It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
+            .Callback<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) =>
+            {
+                Assert.IsTrue(dto.LastModified > remoteRecord.LastModified);
+                Assert.AreEqual(8, dto.Version);
+                if (dto.IsDelete.HasValue)
+                    remoteRecord.IsDeleted = dto.IsDelete.Value;
+            }).Returns(Task.CompletedTask);
+        var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
+        SetPrivateField(factory, "_current", remote.Object);
+        SetPrivateField(factory, "_serverStateLock", new Lock());
+        var syncer = (HistorySyncer)RuntimeHelpers.GetUninitializedObject(typeof(HistorySyncer));
+        SetPrivateField(syncer, "_historyManager", f.Manager);
+        SetPrivateField(syncer, "_remoteServerFactory", factory);
+        SetPrivateField(syncer, "_logger", Mock.Of<ILogger>());
+        await syncer.SyncNeedUpdateAsync(Token);
+        Assert.IsFalse(remoteRecord.IsDeleted);
+        f.Db.ChangeTracker.Clear();
+        Assert.AreEqual(HistorySyncStatus.Synced, (await f.Db.HistoryRecords.SingleAsync(Token)).SyncStatus);
     }
 
     private static void SetPrivateField<T>(object target, string name, T value)
