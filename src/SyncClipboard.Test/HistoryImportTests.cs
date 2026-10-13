@@ -1,6 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Core;
 using SyncClipboard.Core.Exceptions;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer;
@@ -33,15 +31,7 @@ public class HistoryImportTests
 
     private sealed class MemoryDb : HistoryDbContext
     {
-        public Func<Task>? BeforeSave { get; set; }
         protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlite("Data Source=:memory:");
-
-        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            if (BeforeSave is { } beforeSave)
-                await beforeSave();
-            return await base.SaveChangesAsync(cancellationToken);
-        }
     }
 
     private sealed class Fixture : IProfileEnv, IAsyncDisposable
@@ -142,15 +132,12 @@ public class HistoryImportTests
         foreach (var profile in profiles)
             records.Add(await f.RecordAsync(profile, Token));
         var backup = await f.ExportAsync([.. records], Token);
-        var uiNotifications = 0;
         var syncNotifications = new List<HistoryRecord>();
-        f.Manager.HistoryImported += () => uiNotifications++;
-        f.Manager.HistoryAdded += (record, source) => syncNotifications.Add(record);
-        f.Manager.HistoryUpdated += (record, source) => syncNotifications.Add(record);
+        f.Manager.HistoryAdded += record => syncNotifications.Add(record);
+        f.Manager.HistoryUpdated += record => syncNotifications.Add(record);
         var result = await f.ImportAsync(backup, Token);
         Assert.AreEqual(0, result.FailureCount);
         Assert.AreEqual(5, result.ImportedCount);
-        Assert.AreEqual(1, uiNotifications);
         Assert.HasCount(5, syncNotifications);
         Assert.IsNull(result.ReportPath);
         File.Delete(file);
@@ -211,9 +198,8 @@ public class HistoryImportTests
         f.Db.HistoryRecords.Add(existing);
         await f.Db.SaveChangesAsync(Token);
         var notified = false;
-        f.Manager.HistoryUpdated += (record, source) =>
+        f.Manager.HistoryUpdated += record =>
         {
-            Assert.AreEqual(HistoryChangeSource.Import, source);
             Assert.IsTrue(f.DbSemaphore.Wait(0, TestContext.CancellationTokenSource.Token), "Notifications must run outside the database lock.");
             f.DbSemaphore.Release();
             notified = true;
@@ -244,10 +230,9 @@ public class HistoryImportTests
         var backup = await f.ExportAsync(records, Token);
         var notifications = 0;
         var before = DateTime.UtcNow;
-        f.Manager.HistoryAdded += (_, _) => throw new InvalidOperationException("observer failure");
-        f.Manager.HistoryAdded += (record, source) =>
+        f.Manager.HistoryAdded += _ => throw new InvalidOperationException("observer failure");
+        f.Manager.HistoryAdded += record =>
         {
-            Assert.AreEqual(HistoryChangeSource.Import, source);
             Assert.IsTrue(f.DbSemaphore.Wait(0, TestContext.CancellationTokenSource.Token));
             f.DbSemaphore.Release();
             Assert.IsTrue(record.LastAccessed >= before);
@@ -259,224 +244,6 @@ public class HistoryImportTests
         Assert.AreEqual(2, result.ImportedCount);
         Assert.AreEqual(0, result.FailureCount);
         Assert.AreEqual(2, notifications);
-    }
-
-    [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task ImportUpload_WaitsForOrdinaryUploadThenRestoresRemoteRecord(bool cancelUpload)
-    {
-        await using var f = new Fixture();
-        await f.InitializeAsync(Token);
-        var profile = new TextProfile("in-flight upload");
-        var hash = await profile.GetHash(Token);
-        var stamp = DateTime.UtcNow;
-        f.Db.HistoryRecords.Add(new HistoryRecord
-        {
-            Type = ProfileType.Text,
-            Hash = hash,
-            Text = profile.DisplayText,
-            LastAccessed = stamp,
-            LastModified = stamp,
-            Stared = true,
-            Version = 3
-        });
-        await f.Db.SaveChangesAsync(Token);
-        var runtime = new ConfigBase(Path.Combine(f.Root, "runtime.json"));
-        var remote = new Mock<IRemoteClipboardServer>();
-        var server = remote.As<IOfficialSyncServer>();
-        server.Setup(x => x.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new HistoryRecordDto { Type = ProfileType.Text, Hash = hash, IsDeleted = false, Version = 7 });
-        HistoryRecordUpdateDto? update = null;
-        server.Setup(x => x.UpdateHistoryAsync(ProfileType.Text, hash, It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
-            .Callback<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) => update = dto)
-            .Returns(Task.CompletedTask);
-        var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
-        SetPrivateField(factory, "_current", remote.Object);
-        SetPrivateField(factory, "_serverStateLock", new Lock());
-        using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), factory, f.Manager, f, f.Config, runtime);
-        var saving = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var releaseSave = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        f.Db.BeforeSave = async () =>
-        {
-            f.Db.BeforeSave = null;
-            saving.SetResult();
-            await releaseSave.Task.WaitAsync(Token);
-        };
-        try
-        {
-            var ordinary = await queue.EnqueueUpload(profile, ct: Token);
-            await saving.Task.WaitAsync(TimeSpan.FromSeconds(10), Token);
-            var importing = queue.EnqueueUpload(profile, false, HistoryChangeSource.Import, Token);
-            Assert.IsFalse(importing.IsCompleted, "An import must wait for the upload that already passed its source check.");
-            if (cancelUpload)
-                queue.CancelUpload(await profile.GetProfileId(Token));
-            releaseSave.SetResult();
-            var imported = await importing.WaitAsync(TimeSpan.FromSeconds(10), Token);
-            if (cancelUpload)
-            {
-                Assert.AreSame(ordinary, imported);
-                Assert.AreEqual(TransferTaskStatus.Cancelled, imported.Status);
-                Assert.IsNull(update);
-                server.Verify(x => x.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
-                return;
-            }
-            Assert.AreNotSame(ordinary, imported);
-            Assert.AreEqual(TransferTaskStatus.Completed, await imported.CompletionSource.Task.WaitAsync(TimeSpan.FromSeconds(10), Token));
-            Assert.IsNotNull(update);
-            Assert.IsFalse(update.IsDelete);
-            Assert.IsTrue(update.Starred);
-            Assert.AreEqual(stamp, update.LastAccessed!.Value.UtcDateTime);
-            Assert.AreEqual(8, update.Version);
-            server.Verify(x => x.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Exactly(2));
-        }
-        finally
-        {
-            releaseSave.TrySetResult();
-            var cts = (CancellationTokenSource)typeof(HistoryTransferQueue)
-                .GetField("_globalCts", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(queue)!;
-            cts.Cancel();
-            if (typeof(HistoryTransferQueue).GetField("_processingTask", BindingFlags.Instance | BindingFlags.NonPublic)!
-                .GetValue(queue) is Task processing)
-                await processing.WaitAsync(TimeSpan.FromSeconds(10), Token);
-        }
-    }
-
-    [TestMethod]
-    [DataRow(false, false, true, false)]
-    [DataRow(true, false, true, false)]
-    [DataRow(true, true, true, false)]
-    [DataRow(false, false, false, false)]
-    [DataRow(true, false, true, true)]
-    [DataRow(true, true, true, true)]
-    [DataRow(true, true, true, false, false)]
-    [DataRow(true, true, true, true, false)]
-    public async Task ImportEvent_UploadsOrUpdatesWithClipboardPullEnabled(bool remoteExists, bool localExists, bool syncEnabled, bool attachment = false, bool remoteDeleted = true)
-    {
-        await using var f = new Fixture();
-        await f.InitializeAsync(Token);
-        var file = Path.Combine(f.Root, "imported.txt");
-        await File.WriteAllTextAsync(file, "restored attachment", Token);
-        var item = await f.RecordAsync(attachment ? new FileProfile(file) : new TextProfile("imported content"), Token);
-        var backup = await f.ExportAsync([item], Token);
-        if (localExists)
-        {
-            f.Db.HistoryRecords.Add(new HistoryRecord
-            {
-                Type = item.ProfileType,
-                Hash = item.Hash,
-                Text = item.Text,
-                IsDeleted = true,
-                Version = 3,
-                SyncStatus = HistorySyncStatus.Synced,
-                Timestamp = item.Timestamp,
-                LastModified = item.LastModified,
-                LastAccessed = item.LastAccessed
-            });
-            await f.Db.SaveChangesAsync(Token);
-        }
-        f.Config.SetConfig(new SyncConfig { SyncSwitchOn = true, PullSwitchOn = true });
-        var runtime = new ConfigBase(Path.Combine(f.Root, "runtime.json"));
-        runtime.SetConfig(new RuntimeHistoryConfig { EnableSyncHistory = syncEnabled });
-        var remote = new Mock<IRemoteClipboardServer>();
-        var server = remote.As<IOfficialSyncServer>();
-        server.Setup(x => x.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(remoteExists ? new HistoryRecordDto
-            {
-                Type = item.ProfileType,
-                Hash = item.Hash,
-                Version = 7,
-                HasData = attachment,
-                IsDeleted = remoteDeleted
-            } : null);
-        HistoryRecordUpdateDto? update = null;
-        HistoryRecordDto? upload = null;
-        FileHashInfo? uploadedData = null;
-        server.Setup(x => x.UpdateHistoryAsync(item.ProfileType, item.Hash, It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
-            .Callback<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) => update = dto)
-            .Returns(Task.CompletedTask);
-        server.Setup(x => x.UploadHistoryAsync(It.IsAny<HistoryRecordDto>(), It.IsAny<FileHashInfo?>(),
-                It.IsAny<IProgress<HttpDownloadProgress>>(), It.IsAny<CancellationToken>()))
-            .Callback<HistoryRecordDto, FileHashInfo?, IProgress<HttpDownloadProgress>, CancellationToken>((dto, data, _, _) =>
-            {
-                upload = dto;
-                uploadedData = data;
-            })
-            .ReturnsAsync((HistoryRecordDto dto, FileHashInfo? data, IProgress<HttpDownloadProgress> progress, CancellationToken ct) =>
-            {
-                dto.Version = remoteExists ? Math.Max(dto.Version, 8) : dto.Version;
-                return dto;
-            });
-        var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
-        SetPrivateField(factory, "_current", remote.Object);
-        SetPrivateField(factory, "_serverStateLock", new Lock());
-        using var services = new ServiceCollection().AddSingleton(f.Config).AddSingleton<IProfileEnv>(f).BuildServiceProvider();
-        var currentField = typeof(AppCore).GetField("_current", BindingFlags.Static | BindingFlags.NonPublic)!;
-        var previousApp = currentField.GetValue(null);
-        var app = (AppCore)RuntimeHelpers.GetUninitializedObject(typeof(AppCore));
-        SetPrivateField(app, "<Services>k__BackingField", services);
-        SetPrivateField(app, "<Logger>k__BackingField", Mock.Of<ILogger>());
-        using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), factory, f.Manager, f, f.Config, runtime);
-        _ = new HistorySyncer(f.Manager, factory, Mock.Of<ILogger>(), queue, f.Config, runtime);
-        var completed = new TaskCompletionSource<TransferTask>(TaskCreationOptions.RunContinuationsAsynchronously);
-        queue.TaskStatusChanged += (_, task) =>
-        {
-            if (task.Status is TransferTaskStatus.Completed or TransferTaskStatus.Failed)
-                completed.TrySetResult(task);
-        };
-        try
-        {
-            currentField.SetValue(null, app);
-            var before = DateTime.UtcNow;
-            var result = await f.ImportAsync(backup, Token);
-            Assert.AreEqual(0, result.FailureCount);
-            if (!syncEnabled)
-            {
-                Assert.IsEmpty(await queue.GetAllActiveTasks(Token));
-                Assert.IsNull(upload);
-                Assert.IsNull(update);
-                return;
-            }
-            var task = await completed.Task.WaitAsync(TimeSpan.FromSeconds(10), Token);
-            Assert.AreEqual(TransferTaskStatus.Completed, task.Status, task.ErrorMessage);
-            if (remoteExists && !remoteDeleted)
-            {
-                Assert.IsNotNull(update);
-                Assert.IsFalse(update.IsDelete);
-                Assert.AreEqual(8, update.Version);
-                Assert.IsTrue(update.LastAccessed >= before);
-                Assert.AreEqual(update.LastModified, update.LastAccessed);
-                Assert.IsNull(upload);
-            }
-            else
-            {
-                Assert.IsNotNull(upload);
-                Assert.AreEqual(item.Timestamp, upload.CreateTime.UtcDateTime);
-                Assert.IsTrue(upload.LastAccessed >= before);
-                if (update is not null)
-                    Assert.IsFalse(update.IsDelete);
-                if (attachment)
-                {
-                    Assert.IsNotNull(uploadedData);
-                    Assert.AreEqual("restored attachment", await File.ReadAllTextAsync(uploadedData.Path, Token));
-                    Assert.IsFalse(upload.IsDeleted);
-                }
-            }
-            var saved = await f.Db.HistoryRecords.SingleAsync(Token);
-            Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
-            if (remoteExists)
-                Assert.AreEqual(8, saved.Version);
-        }
-        finally
-        {
-            var cts = (CancellationTokenSource)typeof(HistoryTransferQueue)
-                .GetField("_globalCts", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(queue)!;
-            cts.Cancel();
-            if (typeof(HistoryTransferQueue).GetField("_processingTask", BindingFlags.Instance | BindingFlags.NonPublic)!
-                .GetValue(queue) is Task processing)
-                await processing.WaitAsync(TimeSpan.FromSeconds(10), Token);
-            currentField.SetValue(null, previousApp);
-        }
     }
 
     [TestMethod]
@@ -590,7 +357,7 @@ public class HistoryImportTests
         await f.Db.SaveChangesAsync(Token);
         var result = await f.ImportAsync(backup, Token);
         Assert.AreEqual(0, result.FailureCount);
-        // No syncer observed the Import event. Resume using only the persisted record.
+        // Resume using only the persisted record, without a live event subscriber.
         f.Db.ChangeTracker.Clear();
         var remoteRecord = new HistoryRecordDto
         {
@@ -720,16 +487,12 @@ public class HistoryImportTests
         await using var f = new Fixture();
         await f.InitializeAsync(Token);
         var backup = await f.ExportAsync([await f.RecordAsync(new TextProfile("one"), Token), await f.RecordAsync(new TextProfile("two"), Token)], Token);
-        var notifications = 0;
-        f.Manager.HistoryImported += () => notifications++;
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Token);
         var result = await f.ImportAsync(backup, cancellation.Token, new InlineProgress(_ =>
         {
-            Assert.AreEqual(0, notifications);
             cancellation.Cancel();
         }));
         Assert.IsTrue(result.Canceled);
-        Assert.AreEqual(1, notifications);
         Assert.AreEqual(1, result.ImportedCount);
         Assert.HasCount(1, await f.Db.HistoryRecords.ToListAsync(Token));
     }
@@ -929,13 +692,10 @@ public class HistoryImportTests
         f.Db.HistoryRecords.Add(local);
         await f.Db.SaveChangesAsync(Token);
         var (Timestamp, LastModified, LastAccessed) = (local.Timestamp, local.LastModified, local.LastAccessed);
-        var uiNotifications = 0;
         var syncNotifications = new List<HistoryRecord>();
-        f.Manager.HistoryImported += () => uiNotifications++;
-        f.Manager.HistoryUpdated += (record, source) => syncNotifications.Add(record);
+        f.Manager.HistoryUpdated += record => syncNotifications.Add(record);
         var result = await f.ImportAsync(backup, Token);
         Assert.AreEqual(1, result.RepairedCount);
-        Assert.AreEqual(1, uiNotifications);
         Assert.HasCount(1, syncNotifications);
         Assert.AreEqual(0, result.ImportedCount);
         Assert.AreEqual(0, result.FailureCount);
@@ -1152,7 +912,7 @@ public class HistoryImportTests
         await f.Db.SaveChangesAsync(Token);
         await f.Db.Database.ExecuteSqlRawAsync("CREATE TRIGGER reject_refresh BEFORE UPDATE ON HistoryRecords BEGIN SELECT RAISE(ABORT, 'rejected'); END;", Token);
         var notifications = 0;
-        f.Manager.HistoryUpdated += (_, _) => notifications++;
+        f.Manager.HistoryUpdated += _ => notifications++;
         var result = await f.ImportAsync(backup, Token);
         Assert.AreEqual(1, result.FailureCount);
         Assert.AreEqual(0, notifications);
@@ -1185,7 +945,7 @@ public class HistoryImportTests
         await File.WriteAllTextAsync(file, "payload", Token);
         var item = await f.RecordAsync(new FileProfile(file), Token);
         var backup = await f.ExportAsync([item], Token);
-        f.Manager.HistoryAdded += (_, _) => throw new InvalidOperationException("observer failure");
+        f.Manager.HistoryAdded += _ => throw new InvalidOperationException("observer failure");
         var result = await f.ImportAsync(backup, Token);
         Assert.AreEqual(1, result.ImportedCount);
         Assert.AreEqual(0, result.FailureCount);
@@ -1248,46 +1008,6 @@ public class HistoryImportTests
     }
 
     [TestMethod]
-    [DataRow("File")]
-    [DataRow("Image")]
-    [DataRow("Group")]
-    public async Task AlteredFileDisplayText_IsRejectedWithoutBlockingOtherRecords(string type)
-    {
-        await using var f = new Fixture();
-        await f.InitializeAsync(Token);
-        var path = Path.Combine(f.Root, "data.png");
-        await File.WriteAllTextAsync(path, "payload", Token);
-        Profile profile = type switch
-        {
-            "File" => new FileProfile(path),
-            "Image" => new ImageProfile(path),
-            _ => new GroupProfile([path])
-        };
-        var item = await f.RecordAsync(profile, Token);
-        var other = await f.RecordAsync(new TextProfile("valid record"), Token);
-        var backup = await f.ExportAsync([item, other], Token);
-        using (var zip = ZipFile.Open(backup, ZipArchiveMode.Update))
-        {
-            var entry = zip.GetEntry("history.json")!;
-            HistoryExportDocument document;
-            using (var input = entry.Open())
-                document = (await JsonSerializer.DeserializeAsync<HistoryExportDocument>(input, HistoryExporter.JsonOptions, Token))!;
-            document = document with
-            {
-                Records = document.Records.Select(record => record.Hash == item.Hash ? record with { Text = "unrelated.png" } : record).ToArray()
-            };
-            entry.Delete();
-            await using var output = zip.CreateEntry("history.json").Open();
-            await JsonSerializer.SerializeAsync(output, document, HistoryExporter.JsonOptions, Token);
-        }
-        var result = await f.ImportAsync(backup, Token);
-        Assert.AreEqual(1, result.ImportedCount);
-        Assert.Contains("display text", await File.ReadAllTextAsync(result.ReportPath!, Token));
-        Assert.AreEqual(other.Hash, (await f.Db.HistoryRecords.SingleAsync(Token)).Hash);
-        AssertNoImportDirectories(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), item.ProfileType, item.Hash));
-    }
-
-    [TestMethod]
     public async Task InlineTextImport_DoesNotCreateAttachmentDirectories()
     {
         await using var f = new Fixture();
@@ -1344,34 +1064,6 @@ public class HistoryImportTests
         Assert.Contains("Decoded text", await File.ReadAllTextAsync(result.ReportPath!, Token));
         Assert.AreEqual(other.Hash, (await f.Db.HistoryRecords.SingleAsync(Token)).Hash);
         Assert.IsFalse(Directory.Exists(Profile.QueryGetWorkingDir(f.GetHistoryPersistentDir(), ProfileType.Text, hash)));
-    }
-
-    [TestMethod]
-    public async Task AlteredLongTextPreview_IsRejectedWithoutBlockingOtherRecords()
-    {
-        await using var f = new Fixture();
-        await f.InitializeAsync(Token);
-        var item = await f.RecordAsync(new TextProfile(new string('文', 12000)), Token);
-        var other = await f.RecordAsync(new TextProfile("valid"), Token);
-        var backup = await f.ExportAsync([item, other], Token);
-        using (var zip = ZipFile.Open(backup, ZipArchiveMode.Update))
-        {
-            var entry = zip.GetEntry("history.json")!;
-            HistoryExportDocument document;
-            using (var input = entry.Open())
-                document = (await JsonSerializer.DeserializeAsync<HistoryExportDocument>(input, HistoryExporter.JsonOptions, Token))!;
-            document = document with
-            {
-                Records = document.Records.Select(record => record.Hash == item.Hash ? record with { Text = "unrelated preview" } : record).ToArray()
-            };
-            entry.Delete();
-            await using var output = zip.CreateEntry("history.json").Open();
-            await JsonSerializer.SerializeAsync(output, document, HistoryExporter.JsonOptions, Token);
-        }
-        var result = await f.ImportAsync(backup, Token);
-        Assert.AreEqual(1, result.ImportedCount);
-        Assert.Contains("preview", await File.ReadAllTextAsync(result.ReportPath!, Token));
-        Assert.AreEqual(other.Hash, (await f.Db.HistoryRecords.SingleAsync(Token)).Hash);
     }
 
     [TestMethod]

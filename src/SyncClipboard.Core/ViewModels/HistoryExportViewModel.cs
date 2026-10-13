@@ -48,6 +48,18 @@ public sealed partial class HistoryExportViewModel(HistoryManager manager, Histo
     private string status = string.Empty;
 
     [ObservableProperty]
+    private bool isPreparing;
+
+    [ObservableProperty]
+    private int processedCount;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ProgressMaximum))]
+    private int totalCount;
+
+    public int ProgressMaximum => Math.Max(1, TotalCount);
+
+    [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(OpenFolderCommand))]
     [NotifyPropertyChangedFor(nameof(HasArchive), nameof(HasOutput))]
     private string? archivePath;
@@ -63,6 +75,9 @@ public sealed partial class HistoryExportViewModel(HistoryManager manager, Histo
         Directory = selectedDirectory;
         _selected = selected;
         _pickDirectory = pickDirectory;
+        IsPreparing = true;
+        ProcessedCount = 0;
+        TotalCount = 0;
         IsBusy = true;
         IsFinished = false;
         Ready = false;
@@ -77,6 +92,7 @@ public sealed partial class HistoryExportViewModel(HistoryManager manager, Histo
                 var snapshot = await manager.GetExportSnapshotAsync(selected, cancellation.Token);
                 return await exporter.EstimateAsync(snapshot, selected, cancellation.Token);
             }, cancellation.Token);
+            TotalCount = _plan.Items.Count;
             var totalCount = _plan.Items.Count + _plan.Skipped.Count;
             Ready = totalCount > 0;
             Status = Ready
@@ -95,6 +111,7 @@ public sealed partial class HistoryExportViewModel(HistoryManager manager, Histo
         {
             _cancellation = null;
             IsBusy = false;
+            IsPreparing = false;
         }
     }
 
@@ -107,13 +124,19 @@ public sealed partial class HistoryExportViewModel(HistoryManager manager, Histo
             return;
         Ready = false;
         IsBusy = true;
-        Status = string.Format(Strings.HistoryExportProgress, 0, _plan.Items.Count, FormatSize(0));
+        ProcessedCount = 0;
+        TotalCount = _plan.Items.Count;
+        Status = string.Format(Strings.HistoryExportProgress, ProcessedCount, TotalCount, FormatSize(0));
         using var cancellation = new CancellationTokenSource();
         _cancellation = cancellation;
         var progress = new Progress<HistoryExportProgress>(value =>
         {
             if (IsBusy)
-                Status = string.Format(Strings.HistoryExportProgress, value.Processed, value.Total, FormatSize(value.WrittenBytes));
+            {
+                ProcessedCount = value.Processed;
+                TotalCount = value.Total;
+                Status = string.Format(Strings.HistoryExportProgress, ProcessedCount, TotalCount, FormatSize(value.WrittenBytes));
+            }
         });
         try
         {
@@ -121,6 +144,8 @@ public sealed partial class HistoryExportViewModel(HistoryManager manager, Histo
             // Ignore progress queued by the background writer after the final result.
             IsFinished = true;
             IsBusy = false;
+            if (!result.Canceled && result.Error is null)
+                ProcessedCount = TotalCount;
             ArchivePath = result.ArchivePath;
             ReportPath = result.ReportPath;
             Status = HistoryExportReportWriter.FormatResult(result);

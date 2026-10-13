@@ -40,8 +40,18 @@ public class HistoryImportDialogTests
                 var start = dialog.GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Content, Strings.HistoryImportStart));
                 Assert.IsTrue(start.IsVisible && start.IsEffectivelyEnabled);
                 viewModel.IsBusy = true;
+                viewModel.IsPreparing = true;
                 Dispatcher.UIThread.RunJobs();
                 Assert.IsFalse(start.IsVisible);
+                var progress = dialog.GetVisualDescendants().OfType<ProgressBar>().Single();
+                Assert.IsTrue(progress.IsIndeterminate);
+                viewModel.IsPreparing = false;
+                viewModel.TotalCount = 10;
+                viewModel.ProcessedCount = 3;
+                Dispatcher.UIThread.RunJobs();
+                Assert.IsFalse(progress.IsIndeterminate);
+                Assert.AreEqual(10d, progress.Maximum);
+                Assert.AreEqual(3d, progress.Value);
                 dialog.Hide();
                 Dispatcher.UIThread.RunJobs();
                 Assert.IsFalse(result.IsCompleted);

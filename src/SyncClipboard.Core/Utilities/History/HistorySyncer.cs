@@ -411,13 +411,11 @@ public class HistorySyncer
         }
     }
 
-    private async void OnHistoryUpdated(HistoryRecord record, HistoryChangeSource source)
+    private async void OnHistoryUpdated(HistoryRecord record)
     {
         try
         {
-            if (source == HistoryChangeSource.Import)
-                await SyncImportedRecordAsync(record);
-            else if (record.SyncStatus == HistorySyncStatus.NeedSync)
+            if (record.SyncStatus == HistorySyncStatus.NeedSync)
                 await SyncOneAsync(record, CancellationToken.None);
         }
         catch (Exception ex)
@@ -426,15 +424,10 @@ public class HistorySyncer
         }
     }
 
-    private async void OnHistoryAdded(HistoryRecord record, HistoryChangeSource source)
+    private async void OnHistoryAdded(HistoryRecord record)
     {
         try
         {
-            if (source == HistoryChangeSource.Import)
-            {
-                await SyncImportedRecordAsync(record);
-                return;
-            }
             // 如果已启用剪贴板同步且启用拉取，直接返回
             var syncConfig = _configManager.GetConfig<SyncConfig>();
             if (syncConfig.SyncSwitchOn && syncConfig.PullSwitchOn)
@@ -461,16 +454,6 @@ public class HistorySyncer
         {
             _logger.Write("HistorySyncer", $"新增记录处理失败[{record.Hash}]: {ex.Message}");
         }
-    }
-
-    private async Task SyncImportedRecordAsync(HistoryRecord record)
-    {
-        if (!_runtimeConfig.GetConfig<RuntimeHistoryConfig>().EnableSyncHistory)
-            return;
-        var profile = record.ToProfile();
-        if (!await CanUploadLocalProfileAsync(profile, CancellationToken.None))
-            return;
-        await _historyTransferQueue.EnqueueUpload(profile, forceResume: true, HistoryChangeSource.Import, CancellationToken.None);
     }
 
     private static async Task<bool> CanUploadLocalProfileAsync(Profile profile, CancellationToken token)

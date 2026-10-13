@@ -247,8 +247,8 @@ public class HistoryRetentionTests
         await f.Db.SaveChangesAsync(Token);
         var added = new List<HistoryRecord>();
         var updated = new List<HistoryRecord>();
-        f.Manager.HistoryAdded += (record, _) => added.Add(record);
-        f.Manager.HistoryUpdated += (record, _) => updated.Add(record);
+        f.Manager.HistoryAdded += record => added.Add(record);
+        f.Manager.HistoryUpdated += record => updated.Add(record);
         var before = DateTime.UtcNow;
 
         await f.Manager.AddLocalProfile(profile, token: Token);

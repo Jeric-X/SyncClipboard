@@ -10,11 +10,8 @@ internal sealed class HistoryImportReportWriter(string backup, HistoryImportResu
 
     public static string FormatResult(HistoryImportResult result)
     {
-        var text = string.Format(Strings.HistoryImportResult, result.ImportedCount);
-        if (result.RepairedCount > 0)
-            text += string.Format(Strings.HistoryImportRepairedCount, result.RepairedCount);
-        if (result.ExistingCount > 0)
-            text += string.Format(Strings.HistoryImportExistingCount, result.ExistingCount);
+        var imported = result.ImportedCount + result.RepairedCount + result.ExistingCount;
+        var text = string.Format(Strings.HistoryImportResult, imported);
         if (result.FailureCount > 0)
             text += string.Format(Strings.HistoryImportFailureCount, result.FailureCount);
         if (result.Error is not null)

@@ -36,6 +36,18 @@ public sealed partial class HistoryImportViewModel(HistoryImporter importer) : O
     private string status = string.Empty;
 
     [ObservableProperty]
+    private bool isPreparing;
+
+    [ObservableProperty]
+    private int processedCount;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ProgressMaximum))]
+    private int totalCount;
+
+    public int ProgressMaximum => Math.Max(1, TotalCount);
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasReport))]
     [NotifyCanExecuteChangedFor(nameof(OpenFolderCommand))]
     private string? reportPath;
@@ -45,6 +57,9 @@ public sealed partial class HistoryImportViewModel(HistoryImporter importer) : O
     public async Task InitializeAsync(string path)
     {
         BackupPath = path;
+        IsPreparing = true;
+        ProcessedCount = 0;
+        TotalCount = 0;
         IsBusy = true;
         Status = Strings.HistoryImportReading;
         using var cancellation = new CancellationTokenSource();
@@ -52,7 +67,8 @@ public sealed partial class HistoryImportViewModel(HistoryImporter importer) : O
         try
         {
             _plan = await Task.Run(() => HistoryImporter.PrepareAsync(path, cancellation.Token));
-            Ready = _plan.Records.Count > 0;
+            TotalCount = _plan.Records.Count;
+            Ready = TotalCount > 0;
             Status = Ready ? string.Format(Strings.HistoryImportCount, _plan.Records.Count) : Strings.HistoryImportEmpty;
         }
         catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
@@ -69,6 +85,7 @@ public sealed partial class HistoryImportViewModel(HistoryImporter importer) : O
         {
             _cancellation = null;
             IsBusy = false;
+            IsPreparing = false;
         }
     }
 
@@ -83,16 +100,22 @@ public sealed partial class HistoryImportViewModel(HistoryImporter importer) : O
         Ready = false;
         using var cancellation = new CancellationTokenSource();
         _cancellation = cancellation;
-        Status = string.Format(Strings.HistoryImportProgress, 0, _plan.Records.Count);
+        ProcessedCount = 0;
+        TotalCount = _plan.Records.Count;
+        Status = string.Format(Strings.HistoryImportProgress, ProcessedCount, TotalCount);
         var progress = new Progress<int>(count =>
         {
             if (IsBusy)
-                Status = string.Format(Strings.HistoryImportProgress, count, _plan.Records.Count);
+            {
+                ProcessedCount = count;
+                Status = string.Format(Strings.HistoryImportProgress, ProcessedCount, TotalCount);
+            }
         });
         try
         {
             var result = await Task.Run(() => importer.ImportAsync(_plan, progress, cancellation.Token));
             IsBusy = false;
+            ProcessedCount = result.ImportedCount + result.ExistingCount + result.RepairedCount + result.FailureCount;
             Status = HistoryImportReportWriter.FormatResult(result);
             if (result.Canceled)
                 Status += "\n" + Strings.HistoryImportCanceled;

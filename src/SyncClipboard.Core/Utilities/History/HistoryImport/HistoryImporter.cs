@@ -142,8 +142,6 @@ public sealed class HistoryImporter
             }
             progress?.Report(i + 1);
         }
-        if (result.ImportedCount + result.RepairedCount + result.ExistingCount > 0)
-            manager.NotifyHistoryImported();
         await report.CompleteAsync(token).ConfigureAwait(false);
         return result;
     }
@@ -246,7 +244,7 @@ public sealed class HistoryImporter
     {
         var profile = CreateImportProfile(item, type);
         await RestoreProfileTransferAsync(plan, item, profile, directory, token).ConfigureAwait(false);
-        await ValidateRestoredProfileAsync(profile, item, type, directory, token).ConfigureAwait(false);
+        await ValidateRestoredProfileAsync(profile, item, directory, token).ConfigureAwait(false);
         var data = await profile.Persist(profileEnv.GetHistoryPersistentDir(), token).ConfigureAwait(false);
         return new HistoryRecord
         {
@@ -304,7 +302,7 @@ public sealed class HistoryImporter
     }
 
     private static async Task ValidateRestoredProfileAsync(
-        Profile profile, HistoryExportRecord item, ProfileType type, string? directory, CancellationToken token)
+        Profile profile, HistoryExportRecord item, string? directory, CancellationToken token)
     {
         if (!await profile.IsDataComplete(false, token).ConfigureAwait(false))
             throw new InvalidDataException("Record content does not match its hash.");
@@ -312,8 +310,6 @@ public sealed class HistoryImporter
         {
             await ValidateDecodedTextAsync(profile, item, directory!, token).ConfigureAwait(false);
         }
-        if (type != ProfileType.Text && profile.DisplayText != item.Text)
-            throw new InvalidDataException("Record display text does not match its content.");
     }
 
     private static async Task ValidateDecodedTextAsync(
@@ -323,8 +319,6 @@ public sealed class HistoryImporter
         var decodedProfile = new TextProfile(content.Text);
         if (!Utility.SHA256Same(await decodedProfile.GetHash(token).ConfigureAwait(false), item.Hash))
             throw new InvalidDataException("Decoded text does not match its hash.");
-        if (decodedProfile.DisplayText != item.Text)
-            throw new InvalidDataException("Text preview does not match its content.");
     }
 
     private async Task<string> RestoreTransferAsync(

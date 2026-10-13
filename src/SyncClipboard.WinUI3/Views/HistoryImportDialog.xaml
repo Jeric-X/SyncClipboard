@@ -15,9 +15,12 @@
             <StackPanel Spacing="4" Visibility="{Binding ShowSetup, Converter={StaticResource BoolToVisibility}}">
                 <TextBlock Text="{x:Bind i18n:Strings.HistoryExportArchive}" FontWeight="SemiBold" />
                 <TextBlock Text="{Binding BackupPath}" TextWrapping="Wrap" />
-                <TextBlock Text="{x:Bind i18n:Strings.HistoryImportDuplicates}" TextWrapping="Wrap" />
             </StackPanel>
-            <ProgressBar IsIndeterminate="True" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
+            <ProgressBar Minimum="0"
+                         Maximum="{Binding ProgressMaximum}"
+                         Value="{Binding ProcessedCount}"
+                         IsIndeterminate="{Binding IsPreparing}"
+                         Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}" />
             <TextBlock IsTextSelectionEnabled="True" Text="{Binding Status}" TextWrapping="Wrap" />
             <Button Content="{x:Bind i18n:Strings.HistoryImportStart}" Command="{Binding StartCommand}" Visibility="{Binding ShowStart, Converter={StaticResource BoolToVisibility}}" />
             <StackPanel Spacing="4" Visibility="{Binding HasReport, Converter={StaticResource BoolToVisibility}}">

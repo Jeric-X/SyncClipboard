@@ -45,11 +45,11 @@
                                SpinButtonPlacementMode="Inline"
                                SmallChange="1" />
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryImport}">
-                    <Button Content="{x:Bind i18n:Strings.HistoryImport}" Command="{x:Bind _viewModel.ImportHistoryCommand}" />
-                </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryExport}">
-                    <Button Content="{x:Bind i18n:Strings.HistoryExport}" Command="{x:Bind _viewModel.ExportHistoryCommand}" />
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryBackup}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="{x:Bind i18n:Strings.Import}" Command="{x:Bind _viewModel.ImportHistoryCommand}" />
+                        <Button Content="{x:Bind i18n:Strings.Export}" Command="{x:Bind _viewModel.ExportHistoryCommand}" />
+                    </StackPanel>
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.ClearLocalHistory}" Description="{x:Bind i18n:Strings.ClearLocalHistoryDescription}">
                     <Button Content="{x:Bind i18n:Strings.ClearLocalHistory}" Command="{x:Bind _viewModel.ClearLocalHistoryCommand}" />

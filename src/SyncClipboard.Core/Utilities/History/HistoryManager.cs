@@ -16,10 +16,9 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 {
     private const int HistoryKeyQueryBatchSize = 800;
 
-    public event Action<HistoryRecord, HistoryChangeSource>? HistoryAdded;
+    public event Action<HistoryRecord>? HistoryAdded;
     public event Action<HistoryRecord>? HistoryRemoved;
-    public event Action<HistoryRecord, HistoryChangeSource>? HistoryUpdated;
-    public event Action? HistoryImported;
+    public event Action<HistoryRecord>? HistoryUpdated;
 
     private HistoryConfig _historyConfig = new();
     private RuntimeHistoryConfig _runtimeHistoryConfig = new();
@@ -161,11 +160,11 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             await _dbContext.SaveChangesAsync(token);
             if (restored)
             {
-                HistoryAdded?.Invoke(entity, HistoryChangeSource.Default);
+                HistoryAdded?.Invoke(entity);
             }
             else
             {
-                HistoryUpdated?.Invoke(entity, HistoryChangeSource.Default);
+                HistoryUpdated?.Invoke(entity);
             }
             return;
         }
@@ -176,7 +175,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         }
         await _dbContext.HistoryRecords.AddAsync(record, token);
         await _dbContext.SaveChangesAsync(token);
-        HistoryAdded?.Invoke(record, HistoryChangeSource.Default);
+        HistoryAdded?.Invoke(record);
     }
 
     public async Task AddRemoteProfile(Profile profile, CancellationToken token)
@@ -199,7 +198,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                 entity.TransferDataHash = null;
             }
             await _dbContext.SaveChangesAsync(token);
-            HistoryUpdated?.Invoke(entity, HistoryChangeSource.Default);
+            HistoryUpdated?.Invoke(entity);
             return;
         }
 
@@ -207,7 +206,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         record.SyncStatus = HistorySyncStatus.Synced;
         await _dbContext.HistoryRecords.AddAsync(record, token);
         await _dbContext.SaveChangesAsync(token);
-        HistoryAdded?.Invoke(record, HistoryChangeSource.Default);
+        HistoryAdded?.Invoke(record);
     }
 
     public async Task<bool> TryRefreshImportedProfileAsync(ProfileType type, string hash, CancellationToken token)
@@ -295,11 +294,11 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         var handlers = added ? HistoryAdded : HistoryUpdated;
         if (handlers is null)
             return;
-        foreach (Action<HistoryRecord, HistoryChangeSource> handler in handlers.GetInvocationList().Cast<Action<HistoryRecord, HistoryChangeSource>>())
+        foreach (Action<HistoryRecord> handler in handlers.GetInvocationList().Cast<Action<HistoryRecord>>())
         {
             try
             {
-                handler(record, HistoryChangeSource.Import);
+                handler(record);
             }
             catch (Exception ex)
             {
@@ -401,19 +400,6 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         return target;
     }
 
-    internal void NotifyHistoryImported()
-    {
-        // Observer failures must not make the importer remove committed attachments.
-        try
-        {
-            HistoryImported?.Invoke();
-        }
-        catch (Exception ex)
-        {
-            _logger.Write("HistoryManager", $"Import notification failed: {ex.Message}");
-        }
-    }
-
     public async Task<IReadOnlyList<HistoryExportRecord>> GetExportSnapshotAsync(
         IReadOnlyList<HistoryRecordKey>? selected, CancellationToken token)
     {
@@ -478,7 +464,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                 entity.SyncStatus = HistorySyncStatus.NeedSync;
             }
             await _dbContext.SaveChangesAsync(token);
-            HistoryUpdated?.Invoke(entity, HistoryChangeSource.Default);
+            HistoryUpdated?.Invoke(entity);
         }
     }
 
@@ -493,7 +479,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             entity.FilePath = record.FilePath;
             CopyLocalTransferDataBinding(record, entity);
             await _dbContext.SaveChangesAsync(token);
-            HistoryUpdated?.Invoke(entity, HistoryChangeSource.Default);
+            HistoryUpdated?.Invoke(entity);
         }
     }
 
@@ -520,7 +506,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         entity.TransferDataFile = null;
         entity.TransferDataHash = null;
         await _dbContext.SaveChangesAsync(token);
-        HistoryUpdated?.Invoke(entity, HistoryChangeSource.Default);
+        HistoryUpdated?.Invoke(entity);
     }
 
     /// <summary>
@@ -540,7 +526,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             CopyLocalTransferDataBinding(record, record);
             await _dbContext.HistoryRecords.AddAsync(record, token);
             await _dbContext.SaveChangesAsync(token);
-            HistoryAdded?.Invoke(record, HistoryChangeSource.Default);
+            HistoryAdded?.Invoke(record);
             return record;
         }
 
@@ -618,7 +604,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                     {
                         var newRecord = dto.ToHistoryRecord();
                         await _dbContext.HistoryRecords.AddAsync(newRecord, token).ConfigureAwait(false);
-                        HistoryAdded?.Invoke(newRecord, HistoryChangeSource.Default);
+                        HistoryAdded?.Invoke(newRecord);
                         addedRecords.Add(newRecord);
                     }
                 }
@@ -655,7 +641,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         }
         else
         {
-            HistoryUpdated?.Invoke(record, HistoryChangeSource.Default);
+            HistoryUpdated?.Invoke(record);
         }
     }
 
@@ -957,7 +943,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         }
         await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
         foreach (var record in records)
-            HistoryUpdated?.Invoke(record, HistoryChangeSource.Default);
+            HistoryUpdated?.Invoke(record);
     }
 
     /// <summary>

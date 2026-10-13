@@ -1573,9 +1573,6 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryImportResult" xml:space="preserve">
     <value>已导入 {0} 条记录</value>
   </data>
-  <data name="HistoryImportExistingCount" xml:space="preserve">
-    <value>，更新 {0} 条已有记录</value>
-  </data>
   <data name="HistoryImportFailureCount" xml:space="preserve">
     <value>，{0} 条记录未能导入</value>
   </data>
@@ -1591,10 +1588,13 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryImportBusy" xml:space="preserve">
     <value>已有导入正在进行。</value>
   </data>
-  <data name="HistoryImportDuplicates" xml:space="preserve">
-    <value>已有记录保留本机内容、收藏和置顶，恢复删除状态、更新活动时间，并补齐缺失附件。</value>
+  <data name="HistoryBackup" xml:space="preserve">
+    <value>历史记录备份</value>
   </data>
-  <data name="HistoryImportRepairedCount" xml:space="preserve">
-    <value>，已修复 {0} 条记录</value>
+  <data name="Import" xml:space="preserve">
+    <value>导入</value>
+  </data>
+  <data name="Export" xml:space="preserve">
+    <value>导出</value>
   </data>
 </root>
