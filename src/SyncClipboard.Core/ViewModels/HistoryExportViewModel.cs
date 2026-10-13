@@ -141,26 +141,7 @@ public sealed partial class HistoryExportViewModel(HistoryManager manager, Histo
         try
         {
             var result = await Task.Run(() => exporter.ExportAsync(_plan, Directory, progress, cancellation.Token));
-            // Ignore progress queued by the background writer after the final result.
-            IsFinished = true;
-            IsBusy = false;
-            if (!result.Canceled && result.Error is null)
-                ProcessedCount = TotalCount;
-            ArchivePath = result.ArchivePath;
-            ReportPath = result.ReportPath;
-            Status = HistoryExportReportWriter.FormatResult(result);
-            if (result.Canceled)
-                Status += "\n" + Strings.HistoryExportCanceled;
-            if (result.Error is not null)
-                Status += "\n" + string.Format(Strings.HistoryExportFailed, result.Error);
-            if (result.ArchivePath is null)
-                Status += "\n" + Strings.HistoryExportNoArchive;
-            if (result.ReportError is not null)
-            {
-                Status += "\n" + string.Format(Strings.HistoryExportReportFailed, result.ReportError);
-                Status += "\n" + string.Join('\n', result.Skipped.Select(item =>
-                    $"{item.ProfileId}: {HistoryExportReportWriter.Describe(item.Reason)} {item.Detail}"));
-            }
+            ShowResult(result);
         }
         catch (Exception ex)
         {
@@ -171,6 +152,30 @@ public sealed partial class HistoryExportViewModel(HistoryManager manager, Histo
             _cancellation = null;
             IsFinished = true;
             IsBusy = false;
+        }
+    }
+
+    private void ShowResult(HistoryExportResult result)
+    {
+        // Ignore progress queued by the background writer after the final result.
+        IsFinished = true;
+        IsBusy = false;
+        if (!result.Canceled && result.Error is null)
+            ProcessedCount = TotalCount;
+        ArchivePath = result.ArchivePath;
+        ReportPath = result.ReportPath;
+        Status = HistoryExportReportWriter.FormatResult(result);
+        if (result.Canceled)
+            Status += "\n" + Strings.HistoryExportCanceled;
+        if (result.Error is not null)
+            Status += "\n" + string.Format(Strings.HistoryExportFailed, result.Error);
+        if (result.ArchivePath is null)
+            Status += "\n" + Strings.HistoryExportNoArchive;
+        if (result.ReportError is not null)
+        {
+            Status += "\n" + string.Format(Strings.HistoryExportReportFailed, result.ReportError);
+            Status += "\n" + string.Join('\n', result.Skipped.Select(item =>
+                $"{item.ProfileId}: {HistoryExportReportWriter.Describe(item.Reason)} {item.Detail}"));
         }
     }
 
