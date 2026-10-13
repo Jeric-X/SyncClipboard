@@ -135,6 +135,38 @@ public class HistoryRetentionTests
     }
 
     [TestMethod]
+    [DataRow(9, -1)]
+    [DataRow(9, 1)]
+    [DataRow(10, -1)]
+    [DataRow(10, 1)]
+    [DataRow(11, -1)]
+    [DataRow(11, 1)]
+    public async Task RemoteSync_PreservesEarliestCreationTime(int remoteVersion, int remoteCreatedDays)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var activityTime = DateTime.UtcNow.AddDays(-1);
+        var record = Record("creation-time", activityTime, activityTime);
+        record.Version = 10;
+        f.Db.HistoryRecords.Add(record);
+        await f.Db.SaveChangesAsync(Token);
+        var localCreated = record.Timestamp;
+        var remote = record.ToHistoryRecordDto();
+        remote.Version = remoteVersion;
+        remote.CreateTime = localCreated.AddDays(remoteCreatedDays);
+
+        await f.Manager.SyncRemoteHistoryAsync([remote], Token);
+
+        var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        Assert.AreEqual(remoteCreatedDays < 0 ? remote.CreateTime.UtcDateTime : localCreated, saved.Timestamp);
+
+        // Repeated synchronization must not move the oldest known creation time forward.
+        remote.CreateTime = localCreated.AddDays(2);
+        await f.Manager.SyncRemoteHistoryAsync([remote], Token);
+        saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        Assert.AreEqual(remoteCreatedDays < 0 ? localCreated.AddDays(remoteCreatedDays) : localCreated, saved.Timestamp);
+    }
+
+    [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
     public async Task DeletedAttachmentCleanup_PreservesTombstonesUntilExpiration(bool transferOnly)
@@ -254,6 +286,7 @@ public class HistoryRetentionTests
         await f.Db.SaveChangesAsync(Token);
         var modified = local.LastModified;
         var accessed = local.LastAccessed;
+        var created = local.Timestamp;
         var accepted = local.ToHistoryRecordDto();
         accepted.Version = 21;
         if (concurrentRemoteRecord)
@@ -262,6 +295,7 @@ public class HistoryRetentionTests
             accepted.Pinned = true;
             accepted.LastModified = modified.AddMinutes(1);
             accepted.LastAccessed = accessed.AddMinutes(remoteAccessedLater ? 1 : -1);
+            accepted.CreateTime = created.AddDays(remoteAccessedLater ? 1 : -1);
         }
         var remote = new Mock<IRemoteClipboardServer>();
         var server = remote.As<IOfficialSyncServer>();
@@ -316,6 +350,10 @@ public class HistoryRetentionTests
         Assert.AreEqual(concurrentRemoteRecord, saved.Pinned);
         Assert.IsFalse(saved.IsDeleted);
         Assert.AreEqual(remoteAccessedLater ? accepted.LastAccessed.UtcDateTime : accessed, saved.LastAccessed);
+        Assert.AreEqual(concurrentRemoteRecord && !remoteAccessedLater ? accepted.CreateTime.UtcDateTime : created,
+            saved.Timestamp);
+        Assert.AreEqual(accepted.Text, saved.Text);
+        Assert.AreEqual(accepted.Size, saved.Size);
         Assert.IsTrue(saved.IsLocalFileReady);
         Assert.IsGreaterThan(0, saved.FilePath.Length);
     }

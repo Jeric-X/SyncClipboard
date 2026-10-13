@@ -634,10 +634,7 @@ public class HistoryTransferQueue : IDisposable
         {
             var serverRecord = await server.UploadHistoryAsync(recordDto, transferData, task.ProgressReporter, ct);
             record.ApplyChangesFromRemote(serverRecord);
-            if (serverRecord.LastAccessed.UtcDateTime > record.LastAccessed)
-            {
-                record.LastAccessed = serverRecord.LastAccessed.UtcDateTime;
-            }
+            record.ApplyBasicFromRemote(serverRecord);
             record.SyncStatus = HistorySyncStatus.Synced;
             await _historyManager.PersistServerSyncedAsync(record, ct);
         }

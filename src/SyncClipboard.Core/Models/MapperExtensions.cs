@@ -44,7 +44,10 @@ public static class MapperExtensions
     public static void ApplyBasicFromRemote(this HistoryRecord entity, HistoryRecordDto dto)
     {
         entity.Text = dto.Text;
-        entity.Timestamp = dto.CreateTime.UtcDateTime;
+        if (dto.CreateTime.UtcDateTime < entity.Timestamp)
+        {
+            entity.Timestamp = dto.CreateTime.UtcDateTime;
+        }
         if (dto.LastAccessed.UtcDateTime > entity.LastAccessed)
         {
             entity.LastAccessed = dto.LastAccessed.UtcDateTime;
