@@ -612,15 +612,15 @@ public class HistoryTransferQueue : IDisposable
 
         // 先检查服务器上是否已存在该记录
         var existingRecord = await server.GetHistoryByProfileIdAsync(task.ProfileId, ct);
-        if (existingRecord != null)
+        if (existingRecord is { IsDeleted: false })
         {
-            // 服务器已存在，直接标记为成功
+            // 服务器已有正常记录，直接标记为成功
             record.SyncStatus = HistorySyncStatus.Synced;
             await _historyManager.PersistServerSyncedAsync(record, ct);
             return;
         }
 
-        // 服务器不存在，执行上传
+        // 服务器不存在或记录已删除，执行上传以恢复内容和状态
         var transferData = await profile.PrepareTransferData(_profileEnv.GetPersistentDir(), ct);
         var persistentInfo = await profile.Persist(_profileEnv.GetPersistentDir(), ct);
         record.FilePath = persistentInfo.FilePaths;
@@ -632,7 +632,9 @@ public class HistoryTransferQueue : IDisposable
 
         try
         {
-            await server.UploadHistoryAsync(recordDto, transferData, task.ProgressReporter, ct);
+            var serverRecord = await server.UploadHistoryAsync(recordDto, transferData, task.ProgressReporter, ct);
+            record.ApplyChangesFromRemote(serverRecord);
+            record.ApplyBasicFromRemote(serverRecord);
             record.SyncStatus = HistorySyncStatus.Synced;
             await _historyManager.PersistServerSyncedAsync(record, ct);
         }

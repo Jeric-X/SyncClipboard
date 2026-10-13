@@ -349,7 +349,7 @@ public sealed class OfficialAdapter(
         }
     }
 
-    public async Task UploadHistoryAsync(
+    public async Task<HistoryRecordDto> UploadHistoryAsync(
         HistoryRecordDto dto, FileHashInfo? file, IProgress<HttpDownloadProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
@@ -397,6 +397,8 @@ public sealed class OfficialAdapter(
 
             using var response = await _httpClient.SendAsync(request, cancellationToken);
             await EnsureHistoryUploadSucceeded(dto, response, cancellationToken);
+            return await response.Content.ReadFromJsonAsync<HistoryRecordDto>(cancellationToken: cancellationToken)
+                ?? throw new InvalidDataException("History upload response did not contain a record.");
         }
         catch (Exception ex)
         {
