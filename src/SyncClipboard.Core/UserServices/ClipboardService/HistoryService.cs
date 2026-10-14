@@ -65,6 +65,7 @@ public class HistoryService : ClipboardHander
         {
             _stopping = false;
         }
+        historySyncer.StartSynchronization();
         base.StartService();
         remoteServerFactory.CurrentServerChanged += OnServerChanged;
         OnServerChanged(null, EventArgs.Empty);
@@ -78,6 +79,7 @@ public class HistoryService : ClipboardHander
             _stopping = true;
             syncingStopped = _syncingTask.CancelAndWaitAsync();
         }
+        historySyncer.StopSynchronization();
         await base.StopSerivceAsync().ConfigureAwait(false);
         remoteServerFactory.CurrentServerChanged -= OnServerChanged;
         UnsubscribeFromServer();
