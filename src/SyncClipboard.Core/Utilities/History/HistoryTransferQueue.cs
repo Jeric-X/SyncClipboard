@@ -26,6 +26,7 @@ public class HistoryTransferQueue(
     private readonly ConcurrentDictionary<string, TransferTask> _activeTasks = new();
     public readonly SemaphoreSlim ActiveTaskAddMutex = new(1, 1);
     private readonly Lock _queueLock = new();
+    private readonly HashSet<TransferTask> _executingTasks = [];
 
     // 并发控制
     private readonly SemaphoreSlim _workerSemaphore = new(4, 4); // 并行度=4
@@ -153,6 +154,8 @@ public class HistoryTransferQueue(
         using var guard = new ScopeGuard(() => ActiveTaskAddMutex.Release());
         session.ThrowIfCancellationRequested();
         ct.ThrowIfCancellationRequested();
+        if (forceResume)
+            ResumeQueue();
         if (_activeTasks.TryGetValue(taskId, out var existingTask))
         {
             lock (existingTask)
@@ -371,16 +374,18 @@ public class HistoryTransferQueue(
 
     public void Dispose()
     {
+        Task[] executions;
         lock (_queueLock)
         {
             if (_disposed)
                 return;
             _disposed = true;
+            executions = _executingTasks.Select(task => task.ExecutionFinished!.Task).ToArray();
         }
         foreach (var task in _activeTasks.Values.ToArray())
             CancelTask(task, backgroundOnly: false);
         _globalCts.Cancel();
-        _releaseTask = ReleaseQueueResourcesAsync();
+        _releaseTask = ReleaseQueueResourcesAsync(executions);
         GC.SuppressFinalize(this);
     }
 
@@ -392,12 +397,13 @@ public class HistoryTransferQueue(
         GC.SuppressFinalize(this);
     }
 
-    private async Task ReleaseQueueResourcesAsync()
+    private async Task ReleaseQueueResourcesAsync(Task[] executions)
     {
-        await _startSemaphore.WaitAsync();
+        await _startSemaphore.WaitAsync().ConfigureAwait(false);
         _startSemaphore.Release();
         try
         {
+            await Task.WhenAll(executions).ConfigureAwait(false);
             if (_processingTask is not null)
                 await _processingTask.ConfigureAwait(false);
         }
@@ -496,12 +502,22 @@ public class HistoryTransferQueue(
 
     private async Task<TransferTaskStatus> ExecuteTaskAsync(TransferTask task)
     {
-        lock (task)
-        {
-            if (task.IsRemoved)
-                return task.Status;
-            task.IsExecuting = true;
-        }
+        lock (_queueLock)
+            lock (task)
+            {
+                if (task.IsRemoved)
+                    return task.Status;
+                if (_disposed)
+                {
+                    task.Status = TransferTaskStatus.Cancelled;
+                    task.CompletionSource.TrySetResult(task.Status);
+                    RemoveTask(task);
+                    return task.Status;
+                }
+                task.ExecutionFinished = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                task.IsExecuting = true;
+                _executingTasks.Add(task);
+            }
         try
         {
             await ExecuteTaskCoreAsync(task, task.CancellationSource.Token);
@@ -623,6 +639,8 @@ public class HistoryTransferQueue(
                         _queueSignal.Set();
                     }
                 }
+                _executingTasks.Remove(task);
+                task.ExecutionFinished?.TrySetResult();
             }
     }
 

@@ -364,6 +364,7 @@ namespace SyncClipboard.Core
                 {
                     await ServiceManager.StopAllServiceAsync();
                 }
+                await Services.GetRequiredService<HistoryTransferQueue>().DisposeAsync();
                 await threadDispatcher.RunOnMainThreadAsync(() => (Services as IDisposable)?.Dispose());
                 await threadDispatcher.RunOnMainThreadAsync(_platformApplication.Exit);
             }

@@ -42,6 +42,7 @@ public class TransferTask
     internal CancellationTokenRegistration AccountCancellation { get; set; }
     internal CancellationTokenRegistration AutomaticCancellation { get; set; }
     internal CancellationTokenRegistration CallerCancellation { get; set; }
+    internal TaskCompletionSource? ExecutionFinished { get; set; }
     internal bool IsExecuting { get; set; }
     internal bool IsCancelling { get; set; }
     internal bool IsRemoved { get; set; }

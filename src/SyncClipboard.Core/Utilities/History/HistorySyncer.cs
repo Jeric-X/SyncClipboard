@@ -58,14 +58,14 @@ public class HistorySyncer : IDisposable
         CancellationToken token = default)
     {
         var session = _syncSession.Capture();
-        using var request = session.Link(token);
-        token = request?.Token ?? session.AutomaticToken;
         var remoteServer = session.Server;
         token.ThrowIfCancellationRequested();
-        if (remoteServer is null)
+        if (remoteServer is null || session.AutomaticToken.IsCancellationRequested)
         {
             return [];
         }
+        using var request = session.Link(token);
+        token = request?.Token ?? session.AutomaticToken;
 
         var remoteRecords = await FetchRemoteRangeAsync(
             remoteServer,
@@ -91,14 +91,14 @@ public class HistorySyncer : IDisposable
     public async Task SyncAllAsync(DateTime? modifiedAfter, CancellationToken token = default)
     {
         var session = _syncSession.Capture();
-        using var request = session.Link(token);
-        token = request?.Token ?? session.AutomaticToken;
         var remoteServer = session.Server;
         token.ThrowIfCancellationRequested();
-        if (remoteServer is null)
+        if (remoteServer is null || session.AutomaticToken.IsCancellationRequested)
         {
             return;
         }
+        using var request = session.Link(token);
+        token = request?.Token ?? session.AutomaticToken;
 
         var remoteRecords = await FetchRemoteRangeAsync(
             remoteServer,
@@ -186,12 +186,12 @@ public class HistorySyncer : IDisposable
     public async Task SyncNeedUpdateAsync(CancellationToken token = default)
     {
         var session = _syncSession.Capture();
-        using var request = session.Link(token);
-        token = request?.Token ?? session.AutomaticToken;
         var remoteServer = session.Server;
         token.ThrowIfCancellationRequested();
-        if (remoteServer is null)
+        if (remoteServer is null || session.AutomaticToken.IsCancellationRequested)
             return;
+        using var request = session.Link(token);
+        token = request?.Token ?? session.AutomaticToken;
 
         List<HistoryRecord> records;
         try
@@ -225,15 +225,15 @@ public class HistorySyncer : IDisposable
     public async Task SyncOneAsync(HistoryRecord record, CancellationToken token = default)
     {
         var session = _syncSession.Capture();
-        using var request = session.Link(token);
-        token = request?.Token ?? session.AutomaticToken;
         var remoteServer = session.Server;
         token.ThrowIfCancellationRequested();
-        if (remoteServer is null)
+        if (remoteServer is null || session.AutomaticToken.IsCancellationRequested)
         {
             _logger.Write("HistorySyncer", "历史记录同步未启用或当前服务器不支持同步");
             return;
         }
+        using var request = session.Link(token);
+        token = request?.Token ?? session.AutomaticToken;
 
         try
         {

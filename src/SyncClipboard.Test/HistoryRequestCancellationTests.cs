@@ -249,6 +249,109 @@ public class HistoryRequestCancellationTests
         f.Server.Verify(s => s.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    [TestMethod]
+    [DataRow("disable")]
+    [DataRow("unsupported")]
+    public async Task DisabledOrUnsupportedSync_ReturnsWithoutSendingRequests(string state)
+    {
+        await using var f = await SyncFixture.CreateAsync();
+        f.ChangeSession(state);
+        var token = TestContext.CancellationTokenSource.Token;
+        var record = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(token);
+        Assert.HasCount(0, await f.Syncer.SyncRangeAsync(token: token));
+        await f.Syncer.SyncAllAsync(null, token);
+        await f.Syncer.SyncNeedUpdateAsync(token);
+        await f.Syncer.SyncOneAsync(record, token);
+        f.Server.VerifyNoOtherCalls();
+        Assert.AreEqual(HistorySyncStatus.NeedSync, record.SyncStatus);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task QueueDisposal_WaitsForCancelledTransferToActuallyExit(bool immediate)
+    {
+        await using var f = await SyncFixture.CreateAsync();
+        await using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), f.Session, f.Manager,
+            Mock.Of<IProfileEnv>(), null!);
+        var profile = ExistingProfile();
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        f.Server.Setup(s => s.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(async (string _, CancellationToken _) =>
+            {
+                started.SetResult();
+                await release.Task;
+                return new HistoryRecordDto { Type = ProfileType.Text, Hash = "CANCEL" };
+            });
+        Task? manual = null;
+        if (immediate)
+            manual = queue.Upload(profile, ct: TestContext.CancellationTokenSource.Token);
+        else
+            await queue.EnqueueUpload(profile, ct: TestContext.CancellationTokenSource.Token);
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
+        Task disposing;
+        try
+        {
+            disposing = queue.DisposeAsync().AsTask();
+            Assert.IsFalse(disposing.IsCompleted);
+        }
+        finally
+        {
+            release.SetResult();
+        }
+        await disposing.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
+        if (manual is not null)
+            await Assert.ThrowsAsync<OperationCanceledException>(() => manual);
+        var record = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(TestContext.CancellationTokenSource.Token);
+        Assert.AreEqual(HistorySyncStatus.NeedSync, record.SyncStatus);
+    }
+
+    [TestMethod]
+    public async Task ForceResume_DuplicateRequestAllowsExistingTransferToRetry()
+    {
+        await using var f = await SyncFixture.CreateAsync();
+        await using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), f.Session, f.Manager,
+            Mock.Of<IProfileEnv>(), null!);
+        var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var calls = 0;
+        f.Server.Setup(s => s.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(async (string _, CancellationToken _) =>
+            {
+                if (Interlocked.Increment(ref calls) == 1)
+                {
+                    started.SetResult();
+                    await release.Task;
+                    throw new IOException("retry");
+                }
+                return new HistoryRecordDto { Type = ProfileType.Text, Hash = "CANCEL" };
+            });
+        var profile = ExistingProfile();
+        var transfer = await queue.EnqueueUpload(profile, ct: TestContext.CancellationTokenSource.Token);
+        await started.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
+        try
+        {
+            typeof(HistoryTransferQueue).GetField("_isQueueStopped", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(queue, true);
+            await queue.EnqueueUpload(profile, forceResume: true, ct: TestContext.CancellationTokenSource.Token);
+        }
+        finally
+        {
+            release.SetResult();
+        }
+        Assert.AreEqual(TransferTaskStatus.Completed,
+            await transfer.CompletionSource.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.CancellationTokenSource.Token));
+    }
+
+    private static TextProfile ExistingProfile() => new(new SyncClipboard.Shared.Profiles.Models.ProfilePersistentInfo
+    {
+        Type = ProfileType.Text,
+        Text = "cancel",
+        Hash = "CANCEL",
+        Size = 6
+    });
+
     private sealed class MemoryConfig : ConfigBase
     {
         protected override bool Save() => true;
@@ -311,6 +414,10 @@ public class HistoryRequestCancellationTests
             {
                 case "disable":
                     Runtime.SetConfig(new RuntimeHistoryConfig { EnableSyncHistory = false });
+                    break;
+                case "unsupported":
+                    Set(factory, "_current", Mock.Of<IRemoteClipboardServer>());
+                    Session.Capture();
                     break;
                 case "server":
                     Server = NewServer();
