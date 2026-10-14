@@ -1,5 +1,6 @@
 using SyncClipboard.Core.Models;
 using SyncClipboard.Server.Core.Models;
+using SyncClipboard.Core.RemoteServer;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Exceptions;
 using SyncClipboard.Core.Models.UserConfigs;
@@ -12,26 +13,26 @@ namespace SyncClipboard.Core.Utilities.History;
 public class HistorySyncer
 {
     private readonly HistoryManager _historyManager;
+    private readonly RemoteClipboardServerFactory _remoteServerFactory;
     private readonly ILogger _logger;
     private readonly HistoryTransferQueue _historyTransferQueue;
     private readonly ConfigBase _runtimeConfig;
     private readonly ConfigManager _configManager;
-    private readonly HistorySyncSession _syncSession;
 
     public HistorySyncer(
         HistoryManager historyManager,
+        RemoteClipboardServerFactory remoteServerFactory,
         ILogger logger,
         HistoryTransferQueue historyTransferQueue,
         ConfigManager configManager,
-        [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig,
-        HistorySyncSession syncSession)
+        [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig)
     {
         _historyManager = historyManager;
+        _remoteServerFactory = remoteServerFactory;
         _logger = logger;
         _historyTransferQueue = historyTransferQueue;
         _configManager = configManager;
         _runtimeConfig = runtimeConfig;
-        _syncSession = syncSession;
 
         // 订阅 HistoryManager 的事件：更新与删除（软删除）均可能需要同步
         _historyManager.HistoryAdded += OnHistoryAdded;
@@ -49,15 +50,10 @@ public class HistorySyncer
         bool sortByLastAccessed = false,
         CancellationToken token = default)
     {
-        var session = _syncSession.Capture();
-        var remoteServer = session.Server;
-        token.ThrowIfCancellationRequested();
-        if (remoteServer is null || session.AutomaticToken.IsCancellationRequested)
+        if (_remoteServerFactory.Current is not IOfficialSyncServer remoteServer)
         {
             return [];
         }
-        using var request = session.Link(token);
-        token = request?.Token ?? session.AutomaticToken;
 
         var remoteRecords = await FetchRemoteRangeAsync(
             remoteServer,
@@ -71,8 +67,6 @@ public class HistorySyncer
             sortByLastAccessed,
             token);
 
-        session.ThrowIfCancellationRequested();
-        token.ThrowIfCancellationRequested();
         var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
         await DetectOrphanDataAsync(before, after, remoteRecords, types, searchText, starred, token);
         await CleanupLocalRecordsAsync(token);
@@ -82,15 +76,10 @@ public class HistorySyncer
 
     public async Task SyncAllAsync(DateTime? modifiedAfter, CancellationToken token = default)
     {
-        var session = _syncSession.Capture();
-        var remoteServer = session.Server;
-        token.ThrowIfCancellationRequested();
-        if (remoteServer is null || session.AutomaticToken.IsCancellationRequested)
+        if (_remoteServerFactory.Current is not IOfficialSyncServer remoteServer)
         {
             return;
         }
-        using var request = session.Link(token);
-        token = request?.Token ?? session.AutomaticToken;
 
         var remoteRecords = await FetchRemoteRangeAsync(
             remoteServer,
@@ -104,8 +93,6 @@ public class HistorySyncer
             false,
             token);
 
-        session.ThrowIfCancellationRequested();
-        token.ThrowIfCancellationRequested();
         await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
         if (modifiedAfter is null)
         {
@@ -113,7 +100,7 @@ public class HistorySyncer
         }
         await CleanupLocalRecordsAsync(token);
         await PushLocalRangeAsync(null, null, ProfileTypeFilter.All, null, null, token);
-        await SyncPendingHistoryDataAsync(session, token);
+        await SyncPendingHistoryDataAsync(token);
         await _historyTransferQueue.WaitAllTasks(token);
         await CleanupLocalRecordsAsync(token);
     }
@@ -177,20 +164,12 @@ public class HistorySyncer
     /// </summary>
     public async Task SyncNeedUpdateAsync(CancellationToken token = default)
     {
-        var session = _syncSession.Capture();
-        var remoteServer = session.Server;
-        token.ThrowIfCancellationRequested();
-        if (remoteServer is null || session.AutomaticToken.IsCancellationRequested)
-            return;
-        using var request = session.Link(token);
-        token = request?.Token ?? session.AutomaticToken;
-
         List<HistoryRecord> records;
         try
         {
-            records = await _historyManager.GetHistory(token);
+            records = await _historyManager.GetHistory();
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (Exception ex)
         {
             _logger.Write("HistorySyncer", $"获取本地历史记录失败: {ex.Message}");
             return;
@@ -216,16 +195,11 @@ public class HistorySyncer
     /// <returns>返回是否已将本地状态更新为 Synced</returns>
     public async Task SyncOneAsync(HistoryRecord record, CancellationToken token = default)
     {
-        var session = _syncSession.Capture();
-        var remoteServer = session.Server;
-        token.ThrowIfCancellationRequested();
-        if (remoteServer is null || session.AutomaticToken.IsCancellationRequested)
+        if (_remoteServerFactory.Current is not IOfficialSyncServer remoteServer)
         {
-            _logger.Write("HistorySyncer", "历史记录同步未启用或当前服务器不支持同步");
+            _logger.Write("HistorySyncer", "当前远程服务器不支持历史记录同步");
             return;
         }
-        using var request = session.Link(token);
-        token = request?.Token ?? session.AutomaticToken;
 
         try
         {
@@ -239,15 +213,11 @@ public class HistorySyncer
                 LastAccessed = new DateTimeOffset(record.LastAccessed.ToUniversalTime(), TimeSpan.Zero)
             };
             await remoteServer.UpdateHistoryAsync(record.Type, record.Hash, dto, token);
-            session.ThrowIfCancellationRequested();
-            token.ThrowIfCancellationRequested();
             record.SyncStatus = HistorySyncStatus.Synced;
             await _historyManager.PersistServerSyncedAsync(record, token);
         }
         catch (RemoteHistoryConflictException ex)
         {
-            session.ThrowIfCancellationRequested();
-            token.ThrowIfCancellationRequested();
             if (ex.ServerRecord != null)
             {
                 record.ApplyFromServerUpdateDto(ex.ServerRecord);
@@ -257,8 +227,6 @@ public class HistorySyncer
         }
         catch (RemoteHistoryNotFoundException)
         {
-            session.ThrowIfCancellationRequested();
-            token.ThrowIfCancellationRequested();
             record.SyncStatus = HistorySyncStatus.LocalOnly;
             await _historyManager.PersistServerSyncedAsync(record, token);
         }
@@ -397,15 +365,15 @@ public class HistorySyncer
     /// 同步所有未同步记录的数据：下载远端存在但本地未就绪的记录，上传本地数据已就绪的 LocalOnly 记录。
     /// 本地数据未就绪的 LocalOnly 记录不会在后台重新检查，也不会被误当成远端记录下载。
     /// </summary>
-    private async Task SyncPendingHistoryDataAsync(HistorySyncSession.Context session, CancellationToken token)
+    private async Task SyncPendingHistoryDataAsync(CancellationToken token)
     {
         var allRecords = await _historyManager.GetHistory().ConfigureAwait(false);
         allRecords = await Task.Run(allRecords.Where(r => r.IsDeleted == false).ToList, token);
-        await SyncPendingDownloadsAsync(allRecords, session, token);
-        await SyncPendingUploadsAsync(allRecords, session, token);
+        await SyncPendingDownloadsAsync(allRecords, token);
+        await SyncPendingUploadsAsync(allRecords, token);
     }
 
-    private async Task SyncPendingDownloadsAsync(List<HistoryRecord> allRecords, HistorySyncSession.Context session, CancellationToken token)
+    private async Task SyncPendingDownloadsAsync(List<HistoryRecord> allRecords, CancellationToken token)
     {
         var needDownload = await Task.Run(
             () => allRecords
@@ -417,11 +385,11 @@ public class HistorySyncer
                 break;
 
             var profile = record.ToProfile();
-            await _historyTransferQueue.EnqueueDownload(profile, session, forceResume: false, token);
+            await _historyTransferQueue.EnqueueDownload(profile, forceResume: false, token);
         }
     }
 
-    private async Task SyncPendingUploadsAsync(List<HistoryRecord> allRecords, HistorySyncSession.Context session, CancellationToken token)
+    private async Task SyncPendingUploadsAsync(List<HistoryRecord> allRecords, CancellationToken token)
     {
         var needUpload = await Task.Run(
             () => allRecords
@@ -439,7 +407,7 @@ public class HistorySyncer
                 continue;
             }
 
-            await _historyTransferQueue.EnqueueUpload(profile, session, forceResume: false, token);
+            await _historyTransferQueue.EnqueueUpload(profile, forceResume: false, token);
         }
     }
 
@@ -452,7 +420,6 @@ public class HistorySyncer
                 await SyncOneAsync(record, CancellationToken.None);
             }
         }
-        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             _logger.Write("HistorySyncer", $"事件同步失败[{record.Hash}]: {ex.Message}");
@@ -476,18 +443,15 @@ public class HistorySyncer
                 return;
             }
 
-            var session = _syncSession.Capture();
-            session.ThrowIfCancellationRequested();
             var profile = record.ToProfile();
-            if (!await CanUploadLocalProfileAsync(profile, session.AutomaticToken))
+            if (!await CanUploadLocalProfileAsync(profile, CancellationToken.None))
             {
                 return;
             }
 
-            await _historyTransferQueue.EnqueueUpload(profile, session, forceResume: true, session.AutomaticToken);
+            await _historyTransferQueue.EnqueueUpload(profile, forceResume: true, CancellationToken.None);
             // _logger.Write("HistorySyncer", $"新增记录已加入传输队列[{record.Hash}]");
         }
-        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             _logger.Write("HistorySyncer", $"新增记录处理失败[{record.Hash}]: {ex.Message}");
@@ -508,16 +472,13 @@ public class HistorySyncer
             {
                 await SyncOneAsync(record, CancellationToken.None);
             }
+
+            var profileId = Profile.GetProfileId(record.Type, record.Hash);
+            _historyTransferQueue.DeleteTask(profileId);
         }
-        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             _logger.Write("HistorySyncer", $"删除事件同步失败[{record.Hash}]: {ex.Message}");
-        }
-        finally
-        {
-            var profileId = Profile.GetProfileId(record.Type, record.Hash);
-            _historyTransferQueue.DeleteTask(profileId);
         }
     }
 }

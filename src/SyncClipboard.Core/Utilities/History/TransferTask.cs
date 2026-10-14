@@ -38,17 +38,9 @@ public class TransferTask
 
     public Profile Profile { get; init; } = null!;
     public CancellationTokenSource CancellationSource { get; set; } = null!;
-    internal HistorySyncSession.Context? Session { get; init; }
-    internal CancellationTokenRegistration AccountCancellation { get; set; }
-    internal CancellationTokenRegistration AutomaticCancellation { get; set; }
-    internal CancellationTokenRegistration CallerCancellation { get; set; }
-    internal TaskCompletionSource? ExecutionFinished { get; set; }
-    internal bool IsExecuting { get; set; }
-    internal bool IsCancelling { get; set; }
-    internal bool IsRemoved { get; set; }
 
     // 任务完成信号
-    public TaskCompletionSource<TransferTaskStatus> CompletionSource { get; init; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    public TaskCompletionSource<TransferTaskStatus> CompletionSource { get; init; } = new();
 
     public static string GetTaskId(TransferType type, string profileId)
     {

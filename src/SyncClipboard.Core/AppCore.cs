@@ -364,7 +364,6 @@ namespace SyncClipboard.Core
                 {
                     await ServiceManager.StopAllServiceAsync();
                 }
-                await Services.GetRequiredService<HistoryTransferQueue>().DisposeAsync();
                 await threadDispatcher.RunOnMainThreadAsync(() => (Services as IDisposable)?.Dispose());
                 await threadDispatcher.RunOnMainThreadAsync(_platformApplication.Exit);
             }
@@ -414,7 +413,6 @@ namespace SyncClipboard.Core
             services.AddSingleton<HistoryExporter>();
             services.AddTransient<HistoryExportViewModel>();
             services.AddSingleton<HistorySyncer>();
-            services.AddSingleton<HistorySyncSession>();
             services.AddSingleton<HistoryTransferQueue>();
 
             services.AddSingleton<IHttp, Http>();
