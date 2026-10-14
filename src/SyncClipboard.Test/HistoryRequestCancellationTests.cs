@@ -438,7 +438,6 @@ public class HistoryRequestCancellationTests
 
         public async ValueTask DisposeAsync()
         {
-            Syncer.Dispose();
             Session.Dispose();
             await Db.DisposeAsync();
             dbLock.Dispose();

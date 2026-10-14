@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace SyncClipboard.Core.Utilities.History;
 
-public class HistorySyncer : IDisposable
+public class HistorySyncer
 {
     private readonly HistoryManager _historyManager;
     private readonly ILogger _logger;
@@ -37,14 +37,6 @@ public class HistorySyncer : IDisposable
         _historyManager.HistoryAdded += OnHistoryAdded;
         _historyManager.HistoryUpdated += OnHistoryUpdated;
         _historyManager.HistoryRemoved += OnHistoryRemoved;
-    }
-
-    public void Dispose()
-    {
-        _historyManager.HistoryAdded -= OnHistoryAdded;
-        _historyManager.HistoryUpdated -= OnHistoryUpdated;
-        _historyManager.HistoryRemoved -= OnHistoryRemoved;
-        GC.SuppressFinalize(this);
     }
 
     public async Task<List<HistoryRecord>> SyncRangeAsync(
