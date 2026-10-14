@@ -281,7 +281,16 @@ public class HistoryTransferQueue : IDisposable
         _logger.Write("清空传输队列");
 
         // 取消所有任务
-        CancelTasks(_activeTasks.Values);
+        foreach (var task in _activeTasks.Values)
+        {
+            try
+            {
+                task.CancellationSource?.Cancel();
+                task.Status = TransferTaskStatus.Cancelled;
+                NotifyStatusChanged(task);
+            }
+            catch { }
+        }
 
         lock (_queueLock)
         {
@@ -668,20 +677,6 @@ public class HistoryTransferQueue : IDisposable
         }
     }
 
-    private void CancelTasks(IEnumerable<TransferTask> tasks)
-    {
-        foreach (var task in tasks)
-        {
-            try
-            {
-                task.CancellationSource?.Cancel();
-                task.Status = TransferTaskStatus.Cancelled;
-                NotifyStatusChanged(task);
-            }
-            catch { }
-        }
-    }
-
     private void OnSyncHistoryChanged(RuntimeHistoryConfig config)
     {
         if (!config.EnableSyncHistory)
@@ -692,7 +687,16 @@ public class HistoryTransferQueue : IDisposable
 
     private void CancelNonImmediateTasks()
     {
-        CancelTasks(_activeTasks.Values.Where(t => !t.IsImmediateTask));
+        foreach (var task in _activeTasks.Values.Where(t => !t.IsImmediateTask))
+        {
+            try
+            {
+                task.CancellationSource?.Cancel();
+                task.Status = TransferTaskStatus.Cancelled;
+                NotifyStatusChanged(task);
+            }
+            catch { }
+        }
 
         lock (_queueLock)
         {

@@ -18,6 +18,7 @@ public class HistorySyncer
     private readonly HistoryTransferQueue _historyTransferQueue;
     private readonly ConfigBase _runtimeConfig;
     private readonly ConfigManager _configManager;
+    private readonly HistorySyncSession _syncSession;
 
     public HistorySyncer(
         HistoryManager historyManager,
@@ -25,7 +26,8 @@ public class HistorySyncer
         ILogger logger,
         HistoryTransferQueue historyTransferQueue,
         ConfigManager configManager,
-        [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig)
+        [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig,
+        HistorySyncSession syncSession)
     {
         _historyManager = historyManager;
         _remoteServerFactory = remoteServerFactory;
@@ -33,6 +35,7 @@ public class HistorySyncer
         _historyTransferQueue = historyTransferQueue;
         _configManager = configManager;
         _runtimeConfig = runtimeConfig;
+        _syncSession = syncSession;
 
         // 订阅 HistoryManager 的事件：更新与删除（软删除）均可能需要同步
         _historyManager.HistoryAdded += OnHistoryAdded;
@@ -76,11 +79,14 @@ public class HistorySyncer
 
     public async Task SyncAllAsync(DateTime? modifiedAfter, CancellationToken token = default)
     {
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(_syncSession.Token, token);
+        token = linked.Token;
         if (_remoteServerFactory.Current is not IOfficialSyncServer remoteServer)
         {
             return;
         }
 
+        token.ThrowIfCancellationRequested();
         var remoteRecords = await FetchRemoteRangeAsync(
             remoteServer,
             null,
@@ -93,6 +99,7 @@ public class HistorySyncer
             false,
             token);
 
+        token.ThrowIfCancellationRequested();
         await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
         if (modifiedAfter is null)
         {
@@ -195,6 +202,7 @@ public class HistorySyncer
     /// <returns>返回是否已将本地状态更新为 Synced</returns>
     public async Task SyncOneAsync(HistoryRecord record, CancellationToken token = default)
     {
+        token.ThrowIfCancellationRequested();
         if (_remoteServerFactory.Current is not IOfficialSyncServer remoteServer)
         {
             _logger.Write("HistorySyncer", "当前远程服务器不支持历史记录同步");
@@ -212,12 +220,15 @@ public class HistorySyncer
                 LastModified = new DateTimeOffset(record.LastModified.ToUniversalTime(), TimeSpan.Zero),
                 LastAccessed = new DateTimeOffset(record.LastAccessed.ToUniversalTime(), TimeSpan.Zero)
             };
+            token.ThrowIfCancellationRequested();
             await remoteServer.UpdateHistoryAsync(record.Type, record.Hash, dto, token);
+            token.ThrowIfCancellationRequested();
             record.SyncStatus = HistorySyncStatus.Synced;
             await _historyManager.PersistServerSyncedAsync(record, token);
         }
         catch (RemoteHistoryConflictException ex)
         {
+            token.ThrowIfCancellationRequested();
             if (ex.ServerRecord != null)
             {
                 record.ApplyFromServerUpdateDto(ex.ServerRecord);
@@ -227,6 +238,7 @@ public class HistorySyncer
         }
         catch (RemoteHistoryNotFoundException)
         {
+            token.ThrowIfCancellationRequested();
             record.SyncStatus = HistorySyncStatus.LocalOnly;
             await _historyManager.PersistServerSyncedAsync(record, token);
         }
@@ -417,9 +429,10 @@ public class HistorySyncer
         {
             if (record.SyncStatus == HistorySyncStatus.NeedSync)
             {
-                await SyncOneAsync(record, CancellationToken.None);
+                await SyncOneAsync(record, _syncSession.Token);
             }
         }
+        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             _logger.Write("HistorySyncer", $"事件同步失败[{record.Hash}]: {ex.Message}");
@@ -443,15 +456,17 @@ public class HistorySyncer
                 return;
             }
 
+            var token = _syncSession.Token;
             var profile = record.ToProfile();
-            if (!await CanUploadLocalProfileAsync(profile, CancellationToken.None))
+            if (!await CanUploadLocalProfileAsync(profile, token))
             {
                 return;
             }
 
-            await _historyTransferQueue.EnqueueUpload(profile, forceResume: true, CancellationToken.None);
+            await _historyTransferQueue.EnqueueUpload(profile, forceResume: true, token);
             // _logger.Write("HistorySyncer", $"新增记录已加入传输队列[{record.Hash}]");
         }
+        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             _logger.Write("HistorySyncer", $"新增记录处理失败[{record.Hash}]: {ex.Message}");
@@ -470,7 +485,11 @@ public class HistorySyncer
         {
             if (record.SyncStatus == HistorySyncStatus.NeedSync)
             {
-                await SyncOneAsync(record, CancellationToken.None);
+                try
+                {
+                    await SyncOneAsync(record, _syncSession.Token);
+                }
+                catch (OperationCanceledException) { }
             }
 
             var profileId = Profile.GetProfileId(record.Type, record.Hash);
