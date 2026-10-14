@@ -90,8 +90,8 @@ public class HistoryRequestCancellationTests
         if (change != "dispose")
         {
             f.Runtime.SetConfig(new RuntimeHistoryConfig { EnableSyncHistory = true });
-            typeof(HistorySyncer).GetMethod("StartSynchronization", BindingFlags.Instance | BindingFlags.NonPublic)!
-                .Invoke(f.Syncer, null);
+            typeof(HistorySyncSession).GetMethod("Start", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(f.Session, null);
             f.Server.Setup(s => s.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
                 It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
             await f.Syncer.SyncOneAsync(record, TestContext.CancellationTokenSource.Token);
@@ -167,6 +167,88 @@ public class HistoryRequestCancellationTests
         await Assert.ThrowsAsync<OperationCanceledException>(() => single);
     }
 
+    [TestMethod]
+    [DataRow(false, "disable")]
+    [DataRow(false, "server")]
+    [DataRow(true, "disable")]
+    [DataRow(true, "server")]
+    [DataRow(false, "caller")]
+    [DataRow(true, "caller")]
+    public async Task Transfer_SessionCancellationRespectsManualPromotion(bool promote, string change)
+    {
+        await using var f = await SyncFixture.CreateAsync();
+        await using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), f.Session, f.Manager,
+            Mock.Of<IProfileEnv>(), null!);
+        var profile = new TextProfile(new SyncClipboard.Shared.Profiles.Models.ProfilePersistentInfo
+        {
+            Type = ProfileType.Text,
+            Text = "cancel",
+            Hash = "CANCEL",
+            Size = 6
+        });
+        var started = new TaskCompletionSource<CancellationToken>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        f.Server.Setup(s => s.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(async (string _, CancellationToken token) =>
+            {
+                started.SetResult(token);
+                await release.Task;
+                return new HistoryRecordDto { Type = ProfileType.Text, Hash = "REMOTE" };
+            });
+        using var caller = CancellationTokenSource.CreateLinkedTokenSource(TestContext.CancellationTokenSource.Token);
+        var transfer = await queue.EnqueueUpload(profile, ct: caller.Token);
+        var requestToken = await started.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
+        Task? manual = promote ? queue.Upload(profile, ct: TestContext.CancellationTokenSource.Token) : null;
+        try
+        {
+            if (change == "caller")
+                caller.Cancel();
+            else
+                f.ChangeSession(change);
+            Assert.AreEqual(!promote || change == "server", requestToken.IsCancellationRequested);
+        }
+        finally
+        {
+            release.SetResult();
+        }
+        if (manual is not null)
+        {
+            if (change == "server")
+                await Assert.ThrowsAsync<OperationCanceledException>(() => manual);
+            else
+                await manual.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
+        }
+        await queue.DisposeAsync();
+        Assert.AreEqual(promote && change != "server" ? TransferTaskStatus.Completed : TransferTaskStatus.Cancelled,
+            await transfer.CompletionSource.Task);
+        if (!promote || change == "server")
+            Assert.AreEqual(1, await f.Db.HistoryRecords.CountAsync(TestContext.CancellationTokenSource.Token));
+    }
+
+    [TestMethod]
+    [DataRow("disable")]
+    [DataRow("server")]
+    public async Task Transfer_WaitingRegistrationCannotEnterReplacementSession(string change)
+    {
+        await using var f = await SyncFixture.CreateAsync();
+        await using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), f.Session, f.Manager,
+            Mock.Of<IProfileEnv>(), null!);
+        await queue.ActiveTaskAddMutex.WaitAsync(TestContext.CancellationTokenSource.Token);
+        var pending = queue.EnqueueUpload(new TextProfile("late registration"), ct: TestContext.CancellationTokenSource.Token);
+        try
+        {
+            f.ChangeSession(change);
+            f.Runtime.SetConfig(new RuntimeHistoryConfig { EnableSyncHistory = true });
+        }
+        finally
+        {
+            queue.ActiveTaskAddMutex.Release();
+        }
+        await Assert.ThrowsAsync<OperationCanceledException>(() => pending);
+        Assert.HasCount(0, await queue.GetAllActiveTasks(TestContext.CancellationTokenSource.Token));
+        f.Server.Verify(s => s.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     private sealed class MemoryConfig : ConfigBase
     {
         protected override bool Save() => true;
@@ -184,6 +266,7 @@ public class HistoryRequestCancellationTests
         public Mock<IOfficialSyncServer> Server { get; private set; } = NewServer();
         public HistoryManager Manager { get; } = (HistoryManager)RuntimeHelpers.GetUninitializedObject(typeof(HistoryManager));
         public HistorySyncer Syncer { get; private set; } = null!;
+        public HistorySyncSession Session { get; private set; } = null!;
         private readonly RemoteClipboardServerFactory factory =
             (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
         private readonly SemaphoreSlim dbLock = new(1, 1);
@@ -217,7 +300,8 @@ public class HistoryRequestCancellationTests
             Set(f.factory, "_serverStateLock", typeof(Lock).GetConstructor(Type.EmptyTypes)!.Invoke(null));
             Set(f.factory, "_current", f.Server.Object);
             f.Runtime.SetConfig(new RuntimeHistoryConfig { EnableSyncHistory = true });
-            f.Syncer = new HistorySyncer(f.Manager, f.factory, Mock.Of<ILogger>(), null!, null!, f.Runtime);
+            f.Session = new HistorySyncSession(f.factory, f.Runtime);
+            f.Syncer = new HistorySyncer(f.Manager, Mock.Of<ILogger>(), null!, null!, f.Runtime, f.Session);
             return f;
         }
 
@@ -236,11 +320,11 @@ public class HistoryRequestCancellationTests
                     handler?.Invoke(factory, EventArgs.Empty);
                     break;
                 case "stop":
-                    typeof(HistorySyncer).GetMethod("StopSynchronization", BindingFlags.Instance | BindingFlags.NonPublic)!
-                        .Invoke(Syncer, null);
+                    typeof(HistorySyncSession).GetMethod("Stop", BindingFlags.Instance | BindingFlags.NonPublic)!
+                        .Invoke(Session, null);
                     break;
                 case "dispose":
-                    Syncer.Dispose();
+                    Session.Dispose();
                     break;
             }
         }
@@ -248,6 +332,7 @@ public class HistoryRequestCancellationTests
         public async ValueTask DisposeAsync()
         {
             Syncer.Dispose();
+            Session.Dispose();
             await Db.DisposeAsync();
             dbLock.Dispose();
         }

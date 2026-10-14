@@ -326,7 +326,8 @@ public class HistoryRetentionTests
             .SetValue(factory, remote.Object);
         typeof(RemoteClipboardServerFactory).GetField("_serverStateLock", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(factory, RuntimeHelpers.GetUninitializedObject(typeof(Lock)));
-        using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), factory, f.Manager, f, null!, new ConfigBase());
+        using var session = new HistorySyncSession(factory, new ConfigBase());
+        using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), session, f.Manager, f, null!);
 
         await queue.Upload(profile, ct: Token);
 
