@@ -304,8 +304,9 @@ public class HistoryRetentionTests
         var existingRemote = local.ToHistoryRecordDto();
         existingRemote.IsDeleted = remoteDeleted;
         existingRemote.Version = 20;
+        var hasActiveRemote = remoteExists && !remoteDeleted;
         var acknowledgementBeforeResponse = concurrentRemoteRecord && !remoteAccessedLater;
-        if ((remoteExists && !remoteDeleted) || acknowledgementBeforeResponse)
+        if (hasActiveRemote || acknowledgementBeforeResponse)
         {
             f.Db.HistoryRecords.Remove(local);
             await f.Db.SaveChangesAsync(Token);
@@ -336,7 +337,17 @@ public class HistoryRetentionTests
 
         await queue.Upload(profile, ct: Token);
 
-        if (remoteExists && !remoteDeleted)
+        AssertUploadedContent(uploaded, uploadedContent, hasActiveRemote, acknowledgementBeforeResponse, modified);
+        var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        var expected = hasActiveRemote ? existingRemote : accepted;
+        AssertAcceptedUpload(saved, expected, acknowledgementBeforeResponse, accessed, created, f.GetPersistentDir());
+    }
+
+    private static void AssertUploadedContent(
+        HistoryRecordDto? uploaded, string? uploadedContent, bool hasActiveRemote,
+        bool acknowledgementBeforeResponse, DateTime modified)
+    {
+        if (hasActiveRemote)
         {
             Assert.IsNull(uploaded);
         }
@@ -351,9 +362,13 @@ public class HistoryRetentionTests
             }
             Assert.AreEqual("attachment content", uploadedContent);
         }
-        var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+    }
+
+    private static void AssertAcceptedUpload(
+        HistoryRecord saved, HistoryRecordDto expected, bool acknowledgementBeforeResponse,
+        DateTime accessed, DateTime created, string persistentDir)
+    {
         Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
-        var expected = remoteExists && !remoteDeleted ? existingRemote : accepted;
         Assert.AreEqual(expected.Version, saved.Version);
         Assert.AreEqual(expected.LastModified.UtcDateTime, saved.LastModified);
         Assert.AreEqual(expected.Starred, saved.Stared);
@@ -363,13 +378,13 @@ public class HistoryRetentionTests
             : new[] { accessed, expected.LastAccessed.UtcDateTime }.Max(), saved.LastAccessed);
         Assert.AreEqual(acknowledgementBeforeResponse ? expected.CreateTime.UtcDateTime
             : new[] { created, expected.CreateTime.UtcDateTime }.Min(), saved.Timestamp);
-        Assert.AreEqual(accepted.Text, saved.Text);
-        Assert.AreEqual(accepted.Size, saved.Size);
+        Assert.AreEqual(expected.Text, saved.Text);
+        Assert.AreEqual(expected.Size, saved.Size);
         Assert.IsTrue(saved.IsLocalFileReady);
         Assert.IsGreaterThan(0, saved.FilePath.Length);
         Assert.IsNotNull(saved.TransferDataFile);
         Assert.IsNotNull(saved.TransferDataHash);
-        Assert.IsTrue(File.Exists(Path.Combine(f.GetPersistentDir(), saved.TransferDataFile)));
+        Assert.IsTrue(File.Exists(Path.Combine(persistentDir, saved.TransferDataFile)));
     }
 
     [TestMethod]
