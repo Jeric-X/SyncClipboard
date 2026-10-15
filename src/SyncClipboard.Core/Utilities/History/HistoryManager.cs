@@ -279,7 +279,16 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             return (null, false); // Do not recreate a record removed during upload.
         if (current is not null && current.SyncStatus == HistorySyncStatus.Synced &&
             HasSameUploadState(current, response.ToHistoryRecord()))
-            return (null, false); // SignalR already applied this acknowledgement.
+        {
+            // SignalR may acknowledge the upload before its local attachment binding is saved.
+            if (current.IsLocalFileReady || !sent.IsLocalFileReady)
+                return (null, false);
+            current.IsLocalFileReady = true;
+            current.FilePath = sent.FilePath;
+            CopyLocalTransferDataBinding(sent, current);
+            await _dbContext.SaveChangesAsync(token);
+            return (current, false);
+        }
         if (await PreserveNewerUploadChangesAsync(current, sent, response.Version, token))
             return (current, false);
         var entity = current ?? sent;

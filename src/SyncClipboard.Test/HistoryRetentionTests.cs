@@ -304,7 +304,8 @@ public class HistoryRetentionTests
         var existingRemote = local.ToHistoryRecordDto();
         existingRemote.IsDeleted = remoteDeleted;
         existingRemote.Version = 20;
-        if (remoteExists && !remoteDeleted)
+        var acknowledgementBeforeResponse = concurrentRemoteRecord && !remoteAccessedLater;
+        if ((remoteExists && !remoteDeleted) || acknowledgementBeforeResponse)
         {
             f.Db.HistoryRecords.Remove(local);
             await f.Db.SaveChangesAsync(Token);
@@ -322,6 +323,8 @@ public class HistoryRetentionTests
                     Assert.IsNotNull(file);
                     uploadedContent = await File.ReadAllTextAsync(file.Path, token);
                     Assert.AreEqual(await Utility.CalculateFileSHA256(file.Path, token), file.Hash);
+                    if (acknowledgementBeforeResponse)
+                        await f.Manager.SyncRemoteHistoryAsync([accepted], token);
                     return accepted;
                 });
         var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
@@ -341,8 +344,11 @@ public class HistoryRetentionTests
         {
             Assert.IsNotNull(uploaded);
             Assert.IsFalse(uploaded.IsDeleted);
-            Assert.AreEqual(8, uploaded.Version);
-            Assert.AreEqual(modified, uploaded.LastModified.UtcDateTime);
+            if (!acknowledgementBeforeResponse)
+            {
+                Assert.AreEqual(8, uploaded.Version);
+                Assert.AreEqual(modified, uploaded.LastModified.UtcDateTime);
+            }
             Assert.AreEqual("attachment content", uploadedContent);
         }
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
@@ -353,12 +359,17 @@ public class HistoryRetentionTests
         Assert.AreEqual(expected.Starred, saved.Stared);
         Assert.AreEqual(expected.Pinned, saved.Pinned);
         Assert.IsFalse(saved.IsDeleted);
-        Assert.AreEqual(new[] { accessed, expected.LastAccessed.UtcDateTime }.Max(), saved.LastAccessed);
-        Assert.AreEqual(new[] { created, expected.CreateTime.UtcDateTime }.Min(), saved.Timestamp);
+        Assert.AreEqual(acknowledgementBeforeResponse ? expected.LastAccessed.UtcDateTime
+            : new[] { accessed, expected.LastAccessed.UtcDateTime }.Max(), saved.LastAccessed);
+        Assert.AreEqual(acknowledgementBeforeResponse ? expected.CreateTime.UtcDateTime
+            : new[] { created, expected.CreateTime.UtcDateTime }.Min(), saved.Timestamp);
         Assert.AreEqual(accepted.Text, saved.Text);
         Assert.AreEqual(accepted.Size, saved.Size);
         Assert.IsTrue(saved.IsLocalFileReady);
         Assert.IsGreaterThan(0, saved.FilePath.Length);
+        Assert.IsNotNull(saved.TransferDataFile);
+        Assert.IsNotNull(saved.TransferDataHash);
+        Assert.IsTrue(File.Exists(Path.Combine(f.GetPersistentDir(), saved.TransferDataFile)));
     }
 
     [TestMethod]
