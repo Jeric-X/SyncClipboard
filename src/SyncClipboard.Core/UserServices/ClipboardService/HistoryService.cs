@@ -22,6 +22,7 @@ public class HistoryService : ClipboardHander
     private readonly ConfigBase runTimeConfig;
     private readonly RemoteClipboardServerFactory remoteServerFactory;
     private readonly HistorySyncer historySyncer;
+    private readonly HistorySyncSession syncSession;
     private readonly ITrayIcon trayIcon;
     private readonly HistoryTransferQueue historyTransferQueue;
     private HistoryConfig _historyConfig;
@@ -36,7 +37,8 @@ public class HistoryService : ClipboardHander
         RemoteClipboardServerFactory remoteServerFactory,
         HistorySyncer historySyncer,
         ITrayIcon trayIcon,
-        HistoryTransferQueue historyTransferQueue)
+        HistoryTransferQueue historyTransferQueue,
+        HistorySyncSession syncSession)
     {
         this.runTimeConfig = runtimeConfig;
         this.historyManager = historyManager;
@@ -45,6 +47,7 @@ public class HistoryService : ClipboardHander
         this.historySyncer = historySyncer;
         this.trayIcon = trayIcon;
         this.historyTransferQueue = historyTransferQueue;
+        this.syncSession = syncSession;
         _historyConfig = configManager.GetConfig<HistoryConfig>();
         configManager.ListenConfig<HistoryConfig>(OnHistoryConfigChanged);
         _syncingTask = new SingletonTask(SyncTaskImpl);
@@ -200,7 +203,11 @@ public class HistoryService : ClipboardHander
             return;
         }
 
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(syncSession.Token, token);
+        token = linked.Token;
+        token.ThrowIfCancellationRequested();
         var serverTime = await _historySyncServer.GetServerTimeAsync(token).ConfigureAwait(false);
+        token.ThrowIfCancellationRequested();
         var timeDifference = (DateTimeOffset.Now - serverTime).Duration().TotalMinutes;
         if (timeDifference > 5)
         {
@@ -229,7 +236,9 @@ public class HistoryService : ClipboardHander
         {
             try
             {
-                _lastSyncTime = await _historySyncServer.GetServerTimeAsync(token).ConfigureAwait(false);
+                var serverTime = await _historySyncServer.GetServerTimeAsync(token).ConfigureAwait(false);
+                token.ThrowIfCancellationRequested();
+                _lastSyncTime = serverTime;
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             { }
@@ -245,7 +254,8 @@ public class HistoryService : ClipboardHander
 
         try
         {
-            var token = CancellationToken.None;
+            var token = syncSession.Token;
+            token.ThrowIfCancellationRequested();
             var record = historyRecordDto.ToHistoryRecord();
             record = await historyManager.PersistServerSyncedAsync(record, token);
 
@@ -253,9 +263,11 @@ public class HistoryService : ClipboardHander
             {
                 return;
             }
+            token.ThrowIfCancellationRequested();
             var profile = record.ToProfile();
             await historyTransferQueue.EnqueueDownload(profile, forceResume: false, token);
         }
+        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             Logger?.Write($"[HistoryService] Failed to process remote history change: {ex.Message}");

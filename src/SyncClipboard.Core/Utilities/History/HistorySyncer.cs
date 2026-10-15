@@ -79,8 +79,6 @@ public class HistorySyncer
 
     public async Task SyncAllAsync(DateTime? modifiedAfter, CancellationToken token = default)
     {
-        using var linked = CancellationTokenSource.CreateLinkedTokenSource(_syncSession.Token, token);
-        token = linked.Token;
         if (_remoteServerFactory.Current is not IOfficialSyncServer remoteServer)
         {
             return;

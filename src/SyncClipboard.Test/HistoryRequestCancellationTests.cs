@@ -12,6 +12,7 @@ using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Shared.Profiles;
 using System.Reflection;
+using ClientHistoryService = SyncClipboard.Core.UserServices.ClipboardService.HistoryService;
 
 namespace SyncClipboard.Test;
 
@@ -47,7 +48,18 @@ public class HistoryRequestCancellationTests
         using var session = new HistorySyncSession(factory, runtime);
         var manager = (HistoryManager)RuntimeHelpers.GetUninitializedObject(typeof(HistoryManager));
         var syncer = new HistorySyncer(manager, factory, Mock.Of<ILogger>(), null!, null!, runtime, session);
-        var runner = new SingletonTask(token => syncer.SyncAllAsync(null, token));
+        server.Setup(s => s.GetServerTimeAsync(It.IsAny<CancellationToken>())).ReturnsAsync(() => DateTimeOffset.Now);
+        using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), factory, manager, null!, null!, runtime);
+        var service = (ClientHistoryService)RuntimeHelpers.GetUninitializedObject(typeof(ClientHistoryService));
+        SetServiceField(service, "runTimeConfig", runtime);
+        SetServiceField(service, "syncSession", session);
+        SetServiceField(service, "_historySyncServer", server.Object);
+        SetServiceField(service, "historySyncer", syncer);
+        SetServiceField(service, "historyManager", manager);
+        SetServiceField(service, "historyTransferQueue", queue);
+        SetServiceField(service, "trayIcon", Mock.Of<ITrayIcon>());
+        var syncTask = typeof(ClientHistoryService).GetMethod("SyncTaskImpl", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var runner = new SingletonTask(token => (Task)syncTask.Invoke(service, [token])!);
         var syncing = runner.Run();
         await handler.Started.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
 
@@ -118,6 +130,11 @@ public class HistoryRequestCancellationTests
         await Assert.ThrowsAsync<OperationCanceledException>(() => syncing);
         Assert.AreEqual(HistorySyncStatus.NeedSync, record.SyncStatus);
         Assert.AreEqual(3, record.Version);
+    }
+
+    private static void SetServiceField(ClientHistoryService service, string name, object value)
+    {
+        typeof(ClientHistoryService).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(service, value);
     }
 
     private static RemoteClipboardServerFactory CreateFactory(IRemoteClipboardServer server)
