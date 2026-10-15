@@ -1,4 +1,5 @@
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Interfaces;
 
 namespace SyncClipboard.Core.Utilities.History;
 
@@ -20,6 +21,12 @@ public enum TransferTaskStatus
 
 public class TransferTask
 {
+    internal int RequestVersion = 1;
+    internal bool IsExecuting;
+    internal bool IsRemoved;
+
+    internal IOfficialSyncServer? Server { get; init; }
+
     public string ProfileId { get; init; } = string.Empty;
     public string TaskId => GetTaskId(Type, ProfileId);
     public TransferType Type { get; init; }
@@ -36,11 +43,11 @@ public class TransferTask
     public DateTime? StartedTime { get; set; }
     public DateTime? CompletedTime { get; set; }
 
-    public Profile Profile { get; init; } = null!;
+    public Profile Profile { get; set; } = null!;
     public CancellationTokenSource CancellationSource { get; set; } = null!;
 
     // 任务完成信号
-    public TaskCompletionSource<TransferTaskStatus> CompletionSource { get; init; } = new();
+    public TaskCompletionSource<TransferTaskStatus> CompletionSource { get; init; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public static string GetTaskId(TransferType type, string profileId)
     {

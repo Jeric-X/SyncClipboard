@@ -87,9 +87,9 @@ public class HistoryRetentionTests
     [DataRow(-10, 11, 10, false, true, -1)]
     [DataRow(-10, 11, 10, false, true, 2)]
     [DataRow(1, 1, 10, false, true, -1)]
-    [DataRow(0, 10, 10, false, false, -1)]
-    [DataRow(1, 10, 10, false, false, -1)]
-    [DataRow(-1, 10, 10, false, false, 2)]
+    [DataRow(0, 10, 10, false, true, -1)]
+    [DataRow(1, 10, 10, false, true, -1)]
+    [DataRow(-1, 10, 10, false, true, 2)]
     public async Task RemoteSync_PreservesActivityTimesWhenLocalStateWins(
         int localMinutesAhead, int localVersion, int remoteVersion, bool localWins, bool remoteWins, int remoteAccessHours)
     {
@@ -272,7 +272,7 @@ public class HistoryRetentionTests
     [DataRow(true, true, false, false)]
     [DataRow(false, false, true, false)]
     [DataRow(false, false, true, true)]
-    public async Task Upload_SkipsActiveRecordsOrPersistsAcceptedResponse(
+    public async Task Upload_ReconcilesActiveRecordsOrPersistsAcceptedResponse(
         bool remoteExists, bool remoteDeleted, bool concurrentRemoteRecord, bool remoteAccessedLater)
     {
         await using var f = await Fixture.CreateAsync(Token);
@@ -282,6 +282,7 @@ public class HistoryRetentionTests
         await f.Manager.AddLocalProfile(profile, token: Token);
         var local = await f.Db.HistoryRecords.SingleAsync(Token);
         local.Version = 8;
+        local.IsDeleted = remoteDeleted;
         local.LastModified = DateTime.UtcNow.AddMinutes(-1);
         await f.Db.SaveChangesAsync(Token);
         var modified = local.LastModified;
@@ -289,6 +290,7 @@ public class HistoryRetentionTests
         var created = local.Timestamp;
         var accepted = local.ToHistoryRecordDto();
         accepted.Version = 21;
+        accepted.IsDeleted = false;
         if (concurrentRemoteRecord)
         {
             accepted.Starred = true;
@@ -299,15 +301,16 @@ public class HistoryRetentionTests
         }
         var remote = new Mock<IRemoteClipboardServer>();
         var server = remote.As<IOfficialSyncServer>();
+        var existingRemote = local.ToHistoryRecordDto();
+        existingRemote.IsDeleted = remoteDeleted;
+        existingRemote.Version = 20;
+        if (remoteExists && !remoteDeleted)
+        {
+            f.Db.HistoryRecords.Remove(local);
+            await f.Db.SaveChangesAsync(Token);
+        }
         server.Setup(x => x.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(remoteExists ? new HistoryRecordDto
-            {
-                Type = local.Type,
-                Hash = local.Hash,
-                IsDeleted = remoteDeleted,
-                Version = 20,
-                HasData = true
-            } : null);
+            .ReturnsAsync(remoteExists ? existingRemote : null);
         HistoryRecordDto? uploaded = null;
         string? uploadedContent = null;
         server.Setup(x => x.UploadHistoryAsync(It.IsAny<HistoryRecordDto>(), It.IsAny<FileHashInfo?>(),
@@ -344,14 +347,14 @@ public class HistoryRetentionTests
         }
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
         Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
-        Assert.AreEqual(remoteExists && !remoteDeleted ? 8 : 21, saved.Version);
-        Assert.AreEqual(concurrentRemoteRecord ? accepted.LastModified.UtcDateTime : modified, saved.LastModified);
-        Assert.AreEqual(concurrentRemoteRecord, saved.Stared);
-        Assert.AreEqual(concurrentRemoteRecord, saved.Pinned);
+        var expected = remoteExists && !remoteDeleted ? existingRemote : accepted;
+        Assert.AreEqual(expected.Version, saved.Version);
+        Assert.AreEqual(expected.LastModified.UtcDateTime, saved.LastModified);
+        Assert.AreEqual(expected.Starred, saved.Stared);
+        Assert.AreEqual(expected.Pinned, saved.Pinned);
         Assert.IsFalse(saved.IsDeleted);
-        Assert.AreEqual(remoteAccessedLater ? accepted.LastAccessed.UtcDateTime : accessed, saved.LastAccessed);
-        Assert.AreEqual(concurrentRemoteRecord && !remoteAccessedLater ? accepted.CreateTime.UtcDateTime : created,
-            saved.Timestamp);
+        Assert.AreEqual(new[] { accessed, expected.LastAccessed.UtcDateTime }.Max(), saved.LastAccessed);
+        Assert.AreEqual(new[] { created, expected.CreateTime.UtcDateTime }.Min(), saved.Timestamp);
         Assert.AreEqual(accepted.Text, saved.Text);
         Assert.AreEqual(accepted.Size, saved.Size);
         Assert.IsTrue(saved.IsLocalFileReady);
