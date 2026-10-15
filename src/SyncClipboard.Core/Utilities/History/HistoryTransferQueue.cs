@@ -274,6 +274,10 @@ public class HistoryTransferQueue : IDisposable
             // Cancel invokes callbacks synchronously; never hold a queue/task lock here.
             task.CancellationSource.Cancel();
         }
+        catch (AggregateException ex)
+        {
+            _logger.Write($"任务 {task.TaskId} 的取消回调失败: {ex}");
+        }
         finally
         {
             task.CancellationSource.Dispose();

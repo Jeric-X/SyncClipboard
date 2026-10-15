@@ -387,6 +387,16 @@ public class HistoryUploadCoordinationTests
             BindingFlags.Instance | BindingFlags.NonPublic)!;
         var task = await (Task<TransferTask>)register.Invoke(f.Queue,
             [TransferType.Upload, profile, true, null, Token])!;
+        var pending = await f.Queue.EnqueueUpload(new TextProfile("another cancelled transfer"), ct: Token);
+        var pendingToken = pending.CancellationSource.Token;
+        var cancellationCallbacks = 0;
+        void CancelCallback()
+        {
+            if (Interlocked.Increment(ref cancellationCallbacks) == 1)
+                throw new InvalidOperationException("first cancellation callback failed");
+        }
+        using var runningRegistration = task.CancellationSource.Token.Register(CancelCallback);
+        using var pendingRegistration = pendingToken.Register(CancelCallback);
         var execute = typeof(HistoryTransferQueue).GetMethod("ExecuteTaskAsync",
             BindingFlags.Instance | BindingFlags.NonPublic)!;
         var execution = (Task<TransferTaskStatus>)execute.Invoke(f.Queue, [task])!;
@@ -396,7 +406,12 @@ public class HistoryUploadCoordinationTests
             f.Queue.ClearQueue();
             Assert.IsTrue(requestToken.IsCancellationRequested);
             Assert.AreEqual(TransferTaskStatus.Cancelled, await task.CompletionSource.Task.WaitAsync(Token));
+            Assert.IsTrue(pendingToken.IsCancellationRequested);
+            Assert.AreEqual(TransferTaskStatus.Cancelled,
+                await pending.CompletionSource.Task.WaitAsync(TimeSpan.FromSeconds(5), Token));
+            Assert.AreEqual(2, cancellationCallbacks);
             await WaitForDisposedAsync(task.CancellationSource);
+            await WaitForDisposedAsync(pending.CancellationSource);
         }
         finally
         {
