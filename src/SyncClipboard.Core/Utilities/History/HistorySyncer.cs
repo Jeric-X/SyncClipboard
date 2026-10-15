@@ -84,7 +84,6 @@ public class HistorySyncer
             return;
         }
 
-        token.ThrowIfCancellationRequested();
         var remoteRecords = await FetchRemoteRangeAsync(
             remoteServer,
             null,
@@ -97,7 +96,6 @@ public class HistorySyncer
             false,
             token);
 
-        token.ThrowIfCancellationRequested();
         await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
         if (modifiedAfter is null)
         {
@@ -200,7 +198,6 @@ public class HistorySyncer
     /// <returns>返回是否已将本地状态更新为 Synced</returns>
     public async Task SyncOneAsync(HistoryRecord record, CancellationToken token = default)
     {
-        token.ThrowIfCancellationRequested();
         if (_remoteServerFactory.Current is not IOfficialSyncServer remoteServer)
         {
             _logger.Write("HistorySyncer", "当前远程服务器不支持历史记录同步");
@@ -218,15 +215,12 @@ public class HistorySyncer
                 LastModified = new DateTimeOffset(record.LastModified.ToUniversalTime(), TimeSpan.Zero),
                 LastAccessed = new DateTimeOffset(record.LastAccessed.ToUniversalTime(), TimeSpan.Zero)
             };
-            token.ThrowIfCancellationRequested();
             await remoteServer.UpdateHistoryAsync(record.Type, record.Hash, dto, token);
-            token.ThrowIfCancellationRequested();
             record.SyncStatus = HistorySyncStatus.Synced;
             await _historyManager.PersistServerSyncedAsync(record, token);
         }
         catch (RemoteHistoryConflictException ex)
         {
-            token.ThrowIfCancellationRequested();
             if (ex.ServerRecord != null)
             {
                 record.ApplyFromServerUpdateDto(ex.ServerRecord);
@@ -236,7 +230,6 @@ public class HistorySyncer
         }
         catch (RemoteHistoryNotFoundException)
         {
-            token.ThrowIfCancellationRequested();
             record.SyncStatus = HistorySyncStatus.LocalOnly;
             await _historyManager.PersistServerSyncedAsync(record, token);
         }

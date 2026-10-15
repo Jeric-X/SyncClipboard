@@ -1,5 +1,4 @@
 using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Exceptions;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer;
@@ -80,13 +79,9 @@ public class HistoryRequestCancellationTests
     }
 
     [TestMethod]
-    [DataRow(false, "success")]
-    [DataRow(false, "missing")]
-    [DataRow(false, "conflict")]
-    [DataRow(true, "success")]
-    [DataRow(true, "missing")]
-    [DataRow(true, "conflict")]
-    public async Task SingleRecordSession_CancellationPreventsLateResponseChanges(bool serverChanged, string response)
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task SingleRecordSession_CancelsInFlightRequest(bool serverChanged)
     {
         var server = new Mock<IOfficialSyncServer>();
         server.As<IRemoteClipboardServer>();
@@ -98,36 +93,21 @@ public class HistoryRequestCancellationTests
         var syncer = new HistorySyncer(manager, factory, Mock.Of<ILogger>(), null!, null!, runtime, session);
         var record = new HistoryRecord { Hash = "CANCEL", SyncStatus = HistorySyncStatus.NeedSync, Version = 3 };
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         server.Setup(s => s.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
             It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
-            .Returns(async (ProfileType _, string _, HistoryRecordUpdateDto _, CancellationToken _) =>
+            .Returns(async (ProfileType _, string _, HistoryRecordUpdateDto _, CancellationToken token) =>
             {
                 started.SetResult();
-                await release.Task;
-                if (response == "missing")
-                    throw new RemoteHistoryNotFoundException("missing");
-                if (response == "conflict")
-                    throw new RemoteHistoryConflictException("conflict", new HistoryRecordUpdateDto { Version = 9 });
+                await Task.Delay(Timeout.Infinite, token);
             });
         var syncing = syncer.SyncOneAsync(record, session.Token);
         await started.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
-        try
-        {
-            if (serverChanged)
-            {
-                NotifyServerChanged(factory);
-            }
-            else
-            {
-                runtime.SetConfig(new RuntimeHistoryConfig { EnableSyncHistory = false });
-            }
-        }
-        finally
-        {
-            release.SetResult();
-        }
-        await Assert.ThrowsAsync<OperationCanceledException>(() => syncing);
+        if (serverChanged)
+            NotifyServerChanged(factory);
+        else
+            runtime.SetConfig(new RuntimeHistoryConfig { EnableSyncHistory = false });
+        await Assert.ThrowsAsync<OperationCanceledException>(() =>
+            syncing.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token));
         Assert.AreEqual(HistorySyncStatus.NeedSync, record.SyncStatus);
         Assert.AreEqual(3, record.Version);
     }

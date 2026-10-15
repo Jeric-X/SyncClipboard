@@ -205,9 +205,7 @@ public class HistoryService : ClipboardHander
 
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(syncSession.Token, token);
         token = linked.Token;
-        token.ThrowIfCancellationRequested();
         var serverTime = await _historySyncServer.GetServerTimeAsync(token).ConfigureAwait(false);
-        token.ThrowIfCancellationRequested();
         var timeDifference = (DateTimeOffset.Now - serverTime).Duration().TotalMinutes;
         if (timeDifference > 5)
         {
@@ -236,9 +234,7 @@ public class HistoryService : ClipboardHander
         {
             try
             {
-                var serverTime = await _historySyncServer.GetServerTimeAsync(token).ConfigureAwait(false);
-                token.ThrowIfCancellationRequested();
-                _lastSyncTime = serverTime;
+                _lastSyncTime = await _historySyncServer.GetServerTimeAsync(token).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             { }
@@ -255,7 +251,6 @@ public class HistoryService : ClipboardHander
         try
         {
             var token = syncSession.Token;
-            token.ThrowIfCancellationRequested();
             var record = historyRecordDto.ToHistoryRecord();
             record = await historyManager.PersistServerSyncedAsync(record, token);
 
@@ -263,7 +258,6 @@ public class HistoryService : ClipboardHander
             {
                 return;
             }
-            token.ThrowIfCancellationRequested();
             var profile = record.ToProfile();
             await historyTransferQueue.EnqueueDownload(profile, forceResume: false, token);
         }
