@@ -18,6 +18,7 @@ public class HistorySyncer
     private readonly HistoryTransferQueue _historyTransferQueue;
     private readonly ConfigBase _runtimeConfig;
     private readonly ConfigManager _configManager;
+    private readonly HistorySyncSession _syncSession;
 
     public HistorySyncer(
         HistoryManager historyManager,
@@ -25,7 +26,8 @@ public class HistorySyncer
         ILogger logger,
         HistoryTransferQueue historyTransferQueue,
         ConfigManager configManager,
-        [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig)
+        [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig,
+        HistorySyncSession syncSession)
     {
         _historyManager = historyManager;
         _remoteServerFactory = remoteServerFactory;
@@ -33,6 +35,7 @@ public class HistorySyncer
         _historyTransferQueue = historyTransferQueue;
         _configManager = configManager;
         _runtimeConfig = runtimeConfig;
+        _syncSession = syncSession;
 
         // 订阅 HistoryManager 的事件：更新与删除（软删除）均可能需要同步
         _historyManager.HistoryAdded += OnHistoryAdded;
@@ -417,9 +420,10 @@ public class HistorySyncer
         {
             if (record.SyncStatus == HistorySyncStatus.NeedSync)
             {
-                await SyncOneAsync(record, CancellationToken.None);
+                await SyncOneAsync(record, _syncSession.Token);
             }
         }
+        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             _logger.Write("HistorySyncer", $"事件同步失败[{record.Hash}]: {ex.Message}");
@@ -443,15 +447,17 @@ public class HistorySyncer
                 return;
             }
 
+            var token = _syncSession.Token;
             var profile = record.ToProfile();
-            if (!await CanUploadLocalProfileAsync(profile, CancellationToken.None))
+            if (!await CanUploadLocalProfileAsync(profile, token))
             {
                 return;
             }
 
-            await _historyTransferQueue.EnqueueUpload(profile, forceResume: true, CancellationToken.None);
+            await _historyTransferQueue.EnqueueUpload(profile, forceResume: true, token);
             // _logger.Write("HistorySyncer", $"新增记录已加入传输队列[{record.Hash}]");
         }
+        catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             _logger.Write("HistorySyncer", $"新增记录处理失败[{record.Hash}]: {ex.Message}");
@@ -470,7 +476,11 @@ public class HistorySyncer
         {
             if (record.SyncStatus == HistorySyncStatus.NeedSync)
             {
-                await SyncOneAsync(record, CancellationToken.None);
+                try
+                {
+                    await SyncOneAsync(record, _syncSession.Token);
+                }
+                catch (OperationCanceledException) { }
             }
 
             var profileId = Profile.GetProfileId(record.Type, record.Hash);
