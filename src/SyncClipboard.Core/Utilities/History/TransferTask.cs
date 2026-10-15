@@ -1,5 +1,4 @@
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Interfaces;
 
 namespace SyncClipboard.Core.Utilities.History;
 
@@ -21,12 +20,6 @@ public enum TransferTaskStatus
 
 public class TransferTask
 {
-    internal int RequestVersion = 1;
-    internal bool IsExecuting;
-    internal bool IsRemoved;
-
-    internal IOfficialSyncServer? Server { get; init; }
-
     public string ProfileId { get; init; } = string.Empty;
     public string TaskId => GetTaskId(Type, ProfileId);
     public TransferType Type { get; init; }

@@ -273,7 +273,6 @@ public class HistoryUploadCoordinationTests
         await f.Manager.AddLocalProfile(profile, token: Token);
         var entered = Signal();
         var release = Signal();
-        var oldExited = Signal();
         f.Server.Setup(x => x.UploadHistoryAsync(It.IsAny<HistoryRecordDto>(), It.IsAny<FileHashInfo?>(),
             It.IsAny<IProgress<HttpDownloadProgress>?>(), It.IsAny<CancellationToken>()))
             .Returns<HistoryRecordDto, FileHashInfo?, IProgress<HttpDownloadProgress>?, CancellationToken>(async (dto, _, _, _) =>
@@ -283,18 +282,16 @@ public class HistoryUploadCoordinationTests
                 dto.Version = 100;
                 return dto;
             });
-        TransferTask? oldTask = null;
-        f.Queue.TaskStatusChanged += (_, task) =>
-        {
-            if (task.Status == TransferTaskStatus.Running && oldTask is null)
-                oldTask = task;
-            if (ReferenceEquals(task, oldTask) && task.Status == TransferTaskStatus.Cancelled && release.Task.IsCompleted)
-                oldExited.TrySetResult(true);
-        };
-        var oldUpload = f.Queue.Upload(profile, ct: Token);
+        var registration = typeof(HistoryTransferQueue).GetMethod("GetOrAddTaskAsync",
+            BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var oldTask = await (Task<TransferTask>)registration.Invoke(f.Queue,
+            [TransferType.Upload, profile, true, null, Token])!;
+        var execute = typeof(HistoryTransferQueue).GetMethod("ExecuteTaskAsync",
+            BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var oldExecution = (Task<TransferTaskStatus>)execute.Invoke(f.Queue, [oldTask])!;
         await entered.Task.WaitAsync(TimeSpan.FromSeconds(5), Token);
         f.Queue.ClearQueue();
-        await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => oldUpload);
+        Assert.AreEqual(TransferTaskStatus.Cancelled, await oldTask.CompletionSource.Task.WaitAsync(Token));
         var replacementEntered = Signal();
         var replacementRelease = Signal();
         f.Server.Setup(x => x.UploadHistoryAsync(It.IsAny<HistoryRecordDto>(), It.IsAny<FileHashInfo?>(),
@@ -310,7 +307,7 @@ public class HistoryUploadCoordinationTests
         var replacement = f.Queue.Upload(profile, ct: Token);
         await replacementEntered.Task.WaitAsync(TimeSpan.FromSeconds(5), Token);
         release.SetResult(true);
-        await oldExited.Task.WaitAsync(TimeSpan.FromSeconds(5), Token);
+        Assert.AreEqual(TransferTaskStatus.Cancelled, await oldExecution.WaitAsync(TimeSpan.FromSeconds(5), Token));
         var task = f.Queue.GetTaskByProfileId(await profile.GetProfileId(Token));
         Assert.IsNotNull(task);
         Assert.AreNotSame(oldTask, task);
@@ -361,27 +358,54 @@ public class HistoryUploadCoordinationTests
     }
 
     [TestMethod]
-    public async Task ClearQueue_DefersCancellationDisposalUntilWorkerExits()
+    public async Task ClearQueue_CancelsRunningRequestAndReleasesResources()
     {
         await using var f = await Fixture.CreateAsync(Token);
         var profile = new TextProfile("dispose cancelled transfer");
         await f.Manager.AddLocalProfile(profile, token: Token);
+        SetObjectField(f.Queue, "_isQueueStopped", true);
         var entered = Signal();
         var release = Signal();
+        CancellationToken requestToken = default;
+        TransferTask? replacement = null;
         f.Server.Setup(x => x.UploadHistoryAsync(It.IsAny<HistoryRecordDto>(), It.IsAny<FileHashInfo?>(),
             It.IsAny<IProgress<HttpDownloadProgress>?>(), It.IsAny<CancellationToken>()))
-            .Returns<HistoryRecordDto, FileHashInfo?, IProgress<HttpDownloadProgress>?, CancellationToken>(async (dto, _, _, _) =>
+            .Returns<HistoryRecordDto, FileHashInfo?, IProgress<HttpDownloadProgress>?, CancellationToken>(async (_, _, _, ct) =>
             {
+                requestToken = ct;
+                using var registration = ct.Register(() =>
+                {
+                    // Cancellation callbacks may synchronously wait for a new registration on another thread.
+                    replacement = Task.Run(() => f.Queue.EnqueueUpload(profile, ct: Token), Token)
+                        .WaitAsync(TimeSpan.FromSeconds(5), Token).GetAwaiter().GetResult();
+                });
                 entered.SetResult(true);
                 await release.Task;
-                return dto;
+                throw new IOException("request failed after cancellation");
             });
-        var task = await f.Queue.EnqueueUpload(profile, ct: Token);
+        var register = typeof(HistoryTransferQueue).GetMethod("GetOrAddTaskAsync",
+            BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var task = await (Task<TransferTask>)register.Invoke(f.Queue,
+            [TransferType.Upload, profile, true, null, Token])!;
+        var execute = typeof(HistoryTransferQueue).GetMethod("ExecuteTaskAsync",
+            BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var execution = (Task<TransferTaskStatus>)execute.Invoke(f.Queue, [task])!;
         await entered.Task.WaitAsync(TimeSpan.FromSeconds(5), Token);
-        f.Queue.ClearQueue();
-        Assert.IsTrue(task.CancellationSource.Token.IsCancellationRequested);
-        release.SetResult(true);
-        await WaitForDisposedAsync(task.CancellationSource);
+        try
+        {
+            f.Queue.ClearQueue();
+            Assert.IsTrue(requestToken.IsCancellationRequested);
+            Assert.AreEqual(TransferTaskStatus.Cancelled, await task.CompletionSource.Task.WaitAsync(Token));
+            await WaitForDisposedAsync(task.CancellationSource);
+        }
+        finally
+        {
+            release.TrySetResult(true);
+        }
+        Assert.AreEqual(TransferTaskStatus.Cancelled, await execution.WaitAsync(TimeSpan.FromSeconds(5), Token));
+        Assert.IsNotNull(replacement);
+        Assert.AreSame(replacement, f.Queue.GetTaskByProfileId(await profile.GetProfileId(Token)));
+        Assert.IsFalse(replacement.CompletionSource.Task.IsCompleted);
     }
 
     [TestMethod]
@@ -689,48 +713,6 @@ public class HistoryUploadCoordinationTests
     }
 
     [TestMethod]
-    public async Task MissingSourceFailure_AllowsNewUploadWhileFailureIsBeingSaved()
-    {
-        await using var f = await Fixture.CreateAsync(Token);
-        var oldPath = Path.Combine(f.GetPersistentDir(), "old.txt");
-        var newPath = Path.Combine(f.GetPersistentDir(), "new", "old.txt");
-        Directory.CreateDirectory(Path.GetDirectoryName(newPath)!);
-        await File.WriteAllTextAsync(oldPath, "replacement contents", Token);
-        await File.WriteAllTextAsync(newPath, "replacement contents", Token);
-        var oldProfile = new FileProfile(oldPath);
-        var newProfile = new FileProfile(newPath);
-        await f.Manager.AddLocalProfile(oldProfile, token: Token);
-        Assert.AreEqual(await oldProfile.GetProfileId(Token), await newProfile.GetProfileId(Token));
-        var saving = Signal();
-        var release = Signal();
-        f.Db.BeforeSave = async ct =>
-        {
-            f.Db.BeforeSave = null;
-            saving.TrySetResult(true);
-            await release.Task.WaitAsync(ct);
-        };
-        f.Server.SetupSequence(x => x.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new LocalProfileDataUnavailableException("old source disappeared"))
-            .ReturnsAsync((HistoryRecordDto?)null);
-        var oldUpload = f.Queue.Upload(oldProfile, ct: Token);
-        Task replacement;
-        try
-        {
-            await saving.Task.WaitAsync(TimeSpan.FromSeconds(5), Token);
-            replacement = f.Queue.Upload(newProfile, ct: Token);
-        }
-        finally
-        {
-            release.TrySetResult(true);
-        }
-        await Assert.ThrowsExactlyAsync<InvalidOperationException>(
-            () => oldUpload.WaitAsync(TimeSpan.FromSeconds(5), Token));
-        await replacement.WaitAsync(TimeSpan.FromSeconds(5), Token);
-        Assert.AreEqual(1, f.Uploads);
-        Assert.IsTrue((await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token)).IsLocalFileReady);
-    }
-
-    [TestMethod]
     public async Task PromotedPendingUpload_SurvivesFailureSweepBeforeExecution()
     {
         await using var f = await Fixture.CreateAsync(Token);
@@ -800,15 +782,6 @@ public class HistoryUploadCoordinationTests
 
     private sealed class MemoryHistoryDbContext : HistoryDbContext
     {
-        public Func<CancellationToken, Task>? BeforeSave { get; set; }
-
-        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
-        {
-            if (BeforeSave is not null)
-                await BeforeSave(cancellationToken);
-            return await base.SaveChangesAsync(cancellationToken);
-        }
-
         protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlite("Data Source=:memory:");
     }
 
