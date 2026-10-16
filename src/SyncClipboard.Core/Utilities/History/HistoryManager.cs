@@ -256,70 +256,37 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     }
 
     internal async Task CompleteHistoryUploadAsync(
-        HistoryRecord sent, HistoryRecordDto response, CancellationToken token)
+        HistoryRecord uploaded, HistoryRecordDto response, CancellationToken token)
     {
-        (HistoryRecord? entity, bool added) result;
+        HistoryRecord entity;
+        bool added;
         await _dbSemaphore.WaitAsync(token);
         using (new ScopeGuard(() => _dbSemaphore.Release()))
-            result = await ApplyHistoryUploadResponseAsync(sent, response, token);
-        if (result.entity is null)
-            return;
-        if (result.added)
-            HistoryAdded?.Invoke(result.entity);
-        else
-            TriggleUpdateOrDeleteEvent(result.entity);
-    }
-
-    // The caller holds the database lock through snapshot reconciliation and SaveChanges.
-    private async Task<(HistoryRecord? Entity, bool Added)> ApplyHistoryUploadResponseAsync(
-        HistoryRecord sent, HistoryRecordDto response, CancellationToken token)
-    {
-        var current = await Query(sent.Type, sent.Hash, token);
-        if (current is null && sent.ID != 0)
-            return (null, false); // Do not recreate a record removed during upload.
-        if (current is not null && current.SyncStatus == HistorySyncStatus.Synced &&
-            HasSameUploadState(current, response.ToHistoryRecord()))
         {
-            // SignalR may acknowledge the upload before its local attachment binding is saved.
-            if (current.IsLocalFileReady || !sent.IsLocalFileReady)
-                return (null, false);
-            current.IsLocalFileReady = true;
-            current.FilePath = sent.FilePath;
-            CopyLocalTransferDataBinding(sent, current);
+            var current = await Query(uploaded.Type, uploaded.Hash, token);
+            if (current is null && uploaded.ID != 0)
+                return; // Do not recreate a record removed during upload.
+            added = current is null;
+            entity = current ?? uploaded;
+            ApplyRemoteHistory(entity, response);
+            if (!entity.IsLocalFileReady && uploaded.IsLocalFileReady)
+            {
+                entity.IsLocalFileReady = true;
+                entity.FilePath = uploaded.FilePath;
+                CopyLocalTransferDataBinding(uploaded, entity);
+            }
+            if (added)
+            {
+                entity.Hash = entity.Hash.ToUpperInvariant();
+                _dbContext.HistoryRecords.Add(entity);
+            }
             await _dbContext.SaveChangesAsync(token);
-            return (current, false);
         }
-        if (await PreserveNewerUploadChangesAsync(current, sent, response.Version, token))
-            return (current, false);
-        var entity = current ?? sent;
-        entity.ApplyChangesFromRemote(response);
-        entity.ApplyBasicFromRemote(response);
-        entity.SyncStatus = HistorySyncStatus.Synced;
-        if (current is null)
-        {
-            entity.Hash = entity.Hash.ToUpperInvariant();
-            _dbContext.HistoryRecords.Add(entity);
-        }
-        await _dbContext.SaveChangesAsync(token);
-        return (entity, current is null);
+        if (added)
+            HistoryAdded?.Invoke(entity);
+        else
+            TriggleUpdateOrDeleteEvent(entity);
     }
-
-    private async Task<bool> PreserveNewerUploadChangesAsync(
-        HistoryRecord? current, HistoryRecord sent, int responseVersion, CancellationToken token)
-    {
-        if (current is null || HasSameUploadState(current, sent))
-            return false;
-        if (current.Version <= responseVersion)
-            current.Version = checked(responseVersion + 1);
-        current.SyncStatus = HistorySyncStatus.NeedSync;
-        await _dbContext.SaveChangesAsync(token);
-        return true;
-    }
-
-    private static bool HasSameUploadState(HistoryRecord current, HistoryRecord sent) =>
-        current.Version == sent.Version && current.LastModified == sent.LastModified &&
-        current.LastAccessed == sent.LastAccessed && current.Stared == sent.Stared &&
-        current.Pinned == sent.Pinned && current.IsDeleted == sent.IsDeleted;
 
     public async Task UpdateHistoryProperty(HistoryRecord record, CancellationToken token = default)
     {
@@ -488,21 +455,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                 }
                 else
                 {
-                    if (entity.ShouldUpdateFromRemote(dto))
-                    {
-                        entity.ApplyChangesFromRemote(dto);
-                        entity.SyncStatus = HistorySyncStatus.Synced;
-                    }
-                    else if (entity.IsLocalNewerThanRemote(dto))
-                    {
-                        entity.SyncStatus = HistorySyncStatus.NeedSync;
-                    }
-                    else
-                    {
-                        entity.ApplyChangesFromRemote(dto);
-                        entity.SyncStatus = HistorySyncStatus.Synced;
-                    }
-                    entity.ApplyBasicFromRemote(dto);
+                    ApplyRemoteHistory(entity, dto);
                     TriggleUpdateOrDeleteEvent(entity);
                 }
                 await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
@@ -510,6 +463,25 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         }, token);
 
         return addedRecords;
+    }
+
+    private static void ApplyRemoteHistory(HistoryRecord entity, HistoryRecordDto dto)
+    {
+        if (entity.ShouldUpdateFromRemote(dto))
+        {
+            entity.ApplyChangesFromRemote(dto);
+            entity.SyncStatus = HistorySyncStatus.Synced;
+        }
+        else if (entity.IsLocalNewerThanRemote(dto))
+        {
+            entity.SyncStatus = HistorySyncStatus.NeedSync;
+        }
+        else
+        {
+            entity.ApplyChangesFromRemote(dto);
+            entity.SyncStatus = HistorySyncStatus.Synced;
+        }
+        entity.ApplyBasicFromRemote(dto);
     }
 
     private void TriggleUpdateOrDeleteEvent(HistoryRecord record)

@@ -134,11 +134,12 @@ public class HistoryUploadCoordinationTests
     }
 
     [TestMethod]
-    public async Task EditDuringUpload_SurvivesResponseAndSynchronizesWithoutResendingContent()
+    public async Task EditDuringUpload_UsesServerPropertiesWhenVersionsTie()
     {
         await using var f = await Fixture.CreateAsync(Token);
         var profile = new TextProfile("edit in flight");
         await f.Manager.AddLocalProfile(profile, token: Token);
+        var expectedVersion = (await f.Manager.GetOrCreateHistoryRecord(profile, Token)).Version + 1;
         var entered = Signal();
         var release = Signal();
         f.Server.Setup(x => x.UploadHistoryAsync(It.IsAny<HistoryRecordDto>(), It.IsAny<FileHashInfo?>(),
@@ -148,7 +149,7 @@ public class HistoryUploadCoordinationTests
                 f.Uploads++;
                 entered.SetResult(true);
                 await release.Task.WaitAsync(ct);
-                dto.Version = 20;
+                dto.Version = expectedVersion;
                 f.RemoteRecord = dto;
                 return dto;
             });
@@ -168,12 +169,12 @@ public class HistoryUploadCoordinationTests
         await upload.WaitAsync(TimeSpan.FromSeconds(5), Token);
         await synced.Task.WaitAsync(TimeSpan.FromSeconds(5), Token);
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
-        Assert.IsTrue(saved.Stared);
-        Assert.IsTrue(f.RemoteRecord!.Starred);
-        Assert.AreEqual(21, saved.Version);
+        Assert.IsFalse(saved.Stared);
+        Assert.IsFalse(f.RemoteRecord!.Starred);
+        Assert.AreEqual(expectedVersion, saved.Version);
         Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
         Assert.AreEqual(1, f.Uploads);
-        Assert.AreEqual(1, f.Updates);
+        Assert.AreEqual(0, f.Updates);
     }
 
     [TestMethod]
