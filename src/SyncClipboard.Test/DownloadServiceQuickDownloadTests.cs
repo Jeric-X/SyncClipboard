@@ -352,8 +352,8 @@ public class DownloadServiceQuickDownloadTests
             _download = new DownloadService(_services, messenger, upload,
                 _services.GetRequiredService<VirtualKeyboard>(), _monitor.Object, _listener.Object,
                 _hotkeys, _remoteFactory,
-                new ProfileNotificationHelper(Mock.Of<INotification>(),
-                    new ProfileActionBuilder(_services.GetRequiredService<LocalClipboardSetter>(), profileEnv.Object)),
+                new ProfileNotificationHelper(Mock.Of<INotificationManager>(),
+                    new ProfileActionBuilder(_services.GetRequiredService<LocalClipboardSetter>(), profileEnv.Object), config),
                 _services.GetRequiredService<LocalClipboardSetter>());
         }
 

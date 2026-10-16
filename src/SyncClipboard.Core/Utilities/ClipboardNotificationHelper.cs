@@ -1,14 +1,21 @@
-using Microsoft.Extensions.DependencyInjection;
 using NativeNotification.Interface;
 using SyncClipboard.Core.Clipboard;
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Models.UserConfigs;
 
 namespace SyncClipboard.Core.Utilities;
 
-public class ProfileNotificationHelper([FromKeyedServices("ProfileNotification")] INotification notification, ProfileActionBuilder profileActionBuilder)
+public class ProfileNotificationHelper(
+    INotificationManager notificationManager, ProfileActionBuilder profileActionBuilder, ConfigManager configManager)
 {
+    private INotification? _notification;
+
     public async void Notify(Profile profile, CancellationToken token = default)
     {
-        ResetNotification(notification);
+        _notification?.Remove();
+        // Keep expiration callbacks scoped to their own notification, never a newer notification.
+        var notification = notificationManager.Create();
+        _notification = notification;
 
         notification.Title = profile switch
         {
@@ -28,16 +35,9 @@ public class ProfileNotificationHelper([FromKeyedServices("ProfileNotification")
         var actions = await profileActionBuilder.Build(profile, token);
         notification.Buttons = ProfileActionBuilder.ToActionButtons(actions);
         notification.ContentAction = (await profileActionBuilder.GetPrimaryAction(profile, token))?.Action;
-        notification.Show();
-    }
-
-    private static void ResetNotification(INotification notification)
-    {
-        notification.Title = string.Empty;
-        notification.Message = string.Empty;
-        notification.Image = null;
-        notification.Buttons = [];
-        notification.ContentAction = null;
-        notification.Remove();
+        var durationSeconds = configManager.GetConfig<SyncConfig>().NotificationDurationSeconds;
+        notification.Show(durationSeconds > 0
+            ? new NotificationDeliverOption { Duration = TimeSpan.FromSeconds(durationSeconds) }
+            : null);
     }
 }

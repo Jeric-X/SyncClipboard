@@ -435,7 +435,6 @@ namespace SyncClipboard.Core
                     AppIcon = Path.Combine(Env.ProgramDirectory, "Assets", "icon.svg")
                 }),
                 sp.GetRequiredService<Interfaces.ILogger>()));
-            services.AddKeyedSingleton<INotification>("ProfileNotification", (sp, key) => sp.GetRequiredService<INotificationManager>().Create());
             services.AddSingleton<ProfileNotificationHelper>();
 
             services.AddServerAdapter<WebDavConfig, WebDavAdapter>();
