@@ -1,11 +1,11 @@
 using Moq;
-using NativeNotification.Common;
 using NativeNotification.Interface;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Shared.Profiles;
+using SyncClipboard.Shared.Profiles.Models;
 
 namespace SyncClipboard.Test;
 
@@ -15,16 +15,18 @@ public class ProfileNotificationHelperTests
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
-    public async Task MissingDurationDefaultsToTenSeconds()
+    public async Task MissingDurationClosesAfterTenSeconds()
     {
         using var fixture = new Fixture();
+        await fixture.NotifyAsync(TestContext.CancellationTokenSource.Token);
+        Assert.AreEqual("test notification", fixture.Notification.Object.Message);
+        Assert.IsNotNull(fixture.Notification.Object.ContentAction);
+        Assert.IsNotEmpty(fixture.Notification.Object.Buttons);
 
-        var notification = await fixture.NotifyAsync(TestContext.CancellationTokenSource.Token);
-
-        Assert.AreEqual(TimeSpan.FromSeconds(10), notification.Options?.Duration);
-        Assert.AreEqual("test notification", notification.Message);
-        Assert.IsNotNull(notification.ContentAction);
-        Assert.IsNotEmpty(notification.Buttons);
+        fixture.Clock.Advance(TimeSpan.FromSeconds(9));
+        Assert.IsTrue(fixture.IsAlive);
+        fixture.Clock.Advance(TimeSpan.FromSeconds(1));
+        Assert.IsFalse(fixture.IsAlive);
     }
 
     [TestMethod]
@@ -36,122 +38,141 @@ public class ProfileNotificationHelperTests
         using var fixture = new Fixture();
         fixture.Config.SetConfig(new SyncConfig { NotificationDurationSeconds = seconds });
         fixture.Config.Reload();
+        await fixture.NotifyAsync(TestContext.CancellationTokenSource.Token);
 
-        var notification = await fixture.NotifyAsync(TestContext.CancellationTokenSource.Token);
-
-        if (seconds > 0)
-        {
-            Assert.AreEqual(TimeSpan.FromSeconds(seconds), notification.Options?.Duration);
-        }
-        else
-        {
-            Assert.IsNull(notification.Options);
-        }
-    }
-
-    [TestMethod]
-    public async Task PositiveDurationRemovesNotification()
-    {
-        using var fixture = new Fixture();
-        fixture.Config.SetConfig(new SyncConfig { NotificationDurationSeconds = 1 });
-        var token = TestContext.CancellationTokenSource.Token;
-        var notification = await fixture.NotifyAsync(token);
-
-        await notification.Removed.Task.WaitAsync(TimeSpan.FromSeconds(5), token);
-
-        Assert.IsFalse(notification.IsAlive);
+        fixture.Clock.Advance(TimeSpan.FromSeconds(1));
+        Assert.IsTrue(fixture.IsAlive);
+        fixture.Clock.Advance(TimeSpan.FromSeconds(1));
+        Assert.AreEqual(seconds <= 0, fixture.IsAlive);
+        fixture.Clock.Advance(TimeSpan.FromDays(1));
+        Assert.AreEqual(seconds <= 0, fixture.IsAlive);
     }
 
     [TestMethod]
     [DataRow(0)]
     [DataRow(-1)]
     [DataRow(10)]
-    public async Task PreviousExpirationDoesNotRemoveReplacement(int replacementDuration)
+    public async Task NewNotificationResetsAutomaticClose(int replacementDuration)
     {
         using var fixture = new Fixture();
-        fixture.Config.SetConfig(new SyncConfig { NotificationDurationSeconds = 1 });
         var token = TestContext.CancellationTokenSource.Token;
-        var first = await fixture.NotifyAsync(token);
+        await fixture.NotifyAsync(token);
+        fixture.Clock.Advance(TimeSpan.FromSeconds(6));
         fixture.Config.SetConfig(new SyncConfig { NotificationDurationSeconds = replacementDuration });
-        var second = await fixture.NotifyAsync(token);
-        Assert.IsFalse(first.IsAlive);
+        await fixture.NotifyAsync(token);
 
-        // The native library still runs the first notification's expiry callback after replacement.
-        await first.RemovedAgain.Task.WaitAsync(TimeSpan.FromSeconds(5), token);
+        fixture.Clock.Advance(TimeSpan.FromSeconds(4));
+        Assert.IsTrue(fixture.IsAlive);
+        fixture.Clock.Advance(TimeSpan.FromSeconds(6));
+        Assert.AreEqual(replacementDuration <= 0, fixture.IsAlive);
+    }
 
-        Assert.IsTrue(second.IsAlive);
-        Assert.IsFalse(second.Removed.Task.IsCompleted);
+    [TestMethod]
+    public async Task SupersededLocalizationDoesNotShowOldContent()
+    {
+        using var fixture = new Fixture();
+        var token = TestContext.CancellationTokenSource.Token;
+        var localized = new TaskCompletionSource<ProfileLocalInfo>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var oldProfile = new Mock<Profile>();
+        oldProfile.SetupGet(profile => profile.ShortDisplayText).Returns("old content");
+        oldProfile.Setup(profile => profile.Localize(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(localized.Task);
+        var pending = fixture.Helper.NotifyAsync(oldProfile.Object, token);
+        Assert.IsFalse(pending.IsCompleted);
+
+        await fixture.Helper.NotifyAsync(new TextProfile("new content"), token);
+        localized.SetResult(new ProfileLocalInfo { Text = "old content" });
+        await pending.WaitAsync(TimeSpan.FromSeconds(5), token);
+
+        Assert.IsTrue(fixture.IsAlive);
+        Assert.AreEqual("new content", fixture.Notification.Object.Message);
+        fixture.Notification.Verify(notification => notification.Show(It.IsAny<NotificationDeliverOption>()), Times.Once);
     }
 
     private sealed class Fixture : IDisposable
     {
         private readonly DirectoryInfo _directory = Directory.CreateTempSubdirectory();
         private readonly ConfigurationTestServices _configuration = new();
-        private readonly ProfileNotificationHelper _helper;
-        private TaskCompletionSource<TestNotification> _shown = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public Mock<INotification> Notification { get; } = new();
+        public ManualTimeProvider Clock { get; } = new();
         public ConfigManager Config { get; }
+        public ProfileNotificationHelper Helper { get; }
+        public bool IsAlive { get; private set; }
 
         public Fixture()
         {
             Config = new ConfigManager(Path.Combine(_directory.FullName, "config.json"), _configuration.Upgrader);
-            var manager = new Mock<INotificationManager>();
-            manager.Setup(instance => instance.Create()).Returns(() => new TestNotification(item => _shown.TrySetResult(item)));
+            Notification.SetupAllProperties();
+            Notification.Setup(notification => notification.Show(It.IsAny<NotificationDeliverOption>()))
+                .Callback(() => IsAlive = true);
+            Notification.Setup(notification => notification.Remove()).Callback(() => IsAlive = false);
             var profileEnv = Mock.Of<IProfileEnv>(env => env.GetPersistentDir() == _directory.FullName);
-            _helper = new ProfileNotificationHelper(manager.Object, new ProfileActionBuilder(null!, profileEnv), Config);
+            Helper = new ProfileNotificationHelper(Notification.Object, new ProfileActionBuilder(null!, profileEnv), Config, Clock);
         }
 
-        public async Task<TestNotification> NotifyAsync(CancellationToken token)
-        {
-            _shown = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            _helper.Notify(new TextProfile("test notification"), token);
-            return await _shown.Task.WaitAsync(TimeSpan.FromSeconds(5), token);
-        }
+        public Task NotifyAsync(CancellationToken token) => Helper.NotifyAsync(new TextProfile("test notification"), token);
 
         public void Dispose()
         {
+            Helper.Dispose();
             _configuration.Dispose();
             _directory.Delete(true);
         }
     }
 
-    // Use the package's real expiry implementation without depending on a desktop notification service.
-    private sealed class TestNotification(Action<TestNotification> onShow) : INotification
+    private sealed class ManualTimeProvider : TimeProvider
     {
-        private ExpirationHelper? _expiration;
-        private int _removeCount;
-        public string? Title { get; set; }
-        public string? Message { get; set; }
-        public Uri? Image { get; set; }
-        public List<ActionButton> Buttons { get; set; } = [];
-        public Action? ContentAction { get; set; }
-        public string NotificationId { get; } = Guid.NewGuid().ToString();
-        public bool IsAlive { get; private set; }
-        public bool IsCreatedByCurrentProcess => true;
-        public NotificationDeliverOption? Options { get; private set; }
-        public TaskCompletionSource Removed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        public TaskCompletionSource RemovedAgain { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly List<ManualTimer> _timers = [];
+        private TimeSpan _now;
 
-        public void Show(NotificationDeliverOption? config = null)
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
         {
-            Options = config;
-            IsAlive = true;
-            _expiration ??= new ExpirationHelper(this);
-            _expiration.SetNoficifationDuration(config);
-            onShow(this);
+            var timer = new ManualTimer(this, callback, state);
+            timer.Change(dueTime, period);
+            _timers.Add(timer);
+            return timer;
         }
 
-        public bool Update() => IsAlive;
-
-        public void Remove()
+        public void Advance(TimeSpan elapsed)
         {
-            IsAlive = false;
-            if (Interlocked.Increment(ref _removeCount) == 1)
+            _now += elapsed;
+            foreach (var timer in _timers.ToArray())
             {
-                Removed.TrySetResult();
+                timer.FireIfDue(_now);
             }
-            else
+        }
+
+        private sealed class ManualTimer(ManualTimeProvider clock, TimerCallback callback, object? state) : ITimer
+        {
+            private TimeSpan? _due;
+            private bool _disposed;
+
+            public bool Change(TimeSpan dueTime, TimeSpan period)
             {
-                RemovedAgain.TrySetResult();
+                Assert.AreEqual(Timeout.InfiniteTimeSpan, period);
+                if (_disposed)
+                {
+                    return false;
+                }
+                _due = dueTime == Timeout.InfiniteTimeSpan ? null : clock._now + dueTime;
+                return true;
+            }
+
+            public void FireIfDue(TimeSpan now)
+            {
+                if (!_disposed && _due is { } due && due <= now)
+                {
+                    _due = null;
+                    callback(state);
+                }
+            }
+
+            public void Dispose() => _disposed = true;
+
+            public ValueTask DisposeAsync()
+            {
+                Dispose();
+                return ValueTask.CompletedTask;
             }
         }
     }

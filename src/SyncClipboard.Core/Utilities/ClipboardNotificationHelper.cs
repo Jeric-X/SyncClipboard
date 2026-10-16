@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using NativeNotification.Interface;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
@@ -6,38 +7,108 @@ using SyncClipboard.Core.Models.UserConfigs;
 namespace SyncClipboard.Core.Utilities;
 
 public class ProfileNotificationHelper(
-    INotificationManager notificationManager, ProfileActionBuilder profileActionBuilder, ConfigManager configManager)
+    [FromKeyedServices("ProfileNotification")] INotification notification,
+    ProfileActionBuilder profileActionBuilder, ConfigManager configManager, TimeProvider? timeProvider = null) : IDisposable
 {
-    private INotification? _notification;
+    private readonly Lock _notificationLock = new();
+    private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
+    private ITimer? _closeTimer;
+    private long _version;
 
-    public async void Notify(Profile profile, CancellationToken token = default)
+    public void Notify(Profile profile, CancellationToken token = default)
     {
-        _notification?.Remove();
-        // Keep expiration callbacks scoped to their own notification, never a newer notification.
-        var notification = notificationManager.Create();
-        _notification = notification;
+        DelegateExtention.SafeFireAndForget(() => NotifyAsync(profile, token), nameof(ProfileNotificationHelper));
+    }
 
-        notification.Title = profile switch
+    internal async Task NotifyAsync(Profile profile, CancellationToken token = default)
+    {
+        long version;
+        lock (_notificationLock)
         {
-            TextProfile => I18n.Strings.ClipboardTextUpdated,
-            ImageProfile => I18n.Strings.ClipboardImageUpdated,
-            GroupProfile => I18n.Strings.ClipboardFileUpdated,
-            FileProfile => I18n.Strings.ClipboardFileUpdated,
-            _ => I18n.Strings.ClipboardUpdated,
-        };
-
-        if (profile is ImageProfile imageProfile && File.Exists(imageProfile.FullPath))
-        {
-            notification.Image = new Uri(imageProfile.FullPath);
+            version = ++_version;
+            _closeTimer?.Dispose();
+            _closeTimer = null;
+            ResetNotification(notification);
         }
 
-        notification.Message = profile.ShortDisplayText;
         var actions = await profileActionBuilder.Build(profile, token);
-        notification.Buttons = ProfileActionBuilder.ToActionButtons(actions);
-        notification.ContentAction = (await profileActionBuilder.GetPrimaryAction(profile, token))?.Action;
-        var durationSeconds = configManager.GetConfig<SyncConfig>().NotificationDurationSeconds;
-        notification.Show(durationSeconds > 0
-            ? new NotificationDeliverOption { Duration = TimeSpan.FromSeconds(durationSeconds) }
-            : null);
+        var primaryAction = await profileActionBuilder.GetPrimaryAction(profile, token);
+        lock (_notificationLock)
+        {
+            if (version != _version || token.IsCancellationRequested)
+            {
+                return;
+            }
+
+            notification.Title = profile switch
+            {
+                TextProfile => I18n.Strings.ClipboardTextUpdated,
+                ImageProfile => I18n.Strings.ClipboardImageUpdated,
+                GroupProfile => I18n.Strings.ClipboardFileUpdated,
+                FileProfile => I18n.Strings.ClipboardFileUpdated,
+                _ => I18n.Strings.ClipboardUpdated,
+            };
+
+            if (profile is ImageProfile imageProfile && File.Exists(imageProfile.FullPath))
+            {
+                notification.Image = new Uri(imageProfile.FullPath);
+            }
+
+            notification.Message = profile.ShortDisplayText;
+            notification.Buttons = ProfileActionBuilder.ToActionButtons(actions);
+            notification.ContentAction = primaryAction?.Action;
+            notification.Show();
+
+            var durationSeconds = configManager.GetConfig<SyncConfig>().NotificationDurationSeconds;
+            if (durationSeconds > 0)
+            {
+                _closeTimer = _timeProvider.CreateTimer(_ => CloseNotification(version), null,
+                    TimeSpan.FromSeconds(durationSeconds), Timeout.InfiniteTimeSpan);
+            }
+        }
+    }
+
+    private void CloseNotification(long version)
+    {
+        lock (_notificationLock)
+        {
+            // A disposed timer may already have queued its callback when the next notification arrives.
+            if (version != _version)
+            {
+                return;
+            }
+
+            _closeTimer?.Dispose();
+            _closeTimer = null;
+            try
+            {
+                notification.Remove();
+            }
+            catch (Exception exception)
+            {
+                AppCore.TryGetCurrent()?.Logger.Write(nameof(ProfileNotificationHelper), exception.ToString());
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        lock (_notificationLock)
+        {
+            ++_version;
+            _closeTimer?.Dispose();
+            _closeTimer = null;
+        }
+        GC.SuppressFinalize(this);
+    }
+
+    private static void ResetNotification(INotification notification)
+    {
+        notification.Title = string.Empty;
+        notification.Message = string.Empty;
+        notification.Image = null;
+        notification.Buttons = [];
+        notification.ContentAction = null;
+        notification.Remove();
     }
 }
