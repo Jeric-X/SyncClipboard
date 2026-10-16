@@ -269,7 +269,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
             added = current is null;
             entity = current ?? uploaded;
             ApplyRemoteHistory(entity, response);
-            if (!entity.IsLocalFileReady && uploaded.IsLocalFileReady)
+            if (!entity.IsDeleted && !entity.IsLocalFileReady && uploaded.IsLocalFileReady)
             {
                 entity.IsLocalFileReady = true;
                 entity.FilePath = uploaded.FilePath;

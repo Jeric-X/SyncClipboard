@@ -299,6 +299,7 @@ public class HistoryRetentionTests
             accepted.LastAccessed = accessed.AddMinutes(remoteAccessedLater ? 1 : -1);
             accepted.CreateTime = created.AddDays(remoteAccessedLater ? 1 : -1);
         }
+        var deletedDuringUpload = concurrentRemoteRecord && remoteAccessedLater;
         var remote = new Mock<IRemoteClipboardServer>();
         var server = remote.As<IOfficialSyncServer>();
         var existingRemote = local.ToHistoryRecordDto();
@@ -326,6 +327,11 @@ public class HistoryRetentionTests
                     Assert.AreEqual(await Utility.CalculateFileSHA256(file.Path, token), file.Hash);
                     if (acknowledgementBeforeResponse)
                         await f.Manager.SyncRemoteHistoryAsync([accepted], token);
+                    if (deletedDuringUpload)
+                    {
+                        accepted.Version = local.Version;
+                        await f.Manager.DeleteHistory(local, token);
+                    }
                     return accepted;
                 });
         var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
@@ -339,6 +345,18 @@ public class HistoryRetentionTests
 
         AssertUploadedContent(uploaded, uploadedContent, hasActiveRemote, acknowledgementBeforeResponse, modified);
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        if (deletedDuringUpload)
+        {
+            Assert.IsTrue(saved.IsDeleted);
+            Assert.AreEqual(accepted.Version + 1, saved.Version);
+            Assert.AreEqual(HistorySyncStatus.NeedSync, saved.SyncStatus);
+            Assert.IsFalse(saved.IsLocalFileReady);
+            Assert.IsEmpty(saved.FilePath);
+            Assert.IsNull(saved.TransferDataFile);
+            Assert.IsNull(saved.TransferDataHash);
+            Assert.IsFalse(Directory.Exists(f.Manager.GetRecordWorkingDir(saved)));
+            return;
+        }
         var expected = hasActiveRemote ? existingRemote : accepted;
         AssertAcceptedUpload(saved, expected, acknowledgementBeforeResponse, accessed, created, f.GetPersistentDir());
     }
