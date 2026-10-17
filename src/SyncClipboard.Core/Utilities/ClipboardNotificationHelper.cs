@@ -8,11 +8,9 @@ namespace SyncClipboard.Core.Utilities;
 
 public class ProfileNotificationHelper(
     [FromKeyedServices("ProfileNotification")] INotification notification,
-    ProfileActionBuilder profileActionBuilder, ConfigManager configManager, TimeProvider? timeProvider = null) : IDisposable
+    ProfileActionBuilder profileActionBuilder, ConfigManager configManager)
 {
     private readonly Lock _notificationLock = new();
-    private readonly TimeProvider _timeProvider = timeProvider ?? TimeProvider.System;
-    private ITimer? _closeTimer;
     private long _version;
 
     public void Notify(Profile profile, CancellationToken token = default)
@@ -26,8 +24,6 @@ public class ProfileNotificationHelper(
         lock (_notificationLock)
         {
             version = ++_version;
-            _closeTimer?.Dispose();
-            _closeTimer = null;
             ResetNotification(notification);
         }
 
@@ -57,49 +53,12 @@ public class ProfileNotificationHelper(
             notification.Message = profile.ShortDisplayText;
             notification.Buttons = ProfileActionBuilder.ToActionButtons(actions);
             notification.ContentAction = primaryAction?.Action;
-            notification.Show();
-
             var durationSeconds = configManager.GetConfig<SyncConfig>().NotificationDurationSeconds;
-            if (durationSeconds > 0)
+            notification.Show(new NotificationDeliverOption
             {
-                _closeTimer = _timeProvider.CreateTimer(_ => CloseNotification(version), null,
-                    TimeSpan.FromSeconds(durationSeconds), Timeout.InfiniteTimeSpan);
-            }
+                Duration = durationSeconds > 0 ? TimeSpan.FromSeconds(durationSeconds) : null
+            });
         }
-    }
-
-    private void CloseNotification(long version)
-    {
-        lock (_notificationLock)
-        {
-            // A disposed timer may already have queued its callback when the next notification arrives.
-            if (version != _version)
-            {
-                return;
-            }
-
-            _closeTimer?.Dispose();
-            _closeTimer = null;
-            try
-            {
-                notification.Remove();
-            }
-            catch (Exception exception)
-            {
-                AppCore.TryGetCurrent()?.Logger.Write(nameof(ProfileNotificationHelper), exception.ToString());
-            }
-        }
-    }
-
-    public void Dispose()
-    {
-        lock (_notificationLock)
-        {
-            ++_version;
-            _closeTimer?.Dispose();
-            _closeTimer = null;
-        }
-        GC.SuppressFinalize(this);
     }
 
     private static void ResetNotification(INotification notification)
