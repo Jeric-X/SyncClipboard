@@ -122,8 +122,10 @@ public class HistoryRequestCancellationTests
         var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
         typeof(RemoteClipboardServerFactory).GetField("_current", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(factory, server);
+#pragma warning disable CS9216 // Reflection requires object; the target field is still typed and used as Lock.
         typeof(RemoteClipboardServerFactory).GetField("_serverStateLock", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(factory, new Lock());
+#pragma warning restore CS9216
         return factory;
     }
 
