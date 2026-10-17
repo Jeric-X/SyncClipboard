@@ -1573,6 +1573,12 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryImportResult" xml:space="preserve">
     <value>Imported {0} records</value>
   </data>
+  <data name="HistoryImportRepairedCount" xml:space="preserve">
+    <value>, repaired {0} records</value>
+  </data>
+  <data name="HistoryImportExistingCount" xml:space="preserve">
+    <value>, updated {0} existing records</value>
+  </data>
   <data name="HistoryImportFailureCount" xml:space="preserve">
     <value>, failed to import {0} records</value>
   </data>

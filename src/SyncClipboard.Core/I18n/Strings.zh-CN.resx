@@ -1573,6 +1573,12 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryImportResult" xml:space="preserve">
     <value>已导入 {0} 条记录</value>
   </data>
+  <data name="HistoryImportRepairedCount" xml:space="preserve">
+    <value>，修复 {0} 条记录</value>
+  </data>
+  <data name="HistoryImportExistingCount" xml:space="preserve">
+    <value>，更新 {0} 条重复记录</value>
+  </data>
   <data name="HistoryImportFailureCount" xml:space="preserve">
     <value>，{0} 条记录未能导入</value>
   </data>
