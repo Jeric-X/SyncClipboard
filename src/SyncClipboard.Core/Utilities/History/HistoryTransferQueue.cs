@@ -649,7 +649,7 @@ public class HistoryTransferQueue : IDisposable
 
         var response = await UploadContentAsync(task, server, record, profile, ct);
         ct.ThrowIfCancellationRequested();
-        await _historyManager.CompleteHistoryUploadAsync(record, response, ct);
+        await _historyManager.SyncRemoteHistoryAsync([response], ct);
     }
 
     private async Task<HistoryRecordDto> UploadContentAsync(

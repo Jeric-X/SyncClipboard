@@ -77,7 +77,7 @@ public class HistoryUploadCoordinationTests
     {
         await using var f = await Fixture.CreateAsync(Token);
         var profile = new TextProfile("concurrent registration");
-        await f.Manager.AddLocalProfile(profile, token: Token);
+        _ = f.CreateSyncer();
         await profile.GetHash(Token);
         await f.Queue.ActiveTaskAddMutex.WaitAsync(Token);
         var queued = f.Queue.EnqueueUpload(profile, ct: Token);

@@ -248,44 +248,17 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 
         var entity = await Query(profile.Type, await profile.GetHash(token), token);
         if (entity is null)
-            return await ToHistoryRecord(profile, token);
+        {
+            entity = await ToHistoryRecord(profile, token);
+            entity.Hash = entity.Hash.ToUpperInvariant();
+            await _dbContext.HistoryRecords.AddAsync(entity, token);
+            await _dbContext.SaveChangesAsync(token);
+            HistoryAdded?.Invoke(entity);
+        }
         // Network operations must not mutate EF's tracked entity outside the database lock.
         var snapshot = (HistoryRecord)_dbContext.Entry(entity).CurrentValues.ToObject();
         snapshot.FilePath = [.. entity.FilePath];
         return snapshot;
-    }
-
-    internal async Task CompleteHistoryUploadAsync(
-        HistoryRecord uploaded, HistoryRecordDto response, CancellationToken token)
-    {
-        HistoryRecord entity;
-        bool added;
-        await _dbSemaphore.WaitAsync(token);
-        using (new ScopeGuard(() => _dbSemaphore.Release()))
-        {
-            var current = await Query(uploaded.Type, uploaded.Hash, token);
-            if (current is null && uploaded.ID != 0)
-                return; // Do not recreate a record removed during upload.
-            added = current is null;
-            entity = current ?? uploaded;
-            ApplyRemoteHistory(entity, response);
-            if (!entity.IsDeleted && !entity.IsLocalFileReady && uploaded.IsLocalFileReady)
-            {
-                entity.IsLocalFileReady = true;
-                entity.FilePath = uploaded.FilePath;
-                CopyLocalTransferDataBinding(uploaded, entity);
-            }
-            if (added)
-            {
-                entity.Hash = entity.Hash.ToUpperInvariant();
-                _dbContext.HistoryRecords.Add(entity);
-            }
-            await _dbContext.SaveChangesAsync(token);
-        }
-        if (added)
-            HistoryAdded?.Invoke(entity);
-        else
-            TriggleUpdateOrDeleteEvent(entity);
     }
 
     public async Task UpdateHistoryProperty(HistoryRecord record, CancellationToken token = default)

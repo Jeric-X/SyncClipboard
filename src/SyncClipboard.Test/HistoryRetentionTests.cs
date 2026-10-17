@@ -322,6 +322,11 @@ public class HistoryRetentionTests
                 async (dto, file, _, token) =>
                 {
                     uploaded = dto;
+                    var persisted = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(token);
+                    Assert.IsTrue(persisted.IsLocalFileReady);
+                    Assert.IsGreaterThan(0, persisted.FilePath.Length);
+                    Assert.IsNotNull(persisted.TransferDataFile);
+                    Assert.IsNotNull(persisted.TransferDataHash);
                     Assert.IsNotNull(file);
                     uploadedContent = await File.ReadAllTextAsync(file.Path, token);
                     Assert.AreEqual(await Utility.CalculateFileSHA256(file.Path, token), file.Hash);
@@ -341,6 +346,11 @@ public class HistoryRetentionTests
             .SetValue(factory, RuntimeHelpers.GetUninitializedObject(typeof(Lock)));
         using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), factory, f.Manager, f, null!, new ConfigBase());
 
+        f.Manager.HistoryAdded += added =>
+        {
+            accessed = added.LastAccessed;
+            created = added.Timestamp;
+        };
         await queue.Upload(profile, ct: Token);
 
         AssertUploadedContent(uploaded, uploadedContent, hasActiveRemote, acknowledgementBeforeResponse, modified);
@@ -358,7 +368,7 @@ public class HistoryRetentionTests
             return;
         }
         var expected = hasActiveRemote ? existingRemote : accepted;
-        AssertAcceptedUpload(saved, expected, acknowledgementBeforeResponse, accessed, created, f.GetPersistentDir());
+        AssertAcceptedUpload(saved, expected, accessed, created, f.GetPersistentDir());
     }
 
     private static void AssertUploadedContent(
@@ -383,8 +393,7 @@ public class HistoryRetentionTests
     }
 
     private static void AssertAcceptedUpload(
-        HistoryRecord saved, HistoryRecordDto expected, bool acknowledgementBeforeResponse,
-        DateTime accessed, DateTime created, string persistentDir)
+        HistoryRecord saved, HistoryRecordDto expected, DateTime accessed, DateTime created, string persistentDir)
     {
         Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
         Assert.AreEqual(expected.Version, saved.Version);
@@ -392,10 +401,8 @@ public class HistoryRetentionTests
         Assert.AreEqual(expected.Starred, saved.Stared);
         Assert.AreEqual(expected.Pinned, saved.Pinned);
         Assert.IsFalse(saved.IsDeleted);
-        Assert.AreEqual(acknowledgementBeforeResponse ? expected.LastAccessed.UtcDateTime
-            : new[] { accessed, expected.LastAccessed.UtcDateTime }.Max(), saved.LastAccessed);
-        Assert.AreEqual(acknowledgementBeforeResponse ? expected.CreateTime.UtcDateTime
-            : new[] { created, expected.CreateTime.UtcDateTime }.Min(), saved.Timestamp);
+        Assert.AreEqual(new[] { accessed, expected.LastAccessed.UtcDateTime }.Max(), saved.LastAccessed);
+        Assert.AreEqual(new[] { created, expected.CreateTime.UtcDateTime }.Min(), saved.Timestamp);
         Assert.AreEqual(expected.Text, saved.Text);
         Assert.AreEqual(expected.Size, saved.Size);
         Assert.IsTrue(saved.IsLocalFileReady);
