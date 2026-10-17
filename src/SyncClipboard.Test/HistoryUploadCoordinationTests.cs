@@ -1,5 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using ObservableCollections;
+using SyncClipboard.Core.ViewModels;
+using SyncClipboard.Core.ViewModels.Sub;
+using System.Threading.Channels;
 using SyncClipboard.Core;
 using Moq;
 using SyncClipboard.Core.Commons;
@@ -113,6 +117,18 @@ public class HistoryUploadCoordinationTests
         record.TransferDataHash = null;
         record.IsLocalFileReady = false;
         await f.Db.SaveChangesAsync(Token);
+        var patchEntered = Signal();
+        var releasePatch = Signal();
+        f.Server.Setup(x => x.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
+            It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
+            .Returns<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>(async (_, _, dto, ct) =>
+            {
+                Interlocked.Increment(ref f.Updates);
+                patchEntered.TrySetResult(true);
+                await releasePatch.Task.WaitAsync(ct);
+                f.RemoteRecord.Version = dto.Version!.Value;
+                f.RemoteRecord.Starred = dto.Starred!.Value;
+            });
         _ = f.CreateSyncer();
         var synced = Signal();
         f.Manager.HistoryUpdated += updated =>
@@ -120,7 +136,17 @@ public class HistoryUploadCoordinationTests
             if (updated.SyncStatus == HistorySyncStatus.Synced)
                 synced.TrySetResult(true);
         };
-        await f.Queue.Upload(profile, ct: Token);
+        try
+        {
+            await f.Queue.Upload(profile, ct: Token);
+            if (!remoteNewer)
+                await patchEntered.Task.WaitAsync(TimeSpan.FromSeconds(5), Token);
+            Assert.AreEqual(remoteNewer ? 0 : 1, f.Updates);
+        }
+        finally
+        {
+            releasePatch.TrySetResult(true);
+        }
         await synced.Task.WaitAsync(TimeSpan.FromSeconds(5), Token);
         await f.Queue.Upload(profile, ct: Token);
         Assert.AreEqual(0, f.Uploads);
@@ -367,6 +393,8 @@ public class HistoryUploadCoordinationTests
         SetObjectField(f.Queue, "_isQueueStopped", true);
         var entered = Signal();
         var release = Signal();
+        var notifications = Channel.CreateUnbounded<TransferTask>();
+        f.Queue.TaskStatusChanged += (_, changed) => notifications.Writer.TryWrite(changed);
         CancellationToken requestToken = default;
         TransferTask? replacement = null;
         f.Server.Setup(x => x.UploadHistoryAsync(It.IsAny<HistoryRecordDto>(), It.IsAny<FileHashInfo?>(),
@@ -422,6 +450,29 @@ public class HistoryUploadCoordinationTests
         Assert.IsNotNull(replacement);
         Assert.AreSame(replacement, f.Queue.GetTaskByProfileId(await profile.GetProfileId(Token)));
         Assert.IsFalse(replacement.CompletionSource.Task.IsCompleted);
+        notifications.Writer.Complete();
+        await AssertReplacementRemainsVisibleAsync(f, profile, notifications);
+    }
+
+    private async Task AssertReplacementRemainsVisibleAsync(
+        Fixture fixture, Profile profile, Channel<TransferTask> notifications)
+    {
+        var dispatcher = new Mock<IThreadDispatcher>();
+        dispatcher.Setup(x => x.RunOnMainThreadAsync(It.IsAny<Func<Task>>()))
+            .Returns<Func<Task>>(action => action());
+        var viewModel = (HistoryViewModel)RuntimeHelpers.GetUninitializedObject(typeof(HistoryViewModel));
+        var record = await fixture.Manager.GetHistoryRecord(await profile.GetHash(Token), profile.Type, Token);
+        Assert.IsNotNull(record);
+        var item = new HistoryRecordVM(record);
+        SetObjectField(viewModel, "_threadDispatcher", dispatcher.Object);
+        SetObjectField(viewModel, "_transferQueue", fixture.Queue);
+        SetObjectField(viewModel, "_updateTaskQueue", notifications);
+        SetObjectField(viewModel, "allHistoryItems", new ObservableList<HistoryRecordVM> { item });
+        var consume = typeof(HistoryViewModel).GetMethod("ConsumeUpdateTaskQueueAsync",
+            BindingFlags.Instance | BindingFlags.NonPublic)!;
+        await ((Task)consume.Invoke(viewModel, [Token])!).WaitAsync(TimeSpan.FromSeconds(5), Token);
+        Assert.IsTrue(item.IsUploading);
+        Assert.IsTrue(item.IsUploadPending);
     }
 
     [TestMethod]
@@ -879,7 +930,8 @@ public class HistoryUploadCoordinationTests
         public ScopeGuard UseApplication()
         {
             var previous = AppCore.TryGetCurrent();
-            var services = new ServiceCollection().AddSingleton<IProfileEnv>(this).AddSingleton(UserConfig).BuildServiceProvider();
+            var services = new ServiceCollection().AddSingleton<IProfileEnv>(this).AddSingleton(UserConfig)
+                .AddSingleton(Mock.Of<IThreadDispatcher>()).BuildServiceProvider();
             var app = (AppCore)RuntimeHelpers.GetUninitializedObject(typeof(AppCore));
             SetObjectField(app, "<Services>k__BackingField", services);
             SetObjectField(app, "<ConfigManager>k__BackingField", UserConfig);

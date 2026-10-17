@@ -178,16 +178,16 @@ public class HistoryTransferQueue : IDisposable
         }
     }
 
-    public TransferTask? GetTaskByProfileId(string profileId)
+    public TransferTask? GetTaskByProfileId(string profileId, TransferType? type = null)
     {
         var downloadTaskId = TransferTask.GetTaskId(TransferType.Download, profileId);
-        if (_activeTasks.TryGetValue(downloadTaskId, out var downloadTask))
+        if (type != TransferType.Upload && _activeTasks.TryGetValue(downloadTaskId, out var downloadTask))
         {
             return downloadTask;
         }
 
         var uploadTaskId = TransferTask.GetTaskId(TransferType.Upload, profileId);
-        if (_activeTasks.TryGetValue(uploadTaskId, out var uploadTask))
+        if (type != TransferType.Download && _activeTasks.TryGetValue(uploadTaskId, out var uploadTask))
         {
             return uploadTask;
         }
@@ -636,12 +636,12 @@ public class HistoryTransferQueue : IDisposable
         if (remote is { IsDeleted: false })
         {
             // Existing content needs no transfer; normal history events handle any pending property changes.
-            await _historyManager.SyncRemoteHistoryAsync([remote], ct);
             if (profile.HasTransferData && await profile.IsDataComplete(false, ct))
             {
                 var localRecord = await _historyManager.ToHistoryRecord(profile, ct);
                 await _historyManager.UpdateHistoryLocalInfo(localRecord, ct);
             }
+            await _historyManager.SyncRemoteHistoryAsync([remote], ct);
             return;
         }
         if (record.IsDeleted && !task.IsImmediateTask)
