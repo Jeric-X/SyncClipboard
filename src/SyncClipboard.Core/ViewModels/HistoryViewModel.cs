@@ -1765,6 +1765,9 @@ public partial class HistoryViewModel : ObservableObject
             {
                 await _threadDispatcher.RunOnMainThreadAsync(async () =>
                 {
+                    var currentTask = _transferQueue.GetTaskByProfileId(task.ProfileId, task.Type);
+                    if (currentTask is not null && !ReferenceEquals(currentTask, task))
+                        return;
                     if (SelectedFilter == HistoryFilterType.Transferring)
                     {
                         await UpdateRecordFromTaskInTransferFilter(task, token);

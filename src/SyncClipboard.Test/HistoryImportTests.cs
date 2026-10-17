@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using SyncClipboard.Core;
 using SyncClipboard.Core.Exceptions;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer;
@@ -106,6 +108,23 @@ public class HistoryImportTests
         {
             using var plan = await HistoryImporter.PrepareAsync(path, token);
             return await Importer.ImportAsync(plan, progress, token);
+        }
+
+        public ScopeGuard UseApplication()
+        {
+            var previous = AppCore.TryGetCurrent();
+            var services = new ServiceCollection().AddSingleton<IProfileEnv>(this).AddSingleton(Config)
+                .BuildServiceProvider();
+            var app = (AppCore)RuntimeHelpers.GetUninitializedObject(typeof(AppCore));
+            SetPrivateField(app, "<Services>k__BackingField", services);
+            SetPrivateField(app, "<ConfigManager>k__BackingField", Config);
+            var current = typeof(AppCore).GetField("_current", BindingFlags.Static | BindingFlags.NonPublic)!;
+            current.SetValue(null, app);
+            return new ScopeGuard(() =>
+            {
+                current.SetValue(null, previous);
+                services.Dispose();
+            });
         }
 
         public async ValueTask DisposeAsync()
@@ -255,6 +274,7 @@ public class HistoryImportTests
     {
         await using var f = new Fixture();
         await f.InitializeAsync(Token);
+        using var application = f.UseApplication();
         var record = new HistoryRecord
         {
             Type = ProfileType.Text,
@@ -292,7 +312,25 @@ public class HistoryImportTests
         var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
         SetPrivateField(factory, "_current", remote.Object);
         SetPrivateField(factory, "_serverStateLock", new Lock());
+        var runtime = new ConfigBase(Path.Combine(f.Root, "runtime.json"));
+        using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), factory, f.Manager, f, f.Config, runtime);
+        var releaseUpload = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        server.Setup(x => x.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns<string, CancellationToken>(async (_, ct) =>
+            {
+                await releaseUpload.Task.WaitAsync(ct);
+                return null;
+            });
+        server.Setup(x => x.UploadHistoryAsync(It.IsAny<HistoryRecordDto>(), It.IsAny<FileHashInfo?>(),
+                It.IsAny<IProgress<HttpDownloadProgress>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((HistoryRecordDto dto, FileHashInfo? data, IProgress<HttpDownloadProgress> progress, CancellationToken ct) =>
+            {
+                Assert.IsFalse(dto.IsDeleted);
+                dto.Version = 21;
+                return dto;
+            });
         var syncer = (HistorySyncer)RuntimeHelpers.GetUninitializedObject(typeof(HistorySyncer));
+        SetPrivateField(syncer, "_historyTransferQueue", queue);
         SetPrivateField(syncer, "_historyManager", f.Manager);
         SetPrivateField(syncer, "_remoteServerFactory", factory);
         SetPrivateField(syncer, "_logger", Mock.Of<ILogger>());
@@ -311,21 +349,8 @@ public class HistoryImportTests
         Assert.AreEqual(response == 409 ? 20 : 8, saved.Version);
         if (response == 404)
         {
-            server.Setup(x => x.GetHistoryByProfileIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((HistoryRecordDto?)null);
-            server.Setup(x => x.UploadHistoryAsync(It.IsAny<HistoryRecordDto>(), It.IsAny<FileHashInfo?>(),
-                    It.IsAny<IProgress<HttpDownloadProgress>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync((HistoryRecordDto dto, FileHashInfo? data, IProgress<HttpDownloadProgress> progress, CancellationToken ct) =>
-                {
-                    Assert.IsFalse(dto.IsDeleted);
-                    dto.Version = 21;
-                    return dto;
-                });
-            var runtime = new ConfigBase(Path.Combine(f.Root, "runtime.json"));
-            using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), factory, f.Manager, f, f.Config, runtime);
-            var task = await queue.EnqueueUpload(new TextProfile(saved.Text), ct: Token);
-            Assert.AreEqual(TransferTaskStatus.Completed,
-                await task.CompletionSource.Task.WaitAsync(TimeSpan.FromSeconds(10), Token), task.ErrorMessage);
+            releaseUpload.TrySetResult(true);
+            await queue.WaitAllTasks(Token).WaitAsync(TimeSpan.FromSeconds(10), Token);
             f.Db.ChangeTracker.Clear();
             var uploaded = await f.Db.HistoryRecords.SingleAsync(Token);
             Assert.AreEqual(HistorySyncStatus.Synced, uploaded.SyncStatus);

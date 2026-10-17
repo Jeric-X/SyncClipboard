@@ -416,6 +416,7 @@ namespace SyncClipboard.Core
             services.AddTransient<HistoryImportViewModel>();
             services.AddTransient<HistoryExportViewModel>();
             services.AddSingleton<HistorySyncer>();
+            services.AddSingleton<HistorySyncSession>();
             services.AddSingleton<HistoryTransferQueue>();
 
             services.AddSingleton<IHttp, Http>();

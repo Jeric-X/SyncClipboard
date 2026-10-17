@@ -27,10 +27,18 @@ class Program
         }
         catch (Exception e)
         {
-            var path = Path.Combine(Env.LogFolder, $"{DateTime.Now:yyyy-MM-dd HH-mm-ss}.dmp");
-            File.WriteAllText(path + ".txt", $"UnhandledException {e.GetType()} {e.Message} \n{e.StackTrace}");
-            App.Current?.Logger?.Write($"UnhandledException {e.GetType()} {e.Message} \n {e.StackTrace}");
-            App.Current?.AppCore?.ExitAsync().GetAwaiter().GetResult();
+            try
+            {
+                var path = Path.Combine(Env.LogFolder, $"{DateTime.Now:yyyy-MM-dd HH-mm-ss}.dmp");
+                File.WriteAllText(path + ".txt", $"UnhandledException {e.GetType()} {e.Message} \n{e.StackTrace}");
+                App.Current?.Logger?.Write($"UnhandledException {e.GetType()} {e.Message} \n {e.StackTrace}");
+                App.Current?.Logger?.Flush();
+            }
+            finally
+            {
+                // The UI loop has exited; graceful shutdown can no longer dispatch work to it.
+                Environment.Exit((int)ReturnCode.UnhandledException);
+            }
         }
     }
 
