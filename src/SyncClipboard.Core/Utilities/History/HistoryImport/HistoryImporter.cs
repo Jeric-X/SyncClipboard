@@ -142,7 +142,7 @@ public sealed class HistoryImporter
             }
             progress?.Report(i + 1);
         }
-        await report.CompleteAsync(token).ConfigureAwait(false);
+        await report.CompleteAsync(CancellationToken.None).ConfigureAwait(false);
         return result;
     }
 
@@ -251,7 +251,7 @@ public sealed class HistoryImporter
             Type = type,
             Hash = item.Hash.ToUpperInvariant(),
             Text = item.Text,
-            Size = item.Size,
+            Size = data.Size,
             FilePath = data.FilePaths,
             TransferDataFile = data.TransferDataFile,
             TransferDataHash = data.TransferDataHash,
@@ -336,7 +336,8 @@ public sealed class HistoryImporter
         var entry = plan.GetTransferEntry(data.Path);
         if (entry.Length != data.Size)
             throw new InvalidDataException("Transfer size mismatch.");
-        FileSys.EnsureAvailableSpace(data.Size, availableSpace(directory));
+        var requiredSpace = item.ProfileType == ProfileType.Group ? checked(data.Size + item.Size) : data.Size;
+        FileSys.EnsureAvailableSpace(requiredSpace, availableSpace(directory));
         var path = Path.Combine(directory, data.Name);
         await using (var source = entry.Open())
         await using (var output = new FileStream(path, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, useAsync: true))

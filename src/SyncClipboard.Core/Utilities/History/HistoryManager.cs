@@ -275,8 +275,18 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 
     private async Task RefreshImportedRecordAsync(HistoryRecord record, CancellationToken token)
     {
-        TouchImportedRecord(record);
-        await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
+        var entry = _dbContext.Entry(record);
+        var original = entry.CurrentValues.Clone();
+        try
+        {
+            TouchImportedRecord(record);
+            await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
+        }
+        catch
+        {
+            entry.CurrentValues.SetValues(original);
+            throw;
+        }
     }
 
     private static void TouchImportedRecord(HistoryRecord record)
@@ -310,10 +320,10 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     private async Task<HistoryImportOutcome> RepairImportedRecordAsync(
         HistoryRecord existing, HistoryRecord record, string? importDirectory, CancellationToken token)
     {
+        var entry = _dbContext.Entry(existing);
+        var original = entry.CurrentValues.Clone();
         var oldPaths = existing.FilePath;
         var oldFile = existing.TransferDataFile;
-        var oldHash = existing.TransferDataHash;
-        var oldReady = existing.IsLocalFileReady;
         string? movedDirectory = null;
         try
         {
@@ -329,10 +339,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         }
         catch
         {
-            existing.FilePath = oldPaths;
-            existing.TransferDataFile = oldFile;
-            existing.TransferDataHash = oldHash;
-            existing.IsLocalFileReady = oldReady;
+            entry.CurrentValues.SetValues(original);
             if (movedDirectory is not null)
                 Directory.Delete(movedDirectory, recursive: true);
             throw;

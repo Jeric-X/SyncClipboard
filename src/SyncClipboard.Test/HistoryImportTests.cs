@@ -151,6 +151,17 @@ public class HistoryImportTests
         foreach (var profile in profiles)
             records.Add(await f.RecordAsync(profile, Token));
         var backup = await f.ExportAsync([.. records], Token);
+        using (var zip = ZipFile.Open(backup, ZipArchiveMode.Update))
+        {
+            var manifest = zip.GetEntry("history.json")!;
+            HistoryExportDocument document;
+            using (var input = manifest.Open())
+                document = (await JsonSerializer.DeserializeAsync<HistoryExportDocument>(input, HistoryExporter.JsonOptions, Token))!;
+            document = document with { Records = document.Records.Select(record => record with { Size = record.Size + 1 }).ToArray() };
+            manifest.Delete();
+            await using var output = zip.CreateEntry("history.json").Open();
+            await JsonSerializer.SerializeAsync(output, document, HistoryExporter.JsonOptions, Token);
+        }
         var syncNotifications = new List<HistoryRecord>();
         f.Manager.HistoryAdded += record => syncNotifications.Add(record);
         f.Manager.HistoryUpdated += record => syncNotifications.Add(record);
@@ -511,15 +522,24 @@ public class HistoryImportTests
     {
         await using var f = new Fixture();
         await f.InitializeAsync(Token);
-        var backup = await f.ExportAsync([await f.RecordAsync(new TextProfile("one"), Token), await f.RecordAsync(new TextProfile("two"), Token)], Token);
+        var first = await f.RecordAsync(new TextProfile("one"), Token);
+        var later = await f.RecordAsync(new TextProfile("two"), Token);
+        var document = new HistoryExportDocument("syncclipboard-history", 1, "test", DateTime.UtcNow, [first, null!, later]);
+        var backup = Path.Combine(f.Root, "backup.json");
+        await File.WriteAllTextAsync(backup, JsonSerializer.Serialize(document, HistoryExporter.JsonOptions), Token);
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(Token);
-        var result = await f.ImportAsync(backup, cancellation.Token, new InlineProgress(_ =>
+        var result = await f.ImportAsync(backup, cancellation.Token, new InlineProgress(count =>
         {
-            cancellation.Cancel();
+            if (count == 2)
+                cancellation.Cancel();
         }));
         Assert.IsTrue(result.Canceled);
         Assert.AreEqual(1, result.ImportedCount);
+        Assert.AreEqual(1, result.FailureCount);
         Assert.HasCount(1, await f.Db.HistoryRecords.ToListAsync(Token));
+        Assert.IsNotNull(result.ReportPath);
+        Assert.IsNull(result.ReportError);
+        Assert.Contains("2. -: Unsupported record type.", await File.ReadAllTextAsync(result.ReportPath, Token));
     }
 
     [TestMethod]
@@ -902,6 +922,7 @@ public class HistoryImportTests
         };
         f.Db.HistoryRecords.Add(local);
         await f.Db.SaveChangesAsync(Token);
+        var original = (HistoryRecord)f.Db.Entry(local).CurrentValues.ToObject();
         if (rejectCommit)
             await f.Db.Database.ExecuteSqlRawAsync("CREATE TRIGGER reject_repair BEFORE UPDATE ON HistoryRecords BEGIN SELECT RAISE(ABORT, 'rejected'); END;", Token);
         var result = await f.ImportAsync(backup, Token);
@@ -913,6 +934,11 @@ public class HistoryImportTests
         Assert.AreEqual("preserve", await File.ReadAllTextAsync(external, Token));
         if (!rejectCommit)
             Assert.IsTrue(File.Exists(Profile.GetFullPath(f.GetHistoryPersistentDir(), local.Type, local.Hash, local.TransferDataFile)));
+        else
+        {
+            await f.Db.Database.ExecuteSqlRawAsync("DROP TRIGGER reject_repair;", Token);
+            await SaveAnotherRecordAndAssertUnchangedAsync(f, original);
+        }
     }
 
     [TestMethod]
@@ -935,12 +961,32 @@ public class HistoryImportTests
         };
         f.Db.HistoryRecords.Add(existing);
         await f.Db.SaveChangesAsync(Token);
+        var original = (HistoryRecord)f.Db.Entry(existing).CurrentValues.ToObject();
         await f.Db.Database.ExecuteSqlRawAsync("CREATE TRIGGER reject_refresh BEFORE UPDATE ON HistoryRecords BEGIN SELECT RAISE(ABORT, 'rejected'); END;", Token);
         var notifications = 0;
         f.Manager.HistoryUpdated += _ => notifications++;
         var result = await f.ImportAsync(backup, Token);
         Assert.AreEqual(1, result.FailureCount);
         Assert.AreEqual(0, notifications);
+        await f.Db.Database.ExecuteSqlRawAsync("DROP TRIGGER reject_refresh;", Token);
+        await SaveAnotherRecordAndAssertUnchangedAsync(f, original);
+    }
+
+    private async Task SaveAnotherRecordAndAssertUnchangedAsync(Fixture f, HistoryRecord original)
+    {
+        var next = await f.RecordAsync(new TextProfile("next successful record"), Token);
+        var result = await f.ImportAsync(await f.ExportAsync([next], Token), Token);
+        Assert.AreEqual(1, result.ImportedCount);
+        var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(record => record.Hash == original.Hash, Token);
+        Assert.AreEqual(original.IsDeleted, saved.IsDeleted);
+        Assert.AreEqual(original.LastModified, saved.LastModified);
+        Assert.AreEqual(original.LastAccessed, saved.LastAccessed);
+        Assert.AreEqual(original.Version, saved.Version);
+        Assert.AreEqual(original.SyncStatus, saved.SyncStatus);
+        Assert.AreEqual(original.IsLocalFileReady, saved.IsLocalFileReady);
+        Assert.AreEqual(original.TransferDataFile, saved.TransferDataFile);
+        Assert.AreEqual(original.TransferDataHash, saved.TransferDataHash);
+        CollectionAssert.AreEqual(original.FilePath, saved.FilePath);
     }
 
     [TestMethod]
@@ -1105,13 +1151,14 @@ public class HistoryImportTests
         var later = await f.RecordAsync(new TextProfile("not processed"), Token);
         var backup = await f.ExportAsync([first with { Timestamp = attachment.Timestamp.AddDays(1) },
             attachment, later with { Timestamp = attachment.Timestamp.AddDays(-1) }], Token);
+        using var plan = await HistoryImporter.PrepareAsync(backup, Token);
+        var transferSize = plan.Records.Single(record => record!.Hash == attachment.Hash)!.TransferData!.Size;
         var checks = 0;
         var importer = new HistoryImporter(f, f.Manager, _ =>
         {
             checks++;
-            return 0;
+            return group ? transferSize : 0;
         });
-        using var plan = await HistoryImporter.PrepareAsync(backup, Token);
         var result = await importer.ImportAsync(plan, null, Token);
         Assert.AreEqual(1, result.ImportedCount);
         Assert.IsNotNull(result.Error);
