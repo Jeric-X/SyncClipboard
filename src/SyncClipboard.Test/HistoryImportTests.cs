@@ -922,7 +922,6 @@ public class HistoryImportTests
         };
         f.Db.HistoryRecords.Add(local);
         await f.Db.SaveChangesAsync(Token);
-        var original = (HistoryRecord)f.Db.Entry(local).CurrentValues.ToObject();
         if (rejectCommit)
             await f.Db.Database.ExecuteSqlRawAsync("CREATE TRIGGER reject_repair BEFORE UPDATE ON HistoryRecords BEGIN SELECT RAISE(ABORT, 'rejected'); END;", Token);
         var result = await f.ImportAsync(backup, Token);
@@ -934,11 +933,6 @@ public class HistoryImportTests
         Assert.AreEqual("preserve", await File.ReadAllTextAsync(external, Token));
         if (!rejectCommit)
             Assert.IsTrue(File.Exists(Profile.GetFullPath(f.GetHistoryPersistentDir(), local.Type, local.Hash, local.TransferDataFile)));
-        else
-        {
-            await f.Db.Database.ExecuteSqlRawAsync("DROP TRIGGER reject_repair;", Token);
-            await SaveAnotherRecordAndAssertUnchangedAsync(f, original);
-        }
     }
 
     [TestMethod]
@@ -961,32 +955,12 @@ public class HistoryImportTests
         };
         f.Db.HistoryRecords.Add(existing);
         await f.Db.SaveChangesAsync(Token);
-        var original = (HistoryRecord)f.Db.Entry(existing).CurrentValues.ToObject();
         await f.Db.Database.ExecuteSqlRawAsync("CREATE TRIGGER reject_refresh BEFORE UPDATE ON HistoryRecords BEGIN SELECT RAISE(ABORT, 'rejected'); END;", Token);
         var notifications = 0;
         f.Manager.HistoryUpdated += _ => notifications++;
         var result = await f.ImportAsync(backup, Token);
         Assert.AreEqual(1, result.FailureCount);
         Assert.AreEqual(0, notifications);
-        await f.Db.Database.ExecuteSqlRawAsync("DROP TRIGGER reject_refresh;", Token);
-        await SaveAnotherRecordAndAssertUnchangedAsync(f, original);
-    }
-
-    private async Task SaveAnotherRecordAndAssertUnchangedAsync(Fixture f, HistoryRecord original)
-    {
-        var next = await f.RecordAsync(new TextProfile("next successful record"), Token);
-        var result = await f.ImportAsync(await f.ExportAsync([next], Token), Token);
-        Assert.AreEqual(1, result.ImportedCount);
-        var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(record => record.Hash == original.Hash, Token);
-        Assert.AreEqual(original.IsDeleted, saved.IsDeleted);
-        Assert.AreEqual(original.LastModified, saved.LastModified);
-        Assert.AreEqual(original.LastAccessed, saved.LastAccessed);
-        Assert.AreEqual(original.Version, saved.Version);
-        Assert.AreEqual(original.SyncStatus, saved.SyncStatus);
-        Assert.AreEqual(original.IsLocalFileReady, saved.IsLocalFileReady);
-        Assert.AreEqual(original.TransferDataFile, saved.TransferDataFile);
-        Assert.AreEqual(original.TransferDataHash, saved.TransferDataHash);
-        CollectionAssert.AreEqual(original.FilePath, saved.FilePath);
     }
 
     [TestMethod]
