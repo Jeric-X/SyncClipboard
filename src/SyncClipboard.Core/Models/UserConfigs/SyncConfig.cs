@@ -15,6 +15,8 @@ public record class SyncConfig
     public bool EnableUploadSingleFile { get; set; } = true;
     public bool EnableUploadMultiFile { get; set; } = true;
     public bool NotifyOnDownloaded { get; set; } = true;
+    // Remove sync notifications after this many seconds; non-positive values disable automatic removal.
+    public int NotificationDurationSeconds { get; set; } = 10;
     public bool DoNotUploadWhenCut { get; set; } = false;
     public bool NotifyOnManualUpload { get; set; } = false;
     public bool NotifyFileSyncProgress { get; set; } = true;
