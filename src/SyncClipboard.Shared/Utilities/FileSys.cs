@@ -7,6 +7,12 @@ public static class FileSys
     private const int WindowsHandleDiskFull = 39;
     private const int WindowsDiskFull = 112;
 
+    public static void EnsureAvailableSpace(long requiredBytes, long availableBytes)
+    {
+        if (requiredBytes > availableBytes)
+            throw new IOException("Insufficient disk space.", WindowsDiskFull);
+    }
+
     public static bool IsDiskFull(Exception ex) =>
         (ex is IOException && (ex.HResult & HResultCodeMask) is UnixNoSpaceLeft or WindowsHandleDiskFull or WindowsDiskFull)
         || (ex.InnerException is { } inner && IsDiskFull(inner));
