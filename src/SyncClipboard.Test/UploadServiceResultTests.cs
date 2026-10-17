@@ -249,9 +249,7 @@ public class UploadServiceResultTests
             // Isolate the real upload/retry/notification flow from application startup and external accounts.
             var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
             SetField(factory, "_current", Server.Object);
-#pragma warning disable CS9216 // Reflection requires object; the target field is still typed and used as Lock.
             SetField(factory, "_serverStateLock", new Lock());
-#pragma warning restore CS9216
             _download = (DownloadService)RuntimeHelpers.GetUninitializedObject(typeof(DownloadService));
             SetField(_download, "_remoteProfileCache", _previousProfile);
             _upload = (UploadService)RuntimeHelpers.GetUninitializedObject(typeof(UploadService));
@@ -262,9 +260,7 @@ public class UploadServiceResultTests
             SetField(_upload, "_remoteClipboardServerFactory", factory);
             SetField(_upload, "_syncConfig", Config);
             SetField(_upload, "_profileCache", _previousProfile);
-#pragma warning disable CS9216 // Reflection requires object; the target field is still typed and used as Lock.
             SetField(_upload, "_cancelSourceLocker", new Lock(), typeof(ClipboardHander));
-#pragma warning restore CS9216
             typeof(UploadService).GetProperty("DownloadService", BindingFlags.Instance | BindingFlags.NonPublic)!
                 .SetValue(_upload, _download);
             _upload.PushStarted += () => StartCount++;
