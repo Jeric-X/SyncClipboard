@@ -575,6 +575,48 @@ public class HistoryTransferDataHashTests
         await writer.WriteAsync(content.AsMemory(), token);
     }
 
+    [TestMethod]
+    [DataRow(false, true)]
+    [DataRow(true, true)]
+    [DataRow(false, false)]
+    [DataRow(true, false)]
+    public async Task UpdateDeletedRecord_RespectsConflictAndRequiresAttachmentUpload(bool attachment, bool localWins)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var fixture = await TestFixture.CreateAsync(token);
+        var stamp = DateTime.UtcNow;
+        var entity = new HistoryRecordEntity
+        {
+            UserId = "user",
+            Type = attachment ? ProfileType.File : ProfileType.Text,
+            Hash = new string('A', 64),
+            IsDeleted = true,
+            TransferDataFile = attachment ? "removed.txt" : string.Empty,
+            Version = 7,
+            LastModified = stamp
+        };
+        fixture.DbContext.HistoryRecords.Add(entity);
+        await fixture.DbContext.SaveChangesAsync(token);
+        var (updated, server) = await fixture.Service.Update("user", entity.Type, entity.Hash,
+            new HistoryRecordUpdateDto
+            {
+                IsDelete = false,
+                Version = localWins ? 8 : 6,
+                LastModified = stamp,
+                Starred = true
+            }, token);
+        Assert.AreEqual<bool?>(localWins ? (attachment ? null : true) : false, updated);
+        await fixture.DbContext.Entry(entity).ReloadAsync(token);
+        Assert.AreEqual(!localWins || attachment, entity.IsDeleted);
+        Assert.AreEqual(localWins && !attachment ? 8 : 7, entity.Version);
+        if (!localWins)
+        {
+            Assert.IsNotNull(server);
+            Assert.IsTrue(server.IsDeleted);
+            Assert.AreEqual(7, server.Version);
+        }
+    }
+
     private sealed class TestFixture : IAsyncDisposable
     {
         private TestFixture(

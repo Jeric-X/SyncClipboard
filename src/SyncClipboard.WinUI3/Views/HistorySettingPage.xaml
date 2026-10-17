@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <Page x:Class="SyncClipboard.WinUI3.Views.HistorySettingPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -45,8 +45,11 @@
                                SpinButtonPlacementMode="Inline"
                                SmallChange="1" />
                 </ui:SettingsCard>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryExport}">
-                    <Button Content="{x:Bind i18n:Strings.HistoryExport}" Command="{x:Bind _viewModel.ExportHistoryCommand}" />
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryBackup}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="{x:Bind i18n:Strings.Import}" Command="{x:Bind _viewModel.ImportHistoryCommand}" />
+                        <Button Content="{x:Bind i18n:Strings.Export}" Command="{x:Bind _viewModel.ExportHistoryCommand}" />
+                    </StackPanel>
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.ClearLocalHistory}" Description="{x:Bind i18n:Strings.ClearLocalHistoryDescription}">
                     <Button Content="{x:Bind i18n:Strings.ClearLocalHistory}" Command="{x:Bind _viewModel.ClearLocalHistoryCommand}" />
