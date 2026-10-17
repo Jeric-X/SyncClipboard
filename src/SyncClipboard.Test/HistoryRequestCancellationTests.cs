@@ -50,13 +50,13 @@ public class HistoryRequestCancellationTests
         server.Setup(s => s.GetServerTimeAsync(It.IsAny<CancellationToken>())).ReturnsAsync(() => DateTimeOffset.Now);
         using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), factory, manager, null!, null!, runtime);
         var service = (ClientHistoryService)RuntimeHelpers.GetUninitializedObject(typeof(ClientHistoryService));
-        SetServiceField(service, "runTimeConfig", runtime);
-        SetServiceField(service, "syncSession", session);
-        SetServiceField(service, "_historySyncServer", server.Object);
-        SetServiceField(service, "historySyncer", syncer);
-        SetServiceField(service, "historyManager", manager);
-        SetServiceField(service, "historyTransferQueue", queue);
-        SetServiceField(service, "trayIcon", Mock.Of<ITrayIcon>());
+        SetField(service, "runTimeConfig", runtime);
+        SetField(service, "syncSession", session);
+        SetField(service, "_historySyncServer", server.Object);
+        SetField(service, "historySyncer", syncer);
+        SetField(service, "historyManager", manager);
+        SetField(service, "historyTransferQueue", queue);
+        SetField(service, "trayIcon", Mock.Of<ITrayIcon>());
         var syncTask = typeof(ClientHistoryService).GetMethod("SyncTaskImpl", BindingFlags.Instance | BindingFlags.NonPublic)!;
         var runner = new SingletonTask(token => (Task)syncTask.Invoke(service, [token])!);
         var syncing = runner.Run();
@@ -112,18 +112,16 @@ public class HistoryRequestCancellationTests
         Assert.AreEqual(3, record.Version);
     }
 
-    private static void SetServiceField(ClientHistoryService service, string name, object value)
+    private static void SetField<T>(object target, string name, T value)
     {
-        typeof(ClientHistoryService).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(service, value);
+        target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(target, value);
     }
 
     private static RemoteClipboardServerFactory CreateFactory(IRemoteClipboardServer server)
     {
         var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
-        typeof(RemoteClipboardServerFactory).GetField("_current", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .SetValue(factory, server);
-        typeof(RemoteClipboardServerFactory).GetField("_serverStateLock", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .SetValue(factory, new Lock());
+        SetField(factory, "_current", server);
+        SetField(factory, "_serverStateLock", new Lock());
         return factory;
     }
 
