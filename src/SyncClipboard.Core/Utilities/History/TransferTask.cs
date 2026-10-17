@@ -36,11 +36,11 @@ public class TransferTask
     public DateTime? StartedTime { get; set; }
     public DateTime? CompletedTime { get; set; }
 
-    public Profile Profile { get; init; } = null!;
+    public Profile Profile { get; set; } = null!;
     public CancellationTokenSource CancellationSource { get; set; } = null!;
 
     // 任务完成信号
-    public TaskCompletionSource<TransferTaskStatus> CompletionSource { get; init; } = new();
+    public TaskCompletionSource<TransferTaskStatus> CompletionSource { get; init; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     public static string GetTaskId(TransferType type, string profileId)
     {

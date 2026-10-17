@@ -232,6 +232,12 @@ public class HistorySyncer
         {
             record.SyncStatus = HistorySyncStatus.LocalOnly;
             await _historyManager.PersistServerSyncedAsync(record, token);
+            if (!record.IsDeleted)
+            {
+                var profile = record.ToProfile();
+                if (await profile.IsDataComplete(false, token) && await CanUploadLocalProfileAsync(profile, token))
+                    await _historyTransferQueue.EnqueueUpload(profile, forceResume: true, token);
+            }
         }
     }
 
@@ -434,13 +440,8 @@ public class HistorySyncer
     {
         try
         {
-            // 如果已启用剪贴板同步且启用拉取，直接返回
-            var syncConfig = _configManager.GetConfig<SyncConfig>();
-            if (syncConfig.SyncSwitchOn && syncConfig.PullSwitchOn)
-            {
+            if (record.SyncStatus != HistorySyncStatus.LocalOnly)
                 return;
-            }
-
             var runtimeHistoryConfig = _runtimeConfig.GetConfig<RuntimeHistoryConfig>();
             if (runtimeHistoryConfig.EnableSyncHistory is false)
             {

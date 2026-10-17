@@ -6,7 +6,7 @@ using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer;
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
+using SyncClipboard.Server.Core.Models;
 
 namespace SyncClipboard.Core.Utilities.History;
 
@@ -57,7 +57,7 @@ public class HistoryTransferQueue : IDisposable
 
     public async Task<TransferTask> EnqueueDownload(Profile profile, bool forceResume = false, CancellationToken ct = default)
     {
-        return await EnqueueTask(TransferType.Download, profile, forceResume, ct);
+        return await EnqueueTask(TransferType.Download, profile, forceResume, ct: ct);
     }
 
     public async Task<TransferTask> EnqueueUpload(Profile profile, bool forceResume = false, CancellationToken ct = default)
@@ -75,46 +75,79 @@ public class HistoryTransferQueue : IDisposable
         return ExecuteImmediateTask(TransferType.Upload, profile, progress, ct);
     }
 
-    private bool GetRunningTask(string taskId, [NotNullWhen(true)] out TransferTask? task)
-    {
-        if (_activeTasks.TryGetValue(taskId, out var existingTask))
-        {
-            if (existingTask.Status == TransferTaskStatus.Running)
-            {
-                task = existingTask;
-                return true;
-            }
-            else
-            {
-                try
-                {
-                    existingTask.CancellationSource?.Cancel();
-                }
-                catch { }
-            }
-        }
-
-        task = null;
-        return false;
-    }
-
     private async Task ExecuteImmediateTask(TransferType type, Profile profile, IProgress<HttpDownloadProgress>? progress, CancellationToken ct)
     {
+        var task = await GetOrAddTaskAsync(type, profile, immediate: true, progress, ct);
+        // A pending background task can start immediately; execution is claimed once per task.
+        _ = ExecuteTaskAsync(task);
+        var status = await task.CompletionSource.Task.WaitAsync(ct);
+        if (status != TransferTaskStatus.Completed)
+            throw new InvalidOperationException(task.ErrorMessage ?? $"Transfer {status}");
+        task.Profile.CopyTo(profile);
+    }
+
+    private async Task<TransferTask> EnqueueTask(TransferType type, Profile profile, bool forceResume = false,
+        CancellationToken ct = default)
+    {
+        var task = await GetOrAddTaskAsync(type, profile, immediate: false, null, ct);
+        if (forceResume)
+            ResumeQueue();
+        return task;
+    }
+
+    private async Task<TransferTask> GetOrAddTaskAsync(
+        TransferType type, Profile profile, bool immediate, IProgress<HttpDownloadProgress>? progress,
+        CancellationToken ct)
+    {
         var profileId = await profile.GetProfileId(ct);
-        var taskId = TransferTask.GetTaskId(type, profileId);
-
-        if (GetRunningTask(taskId, out var runningTask))
+        TransferTask task;
+        bool created;
+        await ActiveTaskAddMutex.WaitAsync(ct);
+        try
         {
-            runningTask.IsImmediateTask = true;
-            if (progress != null)
+            // Registration and clearing use the same short lock; no callbacks or awaits inside it.
+            lock (_queueLock)
             {
-                runningTask.ExternalProgressReporter = progress;
+                ct.ThrowIfCancellationRequested();
+                (task, created) = GetOrCreateTask(type, profileId, profile, immediate, progress);
+                if (created && !immediate)
+                    _pendingTasks.Enqueue(task);
             }
-            await runningTask.CompletionSource.Task.WaitAsync(ct);
-            runningTask.Profile.CopyTo(profile);
-            return;
         }
+        finally
+        {
+            ActiveTaskAddMutex.Release();
+        }
+        if (created)
+        {
+            NotifyStatusChanged(task);
+            if (!immediate)
+            {
+                await EnsureProcessingTaskStartedAsync(CancellationToken.None);
+                _queueSignal.Set();
+            }
+        }
+        return task;
+    }
 
+    // Called with _queueLock held. When both locks are needed, always take _queueLock before task.
+    private (TransferTask Task, bool Created) GetOrCreateTask(
+        TransferType type, string profileId, Profile profile, bool immediate, IProgress<HttpDownloadProgress>? progress)
+    {
+        var taskId = TransferTask.GetTaskId(type, profileId);
+        if (_activeTasks.TryGetValue(taskId, out var existingTask))
+        {
+            lock (existingTask)
+            {
+                if (IsActiveTask(existingTask) && existingTask.Status is
+                    (TransferTaskStatus.Pending or TransferTaskStatus.Running or TransferTaskStatus.WaitForRetry))
+                {
+                    MergeTaskRequest(existingTask, profile, immediate, progress);
+                    return (existingTask, false);
+                }
+                RemoveTask(existingTask);
+            }
+        }
         var task = new TransferTask
         {
             ProfileId = profileId,
@@ -123,79 +156,38 @@ public class HistoryTransferQueue : IDisposable
             CreatedTime = DateTime.Now,
             CancellationSource = new CancellationTokenSource(),
             Status = TransferTaskStatus.Pending,
-            IsImmediateTask = true,
+            IsImmediateTask = immediate,
             ExternalProgressReporter = progress
         };
-
-        await ActiveTaskAddMutex.WaitAsync(ct);
-        using (var _ = new ScopeGuard(() => ActiveTaskAddMutex.Release()))
-        {
-            NotifyStatusChanged(task);
-            _activeTasks.AddOrUpdate(task.TaskId, task, (_, _) => task);
-        }
-
-        var status = await ExecuteTaskAsync(task).WaitAsync(ct);
-        if (status != TransferTaskStatus.Completed)
-        {
-            throw new Exception(task.ErrorMessage);
-        }
-    }
-
-    private async Task<TransferTask> EnqueueTask(TransferType type, Profile profile, bool forceResume = false, CancellationToken ct = default)
-    {
-        // 如果需要强制恢复且队列已停止，则恢复队列
-        if (forceResume && _isQueueStopped)
-        {
-            ResumeQueue();
-        }
-
-        var profileId = await profile.GetProfileId(ct);
-        var taskId = TransferTask.GetTaskId(type, profileId);
-
-        if (_activeTasks.TryGetValue(taskId, out var existingTask))
-        {
-            _logger.Write($"{type} 任务 {taskId} 已存在，返回现有任务");
-            return existingTask;
-        }
-
-        var task = new TransferTask
-        {
-            ProfileId = profileId,
-            Type = type,
-            Profile = profile,
-            CreatedTime = DateTime.Now,
-            CancellationSource = new CancellationTokenSource(),
-            Status = TransferTaskStatus.Pending
-        };
-
-        await ActiveTaskAddMutex.WaitAsync(ct);
-        using var _ = new ScopeGuard(() => ActiveTaskAddMutex.Release());
-
         _activeTasks.TryAdd(taskId, task);
-
-        NotifyStatusChanged(task);
-        lock (_queueLock)
-        {
-            _pendingTasks.Enqueue(task);
-        }
-        // await _logger.WriteAsync($"{type} 任务 {taskId} 已加入队列");
-
-        await EnsureProcessingTaskStartedAsync(ct);
-        _queueSignal.Set();
-
-        return task;
+        return (task, true);
     }
 
-    public TransferTask? GetTaskByProfileId(string profileId)
+    // Running requests share the current result; only pending requests replace the content source.
+    private static void MergeTaskRequest(
+        TransferTask task, Profile profile, bool immediate, IProgress<HttpDownloadProgress>? progress)
+    {
+        if (task.Status != TransferTaskStatus.Running && task.Type == TransferType.Upload &&
+            (immediate || !task.IsImmediateTask))
+            task.Profile = profile;
+        if (immediate)
+        {
+            task.IsImmediateTask = true;
+            if (progress is not null)
+                task.ExternalProgressReporter = progress;
+        }
+    }
+
+    public TransferTask? GetTaskByProfileId(string profileId, TransferType? type = null)
     {
         var downloadTaskId = TransferTask.GetTaskId(TransferType.Download, profileId);
-        if (_activeTasks.TryGetValue(downloadTaskId, out var downloadTask))
+        if (type != TransferType.Upload && _activeTasks.TryGetValue(downloadTaskId, out var downloadTask))
         {
             return downloadTask;
         }
 
         var uploadTaskId = TransferTask.GetTaskId(TransferType.Upload, profileId);
-        if (_activeTasks.TryGetValue(uploadTaskId, out var uploadTask))
+        if (type != TransferType.Download && _activeTasks.TryGetValue(uploadTaskId, out var uploadTask))
         {
             return uploadTask;
         }
@@ -251,61 +243,72 @@ public class HistoryTransferQueue : IDisposable
 
     private bool CancelTask(string taskId)
     {
-        if (_activeTasks.TryGetValue(taskId, out var task))
+        if (!_activeTasks.TryGetValue(taskId, out var task))
+            return false;
+        CancelTask(task, backgroundOnly: false);
+        return true;
+    }
+
+    private void CancelTask(TransferTask task, bool backgroundOnly)
+    {
+        if (DetachCancelledTask(task, backgroundOnly))
+            FinishCancellation(task);
+    }
+
+    private bool DetachCancelledTask(TransferTask task, bool backgroundOnly)
+    {
+        lock (task)
         {
+            if (!IsActiveTask(task) || (backgroundOnly && task.IsImmediateTask))
+                return false;
             task.Status = TransferTaskStatus.Cancelled;
-            NotifyStatusChanged(task);
-
-            try
-            {
-                task.CancellationSource?.Cancel();
-            }
-            catch (Exception ex)
-            {
-                _logger.Write($"取消任务 {taskId} 时出错: {ex.Message}");
-            }
-
-            if (task.StartedTime == null)
-            {
-                RemoveTask(task);
-            }
-
+            _activeTasks.TryRemove(new KeyValuePair<string, TransferTask>(task.TaskId, task));
             return true;
         }
+    }
 
-        return false;
+    private void FinishCancellation(TransferTask task)
+    {
+        try
+        {
+            // Cancel invokes callbacks synchronously; never hold a queue/task lock here.
+            task.CancellationSource.Cancel();
+        }
+        catch (AggregateException ex)
+        {
+            _logger.Write($"任务 {task.TaskId} 的取消回调失败: {ex}");
+        }
+        finally
+        {
+            task.CancellationSource.Dispose();
+            task.CompletionSource.TrySetResult(TransferTaskStatus.Cancelled);
+            NotifyStatusChanged(task);
+        }
     }
 
     public void ClearQueue()
     {
         _logger.Write("清空传输队列");
+        CancelTasks(backgroundOnly: false);
+    }
 
-        // 取消所有任务
-        foreach (var task in _activeTasks.Values)
-        {
-            try
-            {
-                task.CancellationSource?.Cancel();
-                task.Status = TransferTaskStatus.Cancelled;
-                NotifyStatusChanged(task);
-            }
-            catch { }
-        }
-
+    private void CancelTasks(bool backgroundOnly)
+    {
+        List<TransferTask> cancelled = [];
         lock (_queueLock)
         {
-            _pendingTasks.Clear();
-        }
-
-        // 移除所有任务
-        var allTaskIds = _activeTasks.Keys.ToList();
-        foreach (var taskId in allTaskIds)
-        {
-            if (_activeTasks.TryRemove(taskId, out var task))
+            foreach (var task in _activeTasks.Values.ToArray())
             {
-                RemoveTask(task);
+                if (DetachCancelledTask(task, backgroundOnly))
+                    cancelled.Add(task);
             }
+            var pending = _pendingTasks.Where(IsActiveTask).ToArray();
+            _pendingTasks.Clear();
+            foreach (var task in pending)
+                _pendingTasks.Enqueue(task);
         }
+        foreach (var task in cancelled)
+            FinishCancellation(task);
     }
 
     /// <summary>
@@ -313,25 +316,16 @@ public class HistoryTransferQueue : IDisposable
     /// </summary>
     public void ResumeQueue()
     {
-        if (_isQueueStopped)
+        lock (_queueLock)
         {
+            if (!_isQueueStopped)
+                return;
             _isQueueStopped = false;
             Interlocked.Exchange(ref _consecutiveFailures, 0);
-            _logger.Write("队列已恢复");
-
-            // 通知处理任务恢复处理
-            int pendingCount;
-            lock (_queueLock)
-            {
-                pendingCount = _pendingTasks.Count;
-            }
-
-            // 如果有待处理任务，发送信号
-            if (pendingCount > 0)
-            {
+            if (_pendingTasks.Count > 0)
                 _queueSignal.Set();
-            }
         }
+        _logger.Write("队列已恢复");
     }
 
     private async Task EnsureProcessingTaskStartedAsync(CancellationToken cancellationToken = default)
@@ -363,17 +357,14 @@ public class HistoryTransferQueue : IDisposable
     public void Dispose()
     {
         GC.SuppressFinalize(this);
+        foreach (var task in _activeTasks.Values.ToArray())
+            CancelTask(task, backgroundOnly: false);
+        _globalCts?.Cancel();
         _globalCts?.Dispose();
         _workerSemaphore?.Dispose();
         _startSemaphore?.Dispose();
         _queueSignal?.Dispose();
         ActiveTaskAddMutex?.Dispose();
-
-        foreach (var task in _activeTasks.Values)
-        {
-            task.CancellationSource?.Dispose();
-        }
-        _activeTasks.Clear();
     }
 
     private async Task ProcessQueueAsync(CancellationToken token)
@@ -460,115 +451,149 @@ public class HistoryTransferQueue : IDisposable
 
     private async Task<TransferTaskStatus> ExecuteTaskAsync(TransferTask task)
     {
+        CancellationToken ct;
+        lock (task)
+        {
+            if (!IsActiveTask(task) ||
+                task.Status is not (TransferTaskStatus.Pending or TransferTaskStatus.WaitForRetry))
+                return task.Status;
+            ct = task.CancellationSource.Token;
+            task.Status = TransferTaskStatus.Running;
+            task.StartedTime = DateTime.Now;
+        }
         try
         {
-            await ExecuteTaskCoreAsync(task, task.CancellationSource.Token);
-            return TransferTaskStatus.Completed;
+            await ExecuteTaskCoreAsync(task, ct);
+            return task.Status;
         }
         catch (OperationCanceledException)
         {
-            task.Status = TransferTaskStatus.Cancelled;
-            _logger.Write($"任务 {task.TaskId} 已取消");
-            NotifyStatusChanged(task);
-            task.CompletionSource.TrySetResult(TransferTaskStatus.Cancelled);
-            RemoveTask(task);
-            return TransferTaskStatus.Cancelled;
+            CancelTask(task, backgroundOnly: false);
+            return task.Status;
         }
         catch (LocalProfileDataUnavailableException ex)
         {
-            if (task.Type == TransferType.Upload &&
-                Profile.ParseProfileId(task.ProfileId, out var type, out var hash))
-            {
-                try
-                {
-                    await _historyManager.HandleLocalFileUnavailableAsync(
-                        type,
-                        hash,
-                        CancellationToken.None);
-                }
-                catch (Exception persistException)
-                {
-                    _logger.Write(
-                        $"任务 {task.TaskId} 标记本地文件不可用失败: {persistException.Message}");
-                }
-            }
-
-            task.ErrorMessage = I18n.Strings.SourceFileMissingUnableToUpload;
-            task.FailureCount++;
-            task.Status = TransferTaskStatus.Failed;
-            task.CompletedTime = DateTime.Now;
-            _logger.Write($"任务 {task.TaskId} 因本地文件缺失失败: {ex.Message}");
-            NotifyStatusChanged(task);
-            task.CompletionSource.TrySetResult(TransferTaskStatus.Failed);
-            RemoveTask(task);
-            return TransferTaskStatus.Failed;
+            if (!ct.IsCancellationRequested)
+                await FailMissingLocalDataAsync(task, ex, ct);
+            return task.Status;
         }
         catch (Exception ex)
         {
-            task.ErrorMessage = ex.Message;
-            task.FailureCount++;
-
-            var currentFailures = Interlocked.Increment(ref _consecutiveFailures);
-            _logger.Write($"任务 {task.TaskId} 失败 (连续失败: {currentFailures}/5): {ex.Message}");
-
-            if (currentFailures >= 5)
+            return HandleTaskFailure(task, ex, ct);
+        }
+        finally
+        {
+            if (TryEnqueueRetry(task))
             {
-                task.Status = TransferTaskStatus.Failed;
-                _isQueueStopped = true;
-                MarkAllQueuedTasksAsFailed();
-                _logger.Write("队列因连续失败5次已停止");
-                task.CompletionSource.TrySetResult(TransferTaskStatus.Failed);
-                RemoveTask(task);
-                NotifyStatusChanged(task);
-                return TransferTaskStatus.Failed;
-            }
-            else
-            {
-                task.Status = TransferTaskStatus.WaitForRetry;
-                task.StartedTime = null;
-                task.CompletedTime = DateTime.Now;
-                lock (_queueLock)
-                {
-                    _pendingTasks.Enqueue(task);
-                }
-                NotifyStatusChanged(task);
-
+                await EnsureProcessingTaskStartedAsync(CancellationToken.None);
                 _queueSignal.Set();
-                return TransferTaskStatus.WaitForRetry;
             }
         }
     }
 
+    private TransferTaskStatus HandleTaskFailure(TransferTask task, Exception ex, CancellationToken ct)
+    {
+        int currentFailures;
+        lock (task)
+        {
+            // A cancelled request can still finish with an ordinary I/O error.
+            if (!IsActiveTask(task) || ct.IsCancellationRequested)
+                return task.Status;
+            task.ErrorMessage = ex.Message;
+            task.FailureCount++;
+            currentFailures = Interlocked.Increment(ref _consecutiveFailures);
+            task.Status = currentFailures >= 5 ? TransferTaskStatus.Failed : TransferTaskStatus.WaitForRetry;
+            task.StartedTime = null;
+            task.CompletedTime = DateTime.Now;
+            if (task.Status == TransferTaskStatus.Failed)
+                RemoveTask(task);
+        }
+        _logger.Write($"任务 {task.TaskId} 失败 (连续失败: {currentFailures}/5): {ex.Message}");
+        if (currentFailures >= 5)
+        {
+            MarkAllQueuedTasksAsFailed();
+            _logger.Write("队列因连续失败5次已停止");
+        }
+        NotifyStatusChanged(task);
+        return task.Status;
+    }
+
+    private async Task FailMissingLocalDataAsync(TransferTask task, LocalProfileDataUnavailableException ex, CancellationToken ct)
+    {
+        if (task.Type == TransferType.Upload &&
+            Profile.ParseProfileId(task.ProfileId, out var type, out var hash))
+        {
+            try
+            {
+                await _historyManager.HandleLocalFileUnavailableAsync(type, hash, ct);
+            }
+            catch (Exception persistException)
+            {
+                _logger.Write(
+                    $"任务 {task.TaskId} 标记本地文件不可用失败: {persistException.Message}");
+            }
+        }
+        lock (task)
+        {
+            if (!IsActiveTask(task))
+                return;
+            task.ErrorMessage = I18n.Strings.SourceFileMissingUnableToUpload;
+            task.FailureCount++;
+            task.Status = TransferTaskStatus.Failed;
+            task.CompletedTime = DateTime.Now;
+            RemoveTask(task);
+        }
+        _logger.Write($"任务 {task.TaskId} 因本地文件缺失失败: {ex.Message}");
+        NotifyStatusChanged(task);
+    }
+
+    private bool TryEnqueueRetry(TransferTask task)
+    {
+        lock (_queueLock)
+        {
+            lock (task)
+            {
+                if (!IsActiveTask(task) || task.Status != TransferTaskStatus.WaitForRetry)
+                    return false;
+                if (!_isQueueStopped)
+                {
+                    _pendingTasks.Enqueue(task);
+                    return true;
+                }
+                task.Status = TransferTaskStatus.Failed;
+                task.ErrorMessage = "队列已停止";
+                RemoveTask(task);
+            }
+        }
+        NotifyStatusChanged(task);
+        return false;
+    }
+
     private async Task ExecuteTaskCoreAsync(TransferTask task, CancellationToken ct)
     {
-        task.Status = TransferTaskStatus.Running;
-        task.StartedTime = DateTime.Now;
+        ct.ThrowIfCancellationRequested();
         NotifyStatusChanged(task);
-
         if (task.Type == TransferType.Download)
-        {
             await ExecuteDownloadAsync(task, ct);
-        }
         else
-        {
             await ExecuteUploadAsync(task, ct);
-        }
 
-        task.Status = TransferTaskStatus.Completed;
-        task.CompletedTime = DateTime.Now;
-        Interlocked.Exchange(ref _consecutiveFailures, 0);
+        lock (task)
+        {
+            if (!IsActiveTask(task))
+                return;
+            task.Status = TransferTaskStatus.Completed;
+            task.CompletedTime = DateTime.Now;
+            Interlocked.Exchange(ref _consecutiveFailures, 0);
+            RemoveTask(task);
+        }
         NotifyStatusChanged(task);
-        task.CompletionSource.TrySetResult(TransferTaskStatus.Completed);
-        RemoveTask(task);
     }
 
     private async Task ExecuteDownloadAsync(TransferTask task, CancellationToken ct)
     {
         if (_remoteServerFactory.Current is not IOfficialSyncServer server)
-        {
             throw new InvalidOperationException("当前服务器不支持历史记录同步");
-        }
-
         var profile = task.Profile;
         var persistentDir = _profileEnv.GetPersistentDir();
 
@@ -603,24 +628,33 @@ public class HistoryTransferQueue : IDisposable
     private async Task ExecuteUploadAsync(TransferTask task, CancellationToken ct)
     {
         if (_remoteServerFactory.Current is not IOfficialSyncServer server)
-        {
             throw new InvalidOperationException("当前服务器不支持历史记录同步");
-        }
-
         var profile = task.Profile;
         var record = await _historyManager.GetOrCreateHistoryRecord(profile, ct);
-
-        // 先检查服务器上是否已存在该记录
-        var existingRecord = await server.GetHistoryByProfileIdAsync(task.ProfileId, ct);
-        if (existingRecord is { IsDeleted: false })
+        var remote = await server.GetHistoryByProfileIdAsync(task.ProfileId, ct);
+        ct.ThrowIfCancellationRequested();
+        if (remote is { IsDeleted: false })
         {
-            // 服务器已有正常记录，直接标记为成功
-            record.SyncStatus = HistorySyncStatus.Synced;
-            await _historyManager.PersistServerSyncedAsync(record, ct);
+            // Existing content needs no transfer; normal history events handle any pending property changes.
+            if (profile.HasTransferData && await profile.IsDataComplete(false, ct))
+            {
+                var localRecord = await _historyManager.ToHistoryRecord(profile, ct);
+                await _historyManager.UpdateHistoryLocalInfo(localRecord, ct);
+            }
+            await _historyManager.SyncRemoteHistoryAsync([remote], ct);
             return;
         }
+        if (record.IsDeleted && !task.IsImmediateTask)
+            return;
 
-        // 服务器不存在或记录已删除，执行上传以恢复内容和状态
+        var response = await UploadContentAsync(task, server, record, profile, ct);
+        ct.ThrowIfCancellationRequested();
+        await _historyManager.SyncRemoteHistoryAsync([response], ct);
+    }
+
+    private async Task<HistoryRecordDto> UploadContentAsync(
+        TransferTask task, IOfficialSyncServer server, HistoryRecord record, Profile profile, CancellationToken ct)
+    {
         var transferData = await profile.PrepareTransferData(_profileEnv.GetPersistentDir(), ct);
         var persistentInfo = await profile.Persist(_profileEnv.GetPersistentDir(), ct);
         record.FilePath = persistentInfo.FilePaths;
@@ -628,25 +662,27 @@ public class HistoryTransferQueue : IDisposable
         record.TransferDataHash = persistentInfo.TransferDataHash;
         record.IsLocalFileReady = true;
         await _historyManager.UpdateHistoryLocalInfo(record, ct);
-        var recordDto = record.ToHistoryRecordDto();
-
+        var dto = record.ToHistoryRecordDto();
+        dto.IsDeleted = false;
         try
         {
-            var serverRecord = await server.UploadHistoryAsync(recordDto, transferData, task.ProgressReporter, ct);
-            record.ApplyChangesFromRemote(serverRecord);
-            record.ApplyBasicFromRemote(serverRecord);
-            record.SyncStatus = HistorySyncStatus.Synced;
-            await _historyManager.PersistServerSyncedAsync(record, ct);
+            return await server.UploadHistoryAsync(dto, transferData, task.ProgressReporter, ct);
         }
-        catch (RemoteHistoryConflictException ex)
+        catch (RemoteHistoryConflictException ex) when (ex.ServerRecord is not null)
         {
-            if (ex.ServerRecord == null)
-            {
-                throw;
-            }
-            record.ApplyFromServerUpdateDto(ex.ServerRecord);
-            await _historyManager.PersistServerSyncedAsync(record, ct);
+            return ApplyUploadUpdate(dto, ex.ServerRecord);
         }
+    }
+
+    private static HistoryRecordDto ApplyUploadUpdate(HistoryRecordDto record, HistoryRecordUpdateDto update)
+    {
+        record.Starred = update.Starred ?? record.Starred;
+        record.Pinned = update.Pinned ?? record.Pinned;
+        record.IsDeleted = update.IsDelete ?? record.IsDeleted;
+        record.Version = update.Version ?? record.Version;
+        record.LastModified = update.LastModified ?? record.LastModified;
+        record.LastAccessed = update.LastAccessed ?? record.LastAccessed;
+        return record;
     }
 
     private void NotifyStatusChanged(TransferTask task)
@@ -654,27 +690,43 @@ public class HistoryTransferQueue : IDisposable
         TaskStatusChanged?.Invoke(this, task);
     }
 
+    private bool IsActiveTask(TransferTask task) =>
+        _activeTasks.TryGetValue(task.TaskId, out var current) && ReferenceEquals(current, task);
+
     private void RemoveTask(TransferTask task)
     {
-        if (_activeTasks.TryRemove(task.TaskId, out _))
+        lock (task)
         {
-            task.CancellationSource?.Dispose();
+            if (!_activeTasks.TryRemove(new KeyValuePair<string, TransferTask>(task.TaskId, task)))
+                return;
+            task.CancellationSource.Dispose();
+            task.CompletionSource.TrySetResult(task.Status);
         }
     }
 
     private void MarkAllQueuedTasksAsFailed()
     {
+        List<TransferTask> failed = [];
         lock (_queueLock)
         {
+            _isQueueStopped = true;
             while (_pendingTasks.TryDequeue(out var task))
             {
-                task.Status = TransferTaskStatus.Failed;
-                task.ErrorMessage = "队列已停止";
-                NotifyStatusChanged(task);
-                task.CompletionSource.TrySetResult(TransferTaskStatus.Failed);
-                RemoveTask(task);
+                lock (task)
+                {
+                    if (!IsActiveTask(task) ||
+                        (task.IsImmediateTask && task.Status == TransferTaskStatus.Pending) ||
+                        task.Status is not (TransferTaskStatus.Pending or TransferTaskStatus.WaitForRetry))
+                        continue;
+                    task.Status = TransferTaskStatus.Failed;
+                    task.ErrorMessage = "队列已停止";
+                    RemoveTask(task);
+                    failed.Add(task);
+                }
             }
         }
+        foreach (var task in failed)
+            NotifyStatusChanged(task);
     }
 
     private void OnSyncHistoryChanged(RuntimeHistoryConfig config)
@@ -685,31 +737,5 @@ public class HistoryTransferQueue : IDisposable
         }
     }
 
-    private void CancelNonImmediateTasks()
-    {
-        foreach (var task in _activeTasks.Values.Where(t => !t.IsImmediateTask))
-        {
-            try
-            {
-                task.CancellationSource?.Cancel();
-                task.Status = TransferTaskStatus.Cancelled;
-                NotifyStatusChanged(task);
-            }
-            catch { }
-        }
-
-        lock (_queueLock)
-        {
-            var tasksToRemove = _pendingTasks.Where(t => !t.IsImmediateTask).ToList();
-            _pendingTasks.Clear();
-            foreach (var task in tasksToRemove)
-            {
-                task.Status = TransferTaskStatus.Cancelled;
-                task.ErrorMessage = "同步历史记录已关闭";
-                NotifyStatusChanged(task);
-                task.CompletionSource.TrySetResult(TransferTaskStatus.Cancelled);
-                RemoveTask(task);
-            }
-        }
-    }
+    private void CancelNonImmediateTasks() => CancelTasks(backgroundOnly: true);
 }

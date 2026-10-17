@@ -247,8 +247,18 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
         var entity = await Query(profile.Type, await profile.GetHash(token), token);
-        entity ??= await ToHistoryRecord(profile, token);
-        return entity;
+        if (entity is null)
+        {
+            entity = await ToHistoryRecord(profile, token);
+            entity.Hash = entity.Hash.ToUpperInvariant();
+            await _dbContext.HistoryRecords.AddAsync(entity, token);
+            await _dbContext.SaveChangesAsync(token);
+            HistoryAdded?.Invoke(entity);
+        }
+        // Network operations must not mutate EF's tracked entity outside the database lock.
+        var snapshot = (HistoryRecord)_dbContext.Entry(entity).CurrentValues.ToObject();
+        snapshot.FilePath = [.. entity.FilePath];
+        return snapshot;
     }
 
     public async Task UpdateHistoryProperty(HistoryRecord record, CancellationToken token = default)
@@ -418,20 +428,7 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
                 }
                 else
                 {
-                    if (entity.ShouldUpdateFromRemote(dto))
-                    {
-                        entity.ApplyChangesFromRemote(dto);
-                        entity.SyncStatus = HistorySyncStatus.Synced;
-                    }
-                    else if (entity.IsLocalNewerThanRemote(dto))
-                    {
-                        entity.SyncStatus = HistorySyncStatus.NeedSync;
-                    }
-                    else
-                    {
-                        entity.SyncStatus = HistorySyncStatus.Synced;
-                    }
-                    entity.ApplyBasicFromRemote(dto);
+                    ApplyRemoteHistory(entity, dto);
                     TriggleUpdateOrDeleteEvent(entity);
                 }
                 await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
@@ -439,6 +436,25 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         }, token);
 
         return addedRecords;
+    }
+
+    private static void ApplyRemoteHistory(HistoryRecord entity, HistoryRecordDto dto)
+    {
+        if (entity.ShouldUpdateFromRemote(dto))
+        {
+            entity.ApplyChangesFromRemote(dto);
+            entity.SyncStatus = HistorySyncStatus.Synced;
+        }
+        else if (entity.IsLocalNewerThanRemote(dto))
+        {
+            entity.SyncStatus = HistorySyncStatus.NeedSync;
+        }
+        else
+        {
+            entity.ApplyChangesFromRemote(dto);
+            entity.SyncStatus = HistorySyncStatus.Synced;
+        }
+        entity.ApplyBasicFromRemote(dto);
     }
 
     private void TriggleUpdateOrDeleteEvent(HistoryRecord record)
