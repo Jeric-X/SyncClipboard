@@ -11,10 +11,6 @@ namespace SyncClipboard.Core.Utilities.History.HistoryExport;
 public sealed class HistoryExporter(IProfileEnv profileEnv)
 {
     internal static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
-    private int _sessionActive;
-
-    public IDisposable? TryBeginSession() => Interlocked.CompareExchange(ref _sessionActive, 1, 0) == 0
-        ? new ScopeGuard(() => Interlocked.Exchange(ref _sessionActive, 0)) : null;
 
     public async Task<HistoryExportPlan> EstimateAsync(
         IReadOnlyList<HistoryExportRecord> items, IReadOnlyList<HistoryRecordKey>? selected, CancellationToken token)

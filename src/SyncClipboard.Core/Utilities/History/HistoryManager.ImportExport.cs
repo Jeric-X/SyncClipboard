@@ -7,6 +7,20 @@ namespace SyncClipboard.Core.Utilities.History;
 
 public partial class HistoryManager
 {
+    private int _backupSessionActive;
+
+    public IDisposable? TryBeginBackupSession()
+    {
+        if (Interlocked.CompareExchange(ref _backupSessionActive, 1, 0) != 0)
+            return null;
+        var released = 0;
+        return new ScopeGuard(() =>
+        {
+            if (Interlocked.Exchange(ref released, 1) == 0)
+                Interlocked.Exchange(ref _backupSessionActive, 0);
+        });
+    }
+
     public async Task<(bool Reused, string Hash)> TryReuseExistingRecordForImportAsync(
         ProfileType type, string hash, CancellationToken token)
     {

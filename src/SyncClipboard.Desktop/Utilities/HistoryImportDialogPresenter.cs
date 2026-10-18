@@ -3,7 +3,7 @@ using Avalonia.Platform.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Utilities.History.HistoryImport;
+using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Desktop.Views;
 using SyncClipboard.Desktop.Services;
@@ -12,13 +12,13 @@ using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.Utilities;
 
-public sealed class HistoryImportDialogPresenter(IServiceProvider services, HistoryImporter importer) : IHistoryImportDialog
+public sealed class HistoryImportDialogPresenter(IServiceProvider services, HistoryManager manager) : IHistoryImportDialog
 {
     public async Task ShowAsync()
     {
         var owner = (Window)services.GetRequiredService<IMainWindow>();
         var messages = new AvaloniaDialog(owner);
-        using var session = importer.TryBeginSession();
+        using var session = manager.TryBeginBackupSession();
         if (session is null)
         {
             await messages.ShowMessageAsync(Strings.HistoryImport, Strings.HistoryImportBusy);

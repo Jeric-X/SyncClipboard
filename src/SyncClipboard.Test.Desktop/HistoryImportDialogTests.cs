@@ -6,6 +6,8 @@ using Avalonia.VisualTree;
 using FluentAvalonia.Styling;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.ViewModels;
+using SyncClipboard.Core.Utilities.History;
+using System.Runtime.CompilerServices;
 using SyncClipboard.Desktop.Views;
 
 namespace SyncClipboard.Test.Desktop;
@@ -23,6 +25,9 @@ public class HistoryImportDialogTests
         await session.Dispatch(async () =>
         {
             Application.Current!.Styles.Add(new FluentAvaloniaTheme());
+            var manager = (HistoryManager)RuntimeHelpers.GetUninitializedObject(typeof(HistoryManager));
+            using var backupSession = manager.TryBeginBackupSession();
+            Assert.IsNotNull(backupSession);
             using var viewModel = new HistoryImportViewModel(null!);
             var dialog = new HistoryImportDialog(viewModel, () =>
             {
@@ -37,6 +42,7 @@ public class HistoryImportDialogTests
                 window.Show();
                 var result = dialog.ShowAsync(window);
                 Dispatcher.UIThread.RunJobs();
+                await HistoryExportDialogTests.AssertOtherOperationBlockedAsync(manager, import: false);
                 var start = dialog.GetVisualDescendants().OfType<Button>().Single(button => Equals(button.Content, Strings.HistoryImportStart));
                 Assert.IsTrue(start.IsVisible && start.IsEffectivelyEnabled);
                 viewModel.IsBusy = true;
@@ -63,6 +69,9 @@ public class HistoryImportDialogTests
                 Assert.IsTrue(dialog.GetVisualDescendants().OfType<SelectableTextBlock>().Any(block => block.Text == viewModel.ReportPath));
                 dialog.Hide();
                 await result;
+                backupSession.Dispose();
+                using var nextSession = manager.TryBeginBackupSession();
+                Assert.IsNotNull(nextSession);
             }
             finally
             {

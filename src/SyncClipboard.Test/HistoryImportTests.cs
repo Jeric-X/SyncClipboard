@@ -59,6 +59,9 @@ public class HistoryImportTests
             SetField("_dbSemaphore", _semaphore);
             SetField("_logger", Mock.Of<ILogger>());
             SetField("_profileEnv", this);
+            SetField("_historyConfig", new HistoryConfig { HistoryRetentionMinutes = 60 });
+            SetField("_runtimeHistoryConfig", new RuntimeHistoryConfig());
+            SetField("_historyManagerHelper", new HistoryManagerHelper<HistoryRecord, DateTime>(Manager));
             Config = new ConfigManager(Path.Combine(Root, "SyncClipboard.json"), _configurationServices.Upgrader);
             Importer = new(this, Manager);
         }
@@ -544,6 +547,23 @@ public class HistoryImportTests
         Assert.IsNotNull(result.ReportPath);
         Assert.IsNull(result.ReportError);
         Assert.Contains("2. -: Unsupported record type.", await File.ReadAllTextAsync(result.ReportPath, Token));
+        using var canceledPlan = await HistoryImporter.PrepareAsync(backup, Token);
+        await f.DbSemaphore.WaitAsync(Token);
+        try
+        {
+            var canceledResult = await f.Importer.ImportAsync(canceledPlan, null, cancellation.Token);
+            Assert.IsTrue(canceledResult.Canceled);
+        }
+        finally
+        {
+            f.DbSemaphore.Release();
+        }
+        var saved = await f.Db.HistoryRecords.SingleAsync(Token);
+        saved.Stared = saved.Pinned = false;
+        saved.LastModified = saved.LastAccessed = DateTime.UtcNow.AddDays(-40);
+        await f.Db.SaveChangesAsync(Token);
+        await f.Manager.CleanupExpiredHistory(Token);
+        Assert.IsEmpty(await f.Db.HistoryRecords.ToListAsync(Token));
     }
 
     [TestMethod]
@@ -732,12 +752,13 @@ public class HistoryImportTests
             Pinned = false,
             From = "local device",
             Timestamp = DateTime.UtcNow.AddDays(-2),
-            LastModified = DateTime.UtcNow.AddDays(-1),
-            LastAccessed = DateTime.UtcNow,
-            SyncStatus = HistorySyncStatus.Synced,
+            LastModified = DateTime.UtcNow.AddDays(-40),
+            LastAccessed = DateTime.UtcNow.AddDays(-40),
+            SyncStatus = deleted ? HistorySyncStatus.Synced : HistorySyncStatus.LocalOnly,
             Version = 42,
             IsDeleted = deleted
         };
+        SetPrivateField(f.Manager, "_runtimeHistoryConfig", new RuntimeHistoryConfig { EnableSyncHistory = deleted });
         f.Db.HistoryRecords.Add(local);
         await f.Db.SaveChangesAsync(Token);
         var (Timestamp, LastModified, LastAccessed) = (local.Timestamp, local.LastModified, local.LastAccessed);
@@ -747,6 +768,7 @@ public class HistoryImportTests
         var importer = new HistoryImporter(f, f.Manager, directory =>
         {
             restoreDirectory = directory;
+            f.Manager.CleanupExpiredHistory(Token).GetAwaiter().GetResult();
             return long.MaxValue;
         });
         using var plan = await HistoryImporter.PrepareAsync(backup, Token);
@@ -765,12 +787,16 @@ public class HistoryImportTests
         Assert.IsTrue(local.LastAccessed > LastAccessed);
         Assert.AreEqual(local.LastAccessed, local.LastModified);
         Assert.AreEqual(43, local.Version);
-        Assert.AreEqual(HistorySyncStatus.NeedSync, local.SyncStatus);
+        Assert.AreEqual(deleted ? HistorySyncStatus.NeedSync : HistorySyncStatus.LocalOnly, local.SyncStatus);
         Assert.IsTrue(local.IsLocalFileReady);
         var restored = Profile.GetFullPath(f.GetHistoryPersistentDir(), local.Type, local.Hash, local.TransferDataFile)!;
         Assert.AreEqual("payload", await File.ReadAllTextAsync(restored, Token));
         Assert.AreEqual(item.Hash.ToLowerInvariant(), local.Hash);
-        await f.Manager.RemoveHistory(local, Token);
+        SetPrivateField(f.Manager, "_runtimeHistoryConfig", new RuntimeHistoryConfig());
+        local.SyncStatus = HistorySyncStatus.LocalOnly;
+        local.LastModified = local.LastAccessed = DateTime.UtcNow.AddDays(-40);
+        await f.Db.SaveChangesAsync(Token);
+        await f.Manager.CleanupExpiredHistory(Token);
         Assert.IsFalse(File.Exists(restored));
         Assert.IsEmpty(await f.Db.HistoryRecords.ToListAsync(Token));
     }

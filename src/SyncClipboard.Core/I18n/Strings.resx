@@ -1490,7 +1490,7 @@ Choose whether to use the default location or select another folder.</value>
     <value>No records to export.</value>
   </data>
   <data name="HistoryExportBusy" xml:space="preserve">
-    <value>An export is already in progress.</value>
+    <value>Please close the current import or export window first.</value>
   </data>
   <data name="HistoryExportResult" xml:space="preserve">
     <value>Exported: {0}</value>
@@ -1592,7 +1592,7 @@ Choose whether to use the default location or select another folder.</value>
     <value>Import canceled. Completed records have been kept.</value>
   </data>
   <data name="HistoryImportBusy" xml:space="preserve">
-    <value>An import is already open.</value>
+    <value>Please close the current import or export window first.</value>
   </data>
   <data name="HistoryBackup" xml:space="preserve">
     <value>History backup</value>

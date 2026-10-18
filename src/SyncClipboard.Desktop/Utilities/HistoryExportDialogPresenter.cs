@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Utilities.History.HistoryExport;
+using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Desktop.Views;
 using SyncClipboard.Desktop.Services;
@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.Utilities;
 
-public sealed class HistoryExportDialogPresenter(IServiceProvider services, HistoryExporter exporter) : IHistoryExportDialog
+public sealed class HistoryExportDialogPresenter(IServiceProvider services, HistoryManager manager) : IHistoryExportDialog
 {
     public async Task ShowAsync(IReadOnlyList<HistoryRecordKey>? selected = null, bool fromHistoryWindow = false)
     {
@@ -22,7 +22,7 @@ public sealed class HistoryExportDialogPresenter(IServiceProvider services, Hist
             ? (Window)services.GetRequiredKeyedService<IWindow>("HistoryWindow")
             : (Window)services.GetRequiredService<IMainWindow>();
         var messages = new AvaloniaDialog(owner);
-        using var session = exporter.TryBeginSession();
+        using var session = manager.TryBeginBackupSession();
         if (session is null)
         {
             await messages.ShowMessageAsync(Strings.HistoryExport, Strings.HistoryExportBusy);

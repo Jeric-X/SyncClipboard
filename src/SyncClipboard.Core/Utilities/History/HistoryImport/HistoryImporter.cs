@@ -1,4 +1,3 @@
-using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities.History.HistoryExport;
 using System.Diagnostics.CodeAnalysis;
@@ -26,10 +25,6 @@ public sealed class HistoryImporter
     }
 
     private const long MaxManifestBytes = 64 * 1024 * 1024;
-    private int _sessionActive;
-
-    public IDisposable? TryBeginSession() => Interlocked.CompareExchange(ref _sessionActive, 1, 0) == 0
-        ? new ScopeGuard(() => Interlocked.Exchange(ref _sessionActive, 0)) : null;
 
     public static async Task<HistoryImportPlan> PrepareAsync(string path, CancellationToken token)
     {
@@ -111,6 +106,17 @@ public sealed class HistoryImporter
         HistoryImportPlan plan, IProgress<int>? progress, CancellationToken token)
     {
         var result = new HistoryImportResult();
+        IDisposable cleanupPause;
+        try
+        {
+            cleanupPause = await manager.PauseCleanupAsync(token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            result.Canceled = true;
+            return result;
+        }
+        using var pause = cleanupPause;
         await using var report = new HistoryImportReportWriter(plan.Path, result);
         for (var i = 0; i < plan.Records.Count; i++)
         {

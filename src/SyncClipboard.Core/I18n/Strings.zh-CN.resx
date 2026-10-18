@@ -1490,7 +1490,7 @@ Shift + 左键：选中连续范围</value>
     <value>没有可导出的历史记录。</value>
   </data>
   <data name="HistoryExportBusy" xml:space="preserve">
-    <value>已有导出正在进行。</value>
+    <value>请先关闭当前导入或导出窗口。</value>
   </data>
   <data name="HistoryExportResult" xml:space="preserve">
     <value>已导出 {0} 条记录</value>
@@ -1592,7 +1592,7 @@ Shift + 左键：选中连续范围</value>
     <value>导入已取消，已完成的记录已保留。</value>
   </data>
   <data name="HistoryImportBusy" xml:space="preserve">
-    <value>已有导入正在进行。</value>
+    <value>请先关闭当前导入或导出窗口。</value>
   </data>
   <data name="HistoryBackup" xml:space="preserve">
     <value>历史记录备份</value>
