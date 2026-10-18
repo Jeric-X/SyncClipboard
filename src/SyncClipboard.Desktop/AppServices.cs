@@ -35,6 +35,7 @@ public class AppServices
         services.AddSingleton<IGlobalDialog, Services.AvaloniaGlobalDialog>();
         services.AddSingleton<IMainWindowDialog, Services.AvaloniaDialog>();
         services.AddSingleton<IHistoryExportDialog, HistoryExportDialogPresenter>();
+        services.AddSingleton<IHistoryImportDialog, HistoryImportDialogPresenter>();
         services.AddKeyedSingleton<IMainWindowDialog>("HistoryWindow", (sp, key) =>
         {
             var historyWindow = sp.GetRequiredKeyedService<IWindow>("HistoryWindow") as HistoryWindow;
