@@ -4,14 +4,13 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.Utilities.History.HistoryExport;
 using SyncClipboard.Server.Core.Models;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 
 namespace SyncClipboard.Core.Utilities.History;
 
-public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
+public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 {
     private const int HistoryKeyQueryBatchSize = 800;
 
@@ -26,7 +25,8 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     private readonly IProfileEnv _profileEnv;
     private readonly SemaphoreSlim _dbSemaphore = new(1, 1);
     private readonly HistoryManagerHelper<HistoryRecord, DateTime> _historyManagerHelper;
-    public bool EnableCleanup { get; set; } = true;
+    private int _cleanupPauseCount;
+    private bool EnableCleanup => Volatile.Read(ref _cleanupPauseCount) == 0;
 
     public DbSet<HistoryRecord> RecordDbSet => _dbContext.HistoryRecords;
 
@@ -40,6 +40,20 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         _runtimeHistoryConfig = runtimeConfig.GetListenConfig<RuntimeHistoryConfig>(LoadRuntimeHistoryConfig);
         _historyConfig = configManager.GetListenConfig<HistoryConfig>(LoadHistoryConfig);
         LoadConfig(_historyConfig);
+    }
+
+    public async Task<IDisposable> PauseCleanupAsync(CancellationToken token = default)
+    {
+        // Wait for in-flight cleanup, then publish the pause before another cleanup can start.
+        await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        Interlocked.Increment(ref _cleanupPauseCount);
+        var released = 0;
+        return new ScopeGuard(() =>
+        {
+            if (Interlocked.Exchange(ref released, 1) == 0)
+                Interlocked.Decrement(ref _cleanupPauseCount);
+        });
     }
 
     private void LoadHistoryConfig(HistoryConfig config)
@@ -206,20 +220,6 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
         await _dbContext.HistoryRecords.AddAsync(record, token);
         await _dbContext.SaveChangesAsync(token);
         HistoryAdded?.Invoke(record);
-    }
-
-    public async Task<IReadOnlyList<HistoryExportRecord>> GetExportSnapshotAsync(
-        IReadOnlyList<HistoryRecordKey>? selected, CancellationToken token)
-    {
-        await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
-        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
-        if (selected is { Count: 0 })
-            return [];
-        var records = await _dbContext.HistoryRecords.AsNoTracking().Where(record => !record.IsDeleted)
-            .ToListAsync(token).ConfigureAwait(false);
-        var keys = selected?.Select(key => new HistoryRecordKey(key.Type, key.Hash.ToUpperInvariant())).ToHashSet();
-        return records.Where(record => keys is null || keys.Contains(new(record.Type, record.Hash.ToUpperInvariant())))
-            .Select(HistoryExportRecord.FromRecord).ToArray();
     }
 
     public async Task<List<HistoryRecord>> GetHistory(CancellationToken? token = null)
@@ -473,6 +473,8 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     {
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        if (!EnableCleanup)
+            return;
 
         var cutoffTime = DateTime.UtcNow.AddDays(-30);
         var toDeletes = _dbContext.HistoryRecords
@@ -491,6 +493,8 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     {
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        if (!EnableCleanup)
+            return;
 
         var deletedRecords = _dbContext.HistoryRecords
             .Where(r => r.IsDeleted && (r.FilePath.Length > 0 || r.TransferDataFile != null) && r.IsLocalFileReady)
@@ -524,11 +528,6 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
     {
         try
         {
-            if (!EnableCleanup)
-            {
-                return;
-            }
-
             if (_runtimeHistoryConfig.EnableSyncHistory)
             {
                 await RemoveSoftDeletedOutOfDateRecords(token);
@@ -544,6 +543,8 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 
             await _dbSemaphore.WaitAsync(token);
             using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+            if (!EnableCleanup)
+                return;
 
             var deleted = await _historyManagerHelper.RemoveExpiredInBatchesAsync(
                 r => r.LastModified < cutoffTime && r.LastAccessed < cutoffTime &&
@@ -572,6 +573,9 @@ public class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
 
             _dbSemaphore.Wait(token);
             using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+            if (!EnableCleanup)
+                return;
+
             var existingDirectoryNames = _dbContext.HistoryRecords
                 .Select(r => new { r.Type, r.Hash })
                 .AsEnumerable()

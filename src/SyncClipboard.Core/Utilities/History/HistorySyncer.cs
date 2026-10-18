@@ -210,7 +210,7 @@ public class HistorySyncer
             {
                 Starred = record.Stared,
                 Pinned = record.Pinned,
-                IsDelete = record.IsDeleted ? true : null,
+                IsDelete = record.IsDeleted,
                 Version = record.Version,
                 LastModified = new DateTimeOffset(record.LastModified.ToUniversalTime(), TimeSpan.Zero),
                 LastAccessed = new DateTimeOffset(record.LastAccessed.ToUniversalTime(), TimeSpan.Zero)

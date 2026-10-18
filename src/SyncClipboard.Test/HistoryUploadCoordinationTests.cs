@@ -871,6 +871,7 @@ public class HistoryUploadCoordinationTests
         public ConfigManager UserConfig { get; }
         private ConfigBase Runtime { get; }
         private HistorySyncSession Session { get; }
+        private IDisposable? cleanupPause;
 
         private Fixture()
         {
@@ -883,7 +884,6 @@ public class HistoryUploadCoordinationTests
             SetField("_historyConfig", Config);
             SetField("_runtimeHistoryConfig", RuntimeConfig);
             SetField("_historyManagerHelper", new HistoryManagerHelper<HistoryRecord, DateTime>(Manager));
-            Manager.EnableCleanup = false;
             _ = Server;
             Factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
             SetObjectField(Factory, "_current", Remote.Object);
@@ -952,6 +952,7 @@ public class HistoryUploadCoordinationTests
             var fixture = new Fixture();
             await fixture.Db.Database.OpenConnectionAsync(token);
             await fixture.Db.Database.EnsureCreatedAsync(token);
+            fixture.cleanupPause = await fixture.Manager.PauseCleanupAsync(token);
             return fixture;
         }
 
@@ -964,6 +965,7 @@ public class HistoryUploadCoordinationTests
             Queue.ClearQueue();
             Queue.Dispose();
             application.Dispose();
+            cleanupPause?.Dispose();
             await Db.DisposeAsync();
             semaphore.Dispose();
             root.Delete(true);

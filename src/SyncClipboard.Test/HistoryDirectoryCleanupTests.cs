@@ -97,6 +97,7 @@ public class HistoryDirectoryCleanupTests
         var attachment = Path.Combine(root, "data.txt");
         await File.WriteAllTextAsync(attachment, "history data", Token);
         record.FilePath = ["data.txt"];
+        using var pause = await f.Manager.PauseCleanupAsync(Token);
         await f.DbSemaphore.WaitAsync(Token);
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var cleanup = Task.Run(() =>
@@ -118,6 +119,9 @@ public class HistoryDirectoryCleanupTests
         }
         await cleanup.WaitAsync(Token);
         Assert.IsTrue(File.Exists(attachment));
+        Assert.IsTrue(Directory.Exists(orphan), "Paused cleanup must preserve unregistered directories too.");
+        pause.Dispose();
+        f.Manager.CleanupOrphanedHistoryFolders(Token);
         Assert.IsFalse(Directory.Exists(orphan), "Old directories without a record still need cleanup.");
     }
 

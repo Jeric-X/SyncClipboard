@@ -46,6 +46,8 @@ public class HistoryRequestCancellationTests
         runtime.SetConfig(new RuntimeHistoryConfig { EnableSyncHistory = true });
         using var session = new HistorySyncSession(factory, runtime);
         var manager = (HistoryManager)RuntimeHelpers.GetUninitializedObject(typeof(HistoryManager));
+        using var dbSemaphore = new SemaphoreSlim(1, 1);
+        SetField(manager, "_dbSemaphore", dbSemaphore);
         var syncer = new HistorySyncer(manager, factory, Mock.Of<ILogger>(), null!, null!, runtime, session);
         server.Setup(s => s.GetServerTimeAsync(It.IsAny<CancellationToken>())).ReturnsAsync(() => DateTimeOffset.Now);
         using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), factory, manager, null!, null!, runtime);
@@ -93,10 +95,12 @@ public class HistoryRequestCancellationTests
         var syncer = new HistorySyncer(manager, factory, Mock.Of<ILogger>(), null!, null!, runtime, session);
         var record = new HistoryRecord { Hash = "CANCEL", SyncStatus = HistorySyncStatus.NeedSync, Version = 3 };
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        HistoryRecordUpdateDto? sentUpdate = null;
         server.Setup(s => s.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
             It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
-            .Returns(async (ProfileType _, string _, HistoryRecordUpdateDto _, CancellationToken token) =>
+            .Returns(async (ProfileType _, string _, HistoryRecordUpdateDto update, CancellationToken token) =>
             {
+                sentUpdate = update;
                 started.SetResult();
                 await Task.Delay(Timeout.Infinite, token);
             });
@@ -108,6 +112,8 @@ public class HistoryRequestCancellationTests
             runtime.SetConfig(new RuntimeHistoryConfig { EnableSyncHistory = false });
         await Assert.ThrowsAsync<OperationCanceledException>(() =>
             syncing.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token));
+        Assert.IsNotNull(sentUpdate);
+        Assert.IsFalse(sentUpdate.IsDelete, "A live record explicitly synchronizes its restored state.");
         Assert.AreEqual(HistorySyncStatus.NeedSync, record.SyncStatus);
         Assert.AreEqual(3, record.Version);
     }

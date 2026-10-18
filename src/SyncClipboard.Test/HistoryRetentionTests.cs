@@ -7,6 +7,8 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.History;
+using SyncClipboard.Core.Utilities.History.HistoryExport;
+using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Utilities;
@@ -31,7 +33,9 @@ public class HistoryRetentionTests
         var recent = DateTime.UtcNow;
         var accessed = Record("accessed", old, recent);
         var modified = Record("modified", recent, old);
-        var expired = Record("expired", old, old);
+        var expired = Record(await Utility.CalculateSHA256("expired", Token), old, old);
+        expired.Text = "expired";
+        expired.Size = expired.Text.Length;
         expired.Timestamp = recent;
         var starred = Record("starred", old, old);
         starred.Stared = true;
@@ -43,6 +47,20 @@ public class HistoryRetentionTests
         pending.SyncStatus = HistorySyncStatus.NeedSync;
         f.Db.HistoryRecords.AddRange(accessed, modified, expired, starred, pinned, synced, pending);
         await f.Db.SaveChangesAsync(Token);
+
+        using var export = new HistoryExportViewModel(f.Manager, new HistoryExporter(f));
+        await export.InitializeAsync(f.GetPersistentDir(), [HistoryRecordKey.From(expired)], () => Task.FromResult<string?>(null));
+        Assert.IsTrue(export.Ready);
+        using (var closedExport = new HistoryExportViewModel(f.Manager, new HistoryExporter(f)))
+        {
+            await closedExport.InitializeAsync(f.GetPersistentDir(), [HistoryRecordKey.From(expired)], () => Task.FromResult<string?>(null));
+            Assert.IsTrue(closedExport.Ready);
+        }
+        await f.Manager.CleanupExpiredHistory(Token);
+        Assert.IsTrue(await f.Db.HistoryRecords.AnyAsync(r => r.Hash == expired.Hash, Token));
+        await export.StartCommand.ExecuteAsync(null);
+        Assert.IsNotNull(export.ArchivePath);
+        Assert.IsTrue(File.Exists(export.ArchivePath));
 
         await f.Manager.CleanupExpiredHistory(Token);
 
@@ -71,6 +89,28 @@ public class HistoryRetentionTests
         f.Db.HistoryRecords.AddRange(
             Record("accessed", old, recent), Record("modified", recent, old), inactive, starred);
         await f.Db.SaveChangesAsync(Token);
+
+        await f.DbSemaphore.WaitAsync(Token);
+        var firstPauseTask = f.Manager.PauseCleanupAsync(Token);
+        try
+        {
+            Assert.IsFalse(firstPauseTask.IsCompleted, "Pausing must wait for in-flight cleanup/database work.");
+            using var canceled = new CancellationTokenSource();
+            var canceledPause = f.Manager.PauseCleanupAsync(canceled.Token);
+            canceled.Cancel();
+            await Assert.ThrowsAsync<OperationCanceledException>(() => canceledPause);
+        }
+        finally
+        {
+            f.DbSemaphore.Release();
+        }
+        using var firstPause = await firstPauseTask;
+        using var secondPause = await f.Manager.PauseCleanupAsync(Token);
+        firstPause.Dispose();
+        firstPause.Dispose();
+        await f.Manager.EnforceMaxItemCountAsync(Token);
+        Assert.AreEqual(4, await f.Db.HistoryRecords.CountAsync(Token));
+        secondPause.Dispose();
 
         await f.Manager.EnforceMaxItemCountAsync(Token);
 
@@ -198,6 +238,14 @@ public class HistoryRetentionTests
         }
         f.Db.HistoryRecords.AddRange(recentFile, expiredFile, recentText, expiredText, active);
         await f.Db.SaveChangesAsync(Token);
+
+        using var pause = await f.Manager.PauseCleanupAsync(Token);
+        await f.Manager.ClearDeletedHistoryData(Token);
+        await f.Manager.CleanupExpiredHistory(Token);
+        Assert.AreEqual(5, await f.Db.HistoryRecords.CountAsync(Token));
+        foreach (var record in attachments)
+            Assert.IsTrue(File.Exists(Path.Combine(f.Manager.GetRecordWorkingDir(record)!, "data.bin")));
+        pause.Dispose();
 
         await f.Manager.ClearDeletedHistoryData(Token);
 
@@ -511,6 +559,7 @@ public class HistoryRetentionTests
     {
         private readonly DirectoryInfo root = Directory.CreateTempSubdirectory("SyncClipboard-Retention-");
         private readonly SemaphoreSlim semaphore = new(1, 1);
+        public SemaphoreSlim DbSemaphore => semaphore;
         public MemoryHistoryDbContext Db { get; } = new();
         public HistoryConfig Config { get; } = new() { HistoryRetentionMinutes = 60, MaxItemCount = 0 };
         public HistoryManager Manager { get; }
@@ -527,7 +576,6 @@ public class HistoryRetentionTests
             SetField("_historyConfig", Config);
             SetField("_runtimeHistoryConfig", RuntimeConfig);
             SetField("_historyManagerHelper", new HistoryManagerHelper<HistoryRecord, DateTime>(Manager));
-            Manager.EnableCleanup = true;
         }
 
         private void SetField(string name, object value) => typeof(HistoryManager)
