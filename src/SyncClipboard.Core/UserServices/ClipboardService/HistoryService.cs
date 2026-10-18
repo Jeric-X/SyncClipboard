@@ -212,8 +212,7 @@ public class HistoryService : ClipboardHander
             throw new InvalidOperationException(I18n.Strings.ServerTimeError);
         }
 
-        historyManager.EnableCleanup = false;
-        using (new ScopeGuard(() => historyManager.EnableCleanup = true))
+        using (await historyManager.PauseCleanupAsync(token).ConfigureAwait(false))
         {
             trayIcon.SetStatusString(SERVICE_NAME, "Synchronizing history...");
             historyTransferQueue.ResumeQueue();

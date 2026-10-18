@@ -15,7 +15,11 @@
                      IsReadOnly="True"
                      TextWrapping="Wrap" />
             <Button Content="{x:Static i18n:Strings.HistoryExportChangeDirectory}" Command="{Binding ChangeDirectoryCommand}" IsVisible="{Binding ShowSetup}" />
-            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" />
+            <ProgressBar Minimum="0"
+                         Maximum="{Binding ProgressMaximum}"
+                         Value="{Binding ProcessedCount}"
+                         IsIndeterminate="{Binding IsPreparing}"
+                         IsVisible="{Binding IsBusy}" />
             <SelectableTextBlock Text="{Binding Status}" TextWrapping="Wrap" />
             <Button Content="{x:Static i18n:Strings.HistoryExportStart}" Command="{Binding StartCommand}" IsVisible="{Binding ShowStart}" />
             <StackPanel Spacing="4" IsVisible="{Binding HasArchive}">
