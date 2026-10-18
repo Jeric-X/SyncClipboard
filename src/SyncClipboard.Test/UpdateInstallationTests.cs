@@ -312,14 +312,78 @@ public class UpdateInstallationTests
     }
 
     private UpdateChecker CreateChecker(IUpdateInstaller? installer, IHttp? http = null,
-        Mock<IUpdateInstallerFactory>? factory = null, INotificationManager? notifications = null)
+        Mock<IUpdateInstallerFactory>? factory = null, INotificationManager? notifications = null,
+        IThreadDispatcher? dispatcher = null)
     {
         var path = Path.Combine(directory, "update_info.json");
         File.WriteAllText(path, "{\"UpdateInfo\":{\"manage_type\":\"manual\",\"update_src\":\"github\",\"package_name\":\"test.package\"}}");
         factory ??= new Mock<IUpdateInstallerFactory>();
         factory.Setup(f => f.Create(It.IsAny<UpdateInfoConfig>())).Returns(installer);
         return new UpdateChecker(null!, http!, Mock.Of<ILogger>(), null!, notifications ?? Mock.Of<INotificationManager>(),
-            null!, config, factory.Object, new ConfigBase(path));
+            null!, dispatcher ?? Mock.Of<IThreadDispatcher>(), config, factory.Object, new ConfigBase(path));
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task NotificationInstall_DispatchesBeforeUpdatingBindingsAndStartingInstaller(bool launchFails)
+    {
+        var notifications = new Mock<INotificationManager>();
+        var dispatcher = new Mock<IThreadDispatcher>();
+        var queued = new TaskCompletionSource<Func<Task>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var dispatched = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        dispatcher.Setup(d => d.RunOnMainThreadAsync(It.IsAny<Func<Task>>()))
+            .Returns((Func<Task> action) =>
+            {
+                queued.SetResult(action);
+                return dispatched.Task;
+            });
+        var launch = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var installer = new Mock<IUpdateInstaller>();
+        installer.Setup(i => i.StartAsync(It.IsAny<UpdateInstallRequest>(), It.IsAny<CancellationToken>()))
+            .Returns(launch.Task);
+        var checker = CreateChecker(installer.Object, notifications: notifications.Object, dispatcher: dispatcher.Object);
+        SetProperty(checker, "GithubRelease", new GitHubRelease { TagName = "v9.0.0" });
+        SetProperty(checker, "GithubAsset", new GitHubRelease.GitHubAsset { Digest = "sha256:test" });
+        SetDownloadedStatus(checker);
+        var viewModel = new AboutViewModel(config, Mock.Of<IAppConfig>(), checker);
+        typeof(UpdateChecker).GetMethod("SendNotification", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .Invoke(checker, null);
+        var button = notifications.Invocations.SelectMany(invocation => invocation.Arguments
+            .OfType<IEnumerable<ActionButton>>()).SelectMany(buttons => buttons).Single();
+        Assert.AreEqual(SyncClipboard.Core.I18n.Strings.InstallUpdate, button.Text);
+        var callback = button.Callback;
+        Assert.IsNotNull(callback);
+
+        await Task.Run(callback, TestContext.CancellationTokenSource.Token);
+
+        Assert.AreEqual(UpdaterState.ReadyToInstall, checker.CurrentState.State);
+        Assert.IsTrue(viewModel.UpdateStatus.EnableActionButton);
+        installer.Verify(i => i.StartAsync(It.IsAny<UpdateInstallRequest>(), It.IsAny<CancellationToken>()), Times.Never);
+        var action = await queued.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
+        try
+        {
+            var installation = action();
+            Assert.AreEqual(UpdaterState.Installing, checker.CurrentState.State);
+            Assert.IsFalse(viewModel.UpdateStatus.EnableActionButton);
+            Assert.IsFalse(viewModel.CanCheckForUpdate);
+            if (launchFails)
+                launch.SetException(new IOException("Updater could not start"));
+            else
+                launch.SetResult();
+            await installation;
+
+            installer.Verify(i => i.StartAsync(It.Is<UpdateInstallRequest>(request => request.Digest == "sha256:test"),
+                It.IsAny<CancellationToken>()), Times.Once);
+            Assert.AreEqual(launchFails ? UpdaterState.Failed : UpdaterState.Installing, checker.CurrentState.State);
+            if (launchFails)
+                Assert.AreEqual("Updater could not start", viewModel.UpdateStatus.ExtraMessage);
+        }
+        finally
+        {
+            launch.TrySetResult();
+            dispatched.TrySetResult();
+        }
     }
 
     [TestMethod]

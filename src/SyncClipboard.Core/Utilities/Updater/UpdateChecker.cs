@@ -37,6 +37,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
     private readonly ILogger logger;
     private readonly LocalClipboardSetter localClipboardSetter;
     private readonly IMainWindow mainWindow;
+    private readonly IThreadDispatcher dispatcher;
     private readonly ConfigManager configManager;
     private readonly IUpdateInstaller? updateInstaller;
     private readonly Lock installationGate = new();
@@ -57,6 +58,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         LocalClipboardSetter localClipboardSetter,
         INotificationManager notification,
         IMainWindow mainWindow,
+        IThreadDispatcher dispatcher,
         ConfigManager configManager,
         IUpdateInstallerFactory updateInstallerFactory,
         [FromKeyedServices(Env.UpdateInfoFile)] ConfigBase updateInfoConfig)
@@ -68,6 +70,7 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
         this.configManager = configManager;
         this.notificationManager = notification;
         this.mainWindow = mainWindow;
+        this.dispatcher = dispatcher;
         updateInfo = updateInfoConfig.GetConfig<UpdateInfoConfig>();
         updateInstaller = updateInstallerFactory.Create(updateInfo);
         var autoDownload = configManager.GetConfig<ProgramConfig>().AutoDownloadUpdate;
@@ -175,8 +178,10 @@ public class UpdateChecker : IStateMachine<UpdaterStatus>
 
         var stateText = GetStateText(CurrentState.State);
         var readyToInstall = CurrentState.State == UpdaterState.ReadyToInstall;
+        // Native notification callbacks may run off the UI thread, but installation updates UI-bound state.
         var button = readyToInstall
-            ? new ActionButton(I18n.Strings.InstallUpdate, async () => await InstallUpdate(CancellationToken.None))
+            ? new ActionButton(I18n.Strings.InstallUpdate, () => DelegateExtention.SafeFireAndForget(
+                () => dispatcher.RunOnMainThreadAsync(() => InstallUpdate(CancellationToken.None)), nameof(UpdateChecker)))
             : new ActionButton(I18n.Strings.GoToAboutPage, () => mainWindow.OpenPage(PageDefinition.About, null));
         var message = readyToInstall ? updateInfo.PackageName : I18n.Strings.CheckOnAboutPage;
         notificationManager.ShowText(stateText, message, [button]);
