@@ -4,7 +4,7 @@ using Microsoft.Windows.Storage.Pickers;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Utilities.History.HistoryExport;
+using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.WinUI3.Views;
 using SyncClipboard.WinUI3.Services;
@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace SyncClipboard.WinUI3.Utilities;
 
-public sealed class HistoryExportDialogPresenter(IServiceProvider services, HistoryExporter exporter) : IHistoryExportDialog
+public sealed class HistoryExportDialogPresenter(IServiceProvider services, HistoryManager manager) : IHistoryExportDialog
 {
     public async Task ShowAsync(IReadOnlyList<HistoryRecordKey>? selected = null, bool fromHistoryWindow = false)
     {
@@ -22,7 +22,7 @@ public sealed class HistoryExportDialogPresenter(IServiceProvider services, Hist
             ? (Window)services.GetRequiredKeyedService<IWindow>(nameof(HistoryWindow))
             : (Window)services.GetRequiredService<IMainWindow>();
         var messages = new WinUIDialog(owner);
-        using var session = exporter.TryBeginSession();
+        using var session = manager.TryBeginBackupSession();
         if (session is null)
         {
             await messages.ShowMessageAsync(Strings.HistoryExport, Strings.HistoryExportBusy);
