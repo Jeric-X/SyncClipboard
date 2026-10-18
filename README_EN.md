@@ -1,6 +1,6 @@
 # SyncClipboard
 
-[中文](../README.md) | English
+[中文](README.md) | English
 
 <details>
 <summary>Contents</summary>
@@ -77,7 +77,7 @@ Clipboard is auto-synced between desktop clients running on Windows/Linux/macOS.
 <details>
 <summary>Screenshots</summary>
 
-![](image/WinUI_EN.png)
+![](docs/image/WinUI_EN.png)
 
 </details>
 
@@ -136,7 +136,7 @@ After installation, you can launch it from the menu. If launching via the comman
 - Clipboard sync is delayed, fails, or uploads garbled text: It is recommended to install `xclip` (for X11) or `wl-clipboard` (for Wayland) on your system. SyncClipboard will use these tools to help access the clipboard and improve stability. Use the commands `xclip -version` or `wl-paste -version` to check if they are installed.
 - When upgrading using `deb` or `rpm` installation packages, if the upgrade fails, please uninstall the old version before installing the new one.
 - When using the `AppImage` package, please ensure that the AppImage file has executable permissions.
-- If hotkeys or copy/paste operations indirectly triggered through SyncClipboard fail on Wayland, check [input device permissions](Linux-Input-Permissions_EN.md) first.
+- If hotkeys or copy/paste operations indirectly triggered through SyncClipboard fail on Wayland, check [input device permissions](docs/Linux-Input-Permissions_EN.md) first.
 - The language cannot be auto-detected and defaults to English. You can change the language in SyncClipboard's settings after launching.
 
 > [!NOTE]  
@@ -336,7 +336,7 @@ PUT /SyncClipboard.json
 - `hasData` indicates whether an additional file is used to store the complete clipboard information
   - For Image/File/Group types, `hasData` is always true
   - For Text type, depending on the original string length, you can optionally use an additional UTF8-encoded `.txt` file to store the complete string. If so, the `text` field only stores the beginning part of the complete string
-- `hash` value is a unique identifier of the clipboard content. For the calculation method, please refer to [docs/Hash.md](Hash.md)
+- `hash` value is a unique identifier of the clipboard content. For the calculation method, please refer to [docs/Hash.md](docs/Hash.md)
   - The sender should provide `hash` information whenever possible
   - When the `hash` value exists, the receiver should verify the consistency between the `hash` information and the clipboard content, and execute the error handling process when inconsistent
   - When `hash` is empty, or in an environment where `hash` cannot be calculated, you can use the combination of `type`/`text` to simply determine the equality of clipboard content
@@ -350,7 +350,7 @@ PUT /SyncClipboard.json
 
 ### S3 Sync Protocol Specification
 
-For protocol and data format specifications when using S3-compatible object storage as sync backend, please refer to [S3 Adapter Design](S3-Adapter-Design.md).
+For protocol and data format specifications when using S3-compatible object storage as sync backend, please refer to [S3 Adapter Design](docs/S3-Adapter-Design.md).
 
 ## Open Source Dependencies
 [NativeNotification](https://github.com/Jeric-X/NativeNotification) 
@@ -369,4 +369,4 @@ For protocol and data format specifications when using S3-compatible object stor
 
 ## Donate
 
-If SyncClipboard helps you, donations are welcome to support ongoing maintenance. View donation details [here](donate.md).
+If SyncClipboard helps you, donations are welcome to support ongoing maintenance. View donation details [here](docs/donate.md).

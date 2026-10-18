@@ -1,7 +1,7 @@
 # SyncClipboard
 [![build](https://github.com/Jeric-X/SyncClipboard/actions/workflows/build-entry.yml/badge.svg?branch=master)](https://github.com/Jeric-X/SyncClipboard/actions?query=branch%3Amaster)
 
-中文 | [English](docs/README_EN.md)  
+中文 | [English](README_EN.md)
 
 <details>
 <summary>目录</summary>

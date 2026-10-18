@@ -775,7 +775,7 @@ Shift + left click: Select a continuous range</value>
     <value>The custom configuration file is not used for the username and password</value>
   </data>
   <data name="CustomConfigFileLink" xml:space="preserve">
-    <value>https://github.com/Jeric-X/SyncClipboard/blob/master/docs/README_EN.md#server-configuration</value>
+    <value>https://github.com/Jeric-X/SyncClipboard/blob/master/README_EN.md#server-configuration</value>
   </data>
   <data name="RestartApp" xml:space="preserve">
     <value>Restart</value>
