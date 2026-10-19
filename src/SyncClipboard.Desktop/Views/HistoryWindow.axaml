@@ -242,7 +242,7 @@
                          HorizontalAlignment="Stretch">
                     <ListBox.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <StackPanel />
+                            <VirtualizingStackPanel />
                         </ItemsPanelTemplate>
                     </ListBox.ItemsPanel>
                     <ListBox.ItemTemplate>
