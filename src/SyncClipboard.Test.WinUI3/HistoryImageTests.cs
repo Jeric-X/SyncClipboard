@@ -4,7 +4,6 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.WinUI3.Controls;
 using SyncClipboard.WinUI3.Utilities;
 using SyncClipboard.WinUI3.ValueConverters;
-using SyncClipboard.WinUI3.Views;
 using System.Diagnostics;
 using Windows.Graphics;
 using Windows.Graphics.Imaging;
@@ -88,11 +87,6 @@ public class HistoryImageTests
         var parent = new Border { Child = image };
         var window = new Window { Content = parent };
         window.AppWindow.Move(new PointInt32(-32000, -32000));
-        window.AppWindow.Changed += (sender, args) =>
-        {
-            if (args.DidVisibilityChange)
-                HistoryListModeProxy.Current.IsWindowVisible = sender.IsVisible;
-        };
         var state = HistoryImageLoader.GetState(image);
         try
         {
@@ -106,18 +100,12 @@ public class HistoryImageTests
             Assert.AreEqual(2048, large.DecodePixelWidth);
             Assert.AreEqual(512, large.DecodePixelHeight);
 
-            window.AppWindow.Hide();
-            await WaitUntilAsync(() => image.Source is null);
-            window.AppWindow.Show(false);
-            var reopened = await WaitForBitmapAsync(image);
-            Assert.AreNotSame(large, reopened);
-
-            parent.Visibility = Visibility.Collapsed;
+            image.Visibility = Visibility.Collapsed;
             Assert.IsNull(image.Source);
             HistoryImageLoader.SetFilePath(image, smallPath);
             await state.PendingLoad;
             Assert.IsNull(image.Source);
-            parent.Visibility = Visibility.Visible;
+            image.Visibility = Visibility.Visible;
             var small = await WaitForBitmapAsync(image);
             Assert.AreEqual(32, small.PixelWidth);
             Assert.AreEqual(16, small.PixelHeight);
@@ -136,11 +124,11 @@ public class HistoryImageTests
             // Hide before the asynchronous header read completes: it must not restore Source later.
             HistoryImageLoader.SetFilePath(image, smallPath);
             var pending = state.PendingLoad;
-            HistoryListModeProxy.Current.IsWindowVisible = false;
+            image.Visibility = Visibility.Collapsed;
             Assert.IsNull(image.Source);
             await pending;
             Assert.IsNull(image.Source);
-            HistoryListModeProxy.Current.IsWindowVisible = true;
+            image.Visibility = Visibility.Visible;
             await WaitForBitmapAsync(image);
 
             parent.Child = null;
@@ -167,7 +155,6 @@ public class HistoryImageTests
         }
         finally
         {
-            HistoryListModeProxy.Current.IsWindowVisible = false;
             window.Close();
             directory.Delete(true);
         }
@@ -194,7 +181,6 @@ public class HistoryImageTests
         for (var cycle = 0; cycle < 2; cycle++)
         {
             window.AppWindow.Hide();
-            await WaitUntilAsync(() => images.All(image => image.Source is null));
             scroll.UpdateLayout();
             Assert.AreEqual(extent, scroll.ExtentHeight, 0.01);
             Assert.AreEqual(offset, scroll.VerticalOffset, 0.01);

@@ -4,10 +4,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.Core;
 using SyncClipboard.WinUI3.Utilities;
-using SyncClipboard.WinUI3.Views;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,7 +13,7 @@ using Windows.Graphics.Imaging;
 namespace SyncClipboard.WinUI3.Controls;
 
 /// <summary>
-/// Loads bounded history images only while their controls and history window are visible.
+/// Loads bounded history images while their controls are loaded and individually visible.
 /// WinUI owns the bitmap resources; clearing Source releases the control's reference.
 /// </summary>
 public static class HistoryImageLoader
@@ -55,7 +52,6 @@ public static class HistoryImageLoader
     {
         private static readonly SemaphoreSlim HeaderSlots = new(2);
         private readonly Image _image;
-        private readonly List<(UIElement Element, long Token)> _visibilitySubscriptions = [];
         private CancellationTokenSource? _request;
         private bool _loaded;
 
@@ -67,56 +63,23 @@ public static class HistoryImageLoader
             _image = image;
             image.Loaded += OnLoaded;
             image.Unloaded += OnUnloaded;
-            if (image.IsLoaded)
-            {
-                Attach();
-            }
+            image.RegisterPropertyChangedCallback(UIElement.VisibilityProperty, OnVisibilityChanged);
+            _loaded = image.IsLoaded;
         }
 
         private void OnLoaded(object sender, RoutedEventArgs args)
         {
-            Attach();
-            Update();
-        }
-
-        private void Attach()
-        {
-            if (_loaded)
-                return;
-
             _loaded = true;
-            HistoryListModeProxy.Current.PropertyChanged += OnWindowVisibilityChanged;
-            for (DependencyObject? node = _image; node is not null; node = VisualTreeHelper.GetParent(node))
-            {
-                if (node is UIElement element)
-                {
-                    var token = element.RegisterPropertyChangedCallback(UIElement.VisibilityProperty, OnVisibilityChanged);
-                    _visibilitySubscriptions.Add((element, token));
-                }
-            }
+            Update();
         }
 
         private void OnUnloaded(object sender, RoutedEventArgs args)
         {
             _loaded = false;
-            HistoryListModeProxy.Current.PropertyChanged -= OnWindowVisibilityChanged;
-            foreach (var (element, token) in _visibilitySubscriptions)
-            {
-                element.UnregisterPropertyChangedCallback(UIElement.VisibilityProperty, token);
-            }
-            _visibilitySubscriptions.Clear();
             Update();
         }
 
         private void OnVisibilityChanged(DependencyObject sender, DependencyProperty property) => Update();
-
-        private void OnWindowVisibilityChanged(object? sender, PropertyChangedEventArgs args)
-        {
-            if (args.PropertyName == nameof(HistoryListModeProxy.IsWindowVisible))
-            {
-                Update();
-            }
-        }
 
         internal void Update(bool resetSize = false)
         {
@@ -134,14 +97,8 @@ public static class HistoryImageLoader
                 _image.MaxHeight = double.PositiveInfinity;
             }
 
-            if (!_loaded || !HistoryListModeProxy.Current.IsWindowVisible || string.IsNullOrEmpty(GetFilePath(_image)))
+            if (!_loaded || _image.Visibility != Visibility.Visible || string.IsNullOrEmpty(GetFilePath(_image)))
                 return;
-
-            foreach (var (element, _) in _visibilitySubscriptions)
-            {
-                if (element.Visibility != Visibility.Visible)
-                    return;
-            }
 
             _request = new CancellationTokenSource();
             PendingLoad = LoadAsync(GetFilePath(_image)!, GetIsThumbnail(_image),

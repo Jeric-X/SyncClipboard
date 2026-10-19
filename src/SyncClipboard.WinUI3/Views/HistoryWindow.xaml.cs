@@ -88,8 +88,6 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         configManager.GetAndListenConfig<ProgramConfig>(config => this.SetTheme(config.Theme));
 
         this.Closed += OnHistoryWindowClosed;
-        AppWindow.Changed += OnAppWindowChanged;
-        HistoryListModeProxy.Current.IsWindowVisible = AppWindow.IsVisible;
 
         this.Activated += (_, args) =>
         {
@@ -281,17 +279,10 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         SetNonClientPointerSource();
     }
 
-    private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
-    {
-        if (args.DidVisibilityChange)
-        {
-            HistoryListModeProxy.Current.IsWindowVisible = !_disposed && sender.IsVisible;
-        }
-    }
-
     private void OnHistoryWindowClosed(object sender, WindowEventArgs args)
     {
-        Hide();
+        ResetPointerInteractionState();
+        this.AppWindow.Hide();
         args.Handled = true;
     }
 
@@ -309,8 +300,6 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         }
 
         _disposed = true;
-        HistoryListModeProxy.Current.IsWindowVisible = false;
-        AppWindow.Changed -= OnAppWindowChanged;
         Destroy();
         GC.SuppressFinalize(this);
     }
@@ -355,7 +344,6 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         }
 
         ResetPointerInteractionState();
-        HistoryListModeProxy.Current.IsWindowVisible = false;
         AppWindow.Hide();
     }
 

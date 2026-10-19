@@ -10,20 +10,6 @@ public class HistoryListModeProxy : INotifyPropertyChanged
 
     private bool _isCompactListMode;
     private bool _isMultiSelecting;
-    private bool _isWindowVisible;
-
-    public bool IsWindowVisible
-    {
-        get => _isWindowVisible;
-        set
-        {
-            if (_isWindowVisible == value)
-                return;
-
-            _isWindowVisible = value;
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsWindowVisible)));
-        }
-    }
 
     public bool IsCompactListMode
     {
