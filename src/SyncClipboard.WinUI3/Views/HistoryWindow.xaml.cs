@@ -32,7 +32,6 @@ using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
 using Windows.Graphics;
-using Windows.Graphics.Imaging;
 using Windows.System;
 using Windows.UI.Core;
 using WinUIEx;
@@ -89,6 +88,8 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         configManager.GetAndListenConfig<ProgramConfig>(config => this.SetTheme(config.Theme));
 
         this.Closed += OnHistoryWindowClosed;
+        AppWindow.Changed += OnAppWindowChanged;
+        HistoryListModeProxy.Current.IsWindowVisible = AppWindow.IsVisible;
 
         this.Activated += (_, args) =>
         {
@@ -280,10 +281,17 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         SetNonClientPointerSource();
     }
 
+    private void OnAppWindowChanged(AppWindow sender, AppWindowChangedEventArgs args)
+    {
+        if (args.DidVisibilityChange)
+        {
+            HistoryListModeProxy.Current.IsWindowVisible = !_disposed && sender.IsVisible;
+        }
+    }
+
     private void OnHistoryWindowClosed(object sender, WindowEventArgs args)
     {
-        ResetPointerInteractionState();
-        this.AppWindow.Hide();
+        Hide();
         args.Handled = true;
     }
 
@@ -301,6 +309,8 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         }
 
         _disposed = true;
+        HistoryListModeProxy.Current.IsWindowVisible = false;
+        AppWindow.Changed -= OnAppWindowChanged;
         Destroy();
         GC.SuppressFinalize(this);
     }
@@ -345,6 +355,7 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         }
 
         ResetPointerInteractionState();
+        HistoryListModeProxy.Current.IsWindowVisible = false;
         AppWindow.Hide();
     }
 
@@ -489,38 +500,6 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         {
             _ListView.ScrollIntoView(_ListView.SelectedItem);
         }
-    }
-
-    private void Image_ImageOpened(object sender, RoutedEventArgs _)
-    {
-        if (sender is not Image image)
-        {
-            return;
-        }
-
-        _InvisualableImage.Source = image.Source;
-        _InvisualableImage.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        _InvisualableImage.Source = null;
-        var desiredSize = _InvisualableImage.DesiredSize;
-
-        if (desiredSize.Height > 200)
-        {
-            image.Stretch = Stretch.Uniform;
-        }
-
-        BindLoadedImageVisibility(image);
-    }
-
-    private static void BindLoadedImageVisibility(Image image)
-    {
-        var binding = new Binding
-        {
-            Source = HistoryListModeProxy.Current,
-            Path = new PropertyPath(nameof(HistoryListModeProxy.IsCompactListMode)),
-            Converter = boolToVisibilityNegateConverter,
-            Mode = BindingMode.OneWay,
-        };
-        image.SetBinding(UIElement.VisibilityProperty, binding);
     }
 
     private void ListViewItem_PointerPressed(object sender, PointerRoutedEventArgs e)
