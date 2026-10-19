@@ -89,7 +89,7 @@ public sealed class PreviewImage : Image
             change.Property == DecodeBoundsProperty || change.Property == ScaleWithRenderScalingProperty ||
             change.Property == SizeToImageProperty || change.Property == MaxPixelWidthProperty)
         {
-            UpdateImage();
+            UpdateImage(resetSize: change.Property != IsVisibleProperty);
         }
     }
 
@@ -125,7 +125,7 @@ public sealed class PreviewImage : Image
         }
     }
 
-    private void UpdateImage()
+    private void UpdateImage(bool resetSize = false)
     {
         _request?.Cancel();
         _request?.Dispose();
@@ -133,8 +133,13 @@ public sealed class PreviewImage : Image
         Source = null;
         _bitmap?.Dispose();
         _bitmap = null;
-        Width = double.NaN;
-        Height = double.NaN;
+        // Keep the row's layout while hidden or reloading so releasing pixels does
+        // not collapse the scroll extent. A different file or sizing policy invalidates it.
+        if (resetSize)
+        {
+            Width = double.NaN;
+            Height = double.NaN;
+        }
 
         if (!_attached || !IsVisible || _ancestors.Any(ancestor => !ancestor.IsVisible) || string.IsNullOrEmpty(FilePath))
         {

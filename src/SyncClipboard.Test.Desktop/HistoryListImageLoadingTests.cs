@@ -321,6 +321,90 @@ public class HistoryListImageLoadingTests
         }, TestContext.CancellationTokenSource.Token);
     }
 
+    [TestMethod]
+    public async Task ReopeningWindowKeepsScrollPositionWhileImagesReload()
+    {
+        await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryListImageLoadingTests));
+        await session.Dispatch(async () =>
+        {
+            Application.Current!.Styles.Add(new FluentTheme());
+            var delayLoads = false;
+            var pending = new List<(TaskCompletionSource<PreviewImage.DecodedImage> Request, Size Size)>();
+            var bitmaps = new List<TrackingBitmap>();
+            var list = new ListBox
+            {
+                ItemsSource = Enumerable.Range(0, 20).Select(index => index.ToString()).ToArray(),
+                AutoScrollToSelectedItem = false,
+                ItemsPanel = new FuncTemplate<Panel?>(() => new StackPanel()),
+                ItemTemplate = new FuncDataTemplate<string>((path, _) => new PreviewImage((file, _, _) =>
+                {
+                    var size = new Size(300, 80 + int.Parse(file) * 4);
+                    if (delayLoads)
+                    {
+                        var request = new TaskCompletionSource<PreviewImage.DecodedImage>();
+                        pending.Add((request, size));
+                        return request.Task;
+                    }
+                    var bitmap = CreateBitmap();
+                    bitmaps.Add(bitmap);
+                    return Task.FromResult(new PreviewImage.DecodedImage(bitmap, size));
+                })
+                { FilePath = path, SizeToImage = true })
+            };
+            var window = new Window { Content = list, Width = 450, Height = 400 };
+            try
+            {
+                window.Show();
+                window.UpdateLayout();
+                var images = list.GetVisualDescendants().OfType<PreviewImage>().ToArray();
+                Assert.HasCount(20, images);
+                var scroll = list.GetVisualDescendants().OfType<ScrollViewer>().First();
+                scroll.Offset = new Vector(0, 1200);
+                window.UpdateLayout();
+                var offset = scroll.Offset.Y;
+                var extent = scroll.Extent.Height;
+                Assert.IsGreaterThan(0, offset);
+                delayLoads = true;
+                for (var cycle = 0; cycle < 2; cycle++)
+                {
+                    var oldBitmaps = bitmaps.ToArray();
+                    window.Hide();
+                    Assert.IsTrue(images.All(image => image.Source is null));
+                    Assert.IsTrue(oldBitmaps.All(bitmap => bitmap.DisposeCount == 1));
+                    bitmaps.Clear();
+                    window.Show();
+                    window.UpdateLayout();
+                    Assert.AreEqual(extent, scroll.Extent.Height, 0.01);
+                    Assert.AreEqual(offset, scroll.Offset.Y, 0.01);
+                    Assert.IsGreaterThanOrEqualTo(images.Length, pending.Count);
+                    foreach (var (request, size) in pending)
+                    {
+                        var bitmap = CreateBitmap();
+                        bitmaps.Add(bitmap);
+                        request.SetResult(new PreviewImage.DecodedImage(bitmap, size));
+                        window.UpdateLayout();
+                        Assert.AreEqual(extent, scroll.Extent.Height, 0.01);
+                        Assert.AreEqual(offset, scroll.Offset.Y, 0.01);
+                    }
+                    await Task.WhenAll(images.Select(image => image.PendingLoad));
+                    pending.Clear();
+                    window.UpdateLayout();
+                    Assert.AreEqual(extent, scroll.Extent.Height, 0.01);
+                    Assert.AreEqual(offset, scroll.Offset.Y, 0.01);
+                }
+            }
+            finally
+            {
+                window.Close();
+                foreach (var (request, _) in pending)
+                {
+                    request.TrySetCanceled(TestContext.CancellationTokenSource.Token);
+                }
+            }
+            return true;
+        }, TestContext.CancellationTokenSource.Token);
+    }
+
     private static TrackingBitmap CreateBitmap()
     {
         using var source = new SKBitmap(1, 1);
