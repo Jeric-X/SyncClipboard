@@ -3,6 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <UseWinUI>true</UseWinUI>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
     <StartupObject>SyncClipboard.Test.WinUI3.HistoryImageTestHost</StartupObject>
     <ApplicationManifest>../SyncClipboard.WinUI3/app.manifest</ApplicationManifest>

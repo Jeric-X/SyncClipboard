@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Markup;
 using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.WinUI3.Controls;
 using SyncClipboard.WinUI3.Utilities;
@@ -124,8 +125,18 @@ public class HistoryImageTests
             Assert.IsLessThanOrEqualTo((int)(200 * image.XamlRoot.RasterizationScale), thumbnail.DecodePixelHeight);
             Assert.AreEqual(200, image.Height);
 
-            // Hide before the asynchronous header read completes: it must not restore Source later.
+            HistoryImageLoader.SetContainerRecycled(parent, true);
+            Assert.IsTrue(image.IsLoaded);
+            Assert.IsNull(image.Source);
             HistoryImageLoader.SetFilePath(image, smallPath);
+            await state.PendingLoad;
+            Assert.IsNull(image.Source);
+            HistoryImageLoader.SetContainerRecycled(parent, false);
+            var reused = await WaitForBitmapAsync(image);
+            Assert.AreEqual(32, reused.PixelWidth);
+
+            // Hide before the asynchronous header read completes: it must not restore Source later.
+            HistoryImageLoader.SetFilePath(image, largePath);
             var pending = state.PendingLoad;
             image.Visibility = Visibility.Collapsed;
             Assert.IsNull(image.Source);
@@ -154,13 +165,113 @@ public class HistoryImageTests
             Assert.AreEqual(1, missingCount);
             Assert.IsNull(image.Source);
 
+            await VerifyDecodeFailuresAsync(image, directory.FullName);
             await VerifyScrollPositionAsync(window, largePath);
+            await VerifyRecyclingAsync(window, largePath);
         }
         finally
         {
             window.Close();
             directory.Delete(true);
         }
+    }
+
+    private static async Task VerifyDecodeFailuresAsync(Image image, string directory)
+    {
+        var path = Path.Combine(directory, "deleted-after-header.png");
+        await CreateImageAsync(path, 400, 200);
+        var state = HistoryImageLoader.GetState(image);
+        var missingCount = 0;
+        state.FileMissing += (_, _) => missingCount++;
+        var sourceWasAssigned = false;
+        var subscription = image.RegisterPropertyChangedCallback(Image.SourceProperty, (_, _) =>
+        {
+            if (image.Source is BitmapImage)
+            {
+                sourceWasAssigned = true;
+                // Header reading has finished; the URI decoder has not opened the file yet.
+                File.Delete(path);
+            }
+        });
+        try
+        {
+            HistoryImageLoader.SetFilePath(image, path);
+            await state.PendingLoad;
+            await WaitUntilAsync(() => missingCount == 1);
+            Assert.IsTrue(sourceWasAssigned);
+            Assert.IsNull(image.Source);
+            Assert.IsTrue(double.IsNaN(image.Width));
+            Assert.IsTrue(double.IsNaN(image.Height));
+        }
+        finally
+        {
+            image.UnregisterPropertyChangedCallback(Image.SourceProperty, subscription);
+        }
+
+        var corruptPath = Path.Combine(directory, "corrupt-payload.png");
+        await CreateImageAsync(corruptPath, 400, 200);
+        sourceWasAssigned = false;
+        subscription = image.RegisterPropertyChangedCallback(Image.SourceProperty, (_, _) =>
+        {
+            if (image.Source is BitmapImage)
+            {
+                sourceWasAssigned = true;
+                // Preserve a real file, but replace its payload after the successful header read.
+                File.WriteAllText(corruptPath, "corrupt image payload");
+            }
+        });
+        try
+        {
+            HistoryImageLoader.SetFilePath(image, corruptPath);
+            await state.PendingLoad;
+            await WaitUntilAsync(() => image.Source is null);
+            Assert.IsTrue(sourceWasAssigned);
+            Assert.AreEqual(1, missingCount);
+            Assert.IsTrue(double.IsNaN(image.Width));
+            Assert.IsTrue(double.IsNaN(image.Height));
+        }
+        finally
+        {
+            image.UnregisterPropertyChangedCallback(Image.SourceProperty, subscription);
+        }
+    }
+
+    private static async Task VerifyRecyclingAsync(Window window, string path)
+    {
+        var list = new HistoryListView
+        {
+            Width = 400,
+            Height = 400,
+            ItemTemplate = (DataTemplate)XamlReader.Load($"""
+                <DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                              xmlns:controls="using:SyncClipboard.WinUI3.Controls">
+                    <Image controls:HistoryImageLoader.IsThumbnail="True"
+                           controls:HistoryImageLoader.FilePath="{path}" />
+                </DataTemplate>
+                """),
+            ItemsSource = Enumerable.Range(0, 100).ToArray(),
+        };
+        var recycledCount = 0;
+        list.ContainerContentChanging += (_, args) =>
+        {
+            if (args.InRecycleQueue && args.ItemContainer.ContentTemplateRoot is Image recycledImage)
+            {
+                recycledCount++;
+                Assert.IsNull(recycledImage.Source);
+            }
+        };
+        window.Content = list;
+        await WaitUntilAsync(() => list.ContainerFromIndex(0) is ListViewItem { ContentTemplateRoot: Image });
+        var first = (Image)((ListViewItem)list.ContainerFromIndex(0)).ContentTemplateRoot;
+        await WaitForBitmapAsync(first);
+        list.ScrollIntoView(80, ScrollIntoViewAlignment.Leading);
+        await WaitUntilAsync(() => recycledCount > 0);
+        await WaitUntilAsync(() => list.ContainerFromIndex(80) is ListViewItem { ContentTemplateRoot: Image });
+        var reused = (Image)((ListViewItem)list.ContainerFromIndex(80)).ContentTemplateRoot;
+        await WaitForBitmapAsync(reused);
+        list.ScrollIntoView(0, ScrollIntoViewAlignment.Leading);
+        await WaitUntilAsync(() => list.ContainerFromIndex(0) is ListViewItem { ContentTemplateRoot: Image });
+        await WaitForBitmapAsync((Image)((ListViewItem)list.ContainerFromIndex(0)).ContentTemplateRoot);
     }
 
     private static async Task VerifyScrollPositionAsync(Window window, string path)

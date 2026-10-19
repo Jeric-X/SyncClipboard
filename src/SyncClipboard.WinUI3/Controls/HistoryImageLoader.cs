@@ -30,6 +30,18 @@ public static class HistoryImageLoader
     public static bool GetIsThumbnail(Image image) => (bool)image.GetValue(IsThumbnailProperty);
     public static void SetIsThumbnail(Image image, bool value) => image.SetValue(IsThumbnailProperty, value);
 
+    internal static void SetContainerRecycled(DependencyObject container, bool recycled)
+    {
+        if (container.GetValue(StateProperty) is State state)
+        {
+            state.SetRecycled(recycled);
+        }
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(container); i++)
+        {
+            SetContainerRecycled(VisualTreeHelper.GetChild(container, i), recycled);
+        }
+    }
+
     private static void OnOptionsChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args)
     {
         if (sender is Image image)
@@ -53,7 +65,9 @@ public static class HistoryImageLoader
         private static readonly SemaphoreSlim HeaderSlots = new(2);
         private readonly Image _image;
         private CancellationTokenSource? _request;
+        private BitmapImage? _bitmap;
         private bool _loaded;
+        private bool _recycled;
 
         internal event EventHandler? FileMissing;
         internal Task PendingLoad { get; private set; } = Task.CompletedTask;
@@ -81,14 +95,25 @@ public static class HistoryImageLoader
 
         private void OnVisibilityChanged(DependencyObject sender, DependencyProperty property) => Update();
 
-        internal void Update(bool resetSize = false)
+        internal void SetRecycled(bool recycled)
+        {
+            if (_recycled == recycled)
+                return;
+
+            _recycled = recycled;
+            Update();
+        }
+
+        private void ClearSource(bool resetSize)
         {
             _request?.Cancel();
             _request?.Dispose();
             _request = null;
+            _bitmap?.ImageFailed -= OnImageFailed;
+            _bitmap = null;
             _image.Source = null;
             // Releasing pixels must not collapse rows and change the scroll extent.
-            // Only a different file or sizing policy invalidates the previous layout.
+            // A different file, sizing policy, or decode failure invalidates the previous layout.
             if (resetSize)
             {
                 _image.Width = double.NaN;
@@ -96,13 +121,29 @@ public static class HistoryImageLoader
                 _image.MaxWidth = double.PositiveInfinity;
                 _image.MaxHeight = double.PositiveInfinity;
             }
+        }
 
-            if (!_loaded || _image.Visibility != Visibility.Visible || string.IsNullOrEmpty(GetFilePath(_image)))
+        internal void Update(bool resetSize = false)
+        {
+            ClearSource(resetSize);
+            if (!_loaded || _recycled || _image.Visibility != Visibility.Visible || string.IsNullOrEmpty(GetFilePath(_image)))
                 return;
 
             _request = new CancellationTokenSource();
             PendingLoad = LoadAsync(GetFilePath(_image)!, GetIsThumbnail(_image),
                 _image.XamlRoot?.RasterizationScale ?? 1, _request.Token);
+        }
+
+        private void OnImageFailed(object sender, ExceptionRoutedEventArgs args)
+        {
+            if (!ReferenceEquals(sender, _image.Source))
+                return;
+
+            var path = GetFilePath(_image);
+            ClearSource(resetSize: true);
+            if (!File.Exists(path))
+                FileMissing?.Invoke(this, EventArgs.Empty);
+            AppCore.TryGetCurrent()?.Logger.Write(nameof(HistoryImageLoader), $"Failed to decode preview: {args.ErrorMessage}");
         }
 
         private async Task LoadAsync(string path, bool thumbnail, double scale, CancellationToken token)
@@ -117,6 +158,8 @@ public static class HistoryImageLoader
                     DecodePixelWidth = size.PixelWidth,
                     DecodePixelHeight = size.PixelHeight,
                 };
+                _bitmap = bitmap;
+                bitmap.ImageFailed += OnImageFailed;
 
                 if (thumbnail)
                 {
