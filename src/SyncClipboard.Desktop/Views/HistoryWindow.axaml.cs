@@ -590,50 +590,6 @@ public partial class HistoryWindow : Window, IWindow
         _viewModel.HandleImageDoubleClick(record);
     }
 
-    private void Image_Loaded(object? sender, RoutedEventArgs e)
-    {
-        if (sender is not Image image || image.DataContext is not HistoryRecordVM record)
-        {
-            return;
-        }
-
-        void ImageProperChanged(object? s, AvaloniaPropertyChangedEventArgs e)
-        {
-            if (e.Property != Image.SourceProperty)
-            {
-                return;
-            }
-            SetImageVisual(image);
-        }
-        image.PropertyChanged += ImageProperChanged;
-
-        void OnUnloaded(object? s, RoutedEventArgs e)
-        {
-            image.Unloaded -= OnUnloaded;
-            image.PropertyChanged -= ImageProperChanged;
-        }
-        image.Unloaded += OnUnloaded;
-
-        if (image.Source is not null)
-        {
-            SetImageVisual(image);
-        }
-    }
-
-    private void SetImageVisual(Image image)
-    {
-        _InvisualableImage.Source = image.Source;
-        _InvisualableImage.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        _InvisualableImage.Source = null;
-        var desiredSize = _InvisualableImage.DesiredSize;
-
-        if (desiredSize.Height > 200)
-        {
-            image.Stretch = Stretch.Uniform;
-        }
-        image.Opacity = 1;
-    }
-
     public void ScrollToTop()
     {
         _scrollViewer?.ScrollToHome();

@@ -99,6 +99,14 @@ public static class FuncConverter
             _ => FAInfoBarSeverity.Informational,
         });
 
+    public static IMultiValueConverter HistoryListImageSource { get; } =
+        new FuncMultiValueConverter<object?, string?>(values =>
+        {
+            var inputs = new List<object?>(values);
+            // Wait until the mode binding is initialized before allowing a file load.
+            return inputs.Count == 2 && inputs[1] is false ? inputs[0] as string : null;
+        });
+
     public static IMultiValueConverter LimitHistoryListText { get; } =
         new FuncMultiValueConverter<object?, string>(values =>
         {
