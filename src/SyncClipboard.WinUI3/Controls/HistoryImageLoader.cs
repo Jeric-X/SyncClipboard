@@ -37,7 +37,7 @@ public static class HistoryImageLoader
     {
         if (sender is Image image)
         {
-            GetState(image).Update();
+            GetState(image).Update(resetSize: true);
         }
     }
 
@@ -118,16 +118,21 @@ public static class HistoryImageLoader
             }
         }
 
-        internal void Update()
+        internal void Update(bool resetSize = false)
         {
             _request?.Cancel();
             _request?.Dispose();
             _request = null;
             _image.Source = null;
-            _image.Width = double.NaN;
-            _image.Height = double.NaN;
-            _image.MaxWidth = double.PositiveInfinity;
-            _image.MaxHeight = double.PositiveInfinity;
+            // Releasing pixels must not collapse rows and change the scroll extent.
+            // Only a different file or sizing policy invalidates the previous layout.
+            if (resetSize)
+            {
+                _image.Width = double.NaN;
+                _image.Height = double.NaN;
+                _image.MaxWidth = double.PositiveInfinity;
+                _image.MaxHeight = double.PositiveInfinity;
+            }
 
             if (!_loaded || !HistoryListModeProxy.Current.IsWindowVisible || string.IsNullOrEmpty(GetFilePath(_image)))
                 return;

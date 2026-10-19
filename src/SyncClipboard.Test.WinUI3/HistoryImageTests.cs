@@ -162,12 +162,51 @@ public class HistoryImageTests
             await state.PendingLoad;
             Assert.AreEqual(1, missingCount);
             Assert.IsNull(image.Source);
+
+            await VerifyScrollPositionAsync(window, largePath);
         }
         finally
         {
             HistoryListModeProxy.Current.IsWindowVisible = false;
             window.Close();
             directory.Delete(true);
+        }
+    }
+
+    private static async Task VerifyScrollPositionAsync(Window window, string path)
+    {
+        var rows = new StackPanel();
+        var images = Enumerable.Range(0, 20).Select(_ => new Image()).ToArray();
+        foreach (var image in images)
+        {
+            HistoryImageLoader.SetIsThumbnail(image, true);
+            HistoryImageLoader.SetFilePath(image, path);
+            rows.Children.Add(image);
+        }
+        var scroll = new ScrollViewer { Content = rows, Width = 400, Height = 400 };
+        window.Content = scroll;
+        await WaitUntilAsync(() => images.All(image => image.Source is BitmapImage { PixelWidth: > 0 }));
+        scroll.UpdateLayout();
+        scroll.ChangeView(null, 1200, null, disableAnimation: true);
+        await WaitUntilAsync(() => scroll.VerticalOffset > 0);
+        var offset = scroll.VerticalOffset;
+        var extent = scroll.ExtentHeight;
+        for (var cycle = 0; cycle < 2; cycle++)
+        {
+            window.AppWindow.Hide();
+            await WaitUntilAsync(() => images.All(image => image.Source is null));
+            scroll.UpdateLayout();
+            Assert.AreEqual(extent, scroll.ExtentHeight, 0.01);
+            Assert.AreEqual(offset, scroll.VerticalOffset, 0.01);
+
+            window.AppWindow.Show(false);
+            scroll.UpdateLayout();
+            Assert.AreEqual(extent, scroll.ExtentHeight, 0.01);
+            Assert.AreEqual(offset, scroll.VerticalOffset, 0.01);
+            await WaitUntilAsync(() => images.All(image => image.Source is BitmapImage { PixelWidth: > 0 }));
+            scroll.UpdateLayout();
+            Assert.AreEqual(extent, scroll.ExtentHeight, 0.01);
+            Assert.AreEqual(offset, scroll.VerticalOffset, 0.01);
         }
     }
 
