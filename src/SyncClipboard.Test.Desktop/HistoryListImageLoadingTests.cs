@@ -32,15 +32,15 @@ public class HistoryListImageLoadingTests
         {
             var requested = new List<string>();
             var bitmaps = new List<TrackingBitmap>();
-            var image = new HistoryThumbnail((path, _, _) =>
+            var image = new PreviewImage((path, _, _) =>
             {
                 requested.Add(path);
                 var bitmap = CreateBitmap();
                 bitmaps.Add(bitmap);
-                return Task.FromResult(new HistoryThumbnail.Thumbnail(bitmap, new Size(1, 1)));
+                return Task.FromResult(new PreviewImage.DecodedImage(bitmap, new Size(1, 1)));
             });
             var state = new ImageState { PreviewImage = "first.png" };
-            using var binding = image.Bind(HistoryThumbnail.FilePathProperty, new MultiBinding
+            using var binding = image.Bind(PreviewImage.FilePathProperty, new MultiBinding
             {
                 Converter = FuncConverter.HistoryListImageSource,
                 Bindings =
@@ -101,11 +101,11 @@ public class HistoryListImageLoadingTests
             {
                 ItemsSource = items,
                 ItemsPanel = new FuncTemplate<Panel?>(() => new StackPanel()),
-                ItemTemplate = new FuncDataTemplate<string>((path, _) => new HistoryThumbnail((_, _, _) =>
+                ItemTemplate = new FuncDataTemplate<string>((path, _) => new PreviewImage((_, _, _) =>
                 {
                     var bitmap = CreateBitmap();
                     bitmaps.Add(bitmap);
-                    return Task.FromResult(new HistoryThumbnail.Thumbnail(bitmap, new Size(1, 1)));
+                    return Task.FromResult(new PreviewImage.DecodedImage(bitmap, new Size(1, 1)));
                 })
                 { FilePath = path })
             };
@@ -137,10 +137,10 @@ public class HistoryListImageLoadingTests
         await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryListImageLoadingTests));
         await session.Dispatch(async () =>
         {
-            var requests = new List<TaskCompletionSource<HistoryThumbnail.Thumbnail>>();
-            var image = new HistoryThumbnail((_, _, _) =>
+            var requests = new List<TaskCompletionSource<PreviewImage.DecodedImage>>();
+            var image = new PreviewImage((_, _, _) =>
             {
-                var request = new TaskCompletionSource<HistoryThumbnail.Thumbnail>();
+                var request = new TaskCompletionSource<PreviewImage.DecodedImage>();
                 requests.Add(request);
                 return request.Task;
             })
@@ -182,6 +182,7 @@ public class HistoryListImageLoadingTests
     [TestMethod]
     [DataRow(2400, 1600, 1.0, SKEncodedImageFormat.Png)]
     [DataRow(2400, 1600, 2.0, SKEncodedImageFormat.Jpeg)]
+    [DataRow(8000, 100, 1.0, SKEncodedImageFormat.Png)]
     [DataRow(8000, 100, 2.0, SKEncodedImageFormat.Png)]
     [DataRow(100, 8000, 2.0, SKEncodedImageFormat.Png)]
     [DataRow(10, 8000, 2.0, SKEncodedImageFormat.Png)]
@@ -201,15 +202,19 @@ public class HistoryListImageLoadingTests
                 {
                     data.SaveTo(stream);
                 }
-                var thumbnail = HistoryThumbnail.Decode(path, scale);
+                var thumbnail = PreviewImage.Decode(path, new PreviewImage.DecodeOptions(new Size(5120, 200), scale, 5120));
                 using var bitmap = thumbnail.Bitmap;
-                Assert.IsLessThanOrEqualTo((int)(400 * scale), bitmap.PixelSize.Width);
-                Assert.IsLessThanOrEqualTo((int)(202 * scale), bitmap.PixelSize.Height);
+                Assert.IsLessThanOrEqualTo(5120, bitmap.PixelSize.Width);
+                Assert.IsLessThanOrEqualTo((int)(200 * scale), bitmap.PixelSize.Height);
                 Assert.IsLessThanOrEqualTo(width, bitmap.PixelSize.Width);
                 Assert.IsLessThanOrEqualTo(height, bitmap.PixelSize.Height);
                 Assert.AreEqual((double)width / height, thumbnail.DisplaySize.AspectRatio, 0.001);
-                Assert.IsLessThanOrEqualTo(400, thumbnail.DisplaySize.Width);
-                Assert.IsLessThanOrEqualTo(202, thumbnail.DisplaySize.Height);
+                Assert.IsLessThanOrEqualTo(5120, thumbnail.DisplaySize.Width);
+                Assert.IsLessThanOrEqualTo(200, thumbnail.DisplaySize.Height);
+                if (width == 8000 && height == 100)
+                {
+                    Assert.AreEqual(new PixelSize(5120, 64), bitmap.PixelSize);
+                }
             }
             finally
             {
@@ -225,7 +230,7 @@ public class HistoryListImageLoadingTests
         await session.Dispatch(async () =>
         {
             var path = Path.GetTempFileName();
-            var image = new HistoryThumbnail { FilePath = path };
+            var image = new PreviewImage { FilePath = path, DecodeBounds = new Size(5120, 200), MaxPixelWidth = 5120, ScaleWithRenderScaling = true, SizeToImage = true };
             var window = new Window { Content = image };
             try
             {
@@ -261,7 +266,7 @@ public class HistoryListImageLoadingTests
             {
                 ItemsSource = items,
                 ItemsPanel = new FuncTemplate<Panel?>(() => new StackPanel()),
-                ItemTemplate = new FuncDataTemplate<string>((path, _) => new HistoryThumbnail { FilePath = path })
+                ItemTemplate = new FuncDataTemplate<string>((path, _) => new PreviewImage { FilePath = path, DecodeBounds = new Size(5120, 200), MaxPixelWidth = 5120, ScaleWithRenderScaling = true, SizeToImage = true })
             };
             var window = new Window { Content = list, Width = 850, Height = 530 };
             try
@@ -305,10 +310,10 @@ public class HistoryListImageLoadingTests
             }
             return true;
 
-            async Task<HistoryThumbnail[]> LoadImagesAsync(int count)
+            async Task<PreviewImage[]> LoadImagesAsync(int count)
             {
                 window.UpdateLayout();
-                var images = list.GetVisualDescendants().OfType<HistoryThumbnail>().ToArray();
+                var images = list.GetVisualDescendants().OfType<PreviewImage>().ToArray();
                 Assert.HasCount(count, images);
                 await Task.WhenAll(images.Select(image => image.PendingLoad));
                 Assert.IsTrue(images.All(image => image.Source is Bitmap));
