@@ -149,8 +149,6 @@ public class PreviewPanelImageTests
                     Assert.AreEqual(new PixelSize(400, 200), bitmap.PixelSize);
                     Assert.AreEqual(400, image.Width);
                     Assert.AreEqual(200, image.Height);
-                    window.Hide();
-                    Assert.ThrowsExactly<ObjectDisposedException>(() => _ = bitmap.PixelSize);
                 }
                 else
                 {
@@ -195,9 +193,6 @@ public class PreviewPanelImageTests
                 Assert.AreEqual(new PixelSize(400, 400), thumbnail.PixelSize);
                 Assert.AreEqual(200, image.Width);
                 Assert.AreEqual(200, image.Height);
-                window.Hide();
-                Assert.IsNull(image.Source);
-                Assert.ThrowsExactly<ObjectDisposedException>(() => _ = thumbnail.PixelSize);
             }
             finally
             {

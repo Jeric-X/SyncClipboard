@@ -2,19 +2,17 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
-using Avalonia.VisualTree;
 using SkiaSharp;
 using SyncClipboard.Core;
 using System;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.Controls;
 
 /// <summary>
-/// Owns a bounded image preview. Hidden or detached controls retain no decoded image.
+/// Owns a bounded image preview. Hiding or detaching the control releases its bitmap; hiding its window does not.
 /// </summary>
 public sealed class PreviewImage : Image
 {
@@ -24,7 +22,6 @@ public sealed class PreviewImage : Image
     private CancellationTokenSource? _request;
     private Bitmap? _bitmap;
     private bool _attached;
-    private Visual[] _ancestors = [];
 
     public static readonly StyledProperty<string?> FilePathProperty =
         AvaloniaProperty.Register<PreviewImage, string?>(nameof(FilePath));
@@ -89,43 +86,25 @@ public sealed class PreviewImage : Image
             change.Property == DecodeBoundsProperty || change.Property == ScaleWithRenderScalingProperty ||
             change.Property == SizeToImageProperty || change.Property == MaxPixelWidthProperty)
         {
-            UpdateImage(resetSize: change.Property != IsVisibleProperty);
+            UpdateImage();
         }
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        _ancestors = this.GetVisualAncestors().ToArray();
-        foreach (var ancestor in _ancestors)
-        {
-            ancestor.PropertyChanged += AncestorPropertyChanged;
-        }
         _attached = true;
         UpdateImage();
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        foreach (var ancestor in _ancestors)
-        {
-            ancestor.PropertyChanged -= AncestorPropertyChanged;
-        }
-        _ancestors = [];
         _attached = false;
         UpdateImage();
         base.OnDetachedFromVisualTree(e);
     }
 
-    private void AncestorPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
-    {
-        if (e.Property == IsVisibleProperty)
-        {
-            UpdateImage();
-        }
-    }
-
-    private void UpdateImage(bool resetSize = false)
+    private void UpdateImage()
     {
         _request?.Cancel();
         _request?.Dispose();
@@ -133,15 +112,10 @@ public sealed class PreviewImage : Image
         Source = null;
         _bitmap?.Dispose();
         _bitmap = null;
-        // Keep the row's layout while hidden or reloading so releasing pixels does
-        // not collapse the scroll extent. A different file or sizing policy invalidates it.
-        if (resetSize)
-        {
-            Width = double.NaN;
-            Height = double.NaN;
-        }
+        Width = double.NaN;
+        Height = double.NaN;
 
-        if (!_attached || !IsVisible || _ancestors.Any(ancestor => !ancestor.IsVisible) || string.IsNullOrEmpty(FilePath))
+        if (!_attached || !IsVisible || string.IsNullOrEmpty(FilePath))
         {
             return;
         }
@@ -157,7 +131,7 @@ public sealed class PreviewImage : Image
         try
         {
             decoded = await _load(path, options, token);
-            // Decoding itself cannot be interrupted. Never retain a late result after hiding,
+            // Decoding itself cannot be interrupted. Never retain a late result after hiding the control,
             // refreshing the list, or replacing the file path.
             token.ThrowIfCancellationRequested();
             if (SizeToImage)

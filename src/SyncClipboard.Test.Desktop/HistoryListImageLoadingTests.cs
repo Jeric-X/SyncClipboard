@@ -40,15 +40,14 @@ public class HistoryListImageLoadingTests
                 return Task.FromResult(new PreviewImage.DecodedImage(bitmap, new Size(1, 1)));
             });
             var state = new ImageState { PreviewImage = "first.png" };
-            using var binding = image.Bind(PreviewImage.FilePathProperty, new MultiBinding
+            using var visibleBinding = image.Bind(PreviewImage.IsVisibleProperty, new Binding(nameof(ImageState.IsCompactListMode))
             {
-                Converter = FuncConverter.HistoryListImageSource,
-                Bindings =
-                {
-                    new Binding(nameof(ImageState.PreviewImage)) { Source = state },
-                    new Binding(nameof(ImageState.IsCompactListMode)) { Source = state }
-                }
+                Source = state,
+                Converter = FuncConverter.IsFalse,
+                FallbackValue = false
             });
+            using var pathBinding = image.Bind(PreviewImage.FilePathProperty,
+                new Binding(nameof(ImageState.PreviewImage)) { Source = state });
             var window = new Window { Content = image };
             try
             {
@@ -75,10 +74,16 @@ public class HistoryListImageLoadingTests
                 Assert.HasCount(2, requested);
                 Assert.AreEqual("next.png", requested[1]);
                 window.Hide();
+                state.IsCompactListMode = true;
                 Assert.IsNull(image.Source);
                 Assert.AreEqual(1, bitmaps[1].DisposeCount);
                 state.PreviewImage = "hidden-window.png";
+                window.Show();
                 Assert.HasCount(2, requested);
+                state.IsCompactListMode = false;
+                await image.PendingLoad;
+                Assert.HasCount(3, requested);
+                Assert.AreEqual("hidden-window.png", requested[2]);
             }
             finally
             {
@@ -152,6 +157,7 @@ public class HistoryListImageLoadingTests
                 var oldLoad = image.PendingLoad;
                 image.FilePath = "new.png";
                 var newLoad = image.PendingLoad;
+                window.Hide();
                 var current = CreateBitmap();
                 requests[1].SetResult(new(current, new Size(1, 1)));
                 await newLoad;
@@ -159,6 +165,9 @@ public class HistoryListImageLoadingTests
                 requests[0].SetResult(new(stale, new Size(1, 1)));
                 await oldLoad;
                 Assert.AreSame(current, image.Source);
+                window.Show();
+                Assert.AreSame(current, image.Source);
+                Assert.HasCount(2, requests);
                 Assert.AreEqual(1, stale.DisposeCount);
 
                 image.FilePath = "pending.png";
@@ -322,14 +331,12 @@ public class HistoryListImageLoadingTests
     }
 
     [TestMethod]
-    public async Task ReopeningWindowKeepsScrollPositionWhileImagesReload()
+    public async Task ReopeningWindowReusesImagesAndKeepsScrollPosition()
     {
         await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryListImageLoadingTests));
         await session.Dispatch(async () =>
         {
             Application.Current!.Styles.Add(new FluentTheme());
-            var delayLoads = false;
-            var pending = new List<(TaskCompletionSource<PreviewImage.DecodedImage> Request, Size Size)>();
             var bitmaps = new List<TrackingBitmap>();
             var list = new ListBox
             {
@@ -338,16 +345,9 @@ public class HistoryListImageLoadingTests
                 ItemsPanel = new FuncTemplate<Panel?>(() => new StackPanel()),
                 ItemTemplate = new FuncDataTemplate<string>((path, _) => new PreviewImage((file, _, _) =>
                 {
-                    var size = new Size(300, 80 + int.Parse(file) * 4);
-                    if (delayLoads)
-                    {
-                        var request = new TaskCompletionSource<PreviewImage.DecodedImage>();
-                        pending.Add((request, size));
-                        return request.Task;
-                    }
                     var bitmap = CreateBitmap();
                     bitmaps.Add(bitmap);
-                    return Task.FromResult(new PreviewImage.DecodedImage(bitmap, size));
+                    return Task.FromResult(new PreviewImage.DecodedImage(bitmap, new Size(300, 80 + int.Parse(file) * 4)));
                 })
                 { FilePath = path, SizeToImage = true })
             };
@@ -358,48 +358,33 @@ public class HistoryListImageLoadingTests
                 window.UpdateLayout();
                 var images = list.GetVisualDescendants().OfType<PreviewImage>().ToArray();
                 Assert.HasCount(20, images);
+                await Task.WhenAll(images.Select(image => image.PendingLoad));
+                var sources = images.Select(image => image.Source).ToArray();
+                var loadCount = bitmaps.Count;
                 var scroll = list.GetVisualDescendants().OfType<ScrollViewer>().First();
                 scroll.Offset = new Vector(0, 1200);
                 window.UpdateLayout();
                 var offset = scroll.Offset.Y;
                 var extent = scroll.Extent.Height;
                 Assert.IsGreaterThan(0, offset);
-                delayLoads = true;
                 for (var cycle = 0; cycle < 2; cycle++)
                 {
-                    var oldBitmaps = bitmaps.ToArray();
                     window.Hide();
-                    Assert.IsTrue(images.All(image => image.Source is null));
-                    Assert.IsTrue(oldBitmaps.All(bitmap => bitmap.DisposeCount == 1));
-                    bitmaps.Clear();
+                    CollectionAssert.AreEqual(sources, images.Select(image => image.Source).ToArray());
+                    Assert.IsTrue(bitmaps.All(bitmap => bitmap.DisposeCount == 0));
                     window.Show();
                     window.UpdateLayout();
-                    Assert.AreEqual(extent, scroll.Extent.Height, 0.01);
-                    Assert.AreEqual(offset, scroll.Offset.Y, 0.01);
-                    Assert.IsGreaterThanOrEqualTo(images.Length, pending.Count);
-                    foreach (var (request, size) in pending)
-                    {
-                        var bitmap = CreateBitmap();
-                        bitmaps.Add(bitmap);
-                        request.SetResult(new PreviewImage.DecodedImage(bitmap, size));
-                        window.UpdateLayout();
-                        Assert.AreEqual(extent, scroll.Extent.Height, 0.01);
-                        Assert.AreEqual(offset, scroll.Offset.Y, 0.01);
-                    }
-                    await Task.WhenAll(images.Select(image => image.PendingLoad));
-                    pending.Clear();
-                    window.UpdateLayout();
+                    Assert.HasCount(loadCount, bitmaps);
+                    CollectionAssert.AreEqual(sources, images.Select(image => image.Source).ToArray());
                     Assert.AreEqual(extent, scroll.Extent.Height, 0.01);
                     Assert.AreEqual(offset, scroll.Offset.Y, 0.01);
                 }
+                window.Content = null;
+                Assert.IsTrue(bitmaps.All(bitmap => bitmap.DisposeCount == 1));
             }
             finally
             {
                 window.Close();
-                foreach (var (request, _) in pending)
-                {
-                    request.TrySetCanceled(TestContext.CancellationTokenSource.Token);
-                }
             }
             return true;
         }, TestContext.CancellationTokenSource.Token);

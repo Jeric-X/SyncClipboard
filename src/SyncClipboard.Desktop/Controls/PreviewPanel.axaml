@@ -84,6 +84,7 @@
                     <MultiBinding Converter="{x:Static vc:FuncConverter.ShowImagePreviewMulti}">
                         <Binding Path="#_PreviewPanel.SelectedItem" />
                         <Binding Path="PreviewImage" />
+                        <Binding Path="#_PreviewPanel.ViewModel.ShowPreviewPanel" />
                     </MultiBinding>
                 </controls:PreviewImage.IsVisible>
             </controls:PreviewImage>

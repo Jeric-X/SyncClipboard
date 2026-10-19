@@ -70,6 +70,7 @@
             <DataTemplate x:Key="Image" DataType="vms:HistoryRecordVM">
                 <StackPanel Spacing="4" Orientation="Vertical">
                     <controls:PreviewImage DecodeBounds="5120,200"
+                                           FilePath="{Binding PreviewImage}"
                                            MaxPixelWidth="5120"
                                            ScaleWithRenderScaling="True"
                                            SizeToImage="True"
@@ -77,14 +78,7 @@
                                            ClipToBounds="True"
                                            HorizontalAlignment="Left"
                                            DoubleTapped="Image_DoubleTapped"
-                                           IsVisible="{Binding #_HistoryWindow.ViewModel.IsCompactListMode, Converter={x:Static vc:FuncConverter.Not}}">
-                        <controls:PreviewImage.FilePath>
-                            <MultiBinding Converter="{x:Static vc:FuncConverter.HistoryListImageSource}">
-                                <Binding Path="PreviewImage" />
-                                <Binding Path="#_HistoryWindow.ViewModel.IsCompactListMode" />
-                            </MultiBinding>
-                        </controls:PreviewImage.FilePath>
-                    </controls:PreviewImage>
+                                           IsVisible="{Binding #_HistoryWindow.ViewModel.IsCompactListMode, Converter={x:Static vc:FuncConverter.IsFalse}, FallbackValue=False}" />
                     <TextBlock HorizontalAlignment="Left">
                         <TextBlock.Text>
                             <MultiBinding Converter="{x:Static vc:FuncConverter.LimitHistoryListText}">
