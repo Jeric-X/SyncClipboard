@@ -17,8 +17,9 @@ internal static class WindowsZipPackage
     {
         if (!Directory.Exists(update.Target))
             throw new IOException(UpdaterText.Current.MissingTarget);
-        if (GetProtectedPaths(update).Any(path => FileSystem.IsWithin(update.Target, path)))
-            throw new IOException(UpdaterText.Current.ProtectedTarget);
+        var protectedPath = GetProtectedPaths(update).FirstOrDefault(path => FileSystem.IsWithin(update.Target, path));
+        if (protectedPath is not null)
+            throw new IOException($"{UpdaterText.Current.ProtectedTarget} {protectedPath}");
         if (update.WorkDirectory is not null && FileSystem.IsWithin(update.WorkDirectory, update.Target))
             throw new IOException(UpdaterText.Current.WorkspaceInsideTarget);
     }

@@ -80,6 +80,12 @@ internal static class UpdateWorker
         if (update.WorkDirectory is null)
             throw new IOException(UpdaterText.Current.WorkspaceNotPrepared);
         ValidateWorkspace(update.WorkDirectory);
+        Log(update, $"Updater executable: {Environment.ProcessPath}");
+        Log(update, $"Working directory: {Environment.CurrentDirectory}");
+        Log(update, $"Work directory: {update.WorkDirectory}");
+        Log(update, $"Target: {update.Target}");
+        foreach (var path in update.ProtectedPaths)
+            Log(update, $"Protected path: {path}");
         if (!await IsRunningInWorkspaceAsync(update.WorkDirectory, token))
             throw new IOException(UpdaterText.Current.OutsideWorkspace);
         if (OperatingSystem.IsMacOS())
