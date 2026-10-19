@@ -224,15 +224,7 @@ public sealed class PreviewImage : Image
             options.Bounds.Height * options.Scale / size.Height));
         if (size.Width * ratio < 1 || size.Height * ratio < 1)
         {
-            // Encoded file size does not bound pixel memory. Only use the full-image
-            // workaround when its intermediate bitmap fits the requested decode budget.
-            var maxWidth = Math.Min(options.Bounds.Width * options.Scale, options.MaxPixelWidth);
-            var maxHeight = options.Bounds.Height * options.Scale;
-            if ((long)size.Width * size.Height > maxWidth * maxHeight)
-            {
-                throw new InvalidDataException("Image dimensions exceed the full decode pixel budget.");
-            }
-            return DecodeFullImage(stream, options);
+            throw new InvalidDataException("Scaled image dimensions are smaller than one pixel.");
         }
 
         var bitmap = (double)size.Width * pixelSize.Height >= (double)size.Height * pixelSize.Width

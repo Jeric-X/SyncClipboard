@@ -31,8 +31,6 @@ public class PreviewPanelImageTests
     [DataRow(1024, 4096, 512, 2048, SKEncodedImageFormat.Png)]
     [DataRow(1024, 1024, 1024, 1024, SKEncodedImageFormat.Png)]
     [DataRow(2048, 2048, 2048, 2048, SKEncodedImageFormat.Png)]
-    [DataRow(1, 8192, 1, 2048, SKEncodedImageFormat.Png)]
-    [DataRow(8192, 1, 2048, 1, SKEncodedImageFormat.Png)]
     public async Task DecodeLimitsBothDimensionsWithoutUpscaling(
         int width, int height, int expectedWidth, int expectedHeight, SKEncodedImageFormat format)
     {
@@ -207,32 +205,6 @@ public class PreviewPanelImageTests
                 File.Delete(path);
             }
             return true;
-        }, TestContext.CancellationTokenSource.Token);
-    }
-
-    [TestMethod]
-    [DataRow(32, 262144, 2048, 2048, 1.0)]
-    [DataRow(262144, 32, 2048, 2048, 1.0)]
-    [DataRow(32, 262144, 5120, 200, 2.0)]
-    [DataRow(262144, 32, 5120, 200, 2.0)]
-    public async Task ExtremeAspectImagesCannotExceedTheIntermediatePixelBudget(
-        int width, int height, int boundWidth, int boundHeight, double scale)
-    {
-        await using var session = HeadlessUnitTestSession.StartNew(typeof(PreviewPanelImageTests));
-        await session.Dispatch(() =>
-        {
-            var path = CreateImage(width, height, SKEncodedImageFormat.Png);
-            try
-            {
-                Assert.IsLessThan(10L * 1024 * 1024, new FileInfo(path).Length);
-                var options = new PreviewImage.DecodeOptions(new Size(boundWidth, boundHeight), scale, 5120);
-                var error = Assert.ThrowsExactly<InvalidDataException>(() => PreviewImage.Decode(path, options));
-                Assert.AreEqual("Image dimensions exceed the full decode pixel budget.", error.Message);
-            }
-            finally
-            {
-                File.Delete(path);
-            }
         }, TestContext.CancellationTokenSource.Token);
     }
 

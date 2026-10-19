@@ -185,7 +185,6 @@ public class HistoryListImageLoadingTests
     [DataRow(8000, 100, 1.0, SKEncodedImageFormat.Png)]
     [DataRow(8000, 100, 2.0, SKEncodedImageFormat.Png)]
     [DataRow(100, 8000, 2.0, SKEncodedImageFormat.Png)]
-    [DataRow(10, 8000, 2.0, SKEncodedImageFormat.Png)]
     [DataRow(8000, 10, 2.0, SKEncodedImageFormat.Png)]
     [DataRow(32, 16, 2.0, SKEncodedImageFormat.Png)]
     public async Task DecodeBoundsPixelMemoryAndPreservesAspectRatio(int width, int height, double scale, SKEncodedImageFormat format)
