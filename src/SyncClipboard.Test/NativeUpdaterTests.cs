@@ -119,9 +119,16 @@ public class NativeUpdaterTests : UpdaterTestBase
     }
 
     [TestMethod]
-    public void TargetValidation_RejectsProtectedRoot()
+    [DataRow(false)]
+    [DataRow(true)]
+    public void TargetValidation_RejectsProtectedRoot(bool sameDirectory)
     {
-        Assert.Throws<IOException>(() => WindowsZipPackage.ValidateTarget(Arguments() with { ProtectedPaths = [directory] }));
+        var protectedPath = sameDirectory ? target : directory;
+        var error = Assert.Throws<IOException>(() => WindowsZipPackage.ValidateTarget(Arguments() with
+        {
+            ProtectedPaths = [stage, protectedPath]
+        }));
+        Assert.AreEqual($"{UpdaterText.Current.ProtectedTarget} {protectedPath}", error.Message);
     }
 
     [TestMethod]
