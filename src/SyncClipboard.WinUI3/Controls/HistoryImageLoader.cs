@@ -136,6 +136,7 @@ public static class HistoryImageLoader
             catch (OperationCanceledException) when (token.IsCancellationRequested)
             {
                 // Hidden, unloaded, or replaced images must not restore a stale source.
+                return;
             }
             catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
             {

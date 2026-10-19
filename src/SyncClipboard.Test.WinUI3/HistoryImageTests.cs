@@ -14,6 +14,8 @@ namespace SyncClipboard.Test.WinUI3;
 [DoNotParallelize]
 public class HistoryImageTests
 {
+    public TestContext TestContext { get; set; } = null!;
+
     [TestMethod]
     [DataRow(4096, 1024, false, 1.0, 2048, 512)]
     [DataRow(1024, 4096, false, 2.0, 512, 2048)]
@@ -62,11 +64,12 @@ public class HistoryImageTests
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         })!;
-        var output = process.StandardOutput.ReadToEndAsync();
-        var errors = process.StandardError.ReadToEndAsync();
+        var token = TestContext.CancellationTokenSource.Token;
+        var output = process.StandardOutput.ReadToEndAsync(token);
+        var errors = process.StandardError.ReadToEndAsync(token);
         try
         {
-            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(60));
+            await process.WaitForExitAsync(token).WaitAsync(TimeSpan.FromSeconds(60), token);
         }
         finally
         {
