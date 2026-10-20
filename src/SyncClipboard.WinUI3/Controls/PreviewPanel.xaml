@@ -66,7 +66,7 @@
                    CanDrag="True"
                    DragStarting="PreviewImage_DragStarting"
                    DoubleTapped="PreviewImage_DoubleTapped"
-                   Visibility="{x:Bind vc:ConvertMethod.ImagePreviewVisibility(SelectedItem, SelectedItem.PreviewImage), Mode=OneWay, FallbackValue=Collapsed}" />
+                   Visibility="{x:Bind vc:ConvertMethod.ImagePreviewVisibility(SelectedItem, SelectedItem.PreviewImage, ViewModel.ShowPreviewPanel), Mode=OneWay, FallbackValue=Collapsed}" />
         </Grid>
     </Grid>
 </UserControl>

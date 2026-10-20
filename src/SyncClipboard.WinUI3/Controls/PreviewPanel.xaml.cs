@@ -72,9 +72,7 @@ public sealed partial class PreviewPanel : UserControl
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(HistoryViewModel.ShowPreviewPanel))
-            UpdatePreviewImageContent();
-        else if (e.PropertyName == nameof(HistoryViewModel.EnableSyncHistory))
+        if (e.PropertyName == nameof(HistoryViewModel.EnableSyncHistory))
             UpdateStatusText();
     }
 
@@ -136,7 +134,7 @@ public sealed partial class PreviewPanel : UserControl
     private void UpdatePreviewImageContent()
     {
         HistoryImageLoader.SetFilePath(_PreviewImage,
-            ViewModel?.ShowPreviewPanel == true && SelectedItem?.Type == ProfileType.Image ? SelectedItem.PreviewImage : null);
+            SelectedItem?.Type == ProfileType.Image ? SelectedItem.PreviewImage : null);
     }
 
     private async void PreviewImage_FileMissing(object? sender, EventArgs e)

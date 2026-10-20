@@ -53,9 +53,9 @@
             <DataTemplate x:Key="imageTemplate" x:DataType="vms:HistoryRecordVM">
                 <StackPanel Orientation="Vertical" Spacing="5">
                     <Image HorizontalAlignment="Left"
-                           Stretch="Uniform"
+                           Stretch="UniformToFill"
                            controls:HistoryImageLoader.IsThumbnail="True"
-                           controls:HistoryImageLoader.FilePath="{x:Bind vc:ConvertMethod.HistoryImagePath(PreviewImage, local:HistoryListModeProxy.Current.IsCompactListMode), Mode=OneWay}"
+                           controls:HistoryImageLoader.FilePath="{x:Bind PreviewImage, Mode=OneWay}"
                            Visibility="{x:Bind vc:ConvertMethod.BoolToVisibilityNegate(local:HistoryListModeProxy.Current.IsCompactListMode), Mode=OneWay}"
                            DragStarting="Item_DragStarting"
                            CanDrag="True" />

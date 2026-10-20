@@ -51,11 +51,11 @@ internal static class ConvertMethod
             ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    public static Visibility ImagePreviewVisibility(HistoryRecordVM? record, string? previewImage)
+    public static Visibility ImagePreviewVisibility(HistoryRecordVM? record, string? previewImage, bool showPreviewPanel)
     {
         if (record == null)
             return Visibility.Collapsed;
-        return record.Type == ProfileType.Image && previewImage != null
+        return record.Type == ProfileType.Image && previewImage != null && showPreviewPanel
             ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -139,6 +139,4 @@ internal static class ConvertMethod
     {
         return isLocalFileReady ? 1.0 : 0.5;
     }
-
-    public static string? HistoryImagePath(string? path, bool isCompactListMode) => isCompactListMode ? null : path;
 }

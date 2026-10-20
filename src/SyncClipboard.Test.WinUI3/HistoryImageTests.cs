@@ -4,7 +4,12 @@ using Microsoft.UI.Xaml.Markup;
 using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.WinUI3.Controls;
 using SyncClipboard.WinUI3.Utilities;
-using SyncClipboard.WinUI3.ValueConverters;
+using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.ViewModels;
+using SyncClipboard.Core.ViewModels.Sub;
+using SyncClipboard.Shared.Profiles;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using Windows.Graphics;
 using Windows.Graphics.Imaging;
@@ -116,9 +121,10 @@ public class HistoryImageTests
             Assert.AreEqual(32, image.MaxWidth);
             Assert.AreEqual(16, image.MaxHeight);
 
-            HistoryImageLoader.SetFilePath(image, ConvertMethod.HistoryImagePath(largePath, true));
+            image.Visibility = Visibility.Collapsed;
+            HistoryImageLoader.SetFilePath(image, largePath);
             Assert.IsNull(image.Source);
-            HistoryImageLoader.SetFilePath(image, ConvertMethod.HistoryImagePath(largePath, false));
+            image.Visibility = Visibility.Visible;
             HistoryImageLoader.SetIsThumbnail(image, true);
             var thumbnail = await WaitForBitmapAsync(image);
             Assert.IsLessThanOrEqualTo(5120, thumbnail.DecodePixelWidth);
@@ -165,77 +171,131 @@ public class HistoryImageTests
             Assert.AreEqual(1, missingCount);
             Assert.IsNull(image.Source);
 
-            await VerifyDecodeFailuresAsync(image, directory.FullName);
+            await VerifyDecodeFallbackAsync(directory.FullName);
+            await VerifyDecodeConcurrencyAsync(largePath);
+            await VerifyPreviewPanelAsync(window, largePath, smallPath, directory.FullName);
             await VerifyScrollPositionAsync(window, largePath);
             await VerifyRecyclingAsync(window, largePath);
         }
         finally
         {
             window.Close();
-            directory.Delete(true);
+            // Closing the window cancels results, but in-flight native decodes still finish asynchronously.
+            await WaitUntilAsync(() =>
+            {
+                try
+                {
+                    directory.Delete(true);
+                    return true;
+                }
+                catch (IOException)
+                {
+                    return false;
+                }
+            });
         }
     }
 
-    private static async Task VerifyDecodeFailuresAsync(Image image, string directory)
+    private static async Task VerifyDecodeFallbackAsync(string directory)
     {
-        var path = Path.Combine(directory, "deleted-after-header.png");
-        await CreateImageAsync(path, 400, 200);
-        var state = HistoryImageLoader.GetState(image);
-        var missingCount = 0;
-        state.FileMissing += (_, _) => missingCount++;
-        var sourceWasAssigned = false;
-        var subscription = image.RegisterPropertyChangedCallback(Image.SourceProperty, (_, _) =>
+        var path = Path.Combine(directory, "fallback.png");
+        await CreateImageAsync(path, 4096, 1024);
+        foreach (var length in new[] { 10L * 1024 * 1024 - 1, 10L * 1024 * 1024 })
         {
-            if (image.Source is BitmapImage)
+            using (var file = File.OpenWrite(path))
+                file.SetLength(length);
+
+            foreach (var throws in new[] { false, true })
             {
-                sourceWasAssigned = true;
-                // Header reading has finished; the URI decoder has not opened the file yet.
-                File.Delete(path);
+                Task<(uint, uint)> FailHeader(Windows.Storage.Streams.IRandomAccessStream stream)
+                {
+                    stream.Seek(16);
+                    return throws ? throw new InvalidDataException("Header unavailable") : Task.FromResult((0u, 0u));
+                }
+
+                if (length < 10L * 1024 * 1024)
+                {
+                    var (bitmap, size) = await HistoryImageLoader.DecodeAsync(path, true, 2, CancellationToken.None, FailHeader);
+                    Assert.AreEqual(1600, bitmap.DecodePixelWidth);
+                    Assert.AreEqual(400, bitmap.DecodePixelHeight);
+                    Assert.AreEqual(800, size.Width);
+                    Assert.AreEqual(200, size.Height);
+                    Assert.IsGreaterThan(0, bitmap.PixelWidth);
+                }
+                else
+                {
+                    await Assert.ThrowsExactlyAsync<InvalidDataException>(() =>
+                        HistoryImageLoader.DecodeAsync(path, true, 2, CancellationToken.None, FailHeader));
+                }
             }
-        });
-        try
-        {
-            HistoryImageLoader.SetFilePath(image, path);
-            await state.PendingLoad;
-            await WaitUntilAsync(() => missingCount == 1);
-            Assert.IsTrue(sourceWasAssigned);
-            Assert.IsNull(image.Source);
-            Assert.IsTrue(double.IsNaN(image.Width));
-            Assert.IsTrue(double.IsNaN(image.Height));
         }
-        finally
-        {
-            image.UnregisterPropertyChangedCallback(Image.SourceProperty, subscription);
-        }
+
+        // A readable header permits a large file; only the fallback has the file-size limit.
+        var (bounded, _) = await HistoryImageLoader.DecodeAsync(path, false, 1, CancellationToken.None);
+        Assert.AreEqual(2048, bounded.DecodePixelWidth);
+        Assert.AreEqual(512, bounded.DecodePixelHeight);
 
         var corruptPath = Path.Combine(directory, "corrupt-payload.png");
-        await CreateImageAsync(corruptPath, 400, 200);
-        sourceWasAssigned = false;
-        subscription = image.RegisterPropertyChangedCallback(Image.SourceProperty, (_, _) =>
-        {
-            if (image.Source is BitmapImage)
+        await File.WriteAllTextAsync(corruptPath, "corrupt payload");
+        // Force a successful dimension lookup so this exercises the native decoder failure.
+        await Assert.ThrowsAsync<Exception>(() => HistoryImageLoader.DecodeAsync(corruptPath, false, 1,
+            CancellationToken.None, _ => Task.FromResult((400u, 200u))));
+    }
+
+    private static async Task VerifyPreviewPanelAsync(Window window, string largePath, string smallPath, string directory)
+    {
+        var configPath = Path.Combine(directory, "config.json");
+        File.WriteAllText(configPath, "{}");
+        var viewModel = (HistoryViewModel)RuntimeHelpers.GetUninitializedObject(typeof(HistoryViewModel));
+        typeof(HistoryViewModel).GetField("runtimeConfig", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(viewModel, new ConfigBase(configPath));
+        viewModel.ShowPreviewPanel = false;
+        var record = (HistoryRecordVM)RuntimeHelpers.GetUninitializedObject(typeof(HistoryRecordVM));
+        record.Type = ProfileType.Image;
+        record.PreviewImage = largePath;
+        record.Text = string.Empty;
+        var panel = new PreviewPanel { ViewModel = viewModel, SelectedItem = record };
+        window.Content = panel;
+        var image = (Image)panel.FindName("_PreviewImage");
+        await WaitUntilAsync(() => image.IsLoaded);
+        Assert.AreEqual(Visibility.Collapsed, image.Visibility);
+        Assert.IsNull(image.Source);
+        viewModel.ShowPreviewPanel = true;
+        await WaitForBitmapAsync(image);
+        viewModel.ShowPreviewPanel = false;
+        Assert.IsNull(image.Source);
+        record.PreviewImage = smallPath;
+        await HistoryImageLoader.GetState(image).PendingLoad;
+        Assert.IsNull(image.Source);
+        viewModel.ShowPreviewPanel = true;
+        await WaitForBitmapAsync(image);
+        Assert.AreEqual(32, image.MaxWidth);
+        Assert.AreEqual(16, image.MaxHeight);
+    }
+
+    private static async Task VerifyDecodeConcurrencyAsync(string path)
+    {
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var started = 0;
+        var tasks = Enumerable.Range(0, 6).Select(_ => HistoryImageLoader.DecodeAsync(path, true, 1,
+            CancellationToken.None, async stream =>
             {
-                sourceWasAssigned = true;
-                // Preserve a real file, but replace its payload after the successful header read.
-                File.WriteAllText(corruptPath, "corrupt image payload");
-            }
-        });
+                started++;
+                await release.Task;
+                return (4096u, 1024u);
+            })).ToArray();
         try
         {
-            HistoryImageLoader.SetFilePath(image, corruptPath);
-            await state.PendingLoad;
-            await WaitUntilAsync(() => image.Source is null);
-            Assert.IsTrue(sourceWasAssigned);
-            Assert.AreEqual(1, missingCount);
-            Assert.IsTrue(double.IsNaN(image.Width));
-            Assert.IsTrue(double.IsNaN(image.Height));
+            await WaitUntilAsync(() => started >= 2);
+            Assert.AreEqual(2, started);
         }
         finally
         {
-            image.UnregisterPropertyChangedCallback(Image.SourceProperty, subscription);
+            release.SetResult();
+            await Task.WhenAll(tasks);
         }
+        Assert.AreEqual(6, started);
     }
-
     private static async Task VerifyRecyclingAsync(Window window, string path)
     {
         var list = new HistoryListView
