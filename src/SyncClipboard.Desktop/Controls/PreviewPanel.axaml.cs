@@ -1,8 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Media;
-using Avalonia.Media.Imaging;
 using SyncClipboard.Core;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
@@ -11,8 +9,6 @@ using SyncClipboard.Core.ViewModels.Sub;
 using SyncClipboard.Desktop.Utilities;
 using System;
 using System.ComponentModel;
-using System.IO;
-using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.Controls;
 
@@ -21,7 +17,6 @@ namespace SyncClipboard.Desktop.Controls;
 /// </summary>
 public sealed partial class PreviewPanel : UserControl
 {
-    private (uint width, uint height) _currentPreviewImageSize = (0, 0);
     private const double DragThreshold = 4; // 拖拽阈值（像素）
     private bool _isPendingDrag = false;
     private Point _dragStartPoint;
@@ -57,6 +52,7 @@ public sealed partial class PreviewPanel : UserControl
     public PreviewPanel()
     {
         InitializeComponent();
+        _PreviewImage.FileMissing += PreviewImage_FileMissing;
 
         // 监听属性变化
         PropertyChanged += OnPropertyChanged;
@@ -66,25 +62,15 @@ public sealed partial class PreviewPanel : UserControl
     {
         if (e.Property == ViewModelProperty)
         {
+            if (e.OldValue is HistoryViewModel oldViewModel)
+            {
+                oldViewModel.PropertyChanged -= ViewModel_PropertyChanged;
+            }
             if (e.NewValue is HistoryViewModel viewModel)
             {
-                // 监听ViewModel的ShowPreviewPanel变化
-                viewModel.PropertyChanged += (s, args) =>
-                {
-                    if (args.PropertyName == nameof(HistoryViewModel.ShowPreviewPanel))
-                    {
-                        // 打开预览面板时，立即更新图片预览内容
-                        if (viewModel.ShowPreviewPanel)
-                        {
-                            _ = UpdatePreviewImageContent();
-                        }
-                    }
-                    else if (args.PropertyName == nameof(HistoryViewModel.EnableSyncHistory))
-                    {
-                        UpdateStatusText();
-                    }
-                };
+                viewModel.PropertyChanged += ViewModel_PropertyChanged;
             }
+            UpdatePreviewImageContent();
         }
         else if (e.Property == SelectedItemProperty)
         {
@@ -100,7 +86,15 @@ public sealed partial class PreviewPanel : UserControl
                 newRecord.PropertyChanged += SelectedItem_PropertyChanged;
             }
 
-            _ = UpdatePreviewImageContent();
+            UpdatePreviewImageContent();
+            UpdateStatusText();
+        }
+    }
+
+    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(HistoryViewModel.EnableSyncHistory))
+        {
             UpdateStatusText();
         }
     }
@@ -109,7 +103,7 @@ public sealed partial class PreviewPanel : UserControl
     {
         if (e.PropertyName == nameof(HistoryRecordVM.PreviewImage))
         {
-            _ = UpdatePreviewImageContent();
+            UpdatePreviewImageContent();
         }
 
         if (e.PropertyName is nameof(HistoryRecordVM.SyncState) or nameof(HistoryRecordVM.IsLocalFileReady))
@@ -118,89 +112,28 @@ public sealed partial class PreviewPanel : UserControl
         }
     }
 
-    private void PreviewPanel_SizeChanged(object sender, SizeChangedEventArgs e)
+    private void UpdatePreviewImageContent()
     {
-        // 预览面板大小变化时，重新计算图片 Stretch
-        if (_currentPreviewImageSize.width > 0 && _currentPreviewImageSize.height > 0)
-        {
-            UpdatePreviewImageStretch();
-        }
+        _PreviewImage.FilePath = SelectedItem?.Type == ProfileType.Image
+            ? SelectedItem.PreviewImage
+            : null;
     }
 
-    /// <summary>
-    /// 只处理图片预览的异步加载，文字预览通过绑定自动更新
-    /// </summary>
-    private async Task UpdatePreviewImageContent()
+    private async void PreviewImage_FileMissing(object? sender, EventArgs e)
     {
-        if (ViewModel?.ShowPreviewPanel != true)
+        var record = SelectedItem;
+        var viewModel = ViewModel;
+        if (record is null || viewModel is null)
+        {
             return;
-
-        // 清空之前的图片预览
-        _PreviewImage.Source = null;
-        _currentPreviewImageSize = (0, 0);
-
-        // 检查是否选中了记录
-        if (SelectedItem is not HistoryRecordVM record)
-            return;
-
-        // 只有图片类型且有预览图片时才异步加载
-        if (record.Type != ProfileType.Image || record.PreviewImage == null)
-            return;
-
+        }
         try
         {
-            var dimensions = await GetImageDimensions(record.PreviewImage);
-            if (dimensions is null)
-            {
-                await ViewModel.MarkLocalFileMissingAsync(record);
-                return;
-            }
-
-            // 检查当前选中项是否还是同一个记录
-            if (SelectedItem != record)
-                return;
-
-            // 保存图片尺寸，用于面板大小变化时重新计算
-            _currentPreviewImageSize = dimensions.Value;
-
-            // 计算并设置 Stretch
-            UpdatePreviewImageStretch();
-
-            // 设置图片源
-            _PreviewImage.Source = new Bitmap(record.PreviewImage);
+            await viewModel.MarkLocalFileMissingAsync(record);
         }
         catch (Exception ex)
         {
-            AppCore.TryGetCurrent()?.Logger.Write("PreviewPanel", $"Failed to get image dimensions: {ex.Message}");
-
-            // 检查当前选中项是否还是同一个记录
-            if (SelectedItem != record)
-                return;
-
-            _currentPreviewImageSize = (0, 0);
-            _PreviewImage.Stretch = Stretch.Uniform;
-            _PreviewImage.Source = new Bitmap(record.PreviewImage);
-        }
-    }
-
-    private void UpdatePreviewImageStretch()
-    {
-        var (width, height) = _currentPreviewImageSize;
-        if (width == 0 || height == 0)
-            return;
-
-        // 获取预览面板的实际大小
-        var panelWidth = Bounds.Width - 24;
-        var panelHeight = Bounds.Height - 48; // 减去头部高度
-
-        // 根据图片大小决定 Stretch
-        if (width > panelWidth || height > panelHeight)
-        {
-            _PreviewImage.Stretch = Stretch.Uniform;
-        }
-        else
-        {
-            _PreviewImage.Stretch = Stretch.None;
+            AppCore.TryGetCurrent()?.Logger.Write("PreviewPanel", $"Failed to mark missing image: {ex.Message}");
         }
     }
 
@@ -218,23 +151,6 @@ public sealed partial class PreviewPanel : UserControl
 
         _StatusText.Text = isLocalFileMissing ? Strings.FileMissing : Strings.Synced;
         _StatusText.IsVisible = isLocalFileMissing || isSynced;
-    }
-
-    private static Task<(uint width, uint height)?> GetImageDimensions(string imagePath)
-    {
-        return Task.Run<(uint width, uint height)?>(() =>
-        {
-            try
-            {
-                using var stream = File.OpenRead(imagePath);
-                using var bitmap = new Bitmap(stream);
-                return ((uint)bitmap.PixelSize.Width, (uint)bitmap.PixelSize.Height);
-            }
-            catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
-            {
-                return null;
-            }
-        });
     }
 
     private void PreviewImage_DoubleTapped(object? sender, TappedEventArgs e)

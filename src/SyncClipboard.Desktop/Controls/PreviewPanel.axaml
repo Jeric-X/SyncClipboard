@@ -1,4 +1,4 @@
-<UserControl x:Class="SyncClipboard.Desktop.Controls.PreviewPanel"
+﻿<UserControl x:Class="SyncClipboard.Desktop.Controls.PreviewPanel"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:views="using:SyncClipboard.Desktop.Views"
@@ -16,7 +16,6 @@
           DataContext="{Binding #_PreviewPanel.SelectedItem}"
           x:DataType="vms:HistoryRecordVM"
           Background="Transparent"
-          SizeChanged="PreviewPanel_SizeChanged"
           RowDefinitions="Auto, *">
         <Border Grid.Row="0"
                 Background="Transparent"
@@ -69,25 +68,26 @@
                         <Binding Path="PreviewImage" />
                     </MultiBinding>
                 </ScrollViewer.IsVisible>
-                <controls:HyperlinkTextBlock x:Name="_PreviewTextBlock"
-                                             TextWrapping="Wrap"
-                                             LinkText="{Binding Text, x:DataType=vms:HistoryRecordVM}" />
+                <controls:HyperlinkTextBlock x:Name="_PreviewTextBlock" TextWrapping="Wrap" LinkText="{Binding Text, x:DataType=vms:HistoryRecordVM}" />
             </ScrollViewer>
-            <Image x:Name="_PreviewImage"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   Stretch="None"
-                   DoubleTapped="PreviewImage_DoubleTapped"
-                   PointerPressed="PreviewImage_PointerPressed"
-                   PointerMoved="PreviewImage_PointerMoved"
-                   PointerReleased="PreviewImage_PointerReleased">
-                <Image.IsVisible>
+            <controls:PreviewImage x:Name="_PreviewImage"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   DecodeBounds="2048,2048"
+                                   Stretch="Uniform"
+                                   StretchDirection="DownOnly"
+                                   DoubleTapped="PreviewImage_DoubleTapped"
+                                   PointerPressed="PreviewImage_PointerPressed"
+                                   PointerMoved="PreviewImage_PointerMoved"
+                                   PointerReleased="PreviewImage_PointerReleased">
+                <controls:PreviewImage.IsVisible>
                     <MultiBinding Converter="{x:Static vc:FuncConverter.ShowImagePreviewMulti}">
                         <Binding Path="#_PreviewPanel.SelectedItem" />
                         <Binding Path="PreviewImage" />
+                        <Binding Path="#_PreviewPanel.ViewModel.ShowPreviewPanel" />
                     </MultiBinding>
-                </Image.IsVisible>
-            </Image>
+                </controls:PreviewImage.IsVisible>
+            </controls:PreviewImage>
         </Grid>
     </Grid>
 </UserControl>

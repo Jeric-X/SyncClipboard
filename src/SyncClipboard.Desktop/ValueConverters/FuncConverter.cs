@@ -33,26 +33,14 @@ public static class FuncConverter
             record != null && (record.Type != ProfileType.Image || record.PreviewImage == null));
 
     /// <summary>
-    /// 多值转换器：根据 record 和 previewImage 判断是否显示图片预览
+    /// 多值转换器：根据记录、图片路径和预览面板开关判断是否显示图片预览
     /// </summary>
     public static IMultiValueConverter ShowImagePreviewMulti { get; } =
         new FuncMultiValueConverter<object?, bool>(values =>
         {
-            var valuesList = new List<object?>();
-            foreach (var v in values)
-            {
-                valuesList.Add(v);
-            }
-
-            if (valuesList.Count >= 2 &&
-                valuesList[0] is HistoryRecordVM record)
-            {
-                // PreviewImage 可能是 string 或 null
-                var previewImage = valuesList[1];
-                var hasPreviewImage = previewImage is string s && s != null;
-                return record.Type == ProfileType.Image && hasPreviewImage;
-            }
-            return false;
+            var inputs = new List<object?>(values);
+            return inputs.Count == 3 && inputs[0] is HistoryRecordVM { Type: ProfileType.Image } &&
+                inputs[1] is string && inputs[2] is true;
         });
 
     /// <summary>
@@ -98,6 +86,10 @@ public static class FuncConverter
             Severity.Error => FAInfoBarSeverity.Error,
             _ => FAInfoBarSeverity.Informational,
         });
+
+    // An uninitialized mode must not enable image loading.
+    public static FuncValueConverter<object?, bool> IsFalse { get; } =
+        new FuncValueConverter<object?, bool>(value => value is false);
 
     public static IMultiValueConverter LimitHistoryListText { get; } =
         new FuncMultiValueConverter<object?, string>(values =>

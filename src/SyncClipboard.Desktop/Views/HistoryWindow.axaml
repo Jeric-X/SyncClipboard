@@ -12,7 +12,6 @@
         xmlns:local="using:SyncClipboard.Desktop.Views"
         xmlns:i18n="using:SyncClipboard.Core.I18n"
         xmlns:vc="using:SyncClipboard.Desktop.ValueConverters"
-        xmlns:asyncImage="using:AsyncImageLoader"
         x:Name="_HistoryWindow"
         Title="{x:Static i18n:Strings.ClipboardHistory}"
         Width="850"
@@ -70,14 +69,16 @@
             </DataTemplate>
             <DataTemplate x:Key="Image" DataType="vms:HistoryRecordVM">
                 <StackPanel Spacing="4" Orientation="Vertical">
-                    <Image MaxHeight="202"
-                           HorizontalAlignment="Left"
-                           asyncImage:ImageLoader.Source="{Binding PreviewImage}"
-                           Stretch="None"
-                           DoubleTapped="Image_DoubleTapped"
-                           Opacity="0"
-                           Loaded="Image_Loaded"
-                           IsVisible="{Binding #_HistoryWindow.ViewModel.IsCompactListMode, Converter={x:Static vc:FuncConverter.Not}}" />
+                    <controls:PreviewImage DecodeBounds="5120,200"
+                                           FilePath="{Binding PreviewImage}"
+                                           MaxPixelWidth="5120"
+                                           ScaleWithRenderScaling="True"
+                                           SizeToImage="True"
+                                           Stretch="UniformToFill"
+                                           ClipToBounds="True"
+                                           HorizontalAlignment="Left"
+                                           DoubleTapped="Image_DoubleTapped"
+                                           IsVisible="{Binding #_HistoryWindow.ViewModel.IsCompactListMode, Converter={x:Static vc:FuncConverter.IsFalse}, FallbackValue=False}" />
                     <TextBlock HorizontalAlignment="Left">
                         <TextBlock.Text>
                             <MultiBinding Converter="{x:Static vc:FuncConverter.LimitHistoryListText}">
@@ -220,12 +221,6 @@
                     </Button>
                 </StackPanel>
             </Grid>
-            <Image x:Name="_InvisualableImage"
-                   Grid.Row="2"
-                   MaxHeight="800"
-                   Stretch="None"
-                   IsHitTestVisible="False"
-                   Opacity="0" />
             <Grid x:Name="_MainContentGrid"
                   Grid.Row="2"
                   ColumnDefinitions="*, Auto, 0"
