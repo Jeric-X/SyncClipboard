@@ -17,15 +17,15 @@ namespace SyncClipboard.WinUI3.Controls;
 /// Loads bounded history images while their controls are loaded and individually visible.
 /// WinUI owns the bitmap resources; clearing Source releases the control's reference.
 /// </summary>
-public static class HistoryImageLoader
+public static class PreviewImageLoader
 {
     private static readonly SemaphoreSlim DecodeSlots = new(2);
     public static readonly DependencyProperty FilePathProperty = DependencyProperty.RegisterAttached(
-        "FilePath", typeof(string), typeof(HistoryImageLoader), new PropertyMetadata(null, OnOptionsChanged));
+        "FilePath", typeof(string), typeof(PreviewImageLoader), new PropertyMetadata(null, OnOptionsChanged));
     public static readonly DependencyProperty IsThumbnailProperty = DependencyProperty.RegisterAttached(
-        "IsThumbnail", typeof(bool), typeof(HistoryImageLoader), new PropertyMetadata(false, OnOptionsChanged));
+        "IsThumbnail", typeof(bool), typeof(PreviewImageLoader), new PropertyMetadata(false, OnOptionsChanged));
     private static readonly DependencyProperty StateProperty = DependencyProperty.RegisterAttached(
-        nameof(State), typeof(State), typeof(HistoryImageLoader), new PropertyMetadata(null));
+        nameof(State), typeof(State), typeof(PreviewImageLoader), new PropertyMetadata(null));
 
     public static string? GetFilePath(Image image) => (string?)image.GetValue(FilePathProperty);
     public static void SetFilePath(Image image, string? value) => image.SetValue(FilePathProperty, value);
@@ -145,12 +145,12 @@ public static class HistoryImageLoader
             }
             catch (Exception ex)
             {
-                AppCore.TryGetCurrent()?.Logger.Write(nameof(HistoryImageLoader), $"Failed to load preview: {ex.Message}");
+                AppCore.TryGetCurrent()?.Logger.Write(nameof(PreviewImageLoader), $"Failed to load preview: {ex.Message}");
             }
         }
     }
 
-    internal static async Task<(BitmapImage Bitmap, HistoryImageSize Size)> DecodeAsync(
+    internal static async Task<(BitmapImage Bitmap, PreviewImageSize Size)> DecodeAsync(
         string path, bool thumbnail, double scale, CancellationToken token,
         Func<IRandomAccessStream, Task<(uint Width, uint Height)>>? readHeader = null)
     {
@@ -184,7 +184,7 @@ public static class HistoryImageLoader
                 stream.Seek(0);
             }
 
-            var size = HistoryImageSize.Calculate(dimensions.Width, dimensions.Height, thumbnail, scale, fullDecode);
+            var size = PreviewImageSize.Calculate(dimensions.Width, dimensions.Height, thumbnail, scale, fullDecode);
             bitmap.DecodePixelWidth = size.PixelWidth;
             bitmap.DecodePixelHeight = size.PixelHeight;
             await bitmap.SetSourceAsync(stream);

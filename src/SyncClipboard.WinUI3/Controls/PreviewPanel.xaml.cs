@@ -53,7 +53,7 @@ public sealed partial class PreviewPanel : UserControl
     public PreviewPanel()
     {
         this.InitializeComponent();
-        HistoryImageLoader.GetState(_PreviewImage).FileMissing += PreviewImage_FileMissing;
+        PreviewImageLoader.GetState(_PreviewImage).FileMissing += PreviewImage_FileMissing;
     }
 
     private static void OnViewModelChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -133,7 +133,7 @@ public sealed partial class PreviewPanel : UserControl
 
     private void UpdatePreviewImageContent()
     {
-        HistoryImageLoader.SetFilePath(_PreviewImage,
+        PreviewImageLoader.SetFilePath(_PreviewImage,
             SelectedItem?.Type == ProfileType.Image ? SelectedItem.PreviewImage : null);
     }
 

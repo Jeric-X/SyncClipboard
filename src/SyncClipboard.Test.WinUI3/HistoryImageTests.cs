@@ -34,7 +34,7 @@ public class HistoryImageTests
     public void DecodeSizesPreserveAspectRatioAndBoundPixels(int width, int height, bool thumbnail, double scale,
         int expectedWidth, int expectedHeight)
     {
-        var size = HistoryImageSize.Calculate((uint)width, (uint)height, thumbnail, scale);
+        var size = PreviewImageSize.Calculate((uint)width, (uint)height, thumbnail, scale);
         Assert.AreEqual(expectedWidth, size.PixelWidth);
         Assert.AreEqual(expectedHeight, size.PixelHeight);
         Assert.AreEqual((double)width / height, size.Width / size.Height, 0.000001);
@@ -48,7 +48,7 @@ public class HistoryImageTests
     [DataRow(100000, 1)]
     public void InvalidOrSubpixelImagesAreRejected(int width, int height)
     {
-        Assert.ThrowsExactly<InvalidDataException>(() => HistoryImageSize.Calculate((uint)width, (uint)height, true, 1));
+        Assert.ThrowsExactly<InvalidDataException>(() => PreviewImageSize.Calculate((uint)width, (uint)height, true, 1));
     }
 
     [TestMethod]
@@ -96,10 +96,10 @@ public class HistoryImageTests
         var parent = new Border { Child = image };
         var window = new Window { Content = parent };
         window.AppWindow.Move(new PointInt32(-32000, -32000));
-        var state = HistoryImageLoader.GetState(image);
+        var state = PreviewImageLoader.GetState(image);
         try
         {
-            HistoryImageLoader.SetFilePath(image, largePath);
+            PreviewImageLoader.SetFilePath(image, largePath);
             Assert.IsNull(image.Source);
             window.AppWindow.Show(false);
             var large = await WaitForBitmapAsync(image);
@@ -111,7 +111,7 @@ public class HistoryImageTests
 
             image.Visibility = Visibility.Collapsed;
             Assert.IsNull(image.Source);
-            HistoryImageLoader.SetFilePath(image, smallPath);
+            PreviewImageLoader.SetFilePath(image, smallPath);
             await state.PendingLoad;
             Assert.IsNull(image.Source);
             image.Visibility = Visibility.Visible;
@@ -122,27 +122,27 @@ public class HistoryImageTests
             Assert.AreEqual(16, image.MaxHeight);
 
             image.Visibility = Visibility.Collapsed;
-            HistoryImageLoader.SetFilePath(image, largePath);
+            PreviewImageLoader.SetFilePath(image, largePath);
             Assert.IsNull(image.Source);
             image.Visibility = Visibility.Visible;
-            HistoryImageLoader.SetIsThumbnail(image, true);
+            PreviewImageLoader.SetIsThumbnail(image, true);
             var thumbnail = await WaitForBitmapAsync(image);
             Assert.IsLessThanOrEqualTo(5120, thumbnail.DecodePixelWidth);
             Assert.IsLessThanOrEqualTo((int)(200 * image.XamlRoot.RasterizationScale), thumbnail.DecodePixelHeight);
             Assert.AreEqual(200, image.Height);
 
-            HistoryImageLoader.SetContainerRecycled(parent, true);
+            PreviewImageLoader.SetContainerRecycled(parent, true);
             Assert.IsTrue(image.IsLoaded);
             Assert.IsNull(image.Source);
-            HistoryImageLoader.SetFilePath(image, smallPath);
+            PreviewImageLoader.SetFilePath(image, smallPath);
             await state.PendingLoad;
             Assert.IsNull(image.Source);
-            HistoryImageLoader.SetContainerRecycled(parent, false);
+            PreviewImageLoader.SetContainerRecycled(parent, false);
             var reused = await WaitForBitmapAsync(image);
             Assert.AreEqual(32, reused.PixelWidth);
 
             // Hide before the asynchronous header read completes: it must not restore Source later.
-            HistoryImageLoader.SetFilePath(image, largePath);
+            PreviewImageLoader.SetFilePath(image, largePath);
             var pending = state.PendingLoad;
             image.Visibility = Visibility.Collapsed;
             Assert.IsNull(image.Source);
@@ -160,13 +160,13 @@ public class HistoryImageTests
 
             var missingCount = 0;
             state.FileMissing += (_, _) => missingCount++;
-            HistoryImageLoader.SetFilePath(image, Path.Combine(directory.FullName, "missing.png"));
+            PreviewImageLoader.SetFilePath(image, Path.Combine(directory.FullName, "missing.png"));
             await state.PendingLoad;
             Assert.AreEqual(1, missingCount);
             Assert.IsNull(image.Source);
             var invalidPath = Path.Combine(directory.FullName, "invalid.png");
             await File.WriteAllTextAsync(invalidPath, "not an image");
-            HistoryImageLoader.SetFilePath(image, invalidPath);
+            PreviewImageLoader.SetFilePath(image, invalidPath);
             await state.PendingLoad;
             Assert.AreEqual(1, missingCount);
             Assert.IsNull(image.Source);
@@ -216,7 +216,7 @@ public class HistoryImageTests
 
                 if (length < fullDecodeFileLimit)
                 {
-                    var (bitmap, size) = await HistoryImageLoader.DecodeAsync(path, true, 2, CancellationToken.None, FailHeader);
+                    var (bitmap, size) = await PreviewImageLoader.DecodeAsync(path, true, 2, CancellationToken.None, FailHeader);
                     Assert.AreEqual(1600, bitmap.DecodePixelWidth);
                     Assert.AreEqual(400, bitmap.DecodePixelHeight);
                     Assert.AreEqual(800, size.Width);
@@ -226,20 +226,20 @@ public class HistoryImageTests
                 else
                 {
                     await Assert.ThrowsExactlyAsync<InvalidDataException>(() =>
-                        HistoryImageLoader.DecodeAsync(path, true, 2, CancellationToken.None, FailHeader));
+                        PreviewImageLoader.DecodeAsync(path, true, 2, CancellationToken.None, FailHeader));
                 }
             }
         }
 
         // A readable header permits a large file; only the fallback has the file-size limit.
-        var (bounded, _) = await HistoryImageLoader.DecodeAsync(path, false, 1, CancellationToken.None);
+        var (bounded, _) = await PreviewImageLoader.DecodeAsync(path, false, 1, CancellationToken.None);
         Assert.AreEqual(2048, bounded.DecodePixelWidth);
         Assert.AreEqual(512, bounded.DecodePixelHeight);
 
         var corruptPath = Path.Combine(directory, "corrupt-payload.png");
         await File.WriteAllTextAsync(corruptPath, "corrupt payload");
         // Force a successful dimension lookup so this exercises the native decoder failure.
-        await Assert.ThrowsAsync<Exception>(() => HistoryImageLoader.DecodeAsync(corruptPath, false, 1,
+        await Assert.ThrowsAsync<Exception>(() => PreviewImageLoader.DecodeAsync(corruptPath, false, 1,
             CancellationToken.None, _ => Task.FromResult((400u, 200u))));
     }
 
@@ -266,7 +266,7 @@ public class HistoryImageTests
         viewModel.ShowPreviewPanel = false;
         Assert.IsNull(image.Source);
         record.PreviewImage = smallPath;
-        await HistoryImageLoader.GetState(image).PendingLoad;
+        await PreviewImageLoader.GetState(image).PendingLoad;
         Assert.IsNull(image.Source);
         viewModel.ShowPreviewPanel = true;
         await WaitForBitmapAsync(image);
@@ -278,7 +278,7 @@ public class HistoryImageTests
     {
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var started = 0;
-        var tasks = Enumerable.Range(0, 6).Select(_ => HistoryImageLoader.DecodeAsync(path, true, 1,
+        var tasks = Enumerable.Range(0, 6).Select(_ => PreviewImageLoader.DecodeAsync(path, true, 1,
             CancellationToken.None, async stream =>
             {
                 started++;
@@ -306,8 +306,8 @@ public class HistoryImageTests
             ItemTemplate = (DataTemplate)XamlReader.Load($"""
                 <DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                               xmlns:controls="using:SyncClipboard.WinUI3.Controls">
-                    <Image controls:HistoryImageLoader.IsThumbnail="True"
-                           controls:HistoryImageLoader.FilePath="{path}" />
+                    <Image controls:PreviewImageLoader.IsThumbnail="True"
+                           controls:PreviewImageLoader.FilePath="{path}" />
                 </DataTemplate>
                 """),
             ItemsSource = Enumerable.Range(0, 100).ToArray(),
@@ -341,8 +341,8 @@ public class HistoryImageTests
         var images = Enumerable.Range(0, 20).Select(_ => new Image()).ToArray();
         foreach (var image in images)
         {
-            HistoryImageLoader.SetIsThumbnail(image, true);
-            HistoryImageLoader.SetFilePath(image, path);
+            PreviewImageLoader.SetIsThumbnail(image, true);
+            PreviewImageLoader.SetFilePath(image, path);
             rows.Children.Add(image);
         }
         var scroll = new ScrollViewer { Content = rows, Width = 400, Height = 400 };

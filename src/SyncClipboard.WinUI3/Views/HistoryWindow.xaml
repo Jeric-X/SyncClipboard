@@ -54,8 +54,8 @@
                 <StackPanel Orientation="Vertical" Spacing="5">
                     <Image HorizontalAlignment="Left"
                            Stretch="UniformToFill"
-                           controls:HistoryImageLoader.IsThumbnail="True"
-                           controls:HistoryImageLoader.FilePath="{x:Bind PreviewImage, Mode=OneWay}"
+                           controls:PreviewImageLoader.IsThumbnail="True"
+                           controls:PreviewImageLoader.FilePath="{x:Bind PreviewImage, Mode=OneWay}"
                            Visibility="{x:Bind vc:ConvertMethod.BoolToVisibilityNegate(local:HistoryListModeProxy.Current.IsCompactListMode), Mode=OneWay}"
                            DragStarting="Item_DragStarting"
                            CanDrag="True" />

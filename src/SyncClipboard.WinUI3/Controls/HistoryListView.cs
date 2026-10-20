@@ -22,7 +22,7 @@ public sealed class HistoryListView : ListView
     {
         DefaultStyleKey = typeof(ListView);
         ContainerContentChanging += (_, args) =>
-            HistoryImageLoader.SetContainerRecycled(args.ItemContainer, args.InRecycleQueue);
+            PreviewImageLoader.SetContainerRecycled(args.ItemContainer, args.InRecycleQueue);
     }
 
     protected override DependencyObject GetContainerForItemOverride() => new HistoryListViewItem(this);

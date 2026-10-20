@@ -3,9 +3,9 @@ using System.IO;
 
 namespace SyncClipboard.WinUI3.Utilities;
 
-internal readonly record struct HistoryImageSize(double Width, double Height, int PixelWidth, int PixelHeight)
+internal readonly record struct PreviewImageSize(double Width, double Height, int PixelWidth, int PixelHeight)
 {
-    public static HistoryImageSize Calculate(uint width, uint height, bool thumbnail, double scale, bool fullDecode = false)
+    public static PreviewImageSize Calculate(uint width, uint height, bool thumbnail, double scale, bool fullDecode = false)
     {
         if (width == 0 || height == 0 || !double.IsFinite(scale) || scale <= 0)
         {
