@@ -17,7 +17,7 @@ namespace SyncClipboard.Desktop.Controls;
 public sealed class PreviewImage : Image
 {
     private const long FullDecodeFileLimit = 10L * 1024 * 1024;
-    private static readonly SemaphoreSlim DecodeSlots = new(2);
+    private static readonly SemaphoreSlim DecodeSlots = new(Environment.ProcessorCount);
     private readonly Func<string, DecodeOptions, CancellationToken, Task<DecodedImage>> _load;
     private CancellationTokenSource? _request;
     private Bitmap? _bitmap;

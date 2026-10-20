@@ -19,7 +19,7 @@ namespace SyncClipboard.WinUI3.Controls;
 /// </summary>
 public static class PreviewImageLoader
 {
-    private static readonly SemaphoreSlim DecodeSlots = new(2);
+    private static readonly SemaphoreSlim DecodeSlots = new(Environment.ProcessorCount);
     public static readonly DependencyProperty FilePathProperty = DependencyProperty.RegisterAttached(
         "FilePath", typeof(string), typeof(PreviewImageLoader), new PropertyMetadata(null, OnOptionsChanged));
     public static readonly DependencyProperty IsThumbnailProperty = DependencyProperty.RegisterAttached(
