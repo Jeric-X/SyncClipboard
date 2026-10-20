@@ -276,9 +276,11 @@ public class HistoryImageTests
 
     private static async Task VerifyDecodeConcurrencyAsync(string path)
     {
+        var concurrency = Environment.ProcessorCount;
+        var requestCount = concurrency + 2;
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var started = 0;
-        var tasks = Enumerable.Range(0, 6).Select(_ => PreviewImageLoader.DecodeAsync(path, true, 1,
+        var tasks = Enumerable.Range(0, requestCount).Select(_ => PreviewImageLoader.DecodeAsync(path, true, 1,
             CancellationToken.None, async stream =>
             {
                 started++;
@@ -287,15 +289,15 @@ public class HistoryImageTests
             })).ToArray();
         try
         {
-            await WaitUntilAsync(() => started >= 2);
-            Assert.AreEqual(2, started);
+            await WaitUntilAsync(() => started >= concurrency);
+            Assert.AreEqual(concurrency, started);
         }
         finally
         {
             release.SetResult();
             await Task.WhenAll(tasks);
         }
-        Assert.AreEqual(6, started);
+        Assert.AreEqual(requestCount, started);
     }
     private static async Task VerifyRecyclingAsync(Window window, string path)
     {
