@@ -21,6 +21,8 @@ public sealed class HistoryListView : ListView
     public HistoryListView()
     {
         DefaultStyleKey = typeof(ListView);
+        ContainerContentChanging += (_, args) =>
+            PreviewImageLoader.SetContainerRecycled(args.ItemContainer, args.InRecycleQueue);
     }
 
     protected override DependencyObject GetContainerForItemOverride() => new HistoryListViewItem(this);

@@ -1,4 +1,4 @@
-<UserControl x:Class="SyncClipboard.WinUI3.Controls.PreviewPanel"
+﻿<UserControl x:Class="SyncClipboard.WinUI3.Controls.PreviewPanel"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:SyncClipboard.WinUI3.Controls"
@@ -9,10 +9,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d">
 
-    <Grid MinWidth="300"
-          Background="Transparent"
-          SizeChanged="PreviewPanel_SizeChanged"
-          RowDefinitions="Auto, *">
+    <Grid MinWidth="300" Background="Transparent" RowDefinitions="Auto, *">
         <Border Grid.Row="0"
                 Background="Transparent"
                 Padding="12,4"
@@ -65,11 +62,11 @@
             <Image x:Name="_PreviewImage"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"
-                   Stretch="None"
+                   Stretch="Uniform"
                    CanDrag="True"
                    DragStarting="PreviewImage_DragStarting"
                    DoubleTapped="PreviewImage_DoubleTapped"
-                   Visibility="{x:Bind vc:ConvertMethod.ImagePreviewVisibility(SelectedItem, SelectedItem.PreviewImage), Mode=OneWay, FallbackValue=Collapsed}" />
+                   Visibility="{x:Bind vc:ConvertMethod.ImagePreviewVisibility(SelectedItem, SelectedItem.PreviewImage, ViewModel.ShowPreviewPanel), Mode=OneWay, FallbackValue=Collapsed}" />
         </Grid>
     </Grid>
 </UserControl>

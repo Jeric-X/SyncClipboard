@@ -1,6 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <UseWinUI>true</UseWinUI>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <StartupObject>SyncClipboard.Test.WinUI3.HistoryImageTestHost</StartupObject>
+    <ApplicationManifest>../SyncClipboard.WinUI3/app.manifest</ApplicationManifest>
+    <WindowsPackageType>None</WindowsPackageType>
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
     <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -12,6 +19,11 @@
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Page Remove="ImageTestApplication.xaml" />
+    <ApplicationDefinition Include="ImageTestApplication.xaml" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />

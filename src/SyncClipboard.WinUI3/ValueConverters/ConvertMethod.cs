@@ -3,12 +3,10 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Markup;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.Core.ViewModels.EmbeddedIcons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.ViewModels;
-using System;
 using SyncClipboard.Core.ViewModels.Sub;
 
 namespace SyncClipboard.WinUI3.ValueConverters;
@@ -53,11 +51,11 @@ internal static class ConvertMethod
             ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    public static Visibility ImagePreviewVisibility(HistoryRecordVM? record, string? previewImage)
+    public static Visibility ImagePreviewVisibility(HistoryRecordVM? record, string? previewImage, bool showPreviewPanel)
     {
         if (record == null)
             return Visibility.Collapsed;
-        return record.Type == ProfileType.Image && previewImage != null
+        return record.Type == ProfileType.Image && previewImage != null && showPreviewPanel
             ? Visibility.Visible : Visibility.Collapsed;
     }
 
@@ -140,15 +138,5 @@ internal static class ConvertMethod
     public static double LocalFileReadyToOpacity(bool isLocalFileReady)
     {
         return isLocalFileReady ? 1.0 : 0.5;
-    }
-
-    public static BitmapImage? CreateBitmap(string? uri)
-    {
-        if (string.IsNullOrEmpty(uri))
-        {
-            return null;
-        }
-
-        return new BitmapImage(new Uri(uri));
     }
 }

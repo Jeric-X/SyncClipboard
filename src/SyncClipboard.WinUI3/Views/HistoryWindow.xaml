@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <Window x:Class="SyncClipboard.WinUI3.Views.HistoryWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -52,14 +52,13 @@
             </DataTemplate>
             <DataTemplate x:Key="imageTemplate" x:DataType="vms:HistoryRecordVM">
                 <StackPanel Orientation="Vertical" Spacing="5">
-                    <Image MaxHeight="200"
-                           HorizontalAlignment="Left"
-                           Stretch="None"
-                           ImageOpened="Image_ImageOpened"
+                    <Image HorizontalAlignment="Left"
+                           Stretch="UniformToFill"
+                           controls:PreviewImageLoader.IsThumbnail="True"
+                           controls:PreviewImageLoader.FilePath="{x:Bind PreviewImage, Mode=OneWay}"
+                           Visibility="{x:Bind vc:ConvertMethod.BoolToVisibilityNegate(local:HistoryListModeProxy.Current.IsCompactListMode), Mode=OneWay}"
                            DragStarting="Item_DragStarting"
-                           CanDrag="True"
-                           Source="{x:Bind vc:ConvertMethod.CreateBitmap(PreviewImage), Mode=OneWay}"
-                           Visibility="Collapsed" />
+                           CanDrag="True" />
                     <TextBlock HorizontalAlignment="Left" Text="{x:Bind vc:ConvertMethod.LimitHistoryListText(Text, local:HistoryListModeProxy.Current.IsCompactListMode), Mode=OneWay}" TextTrimming="CharacterEllipsis" />
                 </StackPanel>
             </DataTemplate>
@@ -169,11 +168,6 @@
               x:Name="_MainContentGrid"
               ColumnDefinitions="Auto, Auto, *"
               RowDefinitions="*, Auto">
-            <Image x:Name="_InvisualableImage"
-                   MaxHeight="201"
-                   Stretch="None"
-                   IsHitTestVisible="False"
-                   Opacity="0" />
             <controls:HistoryListView x:Name="_ListView"
                                       Grid.Row="0"
                                       Grid.Column="0"

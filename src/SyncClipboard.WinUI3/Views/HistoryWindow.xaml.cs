@@ -32,7 +32,6 @@ using System.Threading.Tasks;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Foundation;
 using Windows.Graphics;
-using Windows.Graphics.Imaging;
 using Windows.System;
 using Windows.UI.Core;
 using WinUIEx;
@@ -489,38 +488,6 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         {
             _ListView.ScrollIntoView(_ListView.SelectedItem);
         }
-    }
-
-    private void Image_ImageOpened(object sender, RoutedEventArgs _)
-    {
-        if (sender is not Image image)
-        {
-            return;
-        }
-
-        _InvisualableImage.Source = image.Source;
-        _InvisualableImage.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        _InvisualableImage.Source = null;
-        var desiredSize = _InvisualableImage.DesiredSize;
-
-        if (desiredSize.Height > 200)
-        {
-            image.Stretch = Stretch.Uniform;
-        }
-
-        BindLoadedImageVisibility(image);
-    }
-
-    private static void BindLoadedImageVisibility(Image image)
-    {
-        var binding = new Binding
-        {
-            Source = HistoryListModeProxy.Current,
-            Path = new PropertyPath(nameof(HistoryListModeProxy.IsCompactListMode)),
-            Converter = boolToVisibilityNegateConverter,
-            Mode = BindingMode.OneWay,
-        };
-        image.SetBinding(UIElement.VisibilityProperty, binding);
     }
 
     private void ListViewItem_PointerPressed(object sender, PointerRoutedEventArgs e)

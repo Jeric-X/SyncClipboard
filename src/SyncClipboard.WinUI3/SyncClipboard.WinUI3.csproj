@@ -157,6 +157,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SyncClipboard.Core\SyncClipboard.Core.csproj" />
+    <InternalsVisibleTo Include="SyncClipboard.Test.WinUI3" />
   </ItemGroup>
 
   <ItemGroup>
