@@ -198,9 +198,10 @@ public class HistoryImageTests
 
     private static async Task VerifyDecodeFallbackAsync(string directory)
     {
+        const long fullDecodeFileLimit = 10L * 1024 * 1024;
         var path = Path.Combine(directory, "fallback.png");
         await CreateImageAsync(path, 4096, 1024);
-        foreach (var length in new[] { 10L * 1024 * 1024 - 1, 10L * 1024 * 1024 })
+        foreach (var length in new[] { fullDecodeFileLimit - 1, fullDecodeFileLimit })
         {
             using (var file = File.OpenWrite(path))
                 file.SetLength(length);
@@ -213,7 +214,7 @@ public class HistoryImageTests
                     return throws ? throw new InvalidDataException("Header unavailable") : Task.FromResult((0u, 0u));
                 }
 
-                if (length < 10L * 1024 * 1024)
+                if (length < fullDecodeFileLimit)
                 {
                     var (bitmap, size) = await HistoryImageLoader.DecodeAsync(path, true, 2, CancellationToken.None, FailHeader);
                     Assert.AreEqual(1600, bitmap.DecodePixelWidth);
