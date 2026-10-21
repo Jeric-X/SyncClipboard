@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.Core;
+using SyncClipboard.Core.Models;
 using SyncClipboard.WinUI3.Utilities;
 using System;
 using System.IO;
@@ -24,6 +25,8 @@ public static class PreviewImageLoader
         "FilePath", typeof(string), typeof(PreviewImageLoader), new PropertyMetadata(null, OnOptionsChanged));
     public static readonly DependencyProperty IsThumbnailProperty = DependencyProperty.RegisterAttached(
         "IsThumbnail", typeof(bool), typeof(PreviewImageLoader), new PropertyMetadata(false, OnOptionsChanged));
+    public static readonly DependencyProperty MetadataProperty = DependencyProperty.RegisterAttached(
+        "Metadata", typeof(HistoryImageMetadata), typeof(PreviewImageLoader), new PropertyMetadata(null, OnOptionsChanged));
     private static readonly DependencyProperty StateProperty = DependencyProperty.RegisterAttached(
         nameof(State), typeof(State), typeof(PreviewImageLoader), new PropertyMetadata(null));
 
@@ -31,6 +34,9 @@ public static class PreviewImageLoader
     public static void SetFilePath(Image image, string? value) => image.SetValue(FilePathProperty, value);
     public static bool GetIsThumbnail(Image image) => (bool)image.GetValue(IsThumbnailProperty);
     public static void SetIsThumbnail(Image image, bool value) => image.SetValue(IsThumbnailProperty, value);
+
+    public static HistoryImageMetadata? GetMetadata(Image image) => (HistoryImageMetadata?)image.GetValue(MetadataProperty);
+    public static void SetMetadata(Image image, HistoryImageMetadata? value) => image.SetValue(MetadataProperty, value);
 
     internal static void SetContainerRecycled(DependencyObject container, bool recycled)
     {
@@ -102,12 +108,27 @@ public static class PreviewImageLoader
             _image.Height = double.NaN;
             _image.MaxWidth = double.PositiveInfinity;
             _image.MaxHeight = double.PositiveInfinity;
-            if (!_image.IsLoaded || _recycled || _image.Visibility != Visibility.Visible || string.IsNullOrEmpty(GetFilePath(_image)))
+            var path = GetFilePath(_image);
+            if (!_image.IsLoaded || _recycled || string.IsNullOrEmpty(path))
+                return;
+
+            var thumbnail = GetIsThumbnail(_image);
+            var scale = _image.XamlRoot?.RasterizationScale ?? 1;
+            // History records prepare metadata off the UI thread before entering the list.
+            if (thumbnail && GetMetadata(_image) is { Width: > 0, Height: > 0 } metadata && metadata.FilePath == path)
+            {
+                var width = metadata.Rotated ? metadata.Height : metadata.Width;
+                var height = metadata.Rotated ? metadata.Width : metadata.Height;
+                var ratio = Math.Min(1, Math.Min(5120.0 / width, 200.0 / height));
+                _image.Width = width * ratio;
+                _image.Height = height * ratio;
+            }
+
+            if (_image.Visibility != Visibility.Visible)
                 return;
 
             _request = new CancellationTokenSource();
-            PendingLoad = LoadAsync(GetFilePath(_image)!, GetIsThumbnail(_image),
-                _image.XamlRoot?.RasterizationScale ?? 1, _request.Token);
+            PendingLoad = LoadAsync(path, thumbnail, scale, _request.Token);
         }
 
         private async Task LoadAsync(string path, bool thumbnail, double scale, CancellationToken token)

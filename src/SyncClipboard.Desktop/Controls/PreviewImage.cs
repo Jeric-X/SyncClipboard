@@ -4,6 +4,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using SkiaSharp;
 using SyncClipboard.Core;
+using SyncClipboard.Core.Models;
 using System;
 using System.IO;
 using System.Threading;
@@ -30,6 +31,15 @@ public sealed class PreviewImage : Image
     {
         get => GetValue(FilePathProperty);
         set => SetValue(FilePathProperty, value);
+    }
+
+    public static readonly StyledProperty<HistoryImageMetadata?> MetadataProperty =
+        AvaloniaProperty.Register<PreviewImage, HistoryImageMetadata?>(nameof(Metadata));
+
+    public HistoryImageMetadata? Metadata
+    {
+        get => GetValue(MetadataProperty);
+        set => SetValue(MetadataProperty, value);
     }
 
     // Bounds are physical pixels unless ScaleWithRenderScaling is enabled for a list thumbnail.
@@ -82,7 +92,7 @@ public sealed class PreviewImage : Image
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == FilePathProperty || change.Property == IsVisibleProperty ||
+        if (change.Property == FilePathProperty || change.Property == MetadataProperty || change.Property == IsVisibleProperty ||
             change.Property == DecodeBoundsProperty || change.Property == ScaleWithRenderScalingProperty ||
             change.Property == SizeToImageProperty || change.Property == MaxPixelWidthProperty)
         {
@@ -115,14 +125,26 @@ public sealed class PreviewImage : Image
         Width = double.NaN;
         Height = double.NaN;
 
-        if (!_attached || !IsVisible || string.IsNullOrEmpty(FilePath))
+        if (!_attached || string.IsNullOrEmpty(FilePath))
         {
             return;
         }
 
-        _request = new CancellationTokenSource();
         var scale = ScaleWithRenderScaling ? TopLevel.GetTopLevel(this)?.RenderScaling ?? 1 : 1;
-        PendingLoad = ShowImageAsync(FilePath, new DecodeOptions(DecodeBounds, scale, MaxPixelWidth), _request.Token);
+        var options = new DecodeOptions(DecodeBounds, scale, MaxPixelWidth);
+        // History records prepare metadata off the UI thread before entering the list.
+        if (SizeToImage && Metadata is { Width: > 0, Height: > 0 } metadata && metadata.FilePath == FilePath)
+        {
+            var (displaySize, _) = GetSizes(new PixelSize((int)metadata.CanvasWidth, (int)metadata.CanvasHeight), options);
+            Width = displaySize.Width;
+            Height = displaySize.Height;
+        }
+
+        if (!IsVisible)
+            return;
+
+        _request = new CancellationTokenSource();
+        PendingLoad = ShowImageAsync(FilePath, options, _request.Token);
     }
 
     private async Task ShowImageAsync(string path, DecodeOptions options, CancellationToken token)

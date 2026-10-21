@@ -83,6 +83,11 @@ public partial class HistoryWindow : Window, IWindow
         UpdateListViewWidthForPreviewPanel();
 
         // 监听ViewModel属性变化
+        _viewModel.PropertyChanging += (_, e) =>
+        {
+            if (e.PropertyName is nameof(HistoryViewModel.ShowPreviewPanel) or nameof(HistoryViewModel.CompactListWhenPreview))
+                HistoryListScrollAnchor.PreserveSelectedItemPosition(_ListBox);
+        };
         _viewModel.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(HistoryViewModel.ShowPreviewPanel))

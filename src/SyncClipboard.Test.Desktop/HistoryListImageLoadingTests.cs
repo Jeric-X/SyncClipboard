@@ -7,10 +7,14 @@ using Avalonia.Media.Imaging;
 using Avalonia.Themes.Fluent;
 using Avalonia.VisualTree;
 using CommunityToolkit.Mvvm.ComponentModel;
+using ImageMagick;
 using SkiaSharp;
 using ObservableCollections;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Desktop.Controls;
 using SyncClipboard.Desktop.ValueConverters;
+using SyncClipboard.Desktop.Utilities;
+using Avalonia.Threading;
 using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Test.Desktop;
@@ -23,6 +27,176 @@ public class HistoryListImageLoadingTests
 
     public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<Application>()
         .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).UseSkia();
+
+    [TestMethod]
+    [DataRow(2400, 1600, false)]
+    [DataRow(8000, 100, false)]
+    [DataRow(32, 16, false)]
+    [DataRow(10, 20, true)]
+    public async Task ThumbnailReservesItsSizeBeforeDecoding(int width, int height, bool partialGifFrame)
+    {
+        await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryListImageLoadingTests));
+        await session.Dispatch(async () =>
+        {
+            var path = Path.GetTempFileName();
+            if (partialGifFrame)
+            {
+                using var source = new MagickImage(MagickColors.Red, (uint)width, (uint)height);
+                source.Page = new MagickGeometry(0, 0, 600, 400);
+                source.Format = MagickFormat.Gif;
+                source.Write(path);
+            }
+            else
+            {
+                using var source = new SKBitmap(width, height);
+                using var data = source.Encode(SKEncodedImageFormat.Png, 100);
+                using var file = File.Create(path);
+                data.SaveTo(file);
+            }
+
+            var completion = new TaskCompletionSource<PreviewImage.DecodedImage>();
+            var requests = 0;
+            var image = new PreviewImage((_, _, _) =>
+            {
+                requests++;
+                return completion.Task;
+            })
+            {
+                FilePath = path,
+                Metadata = await HistoryImageMetadata.ReadAsync(path, TestContext.CancellationTokenSource.Token),
+                DecodeBounds = new Size(5120, 200),
+                MaxPixelWidth = 5120,
+                ScaleWithRenderScaling = true,
+                SizeToImage = true,
+                IsVisible = false
+            };
+            var window = new Window { Content = image };
+            try
+            {
+                window.Show();
+                var canvasWidth = partialGifFrame ? 600 : width;
+                var canvasHeight = partialGifFrame ? 400 : height;
+                var ratio = Math.Min(1, Math.Min(5120.0 / canvasWidth, 200.0 / canvasHeight));
+                var expected = new Size(canvasWidth * ratio, canvasHeight * ratio);
+                Assert.AreEqual(expected, new Size(image.Width, image.Height));
+                Assert.AreEqual(0, requests);
+                Assert.IsNull(image.Source);
+
+                image.IsVisible = true;
+                window.UpdateLayout();
+                Assert.AreEqual(expected, new Size(image.Width, image.Height));
+                Assert.IsNull(image.Source);
+                var beforeDecode = image.DesiredSize;
+                Assert.IsGreaterThan(0, beforeDecode.Height);
+                completion.SetResult(PreviewImage.Decode(path, new PreviewImage.DecodeOptions(new Size(5120, 200))));
+                await image.PendingLoad;
+                window.UpdateLayout();
+                Assert.AreEqual(beforeDecode, image.DesiredSize);
+
+                image.IsVisible = false;
+                Assert.IsNull(image.Source);
+                image.FilePath = path + ".missing";
+                Assert.IsTrue(double.IsNaN(image.Width));
+                Assert.IsTrue(double.IsNaN(image.Height));
+                Assert.AreEqual(1, requests);
+            }
+            finally
+            {
+                window.Close();
+                File.Delete(path);
+            }
+            return true;
+        }, TestContext.CancellationTokenSource.Token);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ExpandingCompactListKeepsSelectedRowInPlaceWhileImagesDecode(bool virtualized)
+    {
+        await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryListImageLoadingTests));
+        await session.Dispatch(async () =>
+        {
+            Application.Current!.Styles.Add(new FluentTheme());
+            var path = Path.GetTempFileName();
+            using (var source = new SKBitmap(600, 300))
+            using (var data = source.Encode(SKEncodedImageFormat.Png, 100))
+            using (var file = File.Create(path))
+                data.SaveTo(file);
+
+            var metadata = await HistoryImageMetadata.ReadAsync(path, TestContext.CancellationTokenSource.Token);
+            var requests = new List<TaskCompletionSource<PreviewImage.DecodedImage>>();
+            var images = new List<PreviewImage>();
+            var compact = true;
+            var list = new ListBox
+            {
+                ItemsSource = Enumerable.Range(0, 40).Select(i => i.ToString()).ToArray(),
+                AutoScrollToSelectedItem = false,
+                ItemsPanel = new FuncTemplate<Panel?>(() => virtualized ? new VirtualizingStackPanel() : new StackPanel()),
+                ItemTemplate = new FuncDataTemplate<string>((text, _) =>
+                {
+                    var image = new PreviewImage((_, _, _) =>
+                    {
+                        var completion = new TaskCompletionSource<PreviewImage.DecodedImage>();
+                        requests.Add(completion);
+                        return completion.Task;
+                    })
+                    {
+                        FilePath = path,
+                        Metadata = metadata,
+                        DecodeBounds = new Size(5120, 200),
+                        SizeToImage = true,
+                        IsVisible = !compact
+                    };
+                    images.Add(image);
+                    return new StackPanel { Children = { image, new TextBlock { Text = text, Height = 24 } } };
+                })
+            };
+            var window = new Window { Content = list, Width = 450, Height = 400 };
+            try
+            {
+                window.Show();
+                window.UpdateLayout();
+                list.SelectedIndex = 15;
+                var scroll = list.GetVisualDescendants().OfType<ScrollViewer>().First();
+                scroll.Offset = new Vector(0, 400);
+                window.UpdateLayout();
+                double SelectedY() => list.ContainerFromIndex(15)!.TranslatePoint(default, scroll)!.Value.Y;
+                var originalY = SelectedY();
+                Assert.IsTrue(originalY >= 0 && originalY < scroll.Viewport.Height);
+                Assert.IsEmpty(requests);
+
+                HistoryListScrollAnchor.PreserveSelectedItemPosition(list);
+                compact = false;
+                images.ForEach(image => image.IsVisible = true);
+                await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background, TestContext.CancellationTokenSource.Token);
+                window.UpdateLayout();
+                Assert.AreEqual(originalY, SelectedY(), 0.01);
+                var extent = scroll.Extent.Height;
+                var offset = scroll.Offset.Y;
+                foreach (var request in requests)
+                    request.SetResult(new PreviewImage.DecodedImage(CreateBitmap(), new Size(400, 200)));
+                await Task.WhenAll(images.Select(image => image.PendingLoad));
+                window.UpdateLayout();
+                Assert.AreEqual(extent, scroll.Extent.Height, 0.01);
+                Assert.AreEqual(offset, scroll.Offset.Y, 0.01);
+                Assert.AreEqual(originalY, SelectedY(), 0.01);
+
+                HistoryListScrollAnchor.PreserveSelectedItemPosition(list);
+                compact = true;
+                images.ForEach(image => image.IsVisible = false);
+                await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background, TestContext.CancellationTokenSource.Token);
+                window.UpdateLayout();
+                Assert.AreEqual(originalY, SelectedY(), 0.01);
+            }
+            finally
+            {
+                window.Close();
+                File.Delete(path);
+            }
+            return true;
+        }, TestContext.CancellationTokenSource.Token);
+    }
 
     [TestMethod]
     public async Task HiddenImagesDoNotLoadUntilExpandedAndUseTheCurrentPath()

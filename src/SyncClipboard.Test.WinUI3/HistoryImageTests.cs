@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.WinUI3.Controls;
 using SyncClipboard.WinUI3.Utilities;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
 using SyncClipboard.Shared.Profiles;
@@ -100,6 +101,7 @@ public class HistoryImageTests
         try
         {
             PreviewImageLoader.SetFilePath(image, largePath);
+            PreviewImageLoader.SetMetadata(image, await HistoryImageMetadata.ReadAsync(largePath));
             Assert.IsNull(image.Source);
             window.AppWindow.Show(false);
             var large = await WaitForBitmapAsync(image);
@@ -123,9 +125,14 @@ public class HistoryImageTests
 
             image.Visibility = Visibility.Collapsed;
             PreviewImageLoader.SetFilePath(image, largePath);
+            PreviewImageLoader.SetIsThumbnail(image, true);
+            Assert.AreEqual(800, image.Width);
+            Assert.AreEqual(200, image.Height);
             Assert.IsNull(image.Source);
             image.Visibility = Visibility.Visible;
-            PreviewImageLoader.SetIsThumbnail(image, true);
+            // Size must be available synchronously, before the bitmap decode completes.
+            Assert.AreEqual(800, image.Width);
+            Assert.AreEqual(200, image.Height);
             var thumbnail = await WaitForBitmapAsync(image);
             Assert.IsLessThanOrEqualTo(5120, thumbnail.DecodePixelWidth);
             Assert.IsLessThanOrEqualTo((int)(200 * image.XamlRoot.RasterizationScale), thumbnail.DecodePixelHeight);
@@ -175,6 +182,7 @@ public class HistoryImageTests
             await VerifyDecodeConcurrencyAsync(largePath);
             await VerifyPreviewPanelAsync(window, largePath, smallPath, directory.FullName);
             await VerifyScrollPositionAsync(window, largePath);
+            await VerifyCompactListScrollPositionAsync(window, largePath);
             await VerifyRecyclingAsync(window, largePath);
         }
         finally
@@ -369,6 +377,81 @@ public class HistoryImageTests
             Assert.AreEqual(extent, scroll.ExtentHeight, 0.01);
             Assert.AreEqual(offset, scroll.VerticalOffset, 0.01);
         }
+    }
+
+    private static async Task VerifyCompactListScrollPositionAsync(Window window, string path)
+    {
+        var metadata = await HistoryImageMetadata.ReadAsync(path);
+        var list = new HistoryListView
+        {
+            Width = 400,
+            Height = 400,
+            ItemsPanel = (ItemsPanelTemplate)XamlReader.Load("""
+                <ItemsPanelTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation">
+                    <StackPanel />
+                </ItemsPanelTemplate>
+                """),
+            ItemTemplate = (DataTemplate)XamlReader.Load($"""
+                <DataTemplate xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                              xmlns:controls="using:SyncClipboard.WinUI3.Controls">
+                    <StackPanel>
+                        <Image controls:PreviewImageLoader.IsThumbnail="True"
+                               controls:PreviewImageLoader.FilePath="{path}"
+                               controls:PreviewImageLoader.Metadata="{{Binding Metadata}}" Visibility="Collapsed" />
+                        <TextBlock Text="Row" Height="24" />
+                    </StackPanel>
+                </DataTemplate>
+                """),
+            ItemsSource = Enumerable.Range(0, 40).Select(index => new { Index = index, Metadata = metadata }).ToArray()
+        };
+        window.Content = list;
+        await WaitUntilAsync(() => list.ContainerFromIndex(39) is ListViewItem { ContentTemplateRoot: StackPanel });
+        var images = Enumerable.Range(0, 40).Select(i =>
+            (Image)((StackPanel)((ListViewItem)list.ContainerFromIndex(i)).ContentTemplateRoot).Children[0]).ToArray();
+        list.SelectedIndex = 15;
+        var scroll = FindScrollViewer(list)!;
+        scroll.ChangeView(null, 400, null, disableAnimation: true);
+        await WaitUntilAsync(() => scroll.VerticalOffset >= 400);
+        list.UpdateLayout();
+        var selected = (ListViewItem)list.ContainerFromIndex(15);
+        double SelectedY() => selected.TransformToVisual(scroll).TransformPoint(new Windows.Foundation.Point()).Y;
+        var originalY = SelectedY();
+        Assert.IsTrue(originalY >= 0 && originalY < scroll.ViewportHeight);
+        Assert.IsTrue(images.All(image => image.Source is null && image.Height == 200));
+
+        HistoryListScrollAnchor.PreserveSelectedItemPosition(list, scroll);
+        foreach (var image in images)
+            image.Visibility = Visibility.Visible;
+        await Task.WhenAll(images.Select(image => PreviewImageLoader.GetState(image).PendingLoad));
+        await WaitUntilAsync(() =>
+        {
+            list.UpdateLayout();
+            return Math.Abs(SelectedY() - originalY) < 0.1;
+        });
+
+        HistoryListScrollAnchor.PreserveSelectedItemPosition(list, scroll);
+        foreach (var image in images)
+            image.Visibility = Visibility.Collapsed;
+        await WaitUntilAsync(() =>
+        {
+            list.UpdateLayout();
+            return Math.Abs(SelectedY() - originalY) < 0.1;
+        });
+        Assert.IsTrue(images.All(image => image.Source is null));
+    }
+
+    private static ScrollViewer? FindScrollViewer(DependencyObject parent)
+    {
+        if (parent is ScrollViewer scroll)
+            return scroll;
+
+        for (var i = 0; i < Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var found = FindScrollViewer(Microsoft.UI.Xaml.Media.VisualTreeHelper.GetChild(parent, i));
+            if (found is not null)
+                return found;
+        }
+        return null;
     }
 
     private static async Task<BitmapImage> WaitForBitmapAsync(Image image)

@@ -71,6 +71,7 @@
                 <StackPanel Spacing="4" Orientation="Vertical">
                     <controls:PreviewImage DecodeBounds="5120,200"
                                            FilePath="{Binding PreviewImage}"
+                                           Metadata="{Binding PreviewImageMetadata}"
                                            MaxPixelWidth="5120"
                                            ScaleWithRenderScaling="True"
                                            SizeToImage="True"
