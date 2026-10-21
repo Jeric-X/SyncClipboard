@@ -431,6 +431,10 @@ public partial class HistoryViewModel : ObservableObject
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().ShowPreviewPanel;
         set
         {
+            if (ShowPreviewPanel == value)
+                return;
+
+            OnPropertyChanging(nameof(ShowPreviewPanel));
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { ShowPreviewPanel = value });
             OnPropertyChanged(nameof(ShowPreviewPanel));
             OnPropertyChanged(nameof(IsCompactListMode));
@@ -457,6 +461,10 @@ public partial class HistoryViewModel : ObservableObject
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().CompactListWhenPreview;
         set
         {
+            if (CompactListWhenPreview == value)
+                return;
+
+            OnPropertyChanging(nameof(CompactListWhenPreview));
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { CompactListWhenPreview = value });
             OnPropertyChanged(nameof(CompactListWhenPreview));
             OnPropertyChanged(nameof(IsCompactListMode));

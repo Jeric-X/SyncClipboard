@@ -128,6 +128,11 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
 
         ApplyFontScale(_viewModel.FontScalePercent);
         ApplyCompactListMode(_viewModel.IsCompactListMode);
+        _viewModel.PropertyChanging += (_, e) =>
+        {
+            if (e.PropertyName is nameof(HistoryViewModel.ShowPreviewPanel) or nameof(HistoryViewModel.CompactListWhenPreview))
+                HistoryListScrollAnchor.PreserveSelectedItemPosition(_ListView, _scrollViewer);
+        };
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
         ((INotifyCollectionChanged)_viewModel.VisibleSelectedItems).CollectionChanged += OnVisibleSelectedItemsCollectionChanged;
         ApplyListViewSelectionMode();

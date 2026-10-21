@@ -67,6 +67,7 @@ public static class PreviewImageLoader
         private readonly Image _image;
         private CancellationTokenSource? _request;
         private bool _recycled;
+        private (string Path, (uint Width, uint Height) Dimensions)? _cachedSize;
 
         internal event EventHandler? FileMissing;
         internal Task PendingLoad { get; private set; } = Task.CompletedTask;
@@ -102,32 +103,59 @@ public static class PreviewImageLoader
             _image.Height = double.NaN;
             _image.MaxWidth = double.PositiveInfinity;
             _image.MaxHeight = double.PositiveInfinity;
-            if (!_image.IsLoaded || _recycled || _image.Visibility != Visibility.Visible || string.IsNullOrEmpty(GetFilePath(_image)))
+            var path = GetFilePath(_image);
+            if (_cachedSize?.Path != path)
+                _cachedSize = null;
+            if (!_image.IsLoaded || _recycled || string.IsNullOrEmpty(path))
+                return;
+
+            var thumbnail = GetIsThumbnail(_image);
+            var scale = _image.XamlRoot?.RasterizationScale ?? 1;
+            if (_cachedSize is { } cached)
+            {
+                try
+                {
+                    ApplySize(PreviewImageSize.Calculate(cached.Dimensions.Width, cached.Dimensions.Height, thumbnail, scale), thumbnail);
+                }
+                catch (InvalidDataException)
+                {
+                    return;
+                }
+            }
+
+            var sizeOnly = _image.Visibility != Visibility.Visible;
+            if (sizeOnly && (!thumbnail || _cachedSize is not null))
                 return;
 
             _request = new CancellationTokenSource();
-            PendingLoad = LoadAsync(GetFilePath(_image)!, GetIsThumbnail(_image),
-                _image.XamlRoot?.RasterizationScale ?? 1, _request.Token);
+            PendingLoad = LoadAsync(path, thumbnail, scale, sizeOnly, _request.Token);
         }
 
-        private async Task LoadAsync(string path, bool thumbnail, double scale, CancellationToken token)
+        private void ApplySize(PreviewImageSize size, bool thumbnail)
+        {
+            if (thumbnail)
+            {
+                _image.Width = size.Width;
+                _image.Height = size.Height;
+            }
+            else
+            {
+                // Uniform alone also enlarges small images to fill the panel.
+                _image.MaxWidth = size.Width;
+                _image.MaxHeight = size.Height;
+            }
+        }
+
+        private async Task LoadAsync(string path, bool thumbnail, double scale, bool sizeOnly, CancellationToken token)
         {
             try
             {
-                var (bitmap, size) = await DecodeAsync(path, thumbnail, scale, token);
+                var (bitmap, size, dimensions) = await DecodeAsync(path, thumbnail, scale, token,
+                    sizeOnly: sizeOnly, cachedDimensions: _cachedSize?.Dimensions);
                 token.ThrowIfCancellationRequested();
 
-                if (thumbnail)
-                {
-                    _image.Width = size.Width;
-                    _image.Height = size.Height;
-                }
-                else
-                {
-                    // Uniform alone also enlarges small images to fill the panel.
-                    _image.MaxWidth = size.Width;
-                    _image.MaxHeight = size.Height;
-                }
+                _cachedSize = (path, dimensions);
+                ApplySize(size, thumbnail);
                 _image.Stretch = thumbnail ? Stretch.UniformToFill : Stretch.Uniform;
                 _image.Source = bitmap;
             }
@@ -150,19 +178,20 @@ public static class PreviewImageLoader
         }
     }
 
-    internal static async Task<(BitmapImage Bitmap, PreviewImageSize Size)> DecodeAsync(
+    internal static async Task<(BitmapImage? Bitmap, PreviewImageSize Size, (uint Width, uint Height) Dimensions)> DecodeAsync(
         string path, bool thumbnail, double scale, CancellationToken token,
-        Func<IRandomAccessStream, Task<(uint Width, uint Height)>>? readHeader = null)
+        Func<IRandomAccessStream, Task<(uint Width, uint Height)>>? readHeader = null, bool sizeOnly = false,
+        (uint Width, uint Height)? cachedDimensions = null)
     {
         await DecodeSlots.WaitAsync(token);
         try
         {
-            using var file = File.OpenRead(path);
+            using var file = await Task.Run(() => File.OpenRead(path), token);
             using var stream = file.AsRandomAccessStream();
             (uint Width, uint Height) dimensions = default;
             try
             {
-                dimensions = await (readHeader ?? ReadDimensionsAsync)(stream);
+                dimensions = cachedDimensions ?? await (readHeader ?? ReadDimensionsAsync)(stream);
             }
             catch (Exception ex) when (ex is not OutOfMemoryException)
             {
@@ -171,25 +200,19 @@ public static class PreviewImageLoader
 
             token.ThrowIfCancellationRequested();
             stream.Seek(0);
-            var bitmap = new BitmapImage { DecodePixelType = DecodePixelType.Physical };
-            var fullDecode = dimensions.Width == 0 || dimensions.Height == 0;
-            if (fullDecode)
+            var size = PreviewImageSize.Calculate(dimensions.Width, dimensions.Height, thumbnail, scale);
+            if (sizeOnly)
+                return (null, size, dimensions);
+
+            var bitmap = new BitmapImage
             {
-                if (stream.Size >= 10UL * 1024 * 1024)
-                    throw new InvalidDataException("Image requires full decoding but is not smaller than 10 MiB.");
-
-                await bitmap.SetSourceAsync(stream);
-                token.ThrowIfCancellationRequested();
-                dimensions = ((uint)bitmap.PixelWidth, (uint)bitmap.PixelHeight);
-                stream.Seek(0);
-            }
-
-            var size = PreviewImageSize.Calculate(dimensions.Width, dimensions.Height, thumbnail, scale, fullDecode);
-            bitmap.DecodePixelWidth = size.PixelWidth;
-            bitmap.DecodePixelHeight = size.PixelHeight;
+                DecodePixelType = DecodePixelType.Physical,
+                DecodePixelWidth = size.PixelWidth,
+                DecodePixelHeight = size.PixelHeight
+            };
             await bitmap.SetSourceAsync(stream);
             token.ThrowIfCancellationRequested();
-            return (bitmap, size);
+            return (bitmap, size, dimensions);
         }
         finally
         {

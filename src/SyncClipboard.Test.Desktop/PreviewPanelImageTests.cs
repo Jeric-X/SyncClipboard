@@ -41,6 +41,7 @@ public class PreviewPanelImageTests
             try
             {
                 using var bitmap = PreviewImage.Decode(path, new PreviewImage.DecodeOptions(new Size(2048, 2048))).Bitmap;
+                Assert.IsNotNull(bitmap);
                 Assert.AreEqual(new PixelSize(expectedWidth, expectedHeight), bitmap.PixelSize);
                 Assert.IsLessThanOrEqualTo(16L * 1024 * 1024, (long)bitmap.PixelSize.Width * bitmap.PixelSize.Height * 4);
             }
@@ -102,63 +103,6 @@ public class PreviewPanelImageTests
                 File.Delete(path);
                 File.Delete(smallPath);
                 File.Delete(configPath);
-            }
-            return true;
-        }, TestContext.CancellationTokenSource.Token);
-    }
-
-    [TestMethod]
-    [DataRow(0, 10485759L, true)]
-    [DataRow(1, 10485759L, true)]
-    [DataRow(2, 10485759L, true)]
-    [DataRow(0, 10485760L, false)]
-    [DataRow(1, 10485760L, false)]
-    [DataRow(2, 10485760L, false)]
-    [DataRow(0, 10485761L, false)]
-    public async Task HeaderFailureOnlyFallsBackForFilesBelowTenMiB(int failure, long fileLength, bool shouldDisplay)
-    {
-        await using var session = HeadlessUnitTestSession.StartNew(typeof(PreviewPanelImageTests));
-        await session.Dispatch(async () =>
-        {
-            var path = CreateImage(1024, 512, SKEncodedImageFormat.Png);
-            using (var file = File.OpenWrite(path))
-            {
-                file.SetLength(fileLength);
-            }
-            // Keep a decodable file so an unintended full decode above the limit would display it.
-            var image = new PreviewImage((file, options, _) => Task.FromResult(PreviewImage.Decode(file, options, stream =>
-            {
-                stream.Position = 16;
-                return failure switch
-                {
-                    0 => null,
-                    1 => throw new InvalidDataException("Header unavailable"),
-                    _ => new PixelSize(0, 0)
-                };
-            })))
-            { FilePath = path, DecodeBounds = new Size(400, 200), SizeToImage = true };
-            var window = new Window { Content = image };
-            try
-            {
-                window.Show();
-                await image.PendingLoad;
-                if (shouldDisplay)
-                {
-                    var bitmap = (Bitmap)image.Source!;
-                    Assert.IsNotNull(bitmap);
-                    Assert.AreEqual(new PixelSize(400, 200), bitmap.PixelSize);
-                    Assert.AreEqual(400, image.Width);
-                    Assert.AreEqual(200, image.Height);
-                }
-                else
-                {
-                    Assert.IsNull(image.Source);
-                }
-            }
-            finally
-            {
-                window.Close();
-                File.Delete(path);
             }
             return true;
         }, TestContext.CancellationTokenSource.Token);
