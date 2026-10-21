@@ -67,7 +67,7 @@ public static class PreviewImageLoader
         private readonly Image _image;
         private CancellationTokenSource? _request;
         private bool _recycled;
-        private (string Path, bool Thumbnail, double Scale, PreviewImageSize Size)? _cachedSize;
+        private (string Path, (uint Width, uint Height) Dimensions)? _cachedSize;
 
         internal event EventHandler? FileMissing;
         internal Task PendingLoad { get; private set; } = Task.CompletedTask;
@@ -104,18 +104,18 @@ public static class PreviewImageLoader
             _image.MaxWidth = double.PositiveInfinity;
             _image.MaxHeight = double.PositiveInfinity;
             var path = GetFilePath(_image);
+            if (_cachedSize?.Path != path)
+                _cachedSize = null;
             if (!_image.IsLoaded || _recycled || string.IsNullOrEmpty(path))
                 return;
 
             var thumbnail = GetIsThumbnail(_image);
             var scale = _image.XamlRoot?.RasterizationScale ?? 1;
-            if (_cachedSize is { } cached && cached.Path == path && cached.Thumbnail == thumbnail && cached.Scale == scale)
+            if (_cachedSize is { } cached)
             {
-                ApplySize(cached.Size, thumbnail);
-            }
-            else
-            {
-                _cachedSize = null;
+                // Layout may use subpixel dimensions; the decoder validates its own pixel limits.
+                ApplySize(PreviewImageSize.Calculate(cached.Dimensions.Width, cached.Dimensions.Height,
+                    thumbnail, scale, fullDecode: true), thumbnail);
             }
 
             var sizeOnly = _image.Visibility != Visibility.Visible;
@@ -145,10 +145,11 @@ public static class PreviewImageLoader
         {
             try
             {
-                var (bitmap, size) = await DecodeAsync(path, thumbnail, scale, token, sizeOnly: sizeOnly);
+                var (bitmap, size, dimensions) = await DecodeAsync(path, thumbnail, scale, token,
+                    sizeOnly: sizeOnly, cachedDimensions: _cachedSize?.Dimensions);
                 token.ThrowIfCancellationRequested();
 
-                _cachedSize = (path, thumbnail, scale, size);
+                _cachedSize = (path, dimensions);
                 ApplySize(size, thumbnail);
                 _image.Stretch = thumbnail ? Stretch.UniformToFill : Stretch.Uniform;
                 _image.Source = bitmap;
@@ -172,9 +173,10 @@ public static class PreviewImageLoader
         }
     }
 
-    internal static async Task<(BitmapImage? Bitmap, PreviewImageSize Size)> DecodeAsync(
+    internal static async Task<(BitmapImage? Bitmap, PreviewImageSize Size, (uint Width, uint Height) Dimensions)> DecodeAsync(
         string path, bool thumbnail, double scale, CancellationToken token,
-        Func<IRandomAccessStream, Task<(uint Width, uint Height)>>? readHeader = null, bool sizeOnly = false)
+        Func<IRandomAccessStream, Task<(uint Width, uint Height)>>? readHeader = null, bool sizeOnly = false,
+        (uint Width, uint Height)? cachedDimensions = null)
     {
         await DecodeSlots.WaitAsync(token);
         try
@@ -184,7 +186,7 @@ public static class PreviewImageLoader
             (uint Width, uint Height) dimensions = default;
             try
             {
-                dimensions = await (readHeader ?? ReadDimensionsAsync)(stream);
+                dimensions = cachedDimensions ?? await (readHeader ?? ReadDimensionsAsync)(stream);
             }
             catch (Exception ex) when (ex is not OutOfMemoryException)
             {
@@ -199,7 +201,7 @@ public static class PreviewImageLoader
                 if (fullDecode)
                     throw new InvalidDataException("Image dimensions are unavailable without decoding.");
 
-                return (null, PreviewImageSize.Calculate(dimensions.Width, dimensions.Height, thumbnail, scale));
+                return (null, PreviewImageSize.Calculate(dimensions.Width, dimensions.Height, thumbnail, scale), dimensions);
             }
 
             var bitmap = new BitmapImage { DecodePixelType = DecodePixelType.Physical };
@@ -219,7 +221,7 @@ public static class PreviewImageLoader
             bitmap.DecodePixelHeight = size.PixelHeight;
             await bitmap.SetSourceAsync(stream);
             token.ThrowIfCancellationRequested();
-            return (bitmap, size);
+            return (bitmap, size, dimensions);
         }
         finally
         {

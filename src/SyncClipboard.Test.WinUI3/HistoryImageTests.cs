@@ -125,6 +125,10 @@ public class HistoryImageTests
             PreviewImageLoader.SetFilePath(image, largePath);
             PreviewImageLoader.SetIsThumbnail(image, true);
             await state.PendingLoad;
+            PreviewImageLoader.SetIsThumbnail(image, false);
+            Assert.AreEqual(2048, image.MaxWidth);
+            Assert.AreEqual(512, image.MaxHeight);
+            PreviewImageLoader.SetIsThumbnail(image, true);
             Assert.AreEqual(800, image.Width);
             Assert.AreEqual(200, image.Height);
             Assert.IsNull(image.Source);
@@ -178,6 +182,7 @@ public class HistoryImageTests
             Assert.IsNull(image.Source);
 
             await VerifyDecodeFallbackAsync(directory.FullName);
+            await VerifyCachedDimensionsAsync(largePath);
             await VerifyDecodeConcurrencyAsync(largePath);
             await VerifyPreviewPanelAsync(window, largePath, smallPath, directory.FullName);
             await VerifyScrollPositionAsync(window, largePath);
@@ -226,7 +231,7 @@ public class HistoryImageTests
 
                 if (length < fullDecodeFileLimit)
                 {
-                    var (bitmap, size) = await PreviewImageLoader.DecodeAsync(path, true, 2, CancellationToken.None, FailHeader);
+                    var (bitmap, size, _) = await PreviewImageLoader.DecodeAsync(path, true, 2, CancellationToken.None, FailHeader);
                     Assert.IsNotNull(bitmap);
                     Assert.AreEqual(1600, bitmap.DecodePixelWidth);
                     Assert.AreEqual(400, bitmap.DecodePixelHeight);
@@ -243,7 +248,7 @@ public class HistoryImageTests
         }
 
         // A readable header permits a large file; only the fallback has the file-size limit.
-        var (bounded, _) = await PreviewImageLoader.DecodeAsync(path, false, 1, CancellationToken.None);
+        var (bounded, _, _) = await PreviewImageLoader.DecodeAsync(path, false, 1, CancellationToken.None);
         Assert.IsNotNull(bounded);
         Assert.AreEqual(2048, bounded.DecodePixelWidth);
         Assert.AreEqual(512, bounded.DecodePixelHeight);
@@ -381,6 +386,26 @@ public class HistoryImageTests
             Assert.AreEqual(extent, scroll.ExtentHeight, 0.01);
             Assert.AreEqual(offset, scroll.VerticalOffset, 0.01);
         }
+    }
+
+    private static async Task VerifyCachedDimensionsAsync(string path)
+    {
+        var reads = 0;
+        Task<(uint, uint)> ReadHeader(Windows.Storage.Streams.IRandomAccessStream _)
+        {
+            reads++;
+            return Task.FromResult((4096u, 1024u));
+        }
+
+        var (placeholder, _, dimensions) = await PreviewImageLoader.DecodeAsync(path, true, 1,
+            CancellationToken.None, ReadHeader, sizeOnly: true);
+        Assert.IsNull(placeholder);
+        var (bitmap, size, _) = await PreviewImageLoader.DecodeAsync(path, false, 1,
+            CancellationToken.None, ReadHeader, cachedDimensions: dimensions);
+        Assert.IsNotNull(bitmap);
+        Assert.AreEqual(2048, size.Width);
+        Assert.AreEqual(512, size.Height);
+        Assert.AreEqual(1, reads);
     }
 
     private static async Task VerifyCompactListScrollPositionAsync(Window window, string path)

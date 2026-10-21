@@ -22,7 +22,7 @@ public sealed class PreviewImage : Image
     private CancellationTokenSource? _request;
     private Bitmap? _bitmap;
     private bool _attached;
-    private (string Path, DecodeOptions Options, Size Size)? _cachedSize;
+    private (string Path, PixelSize Dimensions)? _cachedSize;
 
     public static readonly StyledProperty<string?> FilePathProperty =
         AvaloniaProperty.Register<PreviewImage, string?>(nameof(FilePath));
@@ -116,24 +116,21 @@ public sealed class PreviewImage : Image
         Width = double.NaN;
         Height = double.NaN;
 
+        if (_cachedSize?.Path != FilePath)
+            _cachedSize = null;
+
         if (!_attached || string.IsNullOrEmpty(FilePath))
         {
             return;
         }
 
         var scale = ScaleWithRenderScaling ? TopLevel.GetTopLevel(this)?.RenderScaling ?? 1 : 1;
-        var options = new DecodeOptions(DecodeBounds, scale, MaxPixelWidth);
-        if (_cachedSize is { } cached && cached.Path == FilePath && cached.Options == options)
+        var options = new DecodeOptions(DecodeBounds, scale, MaxPixelWidth, Dimensions: _cachedSize?.Dimensions);
+        if (SizeToImage && _cachedSize is { } cached)
         {
-            if (SizeToImage)
-            {
-                Width = cached.Size.Width;
-                Height = cached.Size.Height;
-            }
-        }
-        else
-        {
-            _cachedSize = null;
+            var (displaySize, _) = GetSizes(cached.Dimensions, options);
+            Width = displaySize.Width;
+            Height = displaySize.Height;
         }
 
         if (!IsVisible && (!SizeToImage || _cachedSize is not null))
@@ -152,7 +149,7 @@ public sealed class PreviewImage : Image
             // Decoding itself cannot be interrupted. Never retain a late result after hiding the control,
             // refreshing the list, or replacing the file path.
             token.ThrowIfCancellationRequested();
-            _cachedSize = (path, options with { SizeOnly = false }, decoded.DisplaySize);
+            _cachedSize = (path, decoded.Dimensions);
             if (SizeToImage)
             {
                 Width = decoded.DisplaySize.Width;
@@ -203,7 +200,7 @@ public sealed class PreviewImage : Image
         PixelSize? dimensions;
         try
         {
-            dimensions = (readHeader ?? ReadDimensions)(stream);
+            dimensions = options.Dimensions ?? (readHeader ?? ReadDimensions)(stream);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException)
         {
@@ -221,7 +218,7 @@ public sealed class PreviewImage : Image
 
         var (displaySize, pixelSize) = GetSizes(size, options);
         if (options.SizeOnly)
-            return new DecodedImage(null, displaySize);
+            return new DecodedImage(null, displaySize, size);
         // The proportional decoder truncates the short dimension to zero for extreme aspect ratios.
         var ratio = Math.Min(1, Math.Min(Math.Min(options.Bounds.Width * options.Scale, options.MaxPixelWidth) / size.Width,
             options.Bounds.Height * options.Scale / size.Height));
@@ -233,7 +230,7 @@ public sealed class PreviewImage : Image
         var bitmap = (double)size.Width * pixelSize.Height >= (double)size.Height * pixelSize.Width
             ? Bitmap.DecodeToWidth(stream, pixelSize.Width)
             : Bitmap.DecodeToHeight(stream, pixelSize.Height);
-        return new DecodedImage(bitmap, displaySize);
+        return new DecodedImage(bitmap, displaySize, size);
     }
 
     private static PixelSize? ReadDimensions(Stream stream)
@@ -253,7 +250,7 @@ public sealed class PreviewImage : Image
 
         using var original = new Bitmap(stream);
         var (displaySize, pixelSize) = GetSizes(original.PixelSize, options);
-        return new DecodedImage(original.CreateScaledBitmap(pixelSize), displaySize);
+        return new DecodedImage(original.CreateScaledBitmap(pixelSize), displaySize, original.PixelSize);
     }
 
     private static (Size DisplaySize, PixelSize PixelSize) GetSizes(PixelSize size, DecodeOptions options)
@@ -266,6 +263,7 @@ public sealed class PreviewImage : Image
         return (displaySize, pixelSize);
     }
 
-    internal readonly record struct DecodeOptions(Size Bounds, double Scale = 1, int MaxPixelWidth = int.MaxValue, bool SizeOnly = false);
-    internal sealed record DecodedImage(Bitmap? Bitmap, Size DisplaySize);
+    internal readonly record struct DecodeOptions(
+        Size Bounds, double Scale = 1, int MaxPixelWidth = int.MaxValue, bool SizeOnly = false, PixelSize? Dimensions = null);
+    internal sealed record DecodedImage(Bitmap? Bitmap, Size DisplaySize, PixelSize Dimensions);
 }
