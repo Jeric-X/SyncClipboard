@@ -153,7 +153,13 @@ public class HistoryListImageLoadingTests
                 await image.PendingLoad;
                 Assert.IsInstanceOfType<Bitmap>(image.Source);
                 Assert.AreEqual(new PixelSize(150, 75), ((Bitmap)image.Source).PixelSize);
+                image.MaxPixelWidth = 1;
+                await image.PendingLoad;
+                Assert.IsNull(image.Source);
+                Assert.IsTrue(double.IsNaN(image.Width));
+                Assert.IsTrue(double.IsNaN(image.Height));
                 image.IsVisible = false;
+                image.MaxPixelWidth = 150;
                 image.DecodeBounds = new Size(600, 300);
                 Assert.AreEqual(600, image.Width);
                 Assert.AreEqual(300, image.Height);

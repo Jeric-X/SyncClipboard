@@ -16,13 +16,12 @@ namespace SyncClipboard.Desktop.Controls;
 /// </summary>
 public sealed class PreviewImage : Image
 {
-    private const long FullDecodeFileLimit = 10L * 1024 * 1024;
     private static readonly SemaphoreSlim DecodeSlots = new(2);
     private readonly Func<string, DecodeOptions, CancellationToken, Task<DecodedImage>> _load;
     private CancellationTokenSource? _request;
     private Bitmap? _bitmap;
     private bool _attached;
-    private (string Path, PixelSize Dimensions, bool FullDecode)? _cachedSize;
+    private (string Path, PixelSize Dimensions)? _cachedSize;
 
     public static readonly StyledProperty<string?> FilePathProperty =
         AvaloniaProperty.Register<PreviewImage, string?>(nameof(FilePath));
@@ -125,13 +124,19 @@ public sealed class PreviewImage : Image
         }
 
         var scale = ScaleWithRenderScaling ? TopLevel.GetTopLevel(this)?.RenderScaling ?? 1 : 1;
-        var options = new DecodeOptions(DecodeBounds, scale, MaxPixelWidth,
-            Dimensions: _cachedSize?.Dimensions, FullDecode: _cachedSize?.FullDecode ?? false);
+        var options = new DecodeOptions(DecodeBounds, scale, MaxPixelWidth, Dimensions: _cachedSize?.Dimensions);
         if (SizeToImage && _cachedSize is { } cached)
         {
-            var (displaySize, _) = GetSizes(cached.Dimensions, options);
-            Width = displaySize.Width;
-            Height = displaySize.Height;
+            try
+            {
+                var (displaySize, _) = GetSizes(cached.Dimensions, options);
+                Width = displaySize.Width;
+                Height = displaySize.Height;
+            }
+            catch (InvalidDataException)
+            {
+                return;
+            }
         }
 
         if (!IsVisible && (!SizeToImage || _cachedSize is not null))
@@ -150,7 +155,7 @@ public sealed class PreviewImage : Image
             // Decoding itself cannot be interrupted. Never retain a late result after hiding the control,
             // refreshing the list, or replacing the file path.
             token.ThrowIfCancellationRequested();
-            _cachedSize = (path, decoded.Dimensions, decoded.FullDecode);
+            _cachedSize = (path, decoded.Dimensions);
             if (SizeToImage)
             {
                 Width = decoded.DisplaySize.Width;
@@ -198,9 +203,6 @@ public sealed class PreviewImage : Image
     internal static DecodedImage Decode(string path, DecodeOptions options, Func<Stream, PixelSize?>? readHeader = null)
     {
         using var stream = File.OpenRead(path);
-        if (options.FullDecode && !options.SizeOnly)
-            return DecodeFullImage(stream, options);
-
         PixelSize? dimensions;
         try
         {
@@ -213,23 +215,11 @@ public sealed class PreviewImage : Image
 
         stream.Position = 0;
         if (dimensions is not { Width: > 0, Height: > 0 } size)
-        {
-            if (options.SizeOnly)
-                throw new InvalidDataException("Image dimensions are unavailable without decoding.");
-
-            return DecodeFullImage(stream, options);
-        }
+            throw new InvalidDataException("Image dimensions are unavailable.");
 
         var (displaySize, pixelSize) = GetSizes(size, options);
         if (options.SizeOnly)
-            return new DecodedImage(null, displaySize, size, options.FullDecode);
-        // The proportional decoder truncates the short dimension to zero for extreme aspect ratios.
-        var ratio = Math.Min(1, Math.Min(Math.Min(options.Bounds.Width * options.Scale, options.MaxPixelWidth) / size.Width,
-            options.Bounds.Height * options.Scale / size.Height));
-        if (size.Width * ratio < 1 || size.Height * ratio < 1)
-        {
-            throw new InvalidDataException("Scaled image dimensions are smaller than one pixel.");
-        }
+            return new DecodedImage(null, displaySize, size);
 
         var bitmap = (double)size.Width * pixelSize.Height >= (double)size.Height * pixelSize.Width
             ? Bitmap.DecodeToWidth(stream, pixelSize.Width)
@@ -244,31 +234,19 @@ public sealed class PreviewImage : Image
         return codec is null ? null : new PixelSize(codec.Info.Width, codec.Info.Height);
     }
 
-    private static DecodedImage DecodeFullImage(Stream stream, DecodeOptions options)
-    {
-        // A failed header must never trigger an unbounded full decode of a large file.
-        if (stream.Length >= FullDecodeFileLimit)
-        {
-            throw new InvalidDataException("Image requires full decoding but is not smaller than 10 MiB.");
-        }
-
-        using var original = new Bitmap(stream);
-        var (displaySize, pixelSize) = GetSizes(original.PixelSize, options);
-        return new DecodedImage(original.CreateScaledBitmap(pixelSize), displaySize, original.PixelSize, FullDecode: true);
-    }
-
     private static (Size DisplaySize, PixelSize PixelSize) GetSizes(PixelSize size, DecodeOptions options)
     {
         var displayRatio = Math.Min(1, Math.Min(options.Bounds.Width / size.Width, options.Bounds.Height / size.Height));
         var displaySize = new Size(size.Width * displayRatio, size.Height * displayRatio);
         var pixelRatio = Math.Min(Math.Min(1, displayRatio * options.Scale), (double)options.MaxPixelWidth / size.Width);
-        var pixelSize = new PixelSize(Math.Max(1, (int)Math.Floor(size.Width * pixelRatio)),
-            Math.Max(1, (int)Math.Floor(size.Height * pixelRatio)));
+        if (size.Width * pixelRatio < 1 || size.Height * pixelRatio < 1)
+            throw new InvalidDataException("Scaled image dimensions are smaller than one pixel.");
+
+        var pixelSize = new PixelSize((int)Math.Floor(size.Width * pixelRatio), (int)Math.Floor(size.Height * pixelRatio));
         return (displaySize, pixelSize);
     }
 
     internal readonly record struct DecodeOptions(
-        Size Bounds, double Scale = 1, int MaxPixelWidth = int.MaxValue, bool SizeOnly = false,
-        PixelSize? Dimensions = null, bool FullDecode = false);
-    internal sealed record DecodedImage(Bitmap? Bitmap, Size DisplaySize, PixelSize Dimensions, bool FullDecode = false);
+        Size Bounds, double Scale = 1, int MaxPixelWidth = int.MaxValue, bool SizeOnly = false, PixelSize? Dimensions = null);
+    internal sealed record DecodedImage(Bitmap? Bitmap, Size DisplaySize, PixelSize Dimensions);
 }

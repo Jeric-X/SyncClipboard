@@ -181,9 +181,8 @@ public class HistoryImageTests
             Assert.AreEqual(1, missingCount);
             Assert.IsNull(image.Source);
 
-            await VerifyDecodeFallbackAsync(directory.FullName);
+            await VerifyLargeAndCorruptImagesAsync(directory.FullName);
             await VerifyCachedDimensionsAsync(largePath);
-            await VerifyCachedFallbackAsync(directory.FullName);
             await VerifyDecodeConcurrencyAsync(largePath);
             await VerifyPreviewPanelAsync(window, largePath, smallPath, directory.FullName);
             await VerifyScrollPositionAsync(window, largePath);
@@ -209,47 +208,14 @@ public class HistoryImageTests
         }
     }
 
-    private static async Task VerifyDecodeFallbackAsync(string directory)
+    private static async Task VerifyLargeAndCorruptImagesAsync(string directory)
     {
-        const long fullDecodeFileLimit = 10L * 1024 * 1024;
-        var path = Path.Combine(directory, "fallback.png");
+        var path = Path.Combine(directory, "large-preview.png");
         await CreateImageAsync(path, 4096, 1024);
-        foreach (var length in new[] { fullDecodeFileLimit - 1, fullDecodeFileLimit })
-        {
-            using (var file = File.OpenWrite(path))
-                file.SetLength(length);
+        using (var file = File.OpenWrite(path))
+            file.SetLength(10L * 1024 * 1024);
 
-            foreach (var throws in new[] { false, true })
-            {
-                Task<(uint, uint)> FailHeader(Windows.Storage.Streams.IRandomAccessStream stream)
-                {
-                    stream.Seek(16);
-                    return throws ? throw new InvalidDataException("Header unavailable") : Task.FromResult((0u, 0u));
-                }
-
-                await Assert.ThrowsExactlyAsync<InvalidDataException>(() =>
-                    PreviewImageLoader.DecodeAsync(path, true, 2, CancellationToken.None, FailHeader, sizeOnly: true));
-
-                if (length < fullDecodeFileLimit)
-                {
-                    var (bitmap, size, _, _) = await PreviewImageLoader.DecodeAsync(path, true, 2, CancellationToken.None, FailHeader);
-                    Assert.IsNotNull(bitmap);
-                    Assert.AreEqual(1600, bitmap.DecodePixelWidth);
-                    Assert.AreEqual(400, bitmap.DecodePixelHeight);
-                    Assert.AreEqual(800, size.Width);
-                    Assert.AreEqual(200, size.Height);
-                    Assert.IsGreaterThan(0, bitmap.PixelWidth);
-                }
-                else
-                {
-                    await Assert.ThrowsExactlyAsync<InvalidDataException>(() =>
-                        PreviewImageLoader.DecodeAsync(path, true, 2, CancellationToken.None, FailHeader));
-                }
-            }
-        }
-
-        // A readable header permits a large file; only the fallback has the file-size limit.
-        var (bounded, _, _, _) = await PreviewImageLoader.DecodeAsync(path, false, 1, CancellationToken.None);
+        var (bounded, _, _) = await PreviewImageLoader.DecodeAsync(path, false, 1, CancellationToken.None);
         Assert.IsNotNull(bounded);
         Assert.AreEqual(2048, bounded.DecodePixelWidth);
         Assert.AreEqual(512, bounded.DecodePixelHeight);
@@ -389,37 +355,6 @@ public class HistoryImageTests
         }
     }
 
-    private static async Task VerifyCachedFallbackAsync(string directory)
-    {
-        foreach (var (width, height) in new[] { (16000u, 1u), (1u, 16000u) })
-        {
-            var path = Path.Combine(directory, $"fallback-{width}-{height}.png");
-            await CreateImageAsync(path, width, height);
-            var reads = 0;
-            Task<(uint, uint)> FailHeader(Windows.Storage.Streams.IRandomAccessStream _)
-            {
-                reads++;
-                return Task.FromResult((0u, 0u));
-            }
-
-            var (first, size, cachedDimensions, fullDecode) = await PreviewImageLoader.DecodeAsync(path, true, 1,
-                CancellationToken.None, FailHeader);
-            Assert.IsNotNull(first);
-            var (reopened, reopenedSize, _, _) = await PreviewImageLoader.DecodeAsync(path, true, 1,
-                CancellationToken.None, FailHeader, cachedDimensions: cachedDimensions, forceFullDecode: fullDecode);
-            Assert.IsNotNull(reopened);
-            Assert.AreEqual(size, reopenedSize);
-            Assert.AreEqual(first.DecodePixelWidth, reopened.DecodePixelWidth);
-            Assert.AreEqual(first.DecodePixelHeight, reopened.DecodePixelHeight);
-            Assert.AreEqual(1, reads);
-
-            using (var file = File.OpenWrite(path))
-                file.SetLength(10L * 1024 * 1024);
-            await Assert.ThrowsExactlyAsync<InvalidDataException>(() => PreviewImageLoader.DecodeAsync(path, true, 1,
-                CancellationToken.None, FailHeader, cachedDimensions: cachedDimensions, forceFullDecode: fullDecode));
-        }
-    }
-
     private static async Task VerifyCachedDimensionsAsync(string path)
     {
         var reads = 0;
@@ -429,10 +364,10 @@ public class HistoryImageTests
             return Task.FromResult((4096u, 1024u));
         }
 
-        var (placeholder, _, dimensions, _) = await PreviewImageLoader.DecodeAsync(path, true, 1,
+        var (placeholder, _, dimensions) = await PreviewImageLoader.DecodeAsync(path, true, 1,
             CancellationToken.None, ReadHeader, sizeOnly: true);
         Assert.IsNull(placeholder);
-        var (bitmap, size, _, _) = await PreviewImageLoader.DecodeAsync(path, false, 1,
+        var (bitmap, size, _) = await PreviewImageLoader.DecodeAsync(path, false, 1,
             CancellationToken.None, ReadHeader, cachedDimensions: dimensions);
         Assert.IsNotNull(bitmap);
         Assert.AreEqual(2048, size.Width);
