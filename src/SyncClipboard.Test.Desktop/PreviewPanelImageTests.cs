@@ -41,6 +41,7 @@ public class PreviewPanelImageTests
             try
             {
                 using var bitmap = PreviewImage.Decode(path, new PreviewImage.DecodeOptions(new Size(2048, 2048))).Bitmap;
+                Assert.IsNotNull(bitmap);
                 Assert.AreEqual(new PixelSize(expectedWidth, expectedHeight), bitmap.PixelSize);
                 Assert.IsLessThanOrEqualTo(16L * 1024 * 1024, (long)bitmap.PixelSize.Width * bitmap.PixelSize.Height * 4);
             }
@@ -136,11 +137,16 @@ public class PreviewPanelImageTests
                     _ => new PixelSize(0, 0)
                 };
             })))
-            { FilePath = path, DecodeBounds = new Size(400, 200), SizeToImage = true };
+            { FilePath = path, DecodeBounds = new Size(400, 200), SizeToImage = true, IsVisible = false };
             var window = new Window { Content = image };
             try
             {
                 window.Show();
+                await image.PendingLoad;
+                Assert.IsNull(image.Source);
+                Assert.IsTrue(double.IsNaN(image.Width));
+                Assert.IsTrue(double.IsNaN(image.Height));
+                image.IsVisible = true;
                 await image.PendingLoad;
                 if (shouldDisplay)
                 {

@@ -3,7 +3,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.Core;
-using SyncClipboard.Core.Models;
 using SyncClipboard.WinUI3.Utilities;
 using System;
 using System.IO;
@@ -25,8 +24,6 @@ public static class PreviewImageLoader
         "FilePath", typeof(string), typeof(PreviewImageLoader), new PropertyMetadata(null, OnOptionsChanged));
     public static readonly DependencyProperty IsThumbnailProperty = DependencyProperty.RegisterAttached(
         "IsThumbnail", typeof(bool), typeof(PreviewImageLoader), new PropertyMetadata(false, OnOptionsChanged));
-    public static readonly DependencyProperty MetadataProperty = DependencyProperty.RegisterAttached(
-        "Metadata", typeof(HistoryImageMetadata), typeof(PreviewImageLoader), new PropertyMetadata(null, OnOptionsChanged));
     private static readonly DependencyProperty StateProperty = DependencyProperty.RegisterAttached(
         nameof(State), typeof(State), typeof(PreviewImageLoader), new PropertyMetadata(null));
 
@@ -34,9 +31,6 @@ public static class PreviewImageLoader
     public static void SetFilePath(Image image, string? value) => image.SetValue(FilePathProperty, value);
     public static bool GetIsThumbnail(Image image) => (bool)image.GetValue(IsThumbnailProperty);
     public static void SetIsThumbnail(Image image, bool value) => image.SetValue(IsThumbnailProperty, value);
-
-    public static HistoryImageMetadata? GetMetadata(Image image) => (HistoryImageMetadata?)image.GetValue(MetadataProperty);
-    public static void SetMetadata(Image image, HistoryImageMetadata? value) => image.SetValue(MetadataProperty, value);
 
     internal static void SetContainerRecycled(DependencyObject container, bool recycled)
     {
@@ -73,6 +67,7 @@ public static class PreviewImageLoader
         private readonly Image _image;
         private CancellationTokenSource? _request;
         private bool _recycled;
+        private (string Path, bool Thumbnail, double Scale, PreviewImageSize Size)? _cachedSize;
 
         internal event EventHandler? FileMissing;
         internal Task PendingLoad { get; private set; } = Task.CompletedTask;
@@ -114,41 +109,47 @@ public static class PreviewImageLoader
 
             var thumbnail = GetIsThumbnail(_image);
             var scale = _image.XamlRoot?.RasterizationScale ?? 1;
-            // History records prepare metadata off the UI thread before entering the list.
-            if (thumbnail && GetMetadata(_image) is { Width: > 0, Height: > 0 } metadata && metadata.FilePath == path)
+            if (_cachedSize is { } cached && cached.Path == path && cached.Thumbnail == thumbnail && cached.Scale == scale)
             {
-                var width = metadata.Rotated ? metadata.Height : metadata.Width;
-                var height = metadata.Rotated ? metadata.Width : metadata.Height;
-                var ratio = Math.Min(1, Math.Min(5120.0 / width, 200.0 / height));
-                _image.Width = width * ratio;
-                _image.Height = height * ratio;
+                ApplySize(cached.Size, thumbnail);
+            }
+            else
+            {
+                _cachedSize = null;
             }
 
-            if (_image.Visibility != Visibility.Visible)
+            var sizeOnly = _image.Visibility != Visibility.Visible;
+            if (sizeOnly && (!thumbnail || _cachedSize is not null))
                 return;
 
             _request = new CancellationTokenSource();
-            PendingLoad = LoadAsync(path, thumbnail, scale, _request.Token);
+            PendingLoad = LoadAsync(path, thumbnail, scale, sizeOnly, _request.Token);
         }
 
-        private async Task LoadAsync(string path, bool thumbnail, double scale, CancellationToken token)
+        private void ApplySize(PreviewImageSize size, bool thumbnail)
+        {
+            if (thumbnail)
+            {
+                _image.Width = size.Width;
+                _image.Height = size.Height;
+            }
+            else
+            {
+                // Uniform alone also enlarges small images to fill the panel.
+                _image.MaxWidth = size.Width;
+                _image.MaxHeight = size.Height;
+            }
+        }
+
+        private async Task LoadAsync(string path, bool thumbnail, double scale, bool sizeOnly, CancellationToken token)
         {
             try
             {
-                var (bitmap, size) = await DecodeAsync(path, thumbnail, scale, token);
+                var (bitmap, size) = await DecodeAsync(path, thumbnail, scale, token, sizeOnly: sizeOnly);
                 token.ThrowIfCancellationRequested();
 
-                if (thumbnail)
-                {
-                    _image.Width = size.Width;
-                    _image.Height = size.Height;
-                }
-                else
-                {
-                    // Uniform alone also enlarges small images to fill the panel.
-                    _image.MaxWidth = size.Width;
-                    _image.MaxHeight = size.Height;
-                }
+                _cachedSize = (path, thumbnail, scale, size);
+                ApplySize(size, thumbnail);
                 _image.Stretch = thumbnail ? Stretch.UniformToFill : Stretch.Uniform;
                 _image.Source = bitmap;
             }
@@ -171,14 +172,14 @@ public static class PreviewImageLoader
         }
     }
 
-    internal static async Task<(BitmapImage Bitmap, PreviewImageSize Size)> DecodeAsync(
+    internal static async Task<(BitmapImage? Bitmap, PreviewImageSize Size)> DecodeAsync(
         string path, bool thumbnail, double scale, CancellationToken token,
-        Func<IRandomAccessStream, Task<(uint Width, uint Height)>>? readHeader = null)
+        Func<IRandomAccessStream, Task<(uint Width, uint Height)>>? readHeader = null, bool sizeOnly = false)
     {
         await DecodeSlots.WaitAsync(token);
         try
         {
-            using var file = File.OpenRead(path);
+            using var file = await Task.Run(() => File.OpenRead(path), token);
             using var stream = file.AsRandomAccessStream();
             (uint Width, uint Height) dimensions = default;
             try
@@ -192,8 +193,16 @@ public static class PreviewImageLoader
 
             token.ThrowIfCancellationRequested();
             stream.Seek(0);
-            var bitmap = new BitmapImage { DecodePixelType = DecodePixelType.Physical };
             var fullDecode = dimensions.Width == 0 || dimensions.Height == 0;
+            if (sizeOnly)
+            {
+                if (fullDecode)
+                    throw new InvalidDataException("Image dimensions are unavailable without decoding.");
+
+                return (null, PreviewImageSize.Calculate(dimensions.Width, dimensions.Height, thumbnail, scale));
+            }
+
+            var bitmap = new BitmapImage { DecodePixelType = DecodePixelType.Physical };
             if (fullDecode)
             {
                 if (stream.Size >= 10UL * 1024 * 1024)

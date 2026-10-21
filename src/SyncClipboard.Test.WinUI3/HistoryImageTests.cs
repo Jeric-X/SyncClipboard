@@ -5,7 +5,6 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.WinUI3.Controls;
 using SyncClipboard.WinUI3.Utilities;
 using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Models;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
 using SyncClipboard.Shared.Profiles;
@@ -101,7 +100,6 @@ public class HistoryImageTests
         try
         {
             PreviewImageLoader.SetFilePath(image, largePath);
-            PreviewImageLoader.SetMetadata(image, await HistoryImageMetadata.ReadAsync(largePath));
             Assert.IsNull(image.Source);
             window.AppWindow.Show(false);
             var large = await WaitForBitmapAsync(image);
@@ -126,6 +124,7 @@ public class HistoryImageTests
             image.Visibility = Visibility.Collapsed;
             PreviewImageLoader.SetFilePath(image, largePath);
             PreviewImageLoader.SetIsThumbnail(image, true);
+            await state.PendingLoad;
             Assert.AreEqual(800, image.Width);
             Assert.AreEqual(200, image.Height);
             Assert.IsNull(image.Source);
@@ -222,9 +221,13 @@ public class HistoryImageTests
                     return throws ? throw new InvalidDataException("Header unavailable") : Task.FromResult((0u, 0u));
                 }
 
+                await Assert.ThrowsExactlyAsync<InvalidDataException>(() =>
+                    PreviewImageLoader.DecodeAsync(path, true, 2, CancellationToken.None, FailHeader, sizeOnly: true));
+
                 if (length < fullDecodeFileLimit)
                 {
                     var (bitmap, size) = await PreviewImageLoader.DecodeAsync(path, true, 2, CancellationToken.None, FailHeader);
+                    Assert.IsNotNull(bitmap);
                     Assert.AreEqual(1600, bitmap.DecodePixelWidth);
                     Assert.AreEqual(400, bitmap.DecodePixelHeight);
                     Assert.AreEqual(800, size.Width);
@@ -241,6 +244,7 @@ public class HistoryImageTests
 
         // A readable header permits a large file; only the fallback has the file-size limit.
         var (bounded, _) = await PreviewImageLoader.DecodeAsync(path, false, 1, CancellationToken.None);
+        Assert.IsNotNull(bounded);
         Assert.AreEqual(2048, bounded.DecodePixelWidth);
         Assert.AreEqual(512, bounded.DecodePixelHeight);
 
@@ -381,7 +385,6 @@ public class HistoryImageTests
 
     private static async Task VerifyCompactListScrollPositionAsync(Window window, string path)
     {
-        var metadata = await HistoryImageMetadata.ReadAsync(path);
         var list = new HistoryListView
         {
             Width = 400,
@@ -397,17 +400,18 @@ public class HistoryImageTests
                     <StackPanel>
                         <Image controls:PreviewImageLoader.IsThumbnail="True"
                                controls:PreviewImageLoader.FilePath="{path}"
-                               controls:PreviewImageLoader.Metadata="{{Binding Metadata}}" Visibility="Collapsed" />
+                               Visibility="Collapsed" />
                         <TextBlock Text="Row" Height="24" />
                     </StackPanel>
                 </DataTemplate>
                 """),
-            ItemsSource = Enumerable.Range(0, 40).Select(index => new { Index = index, Metadata = metadata }).ToArray()
+            ItemsSource = Enumerable.Range(0, 40).ToArray()
         };
         window.Content = list;
         await WaitUntilAsync(() => list.ContainerFromIndex(39) is ListViewItem { ContentTemplateRoot: StackPanel });
         var images = Enumerable.Range(0, 40).Select(i =>
             (Image)((StackPanel)((ListViewItem)list.ContainerFromIndex(i)).ContentTemplateRoot).Children[0]).ToArray();
+        await Task.WhenAll(images.Select(image => PreviewImageLoader.GetState(image).PendingLoad));
         list.SelectedIndex = 15;
         var scroll = FindScrollViewer(list)!;
         scroll.ChangeView(null, 400, null, disableAnimation: true);

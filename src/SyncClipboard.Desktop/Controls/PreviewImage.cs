@@ -4,7 +4,6 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using SkiaSharp;
 using SyncClipboard.Core;
-using SyncClipboard.Core.Models;
 using System;
 using System.IO;
 using System.Threading;
@@ -23,6 +22,7 @@ public sealed class PreviewImage : Image
     private CancellationTokenSource? _request;
     private Bitmap? _bitmap;
     private bool _attached;
+    private (string Path, DecodeOptions Options, Size Size)? _cachedSize;
 
     public static readonly StyledProperty<string?> FilePathProperty =
         AvaloniaProperty.Register<PreviewImage, string?>(nameof(FilePath));
@@ -31,15 +31,6 @@ public sealed class PreviewImage : Image
     {
         get => GetValue(FilePathProperty);
         set => SetValue(FilePathProperty, value);
-    }
-
-    public static readonly StyledProperty<HistoryImageMetadata?> MetadataProperty =
-        AvaloniaProperty.Register<PreviewImage, HistoryImageMetadata?>(nameof(Metadata));
-
-    public HistoryImageMetadata? Metadata
-    {
-        get => GetValue(MetadataProperty);
-        set => SetValue(MetadataProperty, value);
     }
 
     // Bounds are physical pixels unless ScaleWithRenderScaling is enabled for a list thumbnail.
@@ -92,7 +83,7 @@ public sealed class PreviewImage : Image
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == FilePathProperty || change.Property == MetadataProperty || change.Property == IsVisibleProperty ||
+        if (change.Property == FilePathProperty || change.Property == IsVisibleProperty ||
             change.Property == DecodeBoundsProperty || change.Property == ScaleWithRenderScalingProperty ||
             change.Property == SizeToImageProperty || change.Property == MaxPixelWidthProperty)
         {
@@ -132,19 +123,24 @@ public sealed class PreviewImage : Image
 
         var scale = ScaleWithRenderScaling ? TopLevel.GetTopLevel(this)?.RenderScaling ?? 1 : 1;
         var options = new DecodeOptions(DecodeBounds, scale, MaxPixelWidth);
-        // History records prepare metadata off the UI thread before entering the list.
-        if (SizeToImage && Metadata is { Width: > 0, Height: > 0 } metadata && metadata.FilePath == FilePath)
+        if (_cachedSize is { } cached && cached.Path == FilePath && cached.Options == options)
         {
-            var (displaySize, _) = GetSizes(new PixelSize((int)metadata.CanvasWidth, (int)metadata.CanvasHeight), options);
-            Width = displaySize.Width;
-            Height = displaySize.Height;
+            if (SizeToImage)
+            {
+                Width = cached.Size.Width;
+                Height = cached.Size.Height;
+            }
+        }
+        else
+        {
+            _cachedSize = null;
         }
 
-        if (!IsVisible)
+        if (!IsVisible && (!SizeToImage || _cachedSize is not null))
             return;
 
         _request = new CancellationTokenSource();
-        PendingLoad = ShowImageAsync(FilePath, options, _request.Token);
+        PendingLoad = ShowImageAsync(FilePath, options with { SizeOnly = !IsVisible }, _request.Token);
     }
 
     private async Task ShowImageAsync(string path, DecodeOptions options, CancellationToken token)
@@ -156,6 +152,7 @@ public sealed class PreviewImage : Image
             // Decoding itself cannot be interrupted. Never retain a late result after hiding the control,
             // refreshing the list, or replacing the file path.
             token.ThrowIfCancellationRequested();
+            _cachedSize = (path, options with { SizeOnly = false }, decoded.DisplaySize);
             if (SizeToImage)
             {
                 Width = decoded.DisplaySize.Width;
@@ -179,7 +176,7 @@ public sealed class PreviewImage : Image
         }
         finally
         {
-            decoded?.Bitmap.Dispose();
+            decoded?.Bitmap?.Dispose();
         }
     }
 
@@ -216,10 +213,15 @@ public sealed class PreviewImage : Image
         stream.Position = 0;
         if (dimensions is not { Width: > 0, Height: > 0 } size)
         {
+            if (options.SizeOnly)
+                throw new InvalidDataException("Image dimensions are unavailable without decoding.");
+
             return DecodeFullImage(stream, options);
         }
 
         var (displaySize, pixelSize) = GetSizes(size, options);
+        if (options.SizeOnly)
+            return new DecodedImage(null, displaySize);
         // The proportional decoder truncates the short dimension to zero for extreme aspect ratios.
         var ratio = Math.Min(1, Math.Min(Math.Min(options.Bounds.Width * options.Scale, options.MaxPixelWidth) / size.Width,
             options.Bounds.Height * options.Scale / size.Height));
@@ -264,6 +266,6 @@ public sealed class PreviewImage : Image
         return (displaySize, pixelSize);
     }
 
-    internal readonly record struct DecodeOptions(Size Bounds, double Scale = 1, int MaxPixelWidth = int.MaxValue);
-    internal sealed record DecodedImage(Bitmap Bitmap, Size DisplaySize);
+    internal readonly record struct DecodeOptions(Size Bounds, double Scale = 1, int MaxPixelWidth = int.MaxValue, bool SizeOnly = false);
+    internal sealed record DecodedImage(Bitmap? Bitmap, Size DisplaySize);
 }

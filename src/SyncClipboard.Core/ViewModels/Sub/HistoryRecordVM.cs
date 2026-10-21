@@ -169,30 +169,9 @@ public partial class HistoryRecordVM : ObservableObject
     [ObservableProperty]
     public string? previewImage;
 
-    [ObservableProperty]
-    private HistoryImageMetadata? previewImageMetadata;
-
-    internal async Task PreparePreviewImageAsync(CancellationToken token = default)
-    {
-        var path = PreviewImage;
-        var metadata = await ReadPreviewImageMetadataAsync(token);
-        if (PreviewImage == path)
-            PreviewImageMetadata = metadata;
-    }
-
-    internal Task<HistoryImageMetadata?> ReadPreviewImageMetadataAsync(CancellationToken token = default)
-    {
-        var path = PreviewImage;
-        return Type == ProfileType.Image && !string.IsNullOrEmpty(path)
-            ? HistoryImageMetadata.ReadAsync(path, token).WaitAsync(token)
-            : Task.FromResult<HistoryImageMetadata?>(null);
-    }
-
     private void UpdatePreviewImage()
     {
         PreviewImage = IsLocalFileReady && FilePath.Length > 0 ? FilePath[0] : null;
-        if (PreviewImageMetadata?.FilePath != PreviewImage)
-            PreviewImageMetadata = null;
     }
 
     private Progress<HttpDownloadProgress>? downloadProgressReporter = null;
@@ -348,7 +327,6 @@ public partial class HistoryRecordVM : ObservableObject
         // HasError = record.HasError;
         // ErrorMessage = record.ErrorMessage;
         IsLocalFileReady = record.IsLocalFileReady;
-        PreviewImageMetadata = record.PreviewImageMetadata;
     }
 
     public override bool Equals(object? obj)
@@ -430,8 +408,7 @@ public partial class HistoryRecordVM : ObservableObject
             HasError = this.HasError,
             ErrorMessage = this.ErrorMessage,
             IsLocalFileReady = this.IsLocalFileReady,
-            SortByLastAccessed = this.SortByLastAccessed,
-            PreviewImageMetadata = this.PreviewImageMetadata
+            SortByLastAccessed = this.SortByLastAccessed
         };
 
         return copy;

@@ -10,7 +10,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using ImageMagick;
 using SkiaSharp;
 using ObservableCollections;
-using SyncClipboard.Core.Models;
 using SyncClipboard.Desktop.Controls;
 using SyncClipboard.Desktop.ValueConverters;
 using SyncClipboard.Desktop.Utilities;
@@ -56,14 +55,16 @@ public class HistoryListImageLoadingTests
 
             var completion = new TaskCompletionSource<PreviewImage.DecodedImage>();
             var requests = 0;
-            var image = new PreviewImage((_, _, _) =>
+            var image = new PreviewImage((file, options, token) =>
             {
+                if (options.SizeOnly)
+                    return Task.Run(() => PreviewImage.Decode(file, options), token);
+
                 requests++;
                 return completion.Task;
             })
             {
                 FilePath = path,
-                Metadata = await HistoryImageMetadata.ReadAsync(path, TestContext.CancellationTokenSource.Token),
                 DecodeBounds = new Size(5120, 200),
                 MaxPixelWidth = 5120,
                 ScaleWithRenderScaling = true,
@@ -74,6 +75,7 @@ public class HistoryListImageLoadingTests
             try
             {
                 window.Show();
+                await image.PendingLoad;
                 var canvasWidth = partialGifFrame ? 600 : width;
                 var canvasHeight = partialGifFrame ? 400 : height;
                 var ratio = Math.Min(1, Math.Min(5120.0 / canvasWidth, 200.0 / canvasHeight));
@@ -96,6 +98,7 @@ public class HistoryListImageLoadingTests
                 image.IsVisible = false;
                 Assert.IsNull(image.Source);
                 image.FilePath = path + ".missing";
+                await image.PendingLoad;
                 Assert.IsTrue(double.IsNaN(image.Width));
                 Assert.IsTrue(double.IsNaN(image.Height));
                 Assert.AreEqual(1, requests);
@@ -104,6 +107,49 @@ public class HistoryListImageLoadingTests
             {
                 window.Close();
                 File.Delete(path);
+            }
+            return true;
+        }, TestContext.CancellationTokenSource.Token);
+    }
+
+    [TestMethod]
+    public async Task LateSizeReadsCannotReplaceTheCurrentPlaceholder()
+    {
+        await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryListImageLoadingTests));
+        await session.Dispatch(async () =>
+        {
+            var requests = new List<TaskCompletionSource<PreviewImage.DecodedImage>>();
+            var image = new PreviewImage((_, _, _) =>
+            {
+                var completion = new TaskCompletionSource<PreviewImage.DecodedImage>();
+                requests.Add(completion);
+                return completion.Task;
+            })
+            { FilePath = "old.png", SizeToImage = true, IsVisible = false };
+            var window = new Window { Content = image };
+            try
+            {
+                window.Show();
+                var oldRead = image.PendingLoad;
+                image.FilePath = "current.png";
+                requests[1].SetResult(new(null, new Size(32, 16)));
+                await image.PendingLoad;
+                requests[0].SetResult(new(null, new Size(400, 200)));
+                await oldRead;
+                Assert.AreEqual(32, image.Width);
+                Assert.AreEqual(16, image.Height);
+                Assert.IsNull(image.Source);
+
+                image.IsVisible = true;
+                Assert.AreEqual(16, image.Height);
+                requests[2].SetResult(new(CreateBitmap(), new Size(32, 16)));
+                await image.PendingLoad;
+                Assert.IsNotNull(image.Source);
+                Assert.AreEqual(16, image.Height);
+            }
+            finally
+            {
+                window.Close();
             }
             return true;
         }, TestContext.CancellationTokenSource.Token);
@@ -124,7 +170,6 @@ public class HistoryListImageLoadingTests
             using (var file = File.Create(path))
                 data.SaveTo(file);
 
-            var metadata = await HistoryImageMetadata.ReadAsync(path, TestContext.CancellationTokenSource.Token);
             var requests = new List<TaskCompletionSource<PreviewImage.DecodedImage>>();
             var images = new List<PreviewImage>();
             var compact = true;
@@ -135,15 +180,18 @@ public class HistoryListImageLoadingTests
                 ItemsPanel = new FuncTemplate<Panel?>(() => virtualized ? new VirtualizingStackPanel() : new StackPanel()),
                 ItemTemplate = new FuncDataTemplate<string>((text, _) =>
                 {
-                    var image = new PreviewImage((_, _, _) =>
+                    var image = new PreviewImage((file, options, _) =>
                     {
+                        // Complete size reads immediately to isolate layout anchoring from I/O timing.
+                        if (options.SizeOnly)
+                            return Task.FromResult(PreviewImage.Decode(file, options));
+
                         var completion = new TaskCompletionSource<PreviewImage.DecodedImage>();
                         requests.Add(completion);
                         return completion.Task;
                     })
                     {
                         FilePath = path,
-                        Metadata = metadata,
                         DecodeBounds = new Size(5120, 200),
                         SizeToImage = true,
                         IsVisible = !compact
@@ -178,16 +226,23 @@ public class HistoryListImageLoadingTests
                     request.SetResult(new PreviewImage.DecodedImage(CreateBitmap(), new Size(400, 200)));
                 await Task.WhenAll(images.Select(image => image.PendingLoad));
                 window.UpdateLayout();
-                Assert.AreEqual(extent, scroll.Extent.Height, 0.01);
-                Assert.AreEqual(offset, scroll.Offset.Y, 0.01);
-                Assert.AreEqual(originalY, SelectedY(), 0.01);
+                if (!virtualized)
+                {
+                    // Every row already has its size. Newly realized virtual rows may still change height.
+                    Assert.AreEqual(extent, scroll.Extent.Height, 0.01);
+                    Assert.AreEqual(offset, scroll.Offset.Y, 0.01);
+                    Assert.AreEqual(originalY, SelectedY(), 0.01);
+                }
 
+                list.ScrollIntoView(list.SelectedItem!);
+                window.UpdateLayout();
+                var beforeCollapse = SelectedY();
                 HistoryListScrollAnchor.PreserveSelectedItemPosition(list);
                 compact = true;
                 images.ForEach(image => image.IsVisible = false);
                 await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background, TestContext.CancellationTokenSource.Token);
                 window.UpdateLayout();
-                Assert.AreEqual(originalY, SelectedY(), 0.01);
+                Assert.AreEqual(beforeCollapse, SelectedY(), 0.01);
             }
             finally
             {
@@ -386,6 +441,7 @@ public class HistoryListImageLoadingTests
                 }
                 var thumbnail = PreviewImage.Decode(path, new PreviewImage.DecodeOptions(new Size(5120, 200), scale, 5120));
                 using var bitmap = thumbnail.Bitmap;
+                Assert.IsNotNull(bitmap);
                 Assert.IsLessThanOrEqualTo(5120, bitmap.PixelSize.Width);
                 Assert.IsLessThanOrEqualTo((int)(200 * scale), bitmap.PixelSize.Height);
                 Assert.IsLessThanOrEqualTo(width, bitmap.PixelSize.Width);

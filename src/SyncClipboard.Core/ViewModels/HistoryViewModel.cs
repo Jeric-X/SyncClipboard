@@ -16,7 +16,6 @@ using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Core.ViewModels.Sub;
-using System.Collections.Concurrent;
 using System.Threading.Channels;
 using ElapsedEventArgs = System.Timers.ElapsedEventArgs;
 using Timer = System.Timers.Timer;
@@ -62,8 +61,6 @@ public partial class HistoryViewModel : ObservableObject
     private readonly HistoryTransferQueue _transferQueue;
     private readonly IThreadDispatcher _threadDispatcher;
     private CancellationTokenSource _updateQueueCts = new();
-    private CancellationToken _recordUpdateToken;
-    private ConcurrentDictionary<HistoryRecordKey, object>? _pendingRecordUpdates;
     private TaskCompletionSource<bool>? _transferringLoadingTcs;
 
     private Channel<TransferTask> _updateTaskQueue = Channel.CreateUnbounded<TransferTask>();
@@ -152,7 +149,6 @@ public partial class HistoryViewModel : ObservableObject
         this._historyService = historyService;
         this._transferQueue = transferQueue;
         this._threadDispatcher = threadDispatcher;
-        _recordUpdateToken = _updateQueueCts.Token;
         this._caretPositionProvider = caretPositionProvider;
         this._foregroundWindowInfoProvider = foregroundWindowInfoProvider;
         this._mousePositionProvider = mousePositionProvider;
@@ -657,9 +653,7 @@ public partial class HistoryViewModel : ObservableObject
                 }
                 catch { }
                 _updateQueueCts = new CancellationTokenSource();
-                _pendingRecordUpdates?.Clear();
                 var queueToken = _updateQueueCts.Token;
-                _recordUpdateToken = queueToken;
 
                 _isLocalEnd = false;
 
@@ -1039,71 +1033,17 @@ public partial class HistoryViewModel : ObservableObject
 
     private async void RecordEntityUpdated(HistoryRecord record)
     {
-        var pending = LazyInitializer.EnsureInitialized(ref _pendingRecordUpdates);
-        var key = HistoryRecordKey.From(record);
-        var revision = new object();
-        pending[key] = revision;
-        var token = _recordUpdateToken;
         var newRecordVM = new HistoryRecordVM(record) { SortByLastAccessed = SortByLastAccessed };
-        try
-        {
-            var updatedExistingRow = false;
-            var isCurrent = false;
-            await _threadDispatcher.RunOnMainThreadAsync(() =>
-            {
-                isCurrent = pending.TryGetValue(key, out var current) && ReferenceEquals(current, revision);
-                if (!isCurrent)
-                    return;
-
-                var existing = allHistoryItems.FirstOrDefault(item => item == newRecordVM);
-                if (existing is null)
-                    return;
-
-                if (existing.PreviewImage == newRecordVM.PreviewImage)
-                    newRecordVM.PreviewImageMetadata = existing.PreviewImageMetadata;
-                ApplyRecordUpdate();
-                updatedExistingRow = true;
-            });
-            if (!isCurrent || (updatedExistingRow && newRecordVM.PreviewImageMetadata is not null))
-                return;
-
-            var metadata = await newRecordVM.ReadPreviewImageMetadataAsync(token);
-            await _threadDispatcher.RunOnMainThreadAsync(() =>
-            {
-                // A slower header read must not overwrite a newer update or restore a deleted record.
-                if (!pending.TryRemove(new KeyValuePair<HistoryRecordKey, object>(key, revision)))
-                    return;
-
-                if (updatedExistingRow)
-                {
-                    var existing = allHistoryItems.FirstOrDefault(item => item == newRecordVM);
-                    if (existing is not null && existing.PreviewImage == newRecordVM.PreviewImage)
-                        existing.PreviewImageMetadata = metadata;
-                }
-                else
-                {
-                    newRecordVM.PreviewImageMetadata = metadata;
-                    ApplyRecordUpdate();
-                }
-            });
-        }
-        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
-        finally
-        {
-            pending.TryRemove(new KeyValuePair<HistoryRecordKey, object>(key, revision));
-        }
-
-        void ApplyRecordUpdate()
+        await _threadDispatcher.RunOnMainThreadAsync(() =>
         {
             InitVMTransferStatus(newRecordVM);
             RecordUpdated(newRecordVM);
             RefreshSelectionSummaryForUpdatedRecord(newRecordVM);
-        }
+        });
     }
 
     private void OnHistoryRemoved(HistoryRecord record)
     {
-        _pendingRecordUpdates?.TryRemove(HistoryRecordKey.From(record), out _);
         _threadDispatcher.RunOnMainThreadAsync(() =>
         {
             ApplyHistoryRecordRemoval(record);
@@ -1360,9 +1300,6 @@ public partial class HistoryViewModel : ObservableObject
                 return vm;
             }).ToArray();
         }, token);
-
-        await Task.WhenAll(vms.Select(vm => vm.PreparePreviewImageAsync(token)));
-        token.ThrowIfCancellationRequested();
 
         var last = vms.LastOrDefault()!;
         _timeCursor = SortByLastAccessed ? last.LastAccessed : last.Timestamp;
@@ -1771,7 +1708,6 @@ public partial class HistoryViewModel : ObservableObject
             var record = await HistoryManager.ToRemoteHistoryRecord(task.Profile, token);
 
             vm = new HistoryRecordVM(record) { SortByLastAccessed = SortByLastAccessed };
-            await vm.PreparePreviewImageAsync(token);
             vm.UpdateFromTask(task);
             if (IsMatchUiFilter(vm))
             {

@@ -56,7 +56,6 @@
                            Stretch="UniformToFill"
                            controls:PreviewImageLoader.IsThumbnail="True"
                            controls:PreviewImageLoader.FilePath="{x:Bind PreviewImage, Mode=OneWay}"
-                           controls:PreviewImageLoader.Metadata="{x:Bind PreviewImageMetadata, Mode=OneWay}"
                            Visibility="{x:Bind vc:ConvertMethod.BoolToVisibilityNegate(local:HistoryListModeProxy.Current.IsCompactListMode), Mode=OneWay}"
                            DragStarting="Item_DragStarting"
                            CanDrag="True" />

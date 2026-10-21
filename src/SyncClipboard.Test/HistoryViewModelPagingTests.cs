@@ -1,4 +1,3 @@
-using ImageMagick;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Moq;
@@ -24,101 +23,6 @@ namespace SyncClipboard.Test;
 public class HistoryViewModelPagingTests
 {
     public TestContext TestContext { get; set; } = null!;
-
-    [TestMethod]
-    public async Task ExistingRecordStateUpdatesDoNotWaitForImageMetadata()
-    {
-        var token = TestContext.CancellationTokenSource.Token;
-        await using var fixture = await Fixture.CreateAsync(token);
-        var directory = Directory.CreateTempSubdirectory("history-metadata-updates-");
-        var path = Path.Combine(directory.FullName, "image.png");
-        try
-        {
-            using (var image = new MagickImage(MagickColors.Red, 640, 320))
-                image.Write(path);
-            await fixture.AddImageAsync(path, token);
-            await fixture.LoadAsync();
-            var record = fixture.Records.Single(item => item.Type == ProfileType.Image);
-            record.PreviewImageMetadata = null;
-            var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            record.PropertyChanged += (_, args) =>
-            {
-                if (args.PropertyName == nameof(HistoryRecordVM.PreviewImageMetadata) && record.PreviewImageMetadata is not null)
-                    ready.TrySetResult();
-            };
-
-            // Occupy the metadata readers to simulate slow storage without platform-specific files.
-            var slots = (SemaphoreSlim)typeof(HistoryImageMetadata)
-                .GetField("ReadSlots", BindingFlags.Static | BindingFlags.NonPublic)!.GetValue(null)!;
-            await slots.WaitAsync(token);
-            await slots.WaitAsync(token);
-            try
-            {
-                var update = record.ToHistoryRecord();
-                update.LastAccessed = record.LastAccessed;
-                update.Stared = true;
-                fixture.NotifyRecordUpdated(update);
-                Assert.IsTrue(record.Stared);
-
-                update = record.ToHistoryRecord();
-                update.LastAccessed = record.LastAccessed;
-                update.Pinned = true;
-                fixture.NotifyRecordUpdated(update);
-                Assert.IsTrue(record.Stared && record.Pinned);
-            }
-            finally
-            {
-                slots.Release(2);
-            }
-            await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), token);
-            Assert.IsTrue(record.Stared && record.Pinned);
-        }
-        finally
-        {
-            directory.Delete(true);
-        }
-    }
-
-    [TestMethod]
-    [DataRow(true)]
-    [DataRow(false)]
-    public async Task ImageDimensionsArePreparedBeforePublishingHistoryRows(bool fileExists)
-    {
-        var token = TestContext.CancellationTokenSource.Token;
-        await using var fixture = await Fixture.CreateAsync(token);
-        var directory = Directory.CreateTempSubdirectory("history-metadata-");
-        var path = Path.Combine(directory.FullName, "image.png");
-        try
-        {
-            if (fileExists)
-            {
-                using var image = new MagickImage(MagickColors.Red, 640, 320);
-                image.Write(path);
-            }
-            await fixture.AddImageAsync(path, token);
-            var metadataAtInsertion = new List<HistoryImageMetadata?>();
-            using var view = fixture.Records.CreateView(record =>
-            {
-                if (record.Type == ProfileType.Image)
-                    metadataAtInsertion.Add(record.PreviewImageMetadata);
-                return record;
-            });
-
-            await fixture.LoadAsync();
-
-            Assert.HasCount(20, fixture.Records);
-            Assert.HasCount(1, metadataAtInsertion);
-            if (fileExists)
-                Assert.AreEqual(new HistoryImageMetadata(path, 640, 320, false), metadataAtInsertion[0]);
-            else
-                Assert.IsNull(metadataAtInsertion[0]);
-            fixture.Logger.VerifyNoOtherCalls();
-        }
-        finally
-        {
-            directory.Delete(true);
-        }
-    }
 
     [TestMethod]
     [DataRow(false)]
@@ -166,7 +70,7 @@ public class HistoryViewModelPagingTests
         private readonly SemaphoreSlim semaphore = new(1, 1);
         private readonly ServiceProvider services = new ServiceCollection()
             .AddSingleton(Mock.Of<IThreadDispatcher>())
-            .AddSingleton(Mock.Of<IProfileEnv>(env => env.GetHistoryPersistentDir() == Path.GetTempPath())).BuildServiceProvider();
+            .AddSingleton(Mock.Of<IProfileEnv>()).BuildServiceProvider();
         private readonly AppCore? previousApp = AppCore.TryGetCurrent();
         public HistoryViewModel ViewModel { get; } = (HistoryViewModel)RuntimeHelpers.GetUninitializedObject(typeof(HistoryViewModel));
         public ObservableList<HistoryRecordVM> Records { get; } = [];
@@ -191,13 +95,6 @@ public class HistoryViewModelPagingTests
             SetField(ViewModel, "allHistoryItems", Records);
             SetField(ViewModel, "_loader", new SingletonTask());
             SetField(ViewModel, "logger", Logger.Object);
-            var dispatcher = Mock.Get(services.GetRequiredService<IThreadDispatcher>());
-            dispatcher.Setup(value => value.RunOnMainThreadAsync(It.IsAny<Action>())).Returns<Action>(action =>
-            {
-                action();
-                return Task.CompletedTask;
-            });
-            SetField(ViewModel, "_threadDispatcher", dispatcher.Object);
             var selection = typeof(HistoryViewModel).GetField("selectedHistoryRecords", BindingFlags.Instance | BindingFlags.NonPublic)!;
             selection.SetValue(ViewModel, Activator.CreateInstance(selection.FieldType));
             var window = new Mock<IWindow>();
@@ -234,23 +131,6 @@ public class HistoryViewModelPagingTests
         public Task LoadAsync() => (Task)typeof(HistoryViewModel)
             .GetMethod("LoadPagesAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
             .Invoke(ViewModel, [20, CancellationToken.None])!;
-
-        public void NotifyRecordUpdated(HistoryRecord record) => typeof(HistoryViewModel)
-            .GetMethod("RecordEntityUpdated", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(ViewModel, [record]);
-
-        public async Task AddImageAsync(string path, CancellationToken token)
-        {
-            db.HistoryRecords.Add(new HistoryRecord
-            {
-                Type = ProfileType.Image,
-                Hash = new string('a', 64),
-                FilePath = [path],
-                IsLocalFileReady = true,
-                Timestamp = DateTime.UtcNow,
-                LastAccessed = DateTime.UtcNow
-            });
-            await db.SaveChangesAsync(token);
-        }
 
         private static void SetField(object target, string name, object value) => target.GetType()
             .GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(target, value);
