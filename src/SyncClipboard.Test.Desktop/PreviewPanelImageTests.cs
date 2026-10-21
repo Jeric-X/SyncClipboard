@@ -109,19 +109,22 @@ public class PreviewPanelImageTests
     }
 
     [TestMethod]
-    [DataRow(0, 10485759L, true)]
-    [DataRow(1, 10485759L, true)]
-    [DataRow(2, 10485759L, true)]
-    [DataRow(0, 10485760L, false)]
-    [DataRow(1, 10485760L, false)]
-    [DataRow(2, 10485760L, false)]
-    [DataRow(0, 10485761L, false)]
-    public async Task HeaderFailureOnlyFallsBackForFilesBelowTenMiB(int failure, long fileLength, bool shouldDisplay)
+    [DataRow(0, 10485759L, true, 1024, 512)]
+    [DataRow(1, 10485759L, true, 1024, 512)]
+    [DataRow(2, 10485759L, true, 1024, 512)]
+    [DataRow(0, 10485760L, false, 1024, 512)]
+    [DataRow(1, 10485760L, false, 1024, 512)]
+    [DataRow(2, 10485760L, false, 1024, 512)]
+    [DataRow(0, 10485761L, false, 1024, 512)]
+    [DataRow(0, 10485759L, true, 16000, 1)]
+    [DataRow(1, 10485759L, true, 1, 16000)]
+    public async Task HeaderFailureOnlyFallsBackForFilesBelowTenMiB(
+        int failure, long fileLength, bool shouldDisplay, int width, int height)
     {
         await using var session = HeadlessUnitTestSession.StartNew(typeof(PreviewPanelImageTests));
         await session.Dispatch(async () =>
         {
-            var path = CreateImage(1024, 512, SKEncodedImageFormat.Png);
+            var path = CreateImage(width, height, SKEncodedImageFormat.Png);
             using (var file = File.OpenWrite(path))
             {
                 file.SetLength(fileLength);
@@ -152,9 +155,23 @@ public class PreviewPanelImageTests
                 {
                     var bitmap = (Bitmap)image.Source!;
                     Assert.IsNotNull(bitmap);
-                    Assert.AreEqual(new PixelSize(400, 200), bitmap.PixelSize);
-                    Assert.AreEqual(400, image.Width);
-                    Assert.AreEqual(200, image.Height);
+                    var ratio = Math.Min(1, Math.Min(400.0 / width, 200.0 / height));
+                    var expectedPixels = new PixelSize(Math.Max(1, (int)(width * ratio)), Math.Max(1, (int)(height * ratio)));
+                    Assert.AreEqual(expectedPixels, bitmap.PixelSize);
+                    Assert.AreEqual(width * ratio, image.Width);
+                    Assert.AreEqual(height * ratio, image.Height);
+                    image.IsVisible = false;
+                    image.IsVisible = true;
+                    await image.PendingLoad;
+                    Assert.IsInstanceOfType<Bitmap>(image.Source);
+                    Assert.AreEqual(expectedPixels, ((Bitmap)image.Source).PixelSize);
+
+                    image.IsVisible = false;
+                    using (var file = File.OpenWrite(path))
+                        file.SetLength(10L * 1024 * 1024);
+                    image.IsVisible = true;
+                    await image.PendingLoad;
+                    Assert.IsNull(image.Source);
                 }
                 else
                 {

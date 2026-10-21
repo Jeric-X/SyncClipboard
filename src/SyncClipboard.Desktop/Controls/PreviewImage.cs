@@ -22,7 +22,7 @@ public sealed class PreviewImage : Image
     private CancellationTokenSource? _request;
     private Bitmap? _bitmap;
     private bool _attached;
-    private (string Path, PixelSize Dimensions)? _cachedSize;
+    private (string Path, PixelSize Dimensions, bool FullDecode)? _cachedSize;
 
     public static readonly StyledProperty<string?> FilePathProperty =
         AvaloniaProperty.Register<PreviewImage, string?>(nameof(FilePath));
@@ -125,7 +125,8 @@ public sealed class PreviewImage : Image
         }
 
         var scale = ScaleWithRenderScaling ? TopLevel.GetTopLevel(this)?.RenderScaling ?? 1 : 1;
-        var options = new DecodeOptions(DecodeBounds, scale, MaxPixelWidth, Dimensions: _cachedSize?.Dimensions);
+        var options = new DecodeOptions(DecodeBounds, scale, MaxPixelWidth,
+            Dimensions: _cachedSize?.Dimensions, FullDecode: _cachedSize?.FullDecode ?? false);
         if (SizeToImage && _cachedSize is { } cached)
         {
             var (displaySize, _) = GetSizes(cached.Dimensions, options);
@@ -149,7 +150,7 @@ public sealed class PreviewImage : Image
             // Decoding itself cannot be interrupted. Never retain a late result after hiding the control,
             // refreshing the list, or replacing the file path.
             token.ThrowIfCancellationRequested();
-            _cachedSize = (path, decoded.Dimensions);
+            _cachedSize = (path, decoded.Dimensions, decoded.FullDecode);
             if (SizeToImage)
             {
                 Width = decoded.DisplaySize.Width;
@@ -197,6 +198,9 @@ public sealed class PreviewImage : Image
     internal static DecodedImage Decode(string path, DecodeOptions options, Func<Stream, PixelSize?>? readHeader = null)
     {
         using var stream = File.OpenRead(path);
+        if (options.FullDecode && !options.SizeOnly)
+            return DecodeFullImage(stream, options);
+
         PixelSize? dimensions;
         try
         {
@@ -218,7 +222,7 @@ public sealed class PreviewImage : Image
 
         var (displaySize, pixelSize) = GetSizes(size, options);
         if (options.SizeOnly)
-            return new DecodedImage(null, displaySize, size);
+            return new DecodedImage(null, displaySize, size, options.FullDecode);
         // The proportional decoder truncates the short dimension to zero for extreme aspect ratios.
         var ratio = Math.Min(1, Math.Min(Math.Min(options.Bounds.Width * options.Scale, options.MaxPixelWidth) / size.Width,
             options.Bounds.Height * options.Scale / size.Height));
@@ -250,7 +254,7 @@ public sealed class PreviewImage : Image
 
         using var original = new Bitmap(stream);
         var (displaySize, pixelSize) = GetSizes(original.PixelSize, options);
-        return new DecodedImage(original.CreateScaledBitmap(pixelSize), displaySize, original.PixelSize);
+        return new DecodedImage(original.CreateScaledBitmap(pixelSize), displaySize, original.PixelSize, FullDecode: true);
     }
 
     private static (Size DisplaySize, PixelSize PixelSize) GetSizes(PixelSize size, DecodeOptions options)
@@ -264,6 +268,7 @@ public sealed class PreviewImage : Image
     }
 
     internal readonly record struct DecodeOptions(
-        Size Bounds, double Scale = 1, int MaxPixelWidth = int.MaxValue, bool SizeOnly = false, PixelSize? Dimensions = null);
-    internal sealed record DecodedImage(Bitmap? Bitmap, Size DisplaySize, PixelSize Dimensions);
+        Size Bounds, double Scale = 1, int MaxPixelWidth = int.MaxValue, bool SizeOnly = false,
+        PixelSize? Dimensions = null, bool FullDecode = false);
+    internal sealed record DecodedImage(Bitmap? Bitmap, Size DisplaySize, PixelSize Dimensions, bool FullDecode = false);
 }

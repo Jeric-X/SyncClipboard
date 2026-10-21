@@ -67,7 +67,7 @@ public static class PreviewImageLoader
         private readonly Image _image;
         private CancellationTokenSource? _request;
         private bool _recycled;
-        private (string Path, (uint Width, uint Height) Dimensions)? _cachedSize;
+        private (string Path, (uint Width, uint Height) Dimensions, bool FullDecode)? _cachedSize;
 
         internal event EventHandler? FileMissing;
         internal Task PendingLoad { get; private set; } = Task.CompletedTask;
@@ -145,11 +145,11 @@ public static class PreviewImageLoader
         {
             try
             {
-                var (bitmap, size, dimensions) = await DecodeAsync(path, thumbnail, scale, token,
-                    sizeOnly: sizeOnly, cachedDimensions: _cachedSize?.Dimensions);
+                var (bitmap, size, dimensions, fullDecode) = await DecodeAsync(path, thumbnail, scale, token,
+                    sizeOnly: sizeOnly, cachedDimensions: _cachedSize?.Dimensions, forceFullDecode: _cachedSize?.FullDecode ?? false);
                 token.ThrowIfCancellationRequested();
 
-                _cachedSize = (path, dimensions);
+                _cachedSize = (path, dimensions, fullDecode);
                 ApplySize(size, thumbnail);
                 _image.Stretch = thumbnail ? Stretch.UniformToFill : Stretch.Uniform;
                 _image.Source = bitmap;
@@ -173,10 +173,11 @@ public static class PreviewImageLoader
         }
     }
 
-    internal static async Task<(BitmapImage? Bitmap, PreviewImageSize Size, (uint Width, uint Height) Dimensions)> DecodeAsync(
+    internal static async Task<(BitmapImage? Bitmap, PreviewImageSize Size, (uint Width, uint Height) Dimensions, bool FullDecode)>
+        DecodeAsync(
         string path, bool thumbnail, double scale, CancellationToken token,
         Func<IRandomAccessStream, Task<(uint Width, uint Height)>>? readHeader = null, bool sizeOnly = false,
-        (uint Width, uint Height)? cachedDimensions = null)
+        (uint Width, uint Height)? cachedDimensions = null, bool forceFullDecode = false)
     {
         await DecodeSlots.WaitAsync(token);
         try
@@ -195,13 +196,14 @@ public static class PreviewImageLoader
 
             token.ThrowIfCancellationRequested();
             stream.Seek(0);
-            var fullDecode = dimensions.Width == 0 || dimensions.Height == 0;
+            var fullDecode = forceFullDecode || dimensions.Width == 0 || dimensions.Height == 0;
             if (sizeOnly)
             {
-                if (fullDecode)
+                if (dimensions.Width == 0 || dimensions.Height == 0)
                     throw new InvalidDataException("Image dimensions are unavailable without decoding.");
 
-                return (null, PreviewImageSize.Calculate(dimensions.Width, dimensions.Height, thumbnail, scale), dimensions);
+                return (null, PreviewImageSize.Calculate(dimensions.Width, dimensions.Height, thumbnail, scale, fullDecode),
+                    dimensions, fullDecode);
             }
 
             var bitmap = new BitmapImage { DecodePixelType = DecodePixelType.Physical };
@@ -221,7 +223,7 @@ public static class PreviewImageLoader
             bitmap.DecodePixelHeight = size.PixelHeight;
             await bitmap.SetSourceAsync(stream);
             token.ThrowIfCancellationRequested();
-            return (bitmap, size, dimensions);
+            return (bitmap, size, dimensions, fullDecode);
         }
         finally
         {
