@@ -8,7 +8,6 @@ using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using System.Diagnostics;
-using System.IO;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -193,6 +192,7 @@ public partial class SystemSettingViewModel : ObservableObject
         diagnoseMode = programConfig.DiagnoseMode;
 
         _configManager.GetAndListenConfig<ClipboardFactoryConfig>(LoadClipboardFactoryConfig);
+        _configManager.GetAndListenConfig<PerformanceConfig>(LoadPerformanceConfig);
 
         _staticConfig.ListenConfig<EnvConfig>(OnEnvConfigChanged);
         var envConfig = _staticConfig.GetConfig<EnvConfig>();

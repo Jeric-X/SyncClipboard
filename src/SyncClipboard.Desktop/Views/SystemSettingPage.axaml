@@ -1,4 +1,4 @@
-<UserControl x:Class="SyncClipboard.Desktop.Views.SystemSettingPage"
+﻿<UserControl x:Class="SyncClipboard.Desktop.Views.SystemSettingPage"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -179,6 +179,31 @@
                 <ui:FASettingsExpanderItem Content="/dev/uinput" Description="{x:Static i18n:Strings.InputSimulationPermissionDescription}" IsVisible="{Binding ShowInputDevicePermissions}">
                     <ui:FASettingsExpanderItem.Footer>
                         <TextBlock Text="{Binding InputSimulationPermissionText}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+            </ui:FASettingsExpander.Items>
+        </ui:FASettingsExpander>
+        <ui:FASettingsExpander Header="{x:Static i18n:Strings.Performance}" IsExpanded="True">
+            <ui:FASettingsExpander.IconSource>
+                <ui:FAFontIconSource Glyph="&#xE945;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:FASettingsExpander.IconSource>
+            <ui:FASettingsExpander.Items>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ImageCacheSize}" Description="{x:Static i18n:Strings.ImageCacheSizeDescription}">
+                    <ui:FASettingsExpanderItem.Footer>
+                        <NumericUpDown Minimum="0"
+                                       Maximum="4294967295"
+                                       Value="{Binding HistoryImageCacheSizeMB, Mode=TwoWay}"
+                                       Increment="10"
+                                       ButtonSpinnerLocation="Right" />
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ImageLoadConcurrency}" Description="{x:Static i18n:Strings.ImageLoadConcurrencyDescription}">
+                    <ui:FASettingsExpanderItem.Footer>
+                        <NumericUpDown Minimum="1"
+                                       Maximum="2147483647"
+                                       Value="{Binding HistoryImageLoadConcurrency, Mode=TwoWay}"
+                                       Increment="1"
+                                       ButtonSpinnerLocation="Right" />
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
             </ui:FASettingsExpander.Items>

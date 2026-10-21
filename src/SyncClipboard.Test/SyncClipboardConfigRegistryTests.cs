@@ -18,6 +18,7 @@ public class SyncClipboardConfigRegistryTests
     {
         Assert.AreEqual(HistoryShortcutConfig.ConfigKey, SyncClipboardConfigRegistry.GetDefaultKey<HistoryShortcutConfig>());
         Assert.AreEqual(ProgramConfig.ConfigKey, SyncClipboardConfigRegistry.GetDefaultKey<ProgramConfig>());
+        Assert.AreEqual(PerformanceConfig.ConfigKey, SyncClipboardConfigRegistry.GetDefaultKey<PerformanceConfig>());
         Assert.AreEqual(SyncConfig.ConfigKey, SyncClipboardConfigRegistry.GetDefaultKey<SyncConfig>());
         Assert.AreEqual(ServerConfig.ConfigKey, SyncClipboardConfigRegistry.GetDefaultKey<ServerConfig>());
         Assert.AreEqual(FileFilterConfig.ConfigKey, SyncClipboardConfigRegistry.GetDefaultKey<FileFilterConfig>());
@@ -28,7 +29,7 @@ public class SyncClipboardConfigRegistryTests
     [TestMethod]
     public void ConfigRegistry_ScansBaseAndOptionalKeyAttributes()
     {
-        Assert.HasCount(22, SyncClipboardConfigRegistry.Configurations);
+        Assert.HasCount(23, SyncClipboardConfigRegistry.Configurations);
 
         foreach (var registration in SyncClipboardConfigRegistry.Configurations)
         {

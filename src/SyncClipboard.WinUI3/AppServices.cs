@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Dispatching;
 using SyncClipboard.Core;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.WinUI3.ClipboardWinUI;
@@ -30,6 +31,7 @@ public class AppServices
 
         services.AddTransient<IAppConfig, AppConfig>();
         services.AddSingleton<IPlatformApplication, PlatformApplication>();
+        services.AddSingleton(sp => PreviewImageProvider.CreateCache(sp.GetRequiredService<ConfigManager>()));
 
         services.AddSingleton<IGlobalDialog, Services.WinUIGlobalDialog>();
         services.AddSingleton<IMainWindowDialog, Services.WinUIDialog>();

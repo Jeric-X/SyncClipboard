@@ -1603,4 +1603,19 @@ Choose whether to use the default location or select another folder.</value>
   <data name="Export" xml:space="preserve">
     <value>Export</value>
   </data>
+  <data name="ImageCacheSize" xml:space="preserve">
+    <value>Image cache size (MB)</value>
+  </data>
+  <data name="ImageCacheSizeDescription" xml:space="preserve">
+    <value>Cache thumbnails and previews in the history panel to reduce repeated loading. Set to 0 to disable caching of idle images.</value>
+  </data>
+  <data name="Performance" xml:space="preserve">
+    <value>Performance</value>
+  </data>
+  <data name="ImageLoadConcurrency" xml:space="preserve">
+    <value>Images loaded simultaneously</value>
+  </data>
+  <data name="ImageLoadConcurrencyDescription" xml:space="preserve">
+    <value>Limit the number of images loaded simultaneously in the history panel. Increasing this value can speed up image loading but uses more CPU and memory.</value>
+  </data>
 </root>

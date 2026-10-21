@@ -1,9 +1,10 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
-using Avalonia.Media.Imaging;
-using SkiaSharp;
 using SyncClipboard.Core;
+using SyncClipboard.Core.Utilities.Images;
+using Microsoft.Extensions.DependencyInjection;
+using static SyncClipboard.Desktop.Utilities.PreviewImageProvider;
 using System;
 using System.IO;
 using System.Threading;
@@ -12,14 +13,14 @@ using System.Threading.Tasks;
 namespace SyncClipboard.Desktop.Controls;
 
 /// <summary>
-/// Owns a bounded image preview. Hiding or detaching the control releases its bitmap; hiding its window does not.
+/// Displays a leased preview. Hiding or detaching returns the lease; hiding its window does not.
 /// </summary>
 public sealed class PreviewImage : Image
 {
-    private static readonly SemaphoreSlim DecodeSlots = new(2);
-    private readonly Func<string, DecodeOptions, CancellationToken, Task<DecodedImage>> _load;
+    private readonly PreviewImageCache<PreviewImageKey, DecodedImage> _cache;
+    private readonly bool _checkFileVersion;
     private CancellationTokenSource? _request;
-    private Bitmap? _bitmap;
+    private PreviewImageLease<DecodedImage>? _lease;
     private bool _attached;
     private (string Path, PixelSize Dimensions)? _cachedSize;
 
@@ -71,11 +72,22 @@ public sealed class PreviewImage : Image
 
     internal Task PendingLoad { get; private set; } = Task.CompletedTask;
 
-    public PreviewImage() : this(LoadAsync) { }
+    public PreviewImage() : this(AppCore.TryGetCurrent()?.Services
+        .GetService<PreviewImageCache<PreviewImageKey, DecodedImage>>() ?? CreateCache(null))
+    { }
+
+    internal PreviewImage(PreviewImageCache<PreviewImageKey, DecodedImage> cache)
+    {
+        _cache = cache;
+        _checkFileVersion = true;
+        Stretch = Stretch.Uniform;
+    }
 
     internal PreviewImage(Func<string, DecodeOptions, CancellationToken, Task<DecodedImage>> load)
     {
-        _load = load;
+        _cache = CreateUncached((key, token) => load(key.Path,
+            new DecodeOptions(new Size(key.Width, key.Height), key.Scale, key.MaxPixelWidth, key.SizeOnly,
+                _cachedSize?.Path == key.Path ? _cachedSize?.Dimensions : null), token));
         Stretch = Stretch.Uniform;
     }
 
@@ -110,8 +122,8 @@ public sealed class PreviewImage : Image
         _request?.Dispose();
         _request = null;
         Source = null;
-        _bitmap?.Dispose();
-        _bitmap = null;
+        _lease?.Dispose();
+        _lease = null;
         Width = double.NaN;
         Height = double.NaN;
 
@@ -148,11 +160,19 @@ public sealed class PreviewImage : Image
 
     private async Task ShowImageAsync(string path, DecodeOptions options, CancellationToken token)
     {
-        DecodedImage? decoded = null;
+        PreviewImageLease<DecodedImage>? lease = null;
         try
         {
-            decoded = await _load(path, options, token);
-            // Decoding itself cannot be interrupted. Never retain a late result after hiding the control,
+            var key = _checkFileVersion
+                ? await Task.Run(() => PreviewImageKey.Create(path, options.Bounds.Width, options.Bounds.Height,
+                    options.Scale, options.MaxPixelWidth, options.SizeOnly), token)
+                : new PreviewImageKey(path, 0, 0, options.Bounds.Width, options.Bounds.Height, options.Scale,
+                    options.MaxPixelWidth, options.SizeOnly);
+            token.ThrowIfCancellationRequested();
+            _cache.Invalidate(old => old.IsOlderVersionOf(key));
+            lease = await _cache.AcquireAsync(key, token);
+            var decoded = lease.Image;
+            // Decoding itself cannot be interrupted. Never display a late result after hiding the control,
             // refreshing the list, or replacing the file path.
             token.ThrowIfCancellationRequested();
             _cachedSize = (path, decoded.Dimensions);
@@ -161,15 +181,16 @@ public sealed class PreviewImage : Image
                 Width = decoded.DisplaySize.Width;
                 Height = decoded.DisplaySize.Height;
             }
-            _bitmap = decoded.Bitmap;
-            Source = _bitmap;
-            decoded = null;
+            _lease = lease;
+            Source = decoded.Bitmap;
+            lease = null;
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
         {
             if (!token.IsCancellationRequested)
             {
+                _cache.Invalidate(key => key.Path == Path.GetFullPath(path));
                 FileMissing?.Invoke(this, EventArgs.Empty);
             }
         }
@@ -179,74 +200,8 @@ public sealed class PreviewImage : Image
         }
         finally
         {
-            decoded?.Bitmap?.Dispose();
+            lease?.Dispose();
         }
     }
 
-    private static async Task<DecodedImage> LoadAsync(string path, DecodeOptions options, CancellationToken token)
-    {
-        await DecodeSlots.WaitAsync(token).ConfigureAwait(false);
-        try
-        {
-            return await Task.Run(() =>
-            {
-                token.ThrowIfCancellationRequested();
-                return Decode(path, options);
-            }, token).ConfigureAwait(false);
-        }
-        finally
-        {
-            DecodeSlots.Release();
-        }
-    }
-
-    internal static DecodedImage Decode(string path, DecodeOptions options, Func<Stream, PixelSize?>? readHeader = null)
-    {
-        using var stream = File.OpenRead(path);
-        PixelSize? dimensions;
-        try
-        {
-            dimensions = options.Dimensions ?? (readHeader ?? ReadDimensions)(stream);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        {
-            dimensions = null;
-        }
-
-        stream.Position = 0;
-        if (dimensions is not { Width: > 0, Height: > 0 } size)
-            throw new InvalidDataException("Image dimensions are unavailable.");
-
-        var (displaySize, pixelSize) = GetSizes(size, options);
-        if (options.SizeOnly)
-            return new DecodedImage(null, displaySize, size);
-
-        var bitmap = (double)size.Width * pixelSize.Height >= (double)size.Height * pixelSize.Width
-            ? Bitmap.DecodeToWidth(stream, pixelSize.Width)
-            : Bitmap.DecodeToHeight(stream, pixelSize.Height);
-        return new DecodedImage(bitmap, displaySize, size);
-    }
-
-    private static PixelSize? ReadDimensions(Stream stream)
-    {
-        using var managedStream = new SKManagedStream(stream, false);
-        using var codec = SKCodec.Create(managedStream);
-        return codec is null ? null : new PixelSize(codec.Info.Width, codec.Info.Height);
-    }
-
-    private static (Size DisplaySize, PixelSize PixelSize) GetSizes(PixelSize size, DecodeOptions options)
-    {
-        var displayRatio = Math.Min(1, Math.Min(options.Bounds.Width / size.Width, options.Bounds.Height / size.Height));
-        var displaySize = new Size(size.Width * displayRatio, size.Height * displayRatio);
-        var pixelRatio = Math.Min(Math.Min(1, displayRatio * options.Scale), (double)options.MaxPixelWidth / size.Width);
-        if (size.Width * pixelRatio < 1 || size.Height * pixelRatio < 1)
-            throw new InvalidDataException("Scaled image dimensions are smaller than one pixel.");
-
-        var pixelSize = new PixelSize((int)Math.Floor(size.Width * pixelRatio), (int)Math.Floor(size.Height * pixelRatio));
-        return (displaySize, pixelSize);
-    }
-
-    internal readonly record struct DecodeOptions(
-        Size Bounds, double Scale = 1, int MaxPixelWidth = int.MaxValue, bool SizeOnly = false, PixelSize? Dimensions = null);
-    internal sealed record DecodedImage(Bitmap? Bitmap, Size DisplaySize, PixelSize Dimensions);
 }

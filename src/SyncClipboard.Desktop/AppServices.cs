@@ -4,6 +4,7 @@ using Avalonia.Input.Platform;
 using Microsoft.Extensions.DependencyInjection;
 using SharpHook;
 using SyncClipboard.Core;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Desktop.ClipboardAva;
@@ -31,6 +32,7 @@ public class AppServices
 
         services.AddTransient<IAppConfig, AppConfig>();
         services.AddSingleton<IPlatformApplication, PlatformApplication>();
+        services.AddSingleton(sp => PreviewImageProvider.CreateCache(sp.GetRequiredService<ConfigManager>()));
 
         services.AddSingleton<IGlobalDialog, Services.AvaloniaGlobalDialog>();
         services.AddSingleton<IMainWindowDialog, Services.AvaloniaDialog>();

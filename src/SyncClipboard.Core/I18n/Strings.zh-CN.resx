@@ -1603,4 +1603,19 @@ Shift + 左键：选中连续范围</value>
   <data name="Export" xml:space="preserve">
     <value>导出</value>
   </data>
+  <data name="ImageCacheSize" xml:space="preserve">
+    <value>图片缓存大小（MB）</value>
+  </data>
+  <data name="ImageCacheSizeDescription" xml:space="preserve">
+    <value>缓存历史记录面板中的缩略图和预览图片，减少重复加载。设为 0 时不保留闲置图片。</value>
+  </data>
+  <data name="Performance" xml:space="preserve">
+    <value>性能</value>
+  </data>
+  <data name="ImageLoadConcurrency" xml:space="preserve">
+    <value>同时加载的图片数量</value>
+  </data>
+  <data name="ImageLoadConcurrencyDescription" xml:space="preserve">
+    <value>限制历史记录面板中同时加载的图片数量。增大可加快图片加载，但会增加 CPU 和内存占用。</value>
+  </data>
 </root>
