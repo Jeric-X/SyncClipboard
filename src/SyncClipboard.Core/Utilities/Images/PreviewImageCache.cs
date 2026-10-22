@@ -17,8 +17,8 @@ public sealed class PreviewImageCache<TKey, T> : IDisposable where TKey : notnul
     private readonly Action<T> _release;
     private readonly TimeProvider _timeProvider;
     private ITimer? _cleanupTimer;
-    private TimeSpan _idleTimeout = TimeSpan.FromHours(1);
-    private static readonly TimeSpan CleanupInterval = TimeSpan.FromMinutes(5);
+    private TimeSpan _idleTimeout = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan CleanupInterval = TimeSpan.FromMinutes(1);
     private long _capacity;
     private long _bytes;
     private bool _disposed;
