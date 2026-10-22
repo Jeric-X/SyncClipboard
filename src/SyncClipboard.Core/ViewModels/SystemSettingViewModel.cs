@@ -13,6 +13,10 @@ namespace SyncClipboard.Core.ViewModels;
 
 public partial class SystemSettingViewModel : ObservableObject
 {
+    [RelayCommand]
+    private void OpenAdvancedSettings() =>
+        _services.GetRequiredService<MainViewModel>().NavigateToNextLevel(PageDefinition.AdvancedSetting);
+
     [ObservableProperty]
     private bool hideWindowOnStartUp;
     partial void OnHideWindowOnStartUpChanged(bool value) => ProgramConfig = ProgramConfig with { HideWindowOnStartup = value };

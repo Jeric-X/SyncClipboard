@@ -1607,21 +1607,24 @@ Choose whether to use the default location or select another folder.</value>
     <value>Image cache size (MB)</value>
   </data>
   <data name="ImageCacheSizeDescription" xml:space="preserve">
-    <value>Cache thumbnails and previews in the history panel to reduce repeated loading. Set to 0 to disable caching of idle images.</value>
+    <value>Cache thumbnails and previews to reduce repeated loading. Set to 0 to disable caching of idle images.</value>
   </data>
-  <data name="Performance" xml:space="preserve">
-    <value>Performance</value>
+  <data name="UIPerformance" xml:space="preserve">
+    <value>UI performance</value>
   </data>
   <data name="ImageLoadConcurrency" xml:space="preserve">
-    <value>Images loaded simultaneously</value>
+    <value>Image loading concurrency</value>
   </data>
   <data name="ImageLoadConcurrencyDescription" xml:space="preserve">
-    <value>Limit the number of images loaded simultaneously in the history panel. Increasing this value can speed up image loading but uses more CPU and memory.</value>
+    <value>Limit the number of thumbnails and previews loaded simultaneously. Increasing this value can speed up image loading but uses more CPU and memory.</value>
   </data>
   <data name="ImageCacheIdleTimeout" xml:space="preserve">
     <value>Idle image cache retention (minutes)</value>
   </data>
   <data name="ImageCacheIdleTimeoutDescription" xml:space="preserve">
-    <value>Remove unused image caches in the history panel after the specified time. Set to 0 to disable expiration.</value>
+    <value>Remove unused image caches after the specified time. Set to 0 to disable expiration.</value>
+  </data>
+  <data name="Advanced" xml:space="preserve">
+    <value>Advanced</value>
   </data>
 </root>

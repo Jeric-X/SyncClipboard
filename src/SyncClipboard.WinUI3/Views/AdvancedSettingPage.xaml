@@ -1,0 +1,38 @@
+<Page x:Class="SyncClipboard.WinUI3.Views.AdvancedSettingPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:ui="using:CommunityToolkit.WinUI.Controls"
+      xmlns:i18n="using:SyncClipboard.Core.I18n"
+      MinWidth="550"
+      BorderBrush="Transparent">
+    <StackPanel Spacing="10">
+        <ui:SettingsExpander Header="{x:Bind i18n:Strings.UIPerformance}" IsExpanded="True">
+            <ui:SettingsExpander.HeaderIcon>
+                <FontIcon Glyph="&#xE945;" />
+            </ui:SettingsExpander.HeaderIcon>
+            <ui:SettingsExpander.Items>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.ImageCacheSize}" Description="{x:Bind i18n:Strings.ImageCacheSizeDescription}">
+                    <NumberBox Minimum="0"
+                               Maximum="4294967295"
+                               Value="{x:Bind _viewModel.HistoryImageCacheSizeMB, Mode=TwoWay}"
+                               SpinButtonPlacementMode="Inline"
+                               SmallChange="10" />
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.ImageCacheIdleTimeout}" Description="{x:Bind i18n:Strings.ImageCacheIdleTimeoutDescription}">
+                    <NumberBox Minimum="0"
+                               Maximum="4294967295"
+                               Value="{x:Bind _viewModel.HistoryImageCacheIdleTimeoutMinutes, Mode=TwoWay}"
+                               SpinButtonPlacementMode="Inline"
+                               SmallChange="5" />
+                </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.ImageLoadConcurrency}" Description="{x:Bind i18n:Strings.ImageLoadConcurrencyDescription}">
+                    <NumberBox Minimum="1"
+                               Maximum="2147483647"
+                               Value="{x:Bind _viewModel.HistoryImageLoadConcurrency, Mode=TwoWay}"
+                               SpinButtonPlacementMode="Inline"
+                               SmallChange="1" />
+                </ui:SettingsCard>
+            </ui:SettingsExpander.Items>
+        </ui:SettingsExpander>
+    </StackPanel>
+</Page>

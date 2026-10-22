@@ -12,6 +12,7 @@ public class PageDefinition(string name, string title, string? fontIcon = null)
     public static readonly PageDefinition HistorySetting = new("HistorySetting", I18n.Strings.ClipboardHistory, "\uE1D3");
     public static readonly PageDefinition ServiceStatus = new("ServiceStatus", I18n.Strings.Status, "\uE9D2");
     public static readonly PageDefinition SystemSetting = new("SystemSetting", I18n.Strings.SystemSettings, "\uE115");
+    public static readonly PageDefinition AdvancedSetting = new("AdvancedSetting", I18n.Strings.Advanced);
     public static readonly PageDefinition About = new("About", I18n.Strings.About, "\uE946");
     public static readonly PageDefinition Diagnose = new("Diagnose", I18n.Strings.Diagnose, "\uE9D9");
     public static readonly PageDefinition License = new("License", I18n.Strings.License);

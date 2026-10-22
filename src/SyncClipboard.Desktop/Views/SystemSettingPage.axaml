@@ -15,6 +15,9 @@
              d:DesignHeight="450"
              x:DataType="vm:SystemSettingViewModel"
              mc:Ignorable="d">
+    <UserControl.Resources>
+        <ui:FASymbolIconSource x:Key="GoIcon" Symbol="ChevronRight" />
+    </UserControl.Resources>
     <StackPanel Spacing="10">
         <ui:FASettingsExpander Header="{x:Static i18n:Strings.General}" IsExpanded="True">
             <ui:FASettingsExpander.IconSource>
@@ -109,6 +112,10 @@
                         <Button Click="ShowProxySettingDialog" Content="{x:Static i18n:Strings.Config}" />
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.Advanced}"
+                                           IsClickEnabled="True"
+                                           Command="{Binding OpenAdvancedSettingsCommand}"
+                                           ActionIconSource="{StaticResource GoIcon}" />
             </ui:FASettingsExpander.Items>
         </ui:FASettingsExpander>
         <ui:FASettingsExpander Header="{x:Static i18n:Strings.ClipboardAccess}" IsExpanded="True" IsVisible="{Binding ShowClipboardSettings}">
@@ -179,40 +186,6 @@
                 <ui:FASettingsExpanderItem Content="/dev/uinput" Description="{x:Static i18n:Strings.InputSimulationPermissionDescription}" IsVisible="{Binding ShowInputDevicePermissions}">
                     <ui:FASettingsExpanderItem.Footer>
                         <TextBlock Text="{Binding InputSimulationPermissionText}" FontWeight="SemiBold" VerticalAlignment="Center" />
-                    </ui:FASettingsExpanderItem.Footer>
-                </ui:FASettingsExpanderItem>
-            </ui:FASettingsExpander.Items>
-        </ui:FASettingsExpander>
-        <ui:FASettingsExpander Header="{x:Static i18n:Strings.Performance}" IsExpanded="True">
-            <ui:FASettingsExpander.IconSource>
-                <ui:FAFontIconSource Glyph="&#xE945;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-            </ui:FASettingsExpander.IconSource>
-            <ui:FASettingsExpander.Items>
-                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ImageCacheSize}" Description="{x:Static i18n:Strings.ImageCacheSizeDescription}">
-                    <ui:FASettingsExpanderItem.Footer>
-                        <NumericUpDown Minimum="0"
-                                       Maximum="4294967295"
-                                       Value="{Binding HistoryImageCacheSizeMB, Mode=TwoWay}"
-                                       Increment="10"
-                                       ButtonSpinnerLocation="Right" />
-                    </ui:FASettingsExpanderItem.Footer>
-                </ui:FASettingsExpanderItem>
-                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ImageCacheIdleTimeout}" Description="{x:Static i18n:Strings.ImageCacheIdleTimeoutDescription}">
-                    <ui:FASettingsExpanderItem.Footer>
-                        <NumericUpDown Minimum="0"
-                                       Maximum="4294967295"
-                                       Value="{Binding HistoryImageCacheIdleTimeoutMinutes, Mode=TwoWay}"
-                                       Increment="5"
-                                       ButtonSpinnerLocation="Right" />
-                    </ui:FASettingsExpanderItem.Footer>
-                </ui:FASettingsExpanderItem>
-                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ImageLoadConcurrency}" Description="{x:Static i18n:Strings.ImageLoadConcurrencyDescription}">
-                    <ui:FASettingsExpanderItem.Footer>
-                        <NumericUpDown Minimum="1"
-                                       Maximum="2147483647"
-                                       Value="{Binding HistoryImageLoadConcurrency, Mode=TwoWay}"
-                                       Increment="1"
-                                       ButtonSpinnerLocation="Right" />
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
             </ui:FASettingsExpander.Items>
