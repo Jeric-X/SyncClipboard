@@ -66,6 +66,13 @@
                                SpinButtonPlacementMode="Inline"
                                SmallChange="10" />
                 </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.ImageCacheIdleTimeout}" Description="{x:Bind i18n:Strings.ImageCacheIdleTimeoutDescription}">
+                    <NumberBox Minimum="0"
+                               Maximum="4294967295"
+                               Value="{x:Bind _viewModel.HistoryImageCacheIdleTimeoutMinutes, Mode=TwoWay}"
+                               SpinButtonPlacementMode="Inline"
+                               SmallChange="5" />
+                </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.ImageLoadConcurrency}" Description="{x:Bind i18n:Strings.ImageLoadConcurrencyDescription}">
                     <NumberBox Minimum="1"
                                Maximum="2147483647"

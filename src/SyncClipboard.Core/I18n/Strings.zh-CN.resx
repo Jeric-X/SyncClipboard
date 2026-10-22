@@ -1618,4 +1618,10 @@ Shift + 左键：选中连续范围</value>
   <data name="ImageLoadConcurrencyDescription" xml:space="preserve">
     <value>限制历史记录面板中同时加载的图片数量。增大可加快图片加载，但会增加 CPU 和内存占用。</value>
   </data>
+  <data name="ImageCacheIdleTimeout" xml:space="preserve">
+    <value>闲置图片缓存保留时间（分钟）</value>
+  </data>
+  <data name="ImageCacheIdleTimeoutDescription" xml:space="preserve">
+    <value>清理历史记录面板中超过指定时间未被使用的图片缓存。每 5 分钟检查一次，设为 0 时关闭超时清理。</value>
+  </data>
 </root>

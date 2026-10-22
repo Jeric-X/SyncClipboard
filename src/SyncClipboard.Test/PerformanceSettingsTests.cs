@@ -27,26 +27,40 @@ public class PerformanceSettingsTests
             using var services = new ServiceCollection().AddSingleton(Mock.Of<ILogger>()).BuildServiceProvider();
             var vm = new SystemSettingViewModel(config, new StaticConfig(Mock.Of<INotificationManager>()), services);
             Assert.AreEqual(100u, vm.HistoryImageCacheSizeMB);
+            Assert.AreEqual(60u, vm.HistoryImageCacheIdleTimeoutMinutes);
             Assert.AreEqual(1, vm.HistoryImageLoadConcurrency);
 
             var released = 0;
+            var clock = new PreviewImageTestTimeProvider();
             using var cache = new PreviewImageCache<string, object>(0, (_, _) => Task.FromResult(new object()),
-                _ => 80_000_000, _ => released++);
+                _ => 80_000_000, _ => released++, clock);
             cache.FollowPerformanceConfiguration(config);
             using (var lease = await cache.AcquireAsync("image", TestContext.CancellationTokenSource.Token))
                 Assert.IsNotNull(lease.Image);
             Assert.AreEqual(0, released);
-            vm.HistoryImageCacheSizeMB = 0;
+            vm.HistoryImageCacheIdleTimeoutMinutes = 0;
+            clock.Minutes = 120;
+            clock.Scan();
+            Assert.AreEqual(0, released);
+            vm.HistoryImageCacheIdleTimeoutMinutes = 30;
+            Assert.AreEqual(0, released);
+            clock.Scan();
             Assert.AreEqual(1, released);
+            using (var lease = await cache.AcquireAsync("image", TestContext.CancellationTokenSource.Token))
+                Assert.IsNotNull(lease.Image);
+            vm.HistoryImageCacheSizeMB = 0;
+            Assert.AreEqual(2, released);
             vm.HistoryImageLoadConcurrency = 3;
             var saved = new ConfigManager(path, configuration.Upgrader);
             Assert.AreEqual(0u, saved.GetConfig<PerformanceConfig>().HistoryImageCacheSizeMB);
             Assert.AreEqual(3, saved.GetConfig<PerformanceConfig>().HistoryImageLoadConcurrency);
+            Assert.AreEqual(30u, saved.GetConfig<PerformanceConfig>().HistoryImageCacheIdleTimeoutMinutes);
             Assert.AreEqual(500u, saved.GetConfig<HistoryConfig>().MaxItemCount);
 
             config.SetConfig(new PerformanceConfig { HistoryImageCacheSizeMB = 200, HistoryImageLoadConcurrency = 2 });
             Assert.AreEqual(200u, vm.HistoryImageCacheSizeMB);
             Assert.AreEqual(2, vm.HistoryImageLoadConcurrency);
+            Assert.AreEqual(60u, vm.HistoryImageCacheIdleTimeoutMinutes);
             Assert.AreEqual(200u, config.GetConfig<PerformanceConfig>().HistoryImageCacheSizeMB);
             vm.HistoryImageLoadConcurrency = 0;
             Assert.AreEqual(1, vm.HistoryImageLoadConcurrency);

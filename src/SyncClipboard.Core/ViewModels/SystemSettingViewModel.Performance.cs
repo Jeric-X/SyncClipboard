@@ -16,6 +16,14 @@ public partial class SystemSettingViewModel
     }
 
     [ObservableProperty]
+    private uint historyImageCacheIdleTimeoutMinutes;
+    partial void OnHistoryImageCacheIdleTimeoutMinutesChanged(uint value)
+    {
+        if (!_isLoadingPerformanceConfig)
+            _configManager.SetConfig(_configManager.GetConfig<PerformanceConfig>() with { HistoryImageCacheIdleTimeoutMinutes = value });
+    }
+
+    [ObservableProperty]
     private int historyImageLoadConcurrency;
     partial void OnHistoryImageLoadConcurrencyChanged(int value)
     {
@@ -33,6 +41,7 @@ public partial class SystemSettingViewModel
         try
         {
             HistoryImageCacheSizeMB = config.HistoryImageCacheSizeMB;
+            HistoryImageCacheIdleTimeoutMinutes = config.HistoryImageCacheIdleTimeoutMinutes;
             HistoryImageLoadConcurrency = Math.Max(1, config.HistoryImageLoadConcurrency);
         }
         finally

@@ -1618,4 +1618,10 @@ Choose whether to use the default location or select another folder.</value>
   <data name="ImageLoadConcurrencyDescription" xml:space="preserve">
     <value>Limit the number of images loaded simultaneously in the history panel. Increasing this value can speed up image loading but uses more CPU and memory.</value>
   </data>
+  <data name="ImageCacheIdleTimeout" xml:space="preserve">
+    <value>Idle image cache retention (minutes)</value>
+  </data>
+  <data name="ImageCacheIdleTimeoutDescription" xml:space="preserve">
+    <value>Remove unused image caches in the history panel after the specified time. Checked every 5 minutes. Set to 0 to disable expiration.</value>
+  </data>
 </root>

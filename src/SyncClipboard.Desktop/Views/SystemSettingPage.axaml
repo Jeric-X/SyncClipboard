@@ -197,6 +197,15 @@
                                        ButtonSpinnerLocation="Right" />
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ImageCacheIdleTimeout}" Description="{x:Static i18n:Strings.ImageCacheIdleTimeoutDescription}">
+                    <ui:FASettingsExpanderItem.Footer>
+                        <NumericUpDown Minimum="0"
+                                       Maximum="4294967295"
+                                       Value="{Binding HistoryImageCacheIdleTimeoutMinutes, Mode=TwoWay}"
+                                       Increment="5"
+                                       ButtonSpinnerLocation="Right" />
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
                 <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ImageLoadConcurrency}" Description="{x:Static i18n:Strings.ImageLoadConcurrencyDescription}">
                     <ui:FASettingsExpanderItem.Footer>
                         <NumericUpDown Minimum="1"

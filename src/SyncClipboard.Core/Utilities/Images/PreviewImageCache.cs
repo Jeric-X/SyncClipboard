@@ -15,6 +15,10 @@ public sealed class PreviewImageCache<TKey, T> : IDisposable where TKey : notnul
     private readonly Func<TKey, CancellationToken, Task<T>> _load;
     private readonly Func<T, long> _measure;
     private readonly Action<T> _release;
+    private readonly TimeProvider _timeProvider;
+    private ITimer? _cleanupTimer;
+    private TimeSpan _idleTimeout = TimeSpan.FromHours(1);
+    private static readonly TimeSpan CleanupInterval = TimeSpan.FromMinutes(5);
     private long _capacity;
     private long _bytes;
     private bool _disposed;
@@ -29,21 +33,47 @@ public sealed class PreviewImageCache<TKey, T> : IDisposable where TKey : notnul
         public int Users;
         public bool Invalid;
         public bool Counted;
+        public long IdleSince;
         public LinkedListNode<Entry>? IdleNode;
     }
 
     public PreviewImageCache(long capacity, Func<TKey, CancellationToken, Task<T>> load,
-        Func<T, long> measure, Action<T> release)
+        Func<T, long> measure, Action<T> release, TimeProvider? timeProvider = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(capacity);
         _capacity = capacity;
         _load = load;
         _measure = measure;
         _release = release;
+        _timeProvider = timeProvider ?? TimeProvider.System;
     }
 
     public void FollowPerformanceConfiguration(ConfigManager config) =>
-        config.GetAndListenConfig<PerformanceConfig>(value => SetCapacity((long)value.HistoryImageCacheSizeMB * 1_000_000));
+        config.GetAndListenConfig<PerformanceConfig>(value =>
+        {
+            SetCapacity((long)value.HistoryImageCacheSizeMB * 1_000_000);
+            SetIdleTimeout(TimeSpan.FromMinutes(value.HistoryImageCacheIdleTimeoutMinutes));
+        });
+
+    public void SetIdleTimeout(TimeSpan timeout)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(timeout, TimeSpan.Zero);
+        lock (_gate)
+            _idleTimeout = timeout;
+    }
+
+    private void RemoveExpiredImages()
+    {
+        lock (_gate)
+        {
+            if (_disposed || _idleTimeout == TimeSpan.Zero)
+                return;
+
+            var now = _timeProvider.GetTimestamp();
+            while (_idle.First is { } node && _timeProvider.GetElapsedTime(node.Value.IdleSince, now) >= _idleTimeout)
+                Remove(node.Value);
+        }
+    }
 
     public void SetCapacity(long bytes)
     {
@@ -165,8 +195,11 @@ public sealed class PreviewImageCache<TKey, T> : IDisposable where TKey : notnul
             }
             else
             {
+                entry.IdleSince = _timeProvider.GetTimestamp();
                 entry.IdleNode = _idle.AddLast(entry);
                 Trim();
+                if (_idle.Count > 0)
+                    _cleanupTimer ??= _timeProvider.CreateTimer(_ => RemoveExpiredImages(), null, CleanupInterval, CleanupInterval);
             }
         }
     }
@@ -232,6 +265,8 @@ public sealed class PreviewImageCache<TKey, T> : IDisposable where TKey : notnul
         lock (_gate)
         {
             _disposed = true;
+            _cleanupTimer?.Dispose();
+            _cleanupTimer = null;
             Invalidate(_ => true);
         }
     }
