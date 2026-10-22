@@ -8,7 +8,7 @@
     <StackPanel Spacing="10">
         <ui:FASettingsExpander Header="{x:Static i18n:Strings.UIPerformance}" IsExpanded="True">
             <ui:FASettingsExpander.IconSource>
-                <ui:FAFontIconSource Glyph="&#xE945;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                <ui:FAFontIconSource Glyph="&#xEC4A;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:FASettingsExpander.IconSource>
             <ui:FASettingsExpander.Items>
                 <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ImageCacheSize}" Description="{x:Static i18n:Strings.ImageCacheSizeDescription}">

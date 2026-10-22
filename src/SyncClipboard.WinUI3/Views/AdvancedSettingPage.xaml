@@ -8,7 +8,7 @@
     <StackPanel Spacing="10">
         <ui:SettingsExpander Header="{x:Bind i18n:Strings.UIPerformance}" IsExpanded="True">
             <ui:SettingsExpander.HeaderIcon>
-                <FontIcon Glyph="&#xE945;" />
+                <FontIcon Glyph="&#xEC4A;" />
             </ui:SettingsExpander.HeaderIcon>
             <ui:SettingsExpander.Items>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.ImageCacheSize}" Description="{x:Bind i18n:Strings.ImageCacheSizeDescription}">
