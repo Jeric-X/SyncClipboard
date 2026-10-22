@@ -1622,6 +1622,6 @@ Choose whether to use the default location or select another folder.</value>
     <value>Idle image cache retention (minutes)</value>
   </data>
   <data name="ImageCacheIdleTimeoutDescription" xml:space="preserve">
-    <value>Remove unused image caches in the history panel after the specified time. Checked every minute. Set to 0 to disable expiration.</value>
+    <value>Remove unused image caches in the history panel after the specified time. Set to 0 to disable expiration.</value>
   </data>
 </root>
