@@ -6,11 +6,11 @@ namespace SyncClipboard.WinUI3.Views;
 
 public sealed partial class AdvancedSettingPage : Page
 {
-    private readonly SystemSettingViewModel _viewModel;
+    private readonly AdvancedSettingViewModel _viewModel;
 
     public AdvancedSettingPage()
     {
-        _viewModel = App.Current.Services.GetRequiredService<SystemSettingViewModel>();
+        _viewModel = App.Current.Services.GetRequiredService<AdvancedSettingViewModel>();
         InitializeComponent();
     }
 }

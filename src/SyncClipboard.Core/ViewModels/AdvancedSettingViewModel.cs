@@ -1,10 +1,19 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models.UserConfigs;
 
 namespace SyncClipboard.Core.ViewModels;
 
-public partial class SystemSettingViewModel
+public partial class AdvancedSettingViewModel : ObservableObject
 {
+    private readonly ConfigManager _configManager;
+
+    public AdvancedSettingViewModel(ConfigManager configManager)
+    {
+        _configManager = configManager;
+        _configManager.GetAndListenConfig<PerformanceConfig>(LoadPerformanceConfig);
+    }
+
     private bool _isLoadingPerformanceConfig;
 
     [ObservableProperty]

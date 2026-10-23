@@ -456,6 +456,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<SyncSettingViewModel>();
             services.AddSingleton<ServerConfigViewModel>();
             services.AddSingleton<SystemSettingViewModel>();
+            services.AddSingleton<AdvancedSettingViewModel>();
             services.AddSingleton<AboutViewModel>();
             services.AddSingleton<CliboardAssistantViewModel>();
             services.AddTransient<NextCloudLogInViewModel>();

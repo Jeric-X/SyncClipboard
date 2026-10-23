@@ -4,7 +4,7 @@
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:i18n="using:SyncClipboard.Core.I18n"
              xmlns:vm="using:SyncClipboard.Core.ViewModels"
-             x:DataType="vm:SystemSettingViewModel">
+             x:DataType="vm:AdvancedSettingViewModel">
     <StackPanel Spacing="10">
         <ui:FASettingsExpander Header="{x:Static i18n:Strings.UIPerformance}" IsExpanded="True">
             <ui:FASettingsExpander.IconSource>

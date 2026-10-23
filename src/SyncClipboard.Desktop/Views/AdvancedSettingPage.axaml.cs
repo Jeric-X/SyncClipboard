@@ -9,6 +9,6 @@ public partial class AdvancedSettingPage : UserControl
     public AdvancedSettingPage()
     {
         InitializeComponent();
-        DataContext = App.Current.Services.GetRequiredService<SystemSettingViewModel>();
+        DataContext = App.Current.Services.GetRequiredService<AdvancedSettingViewModel>();
     }
 }

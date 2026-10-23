@@ -1,8 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
-using NativeNotification.Interface;
+using SyncClipboard.Core;
 using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Images;
 using SyncClipboard.Core.ViewModels;
@@ -24,8 +22,10 @@ public class PerformanceSettingsTests
             var path = Path.Combine(directory.FullName, "config.json");
             var config = new ConfigManager(path, configuration.Upgrader);
             config.SetConfig(new HistoryConfig { MaxItemCount = 500 });
-            using var services = new ServiceCollection().AddSingleton(Mock.Of<ILogger>()).BuildServiceProvider();
-            var vm = new SystemSettingViewModel(config, new StaticConfig(Mock.Of<INotificationManager>()), services);
+            var registrations = new ServiceCollection().AddSingleton(config);
+            AppCore.ConfigurateViewModels(registrations);
+            using var services = registrations.BuildServiceProvider();
+            var vm = services.GetRequiredService<AdvancedSettingViewModel>();
             Assert.AreEqual(200u, vm.HistoryImageCacheSizeMB);
             Assert.AreEqual(10u, vm.HistoryImageCacheIdleTimeoutMinutes);
             Assert.AreEqual(1, vm.HistoryImageLoadConcurrency);
