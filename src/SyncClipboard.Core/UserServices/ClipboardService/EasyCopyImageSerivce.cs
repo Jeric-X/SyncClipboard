@@ -166,7 +166,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
     {
         return metaInfo.Image is null
             && metaInfo.Files is not null
-            && metaInfo.Html is not null
+            && (OperatingSystem.IsMacOS() || metaInfo.Html is not null)
             && metaInfo.OriginalType is ClipboardMetaInfomation.ImageType;
     }
 
@@ -174,7 +174,7 @@ public partial class EasyCopyImageSerivce : ClipboardHander
     {
         return metaInfo.Image is not null
             && metaInfo.Files is not null
-            && metaInfo.Html is not null;
+            && (OperatingSystem.IsMacOS() || metaInfo.Html is not null);
     }
 
     private static bool NeedAdjust(Profile profile, ClipboardMetaInfomation metaInfo)
