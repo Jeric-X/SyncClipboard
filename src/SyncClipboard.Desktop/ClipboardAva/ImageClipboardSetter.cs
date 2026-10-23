@@ -51,21 +51,16 @@ internal class ImageClipboardSetter(ILogger logger) : FileClipboardSetter, IClip
             _ = _logger.WriteAsync(LOG_TAG, $"Failed to load image: {imagePath}, {ex.Message}");
         }
 
-        string clipboardHtml = ClipboardImageBuilder.GetClipboardHtml(imagePath);
-
         if (OperatingSystem.IsLinux())
         {
+            string clipboardHtml = ClipboardImageBuilder.GetClipboardHtml(imagePath);
             FillLinuxFileItem(item, [imagePath]);
             SetPlatformImageFormats(item, imagePath, LinuxImageFormat);
             item.Set(DataFormat.CreateBytesPlatformFormat(Format.TextHtml), System.Text.Encoding.UTF8.GetBytes(clipboardHtml));
         }
-        else if (OperatingSystem.IsMacOS())
-        {
-            // SetPlatformImageFormats(item, imagePath, MacImageFormat); 完全靠avalonia统一的bitmap设置，稳定的话删除这条专用于macos的调用
-            item.Set(DataFormat.CreateBytesPlatformFormat(Format.PublicHtml), System.Text.Encoding.UTF8.GetBytes(clipboardHtml));
-        }
         else if (OperatingSystem.IsWindows())
         {
+            string clipboardHtml = ClipboardImageBuilder.GetClipboardHtml(imagePath);
             item.Set(DataFormat.CreateBytesPlatformFormat("HTML Format"), System.Text.Encoding.UTF8.GetBytes(clipboardHtml));
         }
 
@@ -79,13 +74,6 @@ internal class ImageClipboardSetter(ILogger logger) : FileClipboardSetter, IClip
         [Format.ImagePng] = MagickFormat.Png,
         [Format.ImageJpeg] = MagickFormat.Jpeg,
         [Format.ImageBmp] = MagickFormat.Bmp,
-    };
-
-    [SupportedOSPlatform("macos")]
-    private static readonly Dictionary<string, MagickFormat> MacImageFormat = new Dictionary<string, MagickFormat>
-    {
-        [Format.PublicPng] = MagickFormat.Png,
-        [Format.PublicTiff] = MagickFormat.Tiff,
     };
 
     private static void SetPlatformImageFormats(DataTransferItem item, string path, Dictionary<string, MagickFormat> mapper)
