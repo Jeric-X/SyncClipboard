@@ -1,0 +1,44 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.AdvancedSettingPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             x:DataType="vm:AdvancedSettingViewModel">
+    <StackPanel Spacing="10">
+        <ui:FASettingsExpander Header="{x:Static i18n:Strings.UIPerformance}" IsExpanded="True">
+            <ui:FASettingsExpander.IconSource>
+                <ui:FAFontIconSource Glyph="&#xEC4A;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:FASettingsExpander.IconSource>
+            <ui:FASettingsExpander.Items>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ImageCacheSize}" Description="{x:Static i18n:Strings.ImageCacheSizeDescription}">
+                    <ui:FASettingsExpanderItem.Footer>
+                        <NumericUpDown Minimum="0"
+                                       Maximum="4294967295"
+                                       Value="{Binding HistoryImageCacheSizeMB, Mode=TwoWay}"
+                                       Increment="10"
+                                       ButtonSpinnerLocation="Right" />
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ImageCacheIdleTimeout}" Description="{x:Static i18n:Strings.ImageCacheIdleTimeoutDescription}">
+                    <ui:FASettingsExpanderItem.Footer>
+                        <NumericUpDown Minimum="0"
+                                       Maximum="4294967295"
+                                       Value="{Binding HistoryImageCacheIdleTimeoutMinutes, Mode=TwoWay}"
+                                       Increment="5"
+                                       ButtonSpinnerLocation="Right" />
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ImageLoadConcurrency}" Description="{x:Static i18n:Strings.ImageLoadConcurrencyDescription}">
+                    <ui:FASettingsExpanderItem.Footer>
+                        <NumericUpDown Minimum="1"
+                                       Maximum="2147483647"
+                                       Value="{Binding HistoryImageLoadConcurrency, Mode=TwoWay}"
+                                       Increment="1"
+                                       ButtonSpinnerLocation="Right" />
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
+            </ui:FASettingsExpander.Items>
+        </ui:FASettingsExpander>
+    </StackPanel>
+</UserControl>

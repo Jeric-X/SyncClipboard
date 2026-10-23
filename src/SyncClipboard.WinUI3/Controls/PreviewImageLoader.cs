@@ -1,25 +1,24 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.Core;
+using SyncClipboard.Core.Utilities.Images;
+using Microsoft.Extensions.DependencyInjection;
+using static SyncClipboard.WinUI3.Utilities.PreviewImageProvider;
 using SyncClipboard.WinUI3.Utilities;
 using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.Graphics.Imaging;
-using Windows.Storage.Streams;
 
 namespace SyncClipboard.WinUI3.Controls;
 
 /// <summary>
 /// Loads bounded history images while their controls are loaded and individually visible.
-/// WinUI owns the bitmap resources; clearing Source releases the control's reference.
+/// The control returns its lease when hidden or recycled; the cache owns the bitmap references.
 /// </summary>
 public static class PreviewImageLoader
 {
-    private static readonly SemaphoreSlim DecodeSlots = new(2);
     public static readonly DependencyProperty FilePathProperty = DependencyProperty.RegisterAttached(
         "FilePath", typeof(string), typeof(PreviewImageLoader), new PropertyMetadata(null, OnOptionsChanged));
     public static readonly DependencyProperty IsThumbnailProperty = DependencyProperty.RegisterAttached(
@@ -66,6 +65,8 @@ public static class PreviewImageLoader
     {
         private readonly Image _image;
         private CancellationTokenSource? _request;
+        private PreviewImageLease<DecodedImage>? _lease;
+        private readonly PreviewImageCache<PreviewImageKey, DecodedImage> _cache;
         private bool _recycled;
         private (string Path, (uint Width, uint Height) Dimensions)? _cachedSize;
 
@@ -75,6 +76,8 @@ public static class PreviewImageLoader
         public State(Image image)
         {
             _image = image;
+            _cache = AppCore.TryGetCurrent()?.Services.GetService<PreviewImageCache<PreviewImageKey, DecodedImage>>()
+                ?? CreateCache(null);
             image.Loaded += OnLoadedChanged;
             image.Unloaded += OnLoadedChanged;
             image.RegisterPropertyChangedCallback(UIElement.VisibilityProperty, OnVisibilityChanged);
@@ -99,6 +102,8 @@ public static class PreviewImageLoader
             _request?.Dispose();
             _request = null;
             _image.Source = null;
+            _lease?.Dispose();
+            _lease = null;
             _image.Width = double.NaN;
             _image.Height = double.NaN;
             _image.MaxWidth = double.PositiveInfinity;
@@ -148,16 +153,23 @@ public static class PreviewImageLoader
 
         private async Task LoadAsync(string path, bool thumbnail, double scale, bool sizeOnly, CancellationToken token)
         {
+            PreviewImageLease<DecodedImage>? lease = null;
             try
             {
-                var (bitmap, size, dimensions) = await DecodeAsync(path, thumbnail, scale, token,
-                    sizeOnly: sizeOnly, cachedDimensions: _cachedSize?.Dimensions);
+                var key = await Task.Run(() => PreviewImageKey.Create(path, thumbnail ? 5120 : 2048,
+                    thumbnail ? 200 : 2048, thumbnail ? scale : 1, thumbnail ? 5120 : 2048, sizeOnly, thumbnail), token);
+                token.ThrowIfCancellationRequested();
+                _cache.Invalidate(old => old.IsOlderVersionOf(key));
+                lease = await _cache.AcquireAsync(key, token);
+                var (bitmap, size, dimensions) = lease.Image;
                 token.ThrowIfCancellationRequested();
 
                 _cachedSize = (path, dimensions);
                 ApplySize(size, thumbnail);
                 _image.Stretch = thumbnail ? Stretch.UniformToFill : Stretch.Uniform;
+                _lease = lease;
                 _image.Source = bitmap;
+                lease = null;
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested)
             {
@@ -168,6 +180,7 @@ public static class PreviewImageLoader
             {
                 if (!token.IsCancellationRequested)
                 {
+                    _cache.Invalidate(key => key.Path == Path.GetFullPath(path));
                     FileMissing?.Invoke(this, EventArgs.Empty);
                 }
             }
@@ -175,55 +188,10 @@ public static class PreviewImageLoader
             {
                 AppCore.TryGetCurrent()?.Logger.Write(nameof(PreviewImageLoader), $"Failed to load preview: {ex.Message}");
             }
+            finally
+            {
+                lease?.Dispose();
+            }
         }
     }
-
-    internal static async Task<(BitmapImage? Bitmap, PreviewImageSize Size, (uint Width, uint Height) Dimensions)> DecodeAsync(
-        string path, bool thumbnail, double scale, CancellationToken token,
-        Func<IRandomAccessStream, Task<(uint Width, uint Height)>>? readHeader = null, bool sizeOnly = false,
-        (uint Width, uint Height)? cachedDimensions = null)
-    {
-        await DecodeSlots.WaitAsync(token);
-        try
-        {
-            using var file = await Task.Run(() => File.OpenRead(path), token);
-            using var stream = file.AsRandomAccessStream();
-            (uint Width, uint Height) dimensions = default;
-            try
-            {
-                dimensions = cachedDimensions ?? await (readHeader ?? ReadDimensionsAsync)(stream);
-            }
-            catch (Exception ex) when (ex is not OutOfMemoryException)
-            {
-                dimensions = default;
-            }
-
-            token.ThrowIfCancellationRequested();
-            stream.Seek(0);
-            var size = PreviewImageSize.Calculate(dimensions.Width, dimensions.Height, thumbnail, scale);
-            if (sizeOnly)
-                return (null, size, dimensions);
-
-            var bitmap = new BitmapImage
-            {
-                DecodePixelType = DecodePixelType.Physical,
-                DecodePixelWidth = size.PixelWidth,
-                DecodePixelHeight = size.PixelHeight
-            };
-            await bitmap.SetSourceAsync(stream);
-            token.ThrowIfCancellationRequested();
-            return (bitmap, size, dimensions);
-        }
-        finally
-        {
-            // Native decoding cannot be interrupted safely. Keep its slot until it finishes.
-            DecodeSlots.Release();
-        }
-    }
-
-    private static Task<(uint Width, uint Height)> ReadDimensionsAsync(IRandomAccessStream stream) => Task.Run(async () =>
-    {
-        var decoder = await BitmapDecoder.CreateAsync(stream);
-        return (decoder.OrientedPixelWidth, decoder.OrientedPixelHeight);
-    });
 }

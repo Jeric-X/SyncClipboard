@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <Page x:Class="SyncClipboard.WinUI3.Views.SystemSettingPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -52,6 +52,7 @@
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.Proxy}">
                     <Button Click="ShowProxySettingDialog" Content="{x:Bind i18n:Strings.Config}" />
                 </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.Advanced}" IsClickEnabled="True" Command="{x:Bind _viewModel.OpenAdvancedSettingsCommand}" />
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
         <ui:SettingsExpander Header="{x:Bind i18n:Strings.Diagnose}" IsExpanded="True">

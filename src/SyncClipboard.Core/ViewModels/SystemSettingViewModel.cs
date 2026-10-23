@@ -8,12 +8,15 @@ using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using System.Diagnostics;
-using System.IO;
 
 namespace SyncClipboard.Core.ViewModels;
 
 public partial class SystemSettingViewModel : ObservableObject
 {
+    [RelayCommand]
+    private void OpenAdvancedSettings() =>
+        _services.GetRequiredService<MainViewModel>().NavigateToNextLevel(PageDefinition.AdvancedSetting);
+
     [ObservableProperty]
     private bool hideWindowOnStartUp;
     partial void OnHideWindowOnStartUpChanged(bool value) => ProgramConfig = ProgramConfig with { HideWindowOnStartup = value };

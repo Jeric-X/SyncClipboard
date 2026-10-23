@@ -1,3 +1,4 @@
+using SyncClipboard.Desktop.Utilities;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -40,7 +41,7 @@ public class PreviewPanelImageTests
             var path = CreateImage(width, height, format);
             try
             {
-                using var bitmap = PreviewImage.Decode(path, new PreviewImage.DecodeOptions(new Size(2048, 2048))).Bitmap;
+                using var bitmap = PreviewImageProvider.Decode(path, new PreviewImageProvider.DecodeOptions(new Size(2048, 2048))).Bitmap;
                 Assert.IsNotNull(bitmap);
                 Assert.AreEqual(new PixelSize(expectedWidth, expectedHeight), bitmap.PixelSize);
                 Assert.IsLessThanOrEqualTo(16L * 1024 * 1024, (long)bitmap.PixelSize.Width * bitmap.PixelSize.Height * 4);

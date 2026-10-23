@@ -53,12 +53,12 @@ public class HistoryListImageLoadingTests
                 data.SaveTo(file);
             }
 
-            var completion = new TaskCompletionSource<PreviewImage.DecodedImage>();
+            var completion = new TaskCompletionSource<PreviewImageProvider.DecodedImage>();
             var requests = 0;
             var image = new PreviewImage((file, options, token) =>
             {
                 if (options.SizeOnly)
-                    return Task.Run(() => PreviewImage.Decode(file, options), token);
+                    return Task.Run(() => PreviewImageProvider.Decode(file, options), token);
 
                 requests++;
                 return completion.Task;
@@ -90,7 +90,7 @@ public class HistoryListImageLoadingTests
                 Assert.IsNull(image.Source);
                 var beforeDecode = image.DesiredSize;
                 Assert.IsGreaterThan(0, beforeDecode.Height);
-                completion.SetResult(PreviewImage.Decode(path, new PreviewImage.DecodeOptions(new Size(5120, 200))));
+                completion.SetResult(PreviewImageProvider.Decode(path, new PreviewImageProvider.DecodeOptions(new Size(5120, 200))));
                 await image.PendingLoad;
                 window.UpdateLayout();
                 Assert.AreEqual(beforeDecode, image.DesiredSize);
@@ -131,7 +131,7 @@ public class HistoryListImageLoadingTests
             }
 
             var headerReads = 0;
-            var image = new PreviewImage((path, options, token) => Task.Run(() => PreviewImage.Decode(path, options, _ =>
+            var image = new PreviewImage((path, options, token) => Task.Run(() => PreviewImageProvider.Decode(path, options, _ =>
             {
                 Interlocked.Increment(ref headerReads);
                 return new PixelSize(600, 300);
@@ -185,10 +185,10 @@ public class HistoryListImageLoadingTests
         await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryListImageLoadingTests));
         await session.Dispatch(async () =>
         {
-            var requests = new List<TaskCompletionSource<PreviewImage.DecodedImage>>();
+            var requests = new List<TaskCompletionSource<PreviewImageProvider.DecodedImage>>();
             var image = new PreviewImage((_, _, _) =>
             {
-                var completion = new TaskCompletionSource<PreviewImage.DecodedImage>();
+                var completion = new TaskCompletionSource<PreviewImageProvider.DecodedImage>();
                 requests.Add(completion);
                 return completion.Task;
             })
@@ -237,7 +237,7 @@ public class HistoryListImageLoadingTests
             using (var file = File.Create(path))
                 data.SaveTo(file);
 
-            var requests = new List<TaskCompletionSource<PreviewImage.DecodedImage>>();
+            var requests = new List<TaskCompletionSource<PreviewImageProvider.DecodedImage>>();
             var images = new List<PreviewImage>();
             var compact = true;
             var list = new ListBox
@@ -251,9 +251,9 @@ public class HistoryListImageLoadingTests
                     {
                         // Complete size reads immediately to isolate layout anchoring from I/O timing.
                         if (options.SizeOnly)
-                            return Task.FromResult(PreviewImage.Decode(file, options));
+                            return Task.FromResult(PreviewImageProvider.Decode(file, options));
 
-                        var completion = new TaskCompletionSource<PreviewImage.DecodedImage>();
+                        var completion = new TaskCompletionSource<PreviewImageProvider.DecodedImage>();
                         requests.Add(completion);
                         return completion.Task;
                     })
@@ -290,7 +290,7 @@ public class HistoryListImageLoadingTests
                 var extent = scroll.Extent.Height;
                 var offset = scroll.Offset.Y;
                 foreach (var request in requests)
-                    request.SetResult(new PreviewImage.DecodedImage(CreateBitmap(), new Size(400, 200), new PixelSize(600, 300)));
+                    request.SetResult(new PreviewImageProvider.DecodedImage(CreateBitmap(), new Size(400, 200), new PixelSize(600, 300)));
                 await Task.WhenAll(images.Select(image => image.PendingLoad));
                 window.UpdateLayout();
                 if (!virtualized)
@@ -333,7 +333,7 @@ public class HistoryListImageLoadingTests
                 requested.Add(path);
                 var bitmap = CreateBitmap();
                 bitmaps.Add(bitmap);
-                return Task.FromResult(new PreviewImage.DecodedImage(bitmap, new Size(1, 1), new PixelSize(1, 1)));
+                return Task.FromResult(new PreviewImageProvider.DecodedImage(bitmap, new Size(1, 1), new PixelSize(1, 1)));
             });
             var state = new ImageState { PreviewImage = "first.png" };
             using var visibleBinding = image.Bind(PreviewImage.IsVisibleProperty, new Binding(nameof(ImageState.IsCompactListMode))
@@ -406,7 +406,7 @@ public class HistoryListImageLoadingTests
                 {
                     var bitmap = CreateBitmap();
                     bitmaps.Add(bitmap);
-                    return Task.FromResult(new PreviewImage.DecodedImage(bitmap, new Size(1, 1), new PixelSize(1, 1)));
+                    return Task.FromResult(new PreviewImageProvider.DecodedImage(bitmap, new Size(1, 1), new PixelSize(1, 1)));
                 })
                 { FilePath = path })
             };
@@ -438,10 +438,10 @@ public class HistoryListImageLoadingTests
         await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryListImageLoadingTests));
         await session.Dispatch(async () =>
         {
-            var requests = new List<TaskCompletionSource<PreviewImage.DecodedImage>>();
+            var requests = new List<TaskCompletionSource<PreviewImageProvider.DecodedImage>>();
             var image = new PreviewImage((_, _, _) =>
             {
-                var request = new TaskCompletionSource<PreviewImage.DecodedImage>();
+                var request = new TaskCompletionSource<PreviewImageProvider.DecodedImage>();
                 requests.Add(request);
                 return request.Task;
             })
@@ -506,7 +506,7 @@ public class HistoryListImageLoadingTests
                 {
                     data.SaveTo(stream);
                 }
-                var thumbnail = PreviewImage.Decode(path, new PreviewImage.DecodeOptions(new Size(5120, 200), scale, 5120));
+                var thumbnail = PreviewImageProvider.Decode(path, new PreviewImageProvider.DecodeOptions(new Size(5120, 200), scale, 5120));
                 using var bitmap = thumbnail.Bitmap;
                 Assert.IsNotNull(bitmap);
                 Assert.IsLessThanOrEqualTo(5120, bitmap.PixelSize.Width);
@@ -644,7 +644,7 @@ public class HistoryListImageLoadingTests
                 {
                     var bitmap = CreateBitmap();
                     bitmaps.Add(bitmap);
-                    return Task.FromResult(new PreviewImage.DecodedImage(bitmap, new Size(300, 80 + int.Parse(file) * 4), new PixelSize(300, 80 + int.Parse(file) * 4)));
+                    return Task.FromResult(new PreviewImageProvider.DecodedImage(bitmap, new Size(300, 80 + int.Parse(file) * 4), new PixelSize(300, 80 + int.Parse(file) * 4)));
                 })
                 { FilePath = path, SizeToImage = true })
             };

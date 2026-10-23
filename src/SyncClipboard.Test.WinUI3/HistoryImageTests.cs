@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.WinUI3.Controls;
 using SyncClipboard.WinUI3.Utilities;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Utilities.Images;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
 using SyncClipboard.Shared.Profiles;
@@ -183,6 +184,7 @@ public class HistoryImageTests
 
             await VerifyLargeAndCorruptImagesAsync(directory.FullName);
             await VerifyCachedDimensionsAsync(largePath);
+            await VerifySharedCacheAsync(largePath);
             await VerifyDecodeConcurrencyAsync(largePath);
             await VerifyPreviewPanelAsync(window, largePath, smallPath, directory.FullName);
             await VerifyScrollPositionAsync(window, largePath);
@@ -215,7 +217,7 @@ public class HistoryImageTests
         using (var file = File.OpenWrite(path))
             file.SetLength(10L * 1024 * 1024);
 
-        var (bounded, _, _) = await PreviewImageLoader.DecodeAsync(path, false, 1, CancellationToken.None);
+        var (bounded, _, _) = await PreviewImageProvider.DecodeAsync(path, false, 1, CancellationToken.None);
         Assert.IsNotNull(bounded);
         Assert.AreEqual(2048, bounded.DecodePixelWidth);
         Assert.AreEqual(512, bounded.DecodePixelHeight);
@@ -223,7 +225,7 @@ public class HistoryImageTests
         var corruptPath = Path.Combine(directory, "corrupt-payload.png");
         await File.WriteAllTextAsync(corruptPath, "corrupt payload");
         // Force a successful dimension lookup so this exercises the native decoder failure.
-        await Assert.ThrowsAsync<Exception>(() => PreviewImageLoader.DecodeAsync(corruptPath, false, 1,
+        await Assert.ThrowsAsync<Exception>(() => PreviewImageProvider.DecodeAsync(corruptPath, false, 1,
             CancellationToken.None, _ => Task.FromResult((400u, 200u))));
     }
 
@@ -262,7 +264,7 @@ public class HistoryImageTests
     {
         var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var started = 0;
-        var tasks = Enumerable.Range(0, 6).Select(_ => PreviewImageLoader.DecodeAsync(path, true, 1,
+        var tasks = Enumerable.Range(0, 6).Select(_ => PreviewImageProvider.DecodeAsync(path, true, 1,
             CancellationToken.None, async stream =>
             {
                 started++;
@@ -271,8 +273,8 @@ public class HistoryImageTests
             })).ToArray();
         try
         {
-            await WaitUntilAsync(() => started >= 2);
-            Assert.AreEqual(2, started);
+            await WaitUntilAsync(() => started >= 1);
+            Assert.AreEqual(1, started);
         }
         finally
         {
@@ -355,6 +357,27 @@ public class HistoryImageTests
         }
     }
 
+    private static async Task VerifySharedCacheAsync(string path)
+    {
+        using var cache = PreviewImageProvider.CreateCache(null);
+        cache.SetCapacity(32 * 1024 * 1024);
+        var key = PreviewImageKey.Create(path, 2048, 2048, 1, 2048, false);
+        var first = await cache.AcquireAsync(key, CancellationToken.None);
+        var second = await cache.AcquireAsync(key, CancellationToken.None);
+        var bitmap = first.Image.Bitmap;
+        Assert.AreSame(bitmap, second.Image.Bitmap);
+        first.Dispose();
+        second.Dispose();
+        using (var cached = await cache.AcquireAsync(key, CancellationToken.None))
+            Assert.AreSame(bitmap, cached.Image.Bitmap);
+        cache.SetCapacity(0);
+        using var fresh = await cache.AcquireAsync(key, CancellationToken.None);
+        Assert.AreNotSame(bitmap, fresh.Image.Bitmap);
+        using var thumbnail = await cache.AcquireAsync(PreviewImageKey.Create(path, 5120, 200, 1, 5120, false, isThumbnail: true), CancellationToken.None);
+        Assert.AreNotSame(fresh.Image.Bitmap, thumbnail.Image.Bitmap);
+        Assert.AreEqual(200, thumbnail.Image.Bitmap!.DecodePixelHeight);
+    }
+
     private static async Task VerifyCachedDimensionsAsync(string path)
     {
         var reads = 0;
@@ -364,10 +387,10 @@ public class HistoryImageTests
             return Task.FromResult((4096u, 1024u));
         }
 
-        var (placeholder, _, dimensions) = await PreviewImageLoader.DecodeAsync(path, true, 1,
+        var (placeholder, _, dimensions) = await PreviewImageProvider.DecodeAsync(path, true, 1,
             CancellationToken.None, ReadHeader, sizeOnly: true);
         Assert.IsNull(placeholder);
-        var (bitmap, size, _) = await PreviewImageLoader.DecodeAsync(path, false, 1,
+        var (bitmap, size, _) = await PreviewImageProvider.DecodeAsync(path, false, 1,
             CancellationToken.None, ReadHeader, cachedDimensions: dimensions);
         Assert.IsNotNull(bitmap);
         Assert.AreEqual(2048, size.Width);
