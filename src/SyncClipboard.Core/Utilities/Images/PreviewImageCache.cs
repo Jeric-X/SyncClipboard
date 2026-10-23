@@ -221,7 +221,7 @@ public sealed class PreviewImageCache<TKey, T> : IDisposable where TKey : notnul
     }
 
     // Avoid overflowing long while taking floor(capacity * 0.8).
-    private bool CanRetain(long bytes) => bytes <= _capacity / 5 * 4 + _capacity % 5 * 4 / 5;
+    private bool CanRetain(long bytes) => bytes <= ((_capacity / 5) * 4) + (((_capacity % 5) * 4) / 5);
 
     private void Uncount(Entry entry)
     {

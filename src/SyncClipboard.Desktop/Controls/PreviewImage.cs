@@ -203,5 +203,4 @@ public sealed class PreviewImage : Image
             lease?.Dispose();
         }
     }
-
 }
