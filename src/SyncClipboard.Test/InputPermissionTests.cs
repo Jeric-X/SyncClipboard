@@ -21,7 +21,8 @@ public class InputPermissionTests
 
     internal static InputPermissionProvider CreatePermissionProvider(ILogger logger, Action requestAccessibilityPermission,
         bool isMacOS = true, Func<bool>? isAccessibilityEnabled = null,
-        Func<Task<bool>>? confirm = null, Action? openSettings = null, Func<Task>? resetPermission = null)
+        Func<Task<bool>>? confirm = null, Action? openSettings = null, Func<Task>? resetPermission = null,
+        Func<bool>? canPostEvents = null)
     {
         var dispatcher = new Mock<IThreadDispatcher>();
         dispatcher.Setup(x => x.RunOnMainThreadAsync(It.IsAny<Func<Task>>()))
@@ -32,11 +33,13 @@ public class InputPermissionTests
             .Returns(() => confirm?.Invoke() ?? Task.FromResult(true));
         return new InputPermissionProvider(logger, dispatcher.Object, dialog.Object,
             openSettings ?? (() => { }), requestAccessibilityPermission, resetPermission ?? (() => Task.CompletedTask),
-            isMacOS, isAccessibilityEnabled);
+            isMacOS, isAccessibilityEnabled, canPostEvents ?? (() => true));
     }
 
     [TestMethod]
-    public void AccessibilityConfirmation_CoalescesRequests_AndCancellationAllowsRetry()
+    [DataRow(false, true)]
+    [DataRow(true, false)]
+    public void AccessibilityConfirmation_CoalescesRequests_AndCancellationAllowsRetry(bool ax, bool cg)
     {
         var confirmation = new TaskCompletionSource<bool>();
         var events = new List<string>();
@@ -45,7 +48,7 @@ public class InputPermissionTests
         {
             Assert.IsTrue(provider!.HasRequestedAccessibilityPermission);
             events.Add("request");
-        }, isAccessibilityEnabled: () => false, confirm: () =>
+        }, isAccessibilityEnabled: () => ax, canPostEvents: () => cg, confirm: () =>
         {
             events.Add("dialog");
             return confirmation.Task;
@@ -82,7 +85,9 @@ public class InputPermissionTests
     }
 
     [TestMethod]
-    public void AccessibilityGrantedDuringConfirmation_IsPreserved_AndLaterRevocationAllowsRequest()
+    [DataRow(false)]
+    [DataRow(true)]
+    public void AccessibilityGrantedDuringConfirmation_IsPreserved_AndLaterRevocationAllowsRequest(bool axAlreadyGranted)
     {
         var confirmation = new TaskCompletionSource<bool>();
         var granted = false;
@@ -90,7 +95,8 @@ public class InputPermissionTests
         var requests = 0;
         var settings = 0;
         var provider = CreatePermissionProvider(Mock.Of<ILogger>(), () => requests++,
-            isAccessibilityEnabled: () => granted, confirm: () => confirmation.Task,
+            isAccessibilityEnabled: () => axAlreadyGranted || granted, canPostEvents: () => granted,
+            confirm: () => confirmation.Task,
             openSettings: () => settings++, resetPermission: () =>
             {
                 resets++;
@@ -395,7 +401,12 @@ public class InputPermissionTests
                 Assert.AreEqual(state, viewModel.InputPermissions.Accessibility);
                 Assert.AreEqual(OperatingSystem.IsMacOS(), viewModel.OpenAccessibilitySettingsCommand.CanExecute(null));
             }
-            permissions.Verify(x => x.GetStatus(), Times.Exactly(3));
+            permissions.Setup(x => x.GetStatus()).Returns(new InputPermissionStatus(
+                InputPermissionState.Available, InputPermissionState.Available, InputPermissionState.Denied));
+            viewModel.RefreshInputPermissions();
+            Assert.IsFalse(viewModel.IsAccessibilityPermissionAvailable);
+            Assert.AreEqual(Strings.InputPermissionDenied, viewModel.AccessibilityPermissionText);
+            permissions.Verify(x => x.GetStatus(), Times.Exactly(4));
             permissions.VerifyNoOtherCalls();
         }
         finally
@@ -424,6 +435,46 @@ public class InputPermissionTests
                 Assert.IsTrue(provider.CheckAndRequestAccessibilityPermission());
             Assert.IsFalse(provider.HasRequestedAccessibilityPermission);
         }
+    }
+
+    [TestMethod]
+    [DataRow(false, false)]
+    [DataRow(false, true)]
+    [DataRow(true, false)]
+    [DataRow(true, true)]
+    public void MacSimulation_RequiresBothPermissions_WithoutRequesting(bool ax, bool cg)
+    {
+        var cgChecks = 0;
+        var provider = CreatePermissionProvider(Mock.Of<ILogger>(),
+            () => Assert.Fail("Status checks must not request permission."),
+            isAccessibilityEnabled: () => ax, canPostEvents: () =>
+            {
+                cgChecks++;
+                return cg;
+            });
+
+        var axState = ax ? InputPermissionState.Available : InputPermissionState.Denied;
+        var simulationState = ax && cg ? InputPermissionState.Available : InputPermissionState.Denied;
+        var expected = new InputPermissionStatus(axState, axState, simulationState);
+        Assert.AreEqual(expected, provider.GetStatus());
+        Assert.AreEqual(expected, provider.GetSimulationStatus());
+        Assert.AreEqual(ax ? 2 : 0, cgChecks, "AX denial must not initialize the event-posting permission check.");
+        Assert.IsFalse(provider.HasRequestedAccessibilityPermission);
+
+        ax = true;
+        cg = true;
+        Assert.IsTrue(provider.GetSimulationStatus().CanSimulateInput);
+    }
+
+    [TestMethod]
+    public void FailedEventPostingCheck_BlocksSimulation_ButPreservesAXAccess()
+    {
+        var provider = CreatePermissionProvider(Mock.Of<ILogger>(), () => { },
+            isAccessibilityEnabled: () => true, canPostEvents: () => throw new DllNotFoundException());
+        var status = provider.GetStatus();
+        Assert.AreEqual(InputPermissionState.Available, status.Accessibility);
+        Assert.AreEqual(InputPermissionState.Unknown, status.InputSimulation);
+        Assert.IsFalse(status.CanSimulateInput);
     }
 
     [TestMethod]

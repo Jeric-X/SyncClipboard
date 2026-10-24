@@ -51,6 +51,45 @@ public class KeyboardSimulationTests
     }
 
     [TestMethod]
+    [DataRow(false, true)]
+    [DataRow(true, false)]
+    [DataRow(false, false)]
+    public void MissingMacPermission_ResetsAfterConfirmation_AndSkipsInputUntilBothGranted(bool ax, bool cg)
+    {
+        var confirmation = new TaskCompletionSource<bool>();
+        var events = new List<string>();
+        var provider = InputPermissionTests.CreatePermissionProvider(Mock.Of<ILogger>(),
+            () => events.Add("request"), isAccessibilityEnabled: () => ax, canPostEvents: () => cg,
+            confirm: () => confirmation.Task, openSettings: () => events.Add("settings"), resetPermission: () =>
+            {
+                events.Add("reset");
+                return Task.CompletedTask;
+            });
+        var simulator = new Mock<IEventSimulator>();
+        using var keyboard = new VirtualKeyboard(provider, () =>
+        {
+            events.Add("simulator");
+            return simulator.Object;
+        });
+
+        Assert.ThrowsExactly<InvalidOperationException>(keyboard.Paste);
+        Assert.IsEmpty(events, "Permission reset and input must wait for confirmation.");
+        confirmation.SetResult(true);
+        string[] requestedEvents = ["reset", "settings", "request"];
+        CollectionAssert.AreEqual(requestedEvents, events);
+        Assert.ThrowsExactly<InvalidOperationException>(keyboard.Paste);
+        simulator.Verify(x => x.SimulateKeyPress(It.IsAny<KeyCode>()), Times.Never);
+
+        ax = true;
+        cg = true;
+        keyboard.Paste();
+        string[] completedEvents = ["reset", "settings", "request", "simulator"];
+        CollectionAssert.AreEqual(completedEvents, events);
+        simulator.Verify(x => x.SimulateKeyPress(KeyCode.VcV), Times.Once);
+        simulator.Verify(x => x.SimulateKeyRelease(KeyCode.VcV), Times.Once);
+    }
+
+    [TestMethod]
     public void ServiceContainer_ExposesOnlyWrapper_AndDoesNotCheckPermissionsDuringResolution()
     {
         var services = new ServiceCollection();

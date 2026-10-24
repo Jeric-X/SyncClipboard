@@ -49,8 +49,11 @@ public partial class SystemSettingViewModel
     private InputPermissionStatus inputPermissions = new(
         InputPermissionState.Unknown, InputPermissionState.Unknown, InputPermissionState.Unknown);
 
-    public string AccessibilityPermissionText => GetPermissionText(InputPermissions.Accessibility);
-    public bool IsAccessibilityPermissionAvailable => InputPermissions.Accessibility == InputPermissionState.Available;
+    public string AccessibilityPermissionText => GetPermissionText(
+        InputPermissions.Accessibility == InputPermissionState.Available
+            ? InputPermissions.InputSimulation : InputPermissions.Accessibility);
+    public bool IsAccessibilityPermissionAvailable => InputPermissions.Accessibility == InputPermissionState.Available &&
+        InputPermissions.InputSimulation == InputPermissionState.Available;
     public string KeyboardMonitoringPermissionText => GetPermissionText(InputPermissions.KeyboardMonitoring);
     public string InputSimulationPermissionText => GetPermissionText(InputPermissions.InputSimulation);
     public IInputPermissionProvider InputPermissionProvider => _services.GetRequiredService<IInputPermissionProvider>();

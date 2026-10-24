@@ -22,6 +22,7 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
     private readonly Func<Task> _resetAccessibilityPermission;
     private readonly bool _isMacOS;
     private readonly Func<bool> _isAccessibilityEnabled;
+    private readonly Func<bool> _canPostEvents;
     private int _accessibilityRequested;
     private int _requestInProgress;
 
@@ -40,7 +41,7 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
 
     internal InputPermissionProvider(ILogger logger, IThreadDispatcher dispatcher, IGlobalDialog dialog,
         Action openAccessibilitySettings, Action requestAccessibilityPermission, Func<Task> resetAccessibilityPermission,
-        bool isMacOS = true, Func<bool>? isAccessibilityEnabled = null)
+        bool isMacOS = true, Func<bool>? isAccessibilityEnabled = null, Func<bool>? canPostEvents = null)
     {
         _logger = logger;
         _dispatcher = dispatcher;
@@ -50,6 +51,7 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
         _resetAccessibilityPermission = resetAccessibilityPermission;
         _isMacOS = isMacOS;
         _isAccessibilityEnabled = isAccessibilityEnabled ?? AXIsProcessTrusted;
+        _canPostEvents = canPostEvents ?? CGPreflightPostEventAccess;
     }
 
     [DllImport(ApplicationServicesLibrary)]
@@ -59,6 +61,10 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
     [DllImport(ApplicationServicesLibrary)]
     [return: MarshalAs(UnmanagedType.I1)]
     private static extern bool AXIsProcessTrustedWithOptions(nint options);
+
+    [DllImport("/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics")]
+    [return: MarshalAs(UnmanagedType.I1)]
+    private static extern bool CGPreflightPostEventAccess();
 
     [DllImport(ApplicationServicesLibrary)]
     private static extern nint CFDictionaryCreate(nint allocator, ref nint keys, ref nint values,
@@ -127,7 +133,7 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
     {
         if (!_isMacOS)
             return true;
-        if (GetPermissionState(_isAccessibilityEnabled) == InputPermissionState.Available)
+        if (GetSimulationStatus().CanSimulateInput)
             return true;
         if (HasRequestedAccessibilityPermission || Interlocked.CompareExchange(ref _requestInProgress, 1, 0) != 0)
             return false;
@@ -147,7 +153,7 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
                 if (!await _dialog.ShowConfirmationAsync(Strings.AccessibilityPermission,
                     Strings.AccessibilityPermissionRequestMessage, Strings.RequestPermission, Strings.Cancel))
                     return;
-                if (GetPermissionState(_isAccessibilityEnabled) == InputPermissionState.Available)
+                if (GetSimulationStatus().CanSimulateInput)
                     return;
 
                 // Count the entire confirmed attempt, including reset/settings failures, once per app run.
@@ -185,7 +191,10 @@ public sealed class InputPermissionProvider : ObservableObject, IInputPermission
         if (_isMacOS)
         {
             var accessibility = GetPermissionState(_isAccessibilityEnabled);
-            return new(accessibility, accessibility, accessibility);
+            // Avoid an early event-posting preflight while AX access is still denied.
+            var simulation = accessibility == InputPermissionState.Available
+                ? GetPermissionState(_canPostEvents) : accessibility;
+            return new(accessibility, accessibility, simulation);
         }
 
         if (OperatingSystem.IsLinux())
