@@ -5,7 +5,9 @@ permissions:
 on:
   push:
     branches:
-      - '**'
+      - master
+      - ci
+      - dev
     tags: 
       - 'v*'
 
