@@ -51,11 +51,11 @@ public class KeyboardSimulationTests
     }
 
     [TestMethod]
-    [DataRow(false, true)]
-    [DataRow(true, false)]
-    [DataRow(false, false)]
-    public void MissingMacPermission_ResetsAfterConfirmation_AndSkipsInputUntilBothGranted(bool ax, bool cg)
+    [DataRow(true)]
+    [DataRow(false)]
+    public void MissingMacPostPermission_ResetsAfterConfirmation_AndSkipsInputUntilGranted(bool ax)
     {
+        var cg = false;
         var confirmation = new TaskCompletionSource<bool>();
         var events = new List<string>();
         var provider = PermissionTests.CreatePermissionProvider(Mock.Of<ILogger>(),
@@ -79,7 +79,6 @@ public class KeyboardSimulationTests
         CollectionAssert.AreEqual(requestedEvents, events);
         simulator.Verify(x => x.SimulateKeyPress(It.IsAny<KeyCode>()), Times.Never);
 
-        ax = true;
         cg = true;
         keyboard.Paste();
         string[] completedEvents = ["reset", "settings", "request", "simulator"];

@@ -37,19 +37,20 @@ public sealed class MacOSPermissionProvider : IPermissionProvider
 
     public PermissionState GetState(PermissionCapability capability) => capability switch
     {
-        PermissionCapability.SimulateInput or PermissionCapability.MonitorKeyboard or
-            PermissionCapability.ReadWindow or PermissionCapability.ReadCaret => GetAccessibilityState(),
+        PermissionCapability.SimulateInput => GetPermissionState(_canPostEvents),
+        PermissionCapability.ReadWindow or PermissionCapability.ReadCaret => GetPermissionState(_isAccessibilityEnabled),
+        // macOS uses Carbon hotkeys rather than a global keyboard hook.
+        PermissionCapability.MonitorKeyboard => PermissionState.NotRequired,
         _ => throw new ArgumentOutOfRangeException(nameof(capability), capability, null)
     };
 
     private PermissionState GetAccessibilityState()
     {
-        var state = GetPermissionState(_isAccessibilityEnabled);
-        // Avoid initializing the event-posting check until AX access is available.
-        if (state == PermissionState.Available)
-            state = GetPermissionState(_canPostEvents);
-        // All app features share one accessibility permission, including window and caret access.
-        return state;
+        var accessibility = GetPermissionState(_isAccessibilityEnabled);
+        var postEvents = GetPermissionState(_canPostEvents);
+        if (accessibility == PermissionState.Unknown || postEvents == PermissionState.Unknown)
+            return PermissionState.Unknown;
+        return accessibility == postEvents ? accessibility : PermissionState.Partial;
     }
 
     public IReadOnlyList<PermissionItem> GetPermissions()
@@ -57,7 +58,7 @@ public sealed class MacOSPermissionProvider : IPermissionProvider
         var state = GetAccessibilityState();
         PermissionAction action = state == PermissionState.Available
             ? new(Strings.OpenSystemSettings, OpenSettingsAsync)
-            : new(Strings.RequestPermission, RequestAccessibilityPermissionAsync);
+            : new(Strings.RequestPermission, () => RequestAccessibilityPermissionAsync(GetAccessibilityState));
         return [new(Strings.AccessibilityPermission, Strings.AccessibilityPermissionDescription, state, [action])];
     }
 
@@ -65,11 +66,12 @@ public sealed class MacOSPermissionProvider : IPermissionProvider
     {
         if (GetState(capability).IsGranted())
             return true;
-        DelegateExtention.SafeFireAndForget(RequestAccessibilityPermissionAsync, nameof(MacOSPermissionProvider));
+        DelegateExtention.SafeFireAndForget(() => RequestAccessibilityPermissionAsync(() => GetState(capability)),
+            nameof(MacOSPermissionProvider));
         return false;
     }
 
-    private async Task RequestAccessibilityPermissionAsync()
+    private async Task RequestAccessibilityPermissionAsync(Func<PermissionState> getState)
     {
         if (Interlocked.CompareExchange(ref _requestInProgress, 1, 0) != 0)
             return;
@@ -77,13 +79,13 @@ public sealed class MacOSPermissionProvider : IPermissionProvider
         {
             await _dispatcher.RunOnMainThreadAsync(async () =>
             {
-                if (GetAccessibilityState().IsGranted())
+                if (getState().IsGranted())
                     return;
                 if (!await _dialog.ShowConfirmationAsync(Strings.AccessibilityPermission,
                     Strings.AccessibilityPermissionRequestMessage, Strings.RequestPermission, Strings.Cancel))
                     return;
                 // Access may have been granted while the confirmation was open.
-                if (GetAccessibilityState().IsGranted())
+                if (getState().IsGranted())
                     return;
                 try
                 {
