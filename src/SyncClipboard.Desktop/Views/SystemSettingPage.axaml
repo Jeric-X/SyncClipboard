@@ -147,48 +147,39 @@
                 </ui:FASettingsExpanderItem>
             </ui:FASettingsExpander.Items>
         </ui:FASettingsExpander>
-        <ui:FASettingsExpander Header="{x:Static i18n:Strings.PermissionManagement}" IsExpanded="True" IsVisible="{Binding ShowInputPermissions}">
+        <ui:FASettingsExpander Header="{x:Static i18n:Strings.PermissionManagement}"
+                               IsExpanded="True"
+                               IsVisible="{Binding ShowInputPermissions}"
+                               ItemsSource="{Binding InputPermissions}">
             <ui:FASettingsExpander.IconSource>
                 <ui:FAFontIconSource Glyph="&#xE72E;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:FASettingsExpander.IconSource>
             <ui:FASettingsExpander.Footer>
                 <Button Content="{x:Static i18n:Strings.Refresh}" Command="{Binding RefreshInputPermissionsCommand}" />
             </ui:FASettingsExpander.Footer>
-            <ui:FASettingsExpander.Items>
-                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.AccessibilityPermission}" Description="{x:Static i18n:Strings.AccessibilityPermissionDescription}" IsVisible="{Binding ShowAccessibilityPermission}">
-                    <ui:FASettingsExpanderItem.Footer>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <TextBlock Text="{Binding AccessibilityPermissionText}" FontWeight="SemiBold" VerticalAlignment="Center" />
-                            <Button Content="{x:Static i18n:Strings.RequestPermission}" Command="{Binding RequestAccessibilityPermissionCommand}">
-                                <Button.IsVisible>
-                                    <MultiBinding Converter="{x:Static BoolConverters.And}">
-                                        <Binding Path="!IsAccessibilityPermissionAvailable" />
-                                        <Binding Path="!InputPermissionProvider.HasRequestedAccessibilityPermission" />
-                                    </MultiBinding>
-                                </Button.IsVisible>
-                            </Button>
-                            <Button Content="{x:Static i18n:Strings.OpenSystemSettings}" Command="{Binding OpenAccessibilitySettingsCommand}">
-                                <Button.IsVisible>
-                                    <MultiBinding Converter="{x:Static BoolConverters.Or}">
-                                        <Binding Path="IsAccessibilityPermissionAvailable" />
-                                        <Binding Path="InputPermissionProvider.HasRequestedAccessibilityPermission" />
-                                    </MultiBinding>
-                                </Button.IsVisible>
-                            </Button>
-                        </StackPanel>
-                    </ui:FASettingsExpanderItem.Footer>
-                </ui:FASettingsExpanderItem>
-                <ui:FASettingsExpanderItem Content="/dev/input/event*" Description="{x:Static i18n:Strings.KeyboardMonitoringPermissionDescription}" IsVisible="{Binding ShowInputDevicePermissions}">
-                    <ui:FASettingsExpanderItem.Footer>
-                        <TextBlock Text="{Binding KeyboardMonitoringPermissionText}" FontWeight="SemiBold" VerticalAlignment="Center" />
-                    </ui:FASettingsExpanderItem.Footer>
-                </ui:FASettingsExpanderItem>
-                <ui:FASettingsExpanderItem Content="/dev/uinput" Description="{x:Static i18n:Strings.InputSimulationPermissionDescription}" IsVisible="{Binding ShowInputDevicePermissions}">
-                    <ui:FASettingsExpanderItem.Footer>
-                        <TextBlock Text="{Binding InputSimulationPermissionText}" FontWeight="SemiBold" VerticalAlignment="Center" />
-                    </ui:FASettingsExpanderItem.Footer>
-                </ui:FASettingsExpanderItem>
-            </ui:FASettingsExpander.Items>
+            <ui:FASettingsExpander.ItemTemplate>
+                <DataTemplate x:DataType="vm:InputPermissionViewModel">
+                    <ui:FASettingsExpanderItem Content="{Binding Name}" Description="{Binding Description}">
+                        <ui:FASettingsExpanderItem.Footer>
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <TextBlock Text="{Binding StateText}" FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <ItemsControl ItemsSource="{Binding Actions}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal" Spacing="8" />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="vm:InputPermissionActionViewModel">
+                                            <Button Content="{Binding Text}" Command="{Binding Command}" />
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ui:FASettingsExpanderItem.Footer>
+                    </ui:FASettingsExpanderItem>
+                </DataTemplate>
+            </ui:FASettingsExpander.ItemTemplate>
         </ui:FASettingsExpander>
         <ui:FASettingsExpander Header="{x:Static i18n:Strings.Diagnose}" IsExpanded="True">
             <ui:FASettingsExpander.IconSource>

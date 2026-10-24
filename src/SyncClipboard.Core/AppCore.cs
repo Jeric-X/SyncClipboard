@@ -405,7 +405,12 @@ namespace SyncClipboard.Core
             services.AddSingleton<LoggerOption>();
             services.AddSingleton<Interfaces.ILogger, Logger>();
             services.AddSingleton<IMessenger, WeakReferenceMessenger>();
-            services.AddSingleton<IInputPermissionProvider, InputPermissionProvider>();
+            if (OperatingSystem.IsMacOS())
+                services.AddSingleton<IInputPermissionProvider, MacOSInputPermissionProvider>();
+            else if (OperatingSystem.IsLinux())
+                services.AddSingleton<IInputPermissionProvider, LinuxInputPermissionProvider>();
+            else
+                services.AddSingleton<IInputPermissionProvider, WindowsInputPermissionProvider>();
             services.AddSingleton<VirtualKeyboard>();
             services.AddSingleton<UpdateChecker>();
             services.AddSingleton<IUpdateInstallerFactory, UpdateInstallerFactory>();

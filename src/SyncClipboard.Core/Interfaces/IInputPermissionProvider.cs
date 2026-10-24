@@ -1,12 +1,11 @@
 using SyncClipboard.Core.Models.Keyboard;
-using System.ComponentModel;
 
 namespace SyncClipboard.Core.Interfaces;
 
-public interface IInputPermissionProvider : INotifyPropertyChanged
+public interface IInputPermissionProvider
 {
-    bool HasRequestedAccessibilityPermission { get; }
     InputPermissionStatus GetStatus();
     InputPermissionStatus GetSimulationStatus();
+    IReadOnlyList<InputPermissionItem> GetPermissions();
     bool CheckAndRequestAccessibilityPermission();
 }

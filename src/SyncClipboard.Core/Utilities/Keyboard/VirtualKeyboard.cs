@@ -137,7 +137,7 @@ public sealed class VirtualKeyboard : IDisposable
 
                 if (status.Accessibility != InputPermissionState.NotRequired)
                 {
-                    requestPermission = !_permissions.HasRequestedAccessibilityPermission;
+                    requestPermission = true;
                 }
                 else if (!_permissionPrompted)
                 {
