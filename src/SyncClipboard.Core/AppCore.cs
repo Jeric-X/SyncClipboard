@@ -30,6 +30,7 @@ using SyncClipboard.Core.Utilities.History.HistoryImport;
 using SyncClipboard.Core.Utilities.Job;
 using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.Utilities.Network;
+using SyncClipboard.Core.Utilities.Permissions;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Core.Utilities.Web;
 using SyncClipboard.Core.ViewModels;
@@ -406,11 +407,11 @@ namespace SyncClipboard.Core
             services.AddSingleton<Interfaces.ILogger, Logger>();
             services.AddSingleton<IMessenger, WeakReferenceMessenger>();
             if (OperatingSystem.IsMacOS())
-                services.AddSingleton<IInputPermissionProvider, MacOSInputPermissionProvider>();
+                services.AddSingleton<IPermissionProvider, MacOSPermissionProvider>();
             else if (OperatingSystem.IsLinux())
-                services.AddSingleton<IInputPermissionProvider, LinuxInputPermissionProvider>();
+                services.AddSingleton<IPermissionProvider, LinuxPermissionProvider>();
             else
-                services.AddSingleton<IInputPermissionProvider, WindowsInputPermissionProvider>();
+                services.AddSingleton<IPermissionProvider, WindowsPermissionProvider>();
             services.AddSingleton<VirtualKeyboard>();
             services.AddSingleton<UpdateChecker>();
             services.AddSingleton<IUpdateInstallerFactory, UpdateInstallerFactory>();

@@ -1,10 +1,10 @@
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
-using SyncClipboard.Core.Models.Keyboard;
+using SyncClipboard.Core.Models.Permissions;
 
-namespace SyncClipboard.Core.Utilities.Keyboard;
+namespace SyncClipboard.Core.Utilities.Permissions;
 
-public sealed class MacOSInputPermissionProvider : IInputPermissionProvider
+public sealed class MacOSPermissionProvider : IPermissionProvider
 {
     private readonly ILogger _logger;
     private readonly IThreadDispatcher _dispatcher;
@@ -16,12 +16,12 @@ public sealed class MacOSInputPermissionProvider : IInputPermissionProvider
     private readonly Func<bool> _canPostEvents;
     private int _requestInProgress;
 
-    public MacOSInputPermissionProvider(ILogger logger, IThreadDispatcher dispatcher, IGlobalDialog dialog)
+    public MacOSPermissionProvider(ILogger logger, IThreadDispatcher dispatcher, IGlobalDialog dialog)
         : this(logger, dispatcher, dialog, MacOSAccessibility.OpenSettings, MacOSAccessibility.Request,
             MacOSAccessibility.ResetAsync, MacOSAccessibility.AXIsProcessTrusted, MacOSAccessibility.CGPreflightPostEventAccess)
     { }
 
-    internal MacOSInputPermissionProvider(ILogger logger, IThreadDispatcher dispatcher, IGlobalDialog dialog,
+    internal MacOSPermissionProvider(ILogger logger, IThreadDispatcher dispatcher, IGlobalDialog dialog,
         Action openAccessibilitySettings, Action requestAccessibilityPermission, Func<Task> resetAccessibilityPermission,
         Func<bool> isAccessibilityEnabled, Func<bool> canPostEvents)
     {
@@ -35,32 +35,37 @@ public sealed class MacOSInputPermissionProvider : IInputPermissionProvider
         _canPostEvents = canPostEvents;
     }
 
-    public InputPermissionStatus GetStatus()
+    public PermissionState GetState(PermissionCapability capability) => capability switch
+    {
+        PermissionCapability.SimulateInput or PermissionCapability.MonitorKeyboard or
+            PermissionCapability.ReadWindow or PermissionCapability.ReadCaret => GetAccessibilityState(),
+        _ => throw new ArgumentOutOfRangeException(nameof(capability), capability, null)
+    };
+
+    private PermissionState GetAccessibilityState()
     {
         var state = GetPermissionState(_isAccessibilityEnabled);
         // Avoid initializing the event-posting check until AX access is available.
-        if (state == InputPermissionState.Available)
+        if (state == PermissionState.Available)
             state = GetPermissionState(_canPostEvents);
         // All app features share one accessibility permission, including window and caret access.
-        return new(state, state, state);
+        return state;
     }
 
-    public InputPermissionStatus GetSimulationStatus() => GetStatus();
-
-    public IReadOnlyList<InputPermissionItem> GetPermissions()
+    public IReadOnlyList<PermissionItem> GetPermissions()
     {
-        var state = GetStatus().Accessibility;
-        InputPermissionAction action = state == InputPermissionState.Available
+        var state = GetAccessibilityState();
+        PermissionAction action = state == PermissionState.Available
             ? new(Strings.OpenSystemSettings, OpenSettingsAsync)
             : new(Strings.RequestPermission, RequestAccessibilityPermissionAsync);
         return [new(Strings.AccessibilityPermission, Strings.AccessibilityPermissionDescription, state, [action])];
     }
 
-    public bool CheckAndRequestAccessibilityPermission()
+    public bool CheckAndRequest(PermissionCapability capability)
     {
-        if (GetStatus().CanSimulateInput)
+        if (GetState(capability).IsGranted())
             return true;
-        DelegateExtention.SafeFireAndForget(RequestAccessibilityPermissionAsync, nameof(MacOSInputPermissionProvider));
+        DelegateExtention.SafeFireAndForget(RequestAccessibilityPermissionAsync, nameof(MacOSPermissionProvider));
         return false;
     }
 
@@ -72,13 +77,13 @@ public sealed class MacOSInputPermissionProvider : IInputPermissionProvider
         {
             await _dispatcher.RunOnMainThreadAsync(async () =>
             {
-                if (GetStatus().CanSimulateInput)
+                if (GetAccessibilityState().IsGranted())
                     return;
                 if (!await _dialog.ShowConfirmationAsync(Strings.AccessibilityPermission,
                     Strings.AccessibilityPermissionRequestMessage, Strings.RequestPermission, Strings.Cancel))
                     return;
                 // Access may have been granted while the confirmation was open.
-                if (GetStatus().CanSimulateInput)
+                if (GetAccessibilityState().IsGranted())
                     return;
                 try
                 {
@@ -86,7 +91,7 @@ public sealed class MacOSInputPermissionProvider : IInputPermissionProvider
                 }
                 catch (Exception ex)
                 {
-                    _logger.Write(nameof(MacOSInputPermissionProvider), $"Failed to reset accessibility permission: {ex.Message}");
+                    _logger.Write(nameof(MacOSPermissionProvider), $"Failed to reset accessibility permission: {ex.Message}");
                 }
                 _openAccessibilitySettings();
                 _requestAccessibilityPermission();
@@ -94,7 +99,7 @@ public sealed class MacOSInputPermissionProvider : IInputPermissionProvider
         }
         catch (Exception ex)
         {
-            _logger.Write(nameof(MacOSInputPermissionProvider), $"Failed to request accessibility permission: {ex.Message}");
+            _logger.Write(nameof(MacOSPermissionProvider), $"Failed to request accessibility permission: {ex.Message}");
         }
         finally
         {
@@ -110,20 +115,20 @@ public sealed class MacOSInputPermissionProvider : IInputPermissionProvider
         }
         catch (Exception ex)
         {
-            _logger.Write(nameof(MacOSInputPermissionProvider), ex.Message);
+            _logger.Write(nameof(MacOSPermissionProvider), ex.Message);
             await _dialog.ShowMessageAsync(Strings.OpenSystemSettings, ex.Message, Strings.Confirm);
         }
     }
 
-    private static InputPermissionState GetPermissionState(Func<bool> isAllowed)
+    private static PermissionState GetPermissionState(Func<bool> isAllowed)
     {
         try
         {
-            return isAllowed() ? InputPermissionState.Available : InputPermissionState.Denied;
+            return isAllowed() ? PermissionState.Available : PermissionState.Denied;
         }
         catch
         {
-            return InputPermissionState.Unknown;
+            return PermissionState.Unknown;
         }
     }
 }

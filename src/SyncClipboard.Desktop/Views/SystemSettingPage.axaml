@@ -149,16 +149,16 @@
         </ui:FASettingsExpander>
         <ui:FASettingsExpander Header="{x:Static i18n:Strings.PermissionManagement}"
                                IsExpanded="True"
-                               IsVisible="{Binding ShowInputPermissions}"
-                               ItemsSource="{Binding InputPermissions}">
+                               IsVisible="{Binding ShowPermissions}"
+                               ItemsSource="{Binding Permissions}">
             <ui:FASettingsExpander.IconSource>
                 <ui:FAFontIconSource Glyph="&#xE72E;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:FASettingsExpander.IconSource>
             <ui:FASettingsExpander.Footer>
-                <Button Content="{x:Static i18n:Strings.Refresh}" Command="{Binding RefreshInputPermissionsCommand}" />
+                <Button Content="{x:Static i18n:Strings.Refresh}" Command="{Binding RefreshPermissionsCommand}" />
             </ui:FASettingsExpander.Footer>
             <ui:FASettingsExpander.ItemTemplate>
-                <DataTemplate x:DataType="vm:InputPermissionViewModel">
+                <DataTemplate x:DataType="vm:PermissionViewModel">
                     <ui:FASettingsExpanderItem Content="{Binding Name}" Description="{Binding Description}">
                         <ui:FASettingsExpanderItem.Footer>
                             <StackPanel Orientation="Horizontal" Spacing="8">
@@ -170,7 +170,7 @@
                                         </ItemsPanelTemplate>
                                     </ItemsControl.ItemsPanel>
                                     <ItemsControl.ItemTemplate>
-                                        <DataTemplate x:DataType="vm:InputPermissionActionViewModel">
+                                        <DataTemplate x:DataType="vm:PermissionActionViewModel">
                                             <Button Content="{Binding Text}" Command="{Binding Command}" />
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>

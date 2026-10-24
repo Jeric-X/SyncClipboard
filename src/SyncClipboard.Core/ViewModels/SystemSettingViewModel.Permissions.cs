@@ -10,7 +10,7 @@ namespace SyncClipboard.Core.ViewModels;
 
 public partial class SystemSettingViewModel
 {
-    public bool ShowInputPermissions => InputPermissions.Count > 0;
+    public bool ShowPermissions => Permissions.Count > 0;
 
     public static readonly LocaleString<LinuxMode>[] LinuxInputModes =
     [
@@ -35,13 +35,13 @@ public partial class SystemSettingViewModel
         ProgramConfig = ProgramConfig with { LinuxInputMode = value.Key };
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ShowInputPermissions))]
-    private IReadOnlyList<InputPermissionViewModel> inputPermissions = [];
+    [NotifyPropertyChangedFor(nameof(ShowPermissions))]
+    private IReadOnlyList<PermissionViewModel> permissions = [];
 
     [RelayCommand]
-    public void RefreshInputPermissions()
+    public void RefreshPermissions()
     {
-        InputPermissions = _services.GetRequiredService<IInputPermissionProvider>().GetPermissions()
-            .Select(permission => new InputPermissionViewModel(permission, RefreshInputPermissions)).ToArray();
+        Permissions = _services.GetRequiredService<IPermissionProvider>().GetPermissions()
+            .Select(permission => new PermissionViewModel(permission, RefreshPermissions)).ToArray();
     }
 }

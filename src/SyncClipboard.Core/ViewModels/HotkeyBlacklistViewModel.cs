@@ -4,6 +4,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.Keyboard;
+using SyncClipboard.Core.Models.Permissions;
 using SyncClipboard.Core.Models.UserConfigs;
 using System.Collections.ObjectModel;
 
@@ -14,7 +15,7 @@ public partial class HotkeyBlacklistViewModel : ObservableObject
     private readonly ConfigManager _configManager;
     private readonly ForegroundWindowCapture _captureService;
     private readonly HotkeyManager _hotkeyManager;
-    private readonly IInputPermissionProvider _permissions;
+    private readonly IPermissionProvider _permissions;
     private HotkeyBlacklistConfig _config = new();
     private bool _isLoading;
 
@@ -26,7 +27,7 @@ public partial class HotkeyBlacklistViewModel : ObservableObject
         {
             SaveConfig();
             if (value)
-                _permissions.CheckAndRequestAccessibilityPermission();
+                _permissions.CheckAndRequest(PermissionCapability.ReadWindow);
         }
     }
 
@@ -47,7 +48,7 @@ public partial class HotkeyBlacklistViewModel : ObservableObject
         ConfigManager configManager,
         ForegroundWindowCapture captureService,
         HotkeyManager hotkeyManager,
-        IInputPermissionProvider permissions)
+        IPermissionProvider permissions)
     {
         _configManager = configManager;
         _captureService = captureService;

@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace SyncClipboard.Core.Utilities.Keyboard;
+namespace SyncClipboard.Core.Utilities.Permissions;
 
 internal static class MacOSAccessibility
 {

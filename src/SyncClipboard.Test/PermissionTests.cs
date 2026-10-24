@@ -8,18 +8,20 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
+using SyncClipboard.Core.Models.Permissions;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Keyboard;
+using SyncClipboard.Core.Utilities.Permissions;
 using SyncClipboard.Core.ViewModels;
 
 namespace SyncClipboard.Test;
 
 [TestClass]
-public class InputPermissionTests
+public class PermissionTests
 {
     public TestContext TestContext { get; set; } = null!;
 
-    internal static MacOSInputPermissionProvider CreatePermissionProvider(ILogger logger, Action requestAccessibilityPermission,
+    internal static MacOSPermissionProvider CreatePermissionProvider(ILogger logger, Action requestAccessibilityPermission,
         Func<bool>? isAccessibilityEnabled = null,
         Func<Task<bool>>? confirm = null, Action? openSettings = null, Func<Task>? resetPermission = null,
         Func<bool>? canPostEvents = null)
@@ -31,7 +33,7 @@ public class InputPermissionTests
         dialog.Setup(x => x.ShowConfirmationAsync(Strings.AccessibilityPermission,
             Strings.AccessibilityPermissionRequestMessage, Strings.RequestPermission, Strings.Cancel))
             .Returns(() => confirm?.Invoke() ?? Task.FromResult(true));
-        return new MacOSInputPermissionProvider(logger, dispatcher.Object, dialog.Object,
+        return new MacOSPermissionProvider(logger, dispatcher.Object, dialog.Object,
             openSettings ?? (() => { }), requestAccessibilityPermission, resetPermission ?? (() => Task.CompletedTask),
             isAccessibilityEnabled ?? (() => false), canPostEvents ?? (() => true));
     }
@@ -54,13 +56,13 @@ public class InputPermissionTests
             return Task.CompletedTask;
         });
 
-        Parallel.For(0, 10, _ => Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission()));
+        Parallel.For(0, 10, _ => Assert.IsFalse(provider.CheckAndRequest(PermissionCapability.SimulateInput)));
         Assert.HasCount(1, events);
         confirmation.SetResult(false);
         Assert.HasCount(1, events);
 
         confirmation = new TaskCompletionSource<bool>();
-        Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
+        Assert.IsFalse(provider.CheckAndRequest(PermissionCapability.SimulateInput));
         confirmation.SetResult(true);
         string[] expected = ["dialog", "dialog", "reset", "settings", "request"];
         CollectionAssert.AreEqual(expected, events);
@@ -85,17 +87,17 @@ public class InputPermissionTests
                 return Task.CompletedTask;
             });
 
-        Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
+        Assert.IsFalse(provider.CheckAndRequest(PermissionCapability.SimulateInput));
         granted = true;
         confirmation.SetResult(true);
 
         Assert.AreEqual(0, resets);
         Assert.AreEqual(0, requests);
         Assert.AreEqual(0, settings);
-        Assert.IsTrue(provider.CheckAndRequestAccessibilityPermission());
+        Assert.IsTrue(provider.CheckAndRequest(PermissionCapability.SimulateInput));
 
         granted = false;
-        Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
+        Assert.IsFalse(provider.CheckAndRequest(PermissionCapability.SimulateInput));
         Assert.AreEqual(1, resets);
         Assert.AreEqual(1, requests);
         Assert.AreEqual(1, settings);
@@ -117,7 +119,7 @@ public class InputPermissionTests
             return reset.Task;
         });
 
-        Parallel.For(0, 10, _ => Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission()));
+        Parallel.For(0, 10, _ => Assert.IsFalse(provider.CheckAndRequest(PermissionCapability.SimulateInput)));
         string[] resettingEvents = ["reset"];
         CollectionAssert.AreEqual(resettingEvents, events);
 
@@ -149,10 +151,10 @@ public class InputPermissionTests
                     ? new TimeoutException("Reset timed out") : new InvalidOperationException("Reset failed"));
             });
 
-        Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
+        Assert.IsFalse(provider.CheckAndRequest(PermissionCapability.SimulateInput));
         string[] expected = ["dialog", "reset", "settings", "request"];
         CollectionAssert.AreEqual(expected, events);
-        logger.Verify(x => x.Write(nameof(MacOSInputPermissionProvider),
+        logger.Verify(x => x.Write(nameof(MacOSPermissionProvider),
             It.Is<string>(message => message.StartsWith("Failed to reset accessibility permission:"))), Times.Once);
     }
 
@@ -164,7 +166,7 @@ public class InputPermissionTests
     {
         var requests = 0;
         var logger = new Mock<ILogger>();
-        var provider = InputPermissionTests.CreatePermissionProvider(logger.Object, () =>
+        var provider = PermissionTests.CreatePermissionProvider(logger.Object, () =>
         {
             requests++;
             if (failure == "request")
@@ -175,19 +177,21 @@ public class InputPermissionTests
                 throw new InvalidOperationException("Settings failed");
         });
 
-        Assert.IsFalse(provider.CheckAndRequestAccessibilityPermission());
+        Assert.IsFalse(provider.CheckAndRequest(PermissionCapability.SimulateInput));
         Assert.AreEqual(failure == "settings" ? 0 : 1, requests);
-        logger.Verify(x => x.Write(nameof(MacOSInputPermissionProvider), It.IsAny<string>()),
+        logger.Verify(x => x.Write(nameof(MacOSPermissionProvider), It.IsAny<string>()),
             failure == "none" ? Times.Never() : Times.Once());
     }
 
     [TestMethod]
     public void WindowsPermissions_RequireNoAuthorizationOrSettingsEntries()
     {
-        var provider = new WindowsInputPermissionProvider();
-        Assert.IsTrue(provider.CheckAndRequestAccessibilityPermission());
-        Assert.IsTrue(provider.GetSimulationStatus().CanSimulateInput);
-        Assert.AreEqual(InputPermissionState.NotRequired, provider.GetStatus().Accessibility);
+        var provider = new WindowsPermissionProvider();
+        foreach (var capability in Enum.GetValues<PermissionCapability>())
+        {
+            Assert.IsTrue(provider.CheckAndRequest(capability));
+            Assert.AreEqual(PermissionState.NotRequired, provider.GetState(capability));
+        }
         Assert.IsEmpty(provider.GetPermissions());
     }
 
@@ -206,16 +210,15 @@ public class InputPermissionTests
         provider.Setup(x => x.GetLoadedLinuxBackend()).Returns(() => backend);
         provider.Setup(x => x.GetLinuxMode()).Returns(mode);
         var deviceChecks = 0;
-        var permissions = new Mock<IInputPermissionProvider>();
-        permissions.Setup(x => x.GetSimulationStatus()).Returns(() => LinuxInputPermissionProvider.GetLinuxStatus(
-            provider.Object, isWayland, () =>
+        var permissions = new LinuxPermissionProvider(provider.Object, () => isWayland,
+            () => throw new AssertFailedException("Simulation must not scan keyboard devices."), () =>
             {
                 deviceChecks++;
-                return new(InputPermissionState.NotRequired, InputPermissionState.Available, InputPermissionState.Available);
-            }));
+                return PermissionState.Available;
+            }, Mock.Of<IThreadDispatcher>(), Mock.Of<IGlobalDialog>());
         var simulator = new Mock<IEventSimulator>();
         var created = 0;
-        using var keyboard = new VirtualKeyboard(permissions.Object, () =>
+        using var keyboard = new VirtualKeyboard(permissions, () =>
         {
             created++;
             backend = expectedBackend;
@@ -241,11 +244,11 @@ public class InputPermissionTests
         var provider = new Mock<ILinuxBackendProvider>();
         provider.Setup(x => x.GetLoadedLinuxBackend()).Returns(LinuxBackend.None);
         provider.Setup(x => x.GetLinuxMode()).Returns(mode);
-        var denied = new InputPermissionStatus(
-            InputPermissionState.NotRequired, InputPermissionState.Denied, InputPermissionState.Denied);
-        var status = LinuxInputPermissionProvider.GetLinuxStatus(provider.Object, isWayland, () => denied);
-        Assert.AreEqual(denied, status);
-        Assert.IsFalse(status.CanSimulateInput);
+        var permissions = new LinuxPermissionProvider(provider.Object, () => isWayland,
+            () => PermissionState.Denied, () => PermissionState.Denied,
+            Mock.Of<IThreadDispatcher>(), Mock.Of<IGlobalDialog>());
+        Assert.AreEqual(PermissionState.Denied, permissions.GetState(PermissionCapability.MonitorKeyboard));
+        Assert.IsFalse(permissions.GetState(PermissionCapability.SimulateInput).IsGranted());
     }
 
     [TestMethod]
@@ -259,18 +262,18 @@ public class InputPermissionTests
         {
             var config = new ConfigManager(Path.Combine(directory.FullName, "config.json"), migrationServices.Upgrader);
             config.SetConfig(configKey, new ClipboardOwnerFilterConfig { FilterMode = "BlackList" });
-            var permissions = new Mock<IInputPermissionProvider>();
+            var permissions = new Mock<IPermissionProvider>();
             var viewModel = new ClipboardOwnerFilterSettingViewModel(config, Mock.Of<IClipboardChangingListener>(), permissions.Object);
             viewModel.UseConfig(configKey);
             config.SetConfig(configKey, new ClipboardOwnerFilterConfig { FilterMode = "WhiteList" });
-            permissions.Verify(x => x.CheckAndRequestAccessibilityPermission(), Times.Never);
+            permissions.Verify(x => x.CheckAndRequest(PermissionCapability.ReadWindow), Times.Never);
 
             viewModel.FilterMode = ClipboardOwnerFilterSettingViewModel.Modes[0];
-            permissions.Verify(x => x.CheckAndRequestAccessibilityPermission(), Times.Never);
+            permissions.Verify(x => x.CheckAndRequest(PermissionCapability.ReadWindow), Times.Never);
             viewModel.FilterMode = ClipboardOwnerFilterSettingViewModel.Modes[1];
-            permissions.Verify(x => x.CheckAndRequestAccessibilityPermission(), Times.Once);
+            permissions.Verify(x => x.CheckAndRequest(PermissionCapability.ReadWindow), Times.Once);
             viewModel.FilterMode = ClipboardOwnerFilterSettingViewModel.Modes[2];
-            permissions.Verify(x => x.CheckAndRequestAccessibilityPermission(), Times.Once);
+            permissions.Verify(x => x.CheckAndRequest(PermissionCapability.ReadWindow), Times.Once);
         }
         finally
         {
@@ -288,19 +291,19 @@ public class InputPermissionTests
             var config = new ConfigManager(Path.Combine(directory.FullName, "config.json"), migrationServices.Upgrader);
             config.SetConfig(new HotkeyBlacklistConfig { Enabled = true });
             var registry = Mock.Of<INativeHotkeyRegistry>();
-            var permissions = new Mock<IInputPermissionProvider>();
+            var permissions = new Mock<IPermissionProvider>();
             var viewModel = new HotkeyBlacklistViewModel(config,
                 new ForegroundWindowCapture(registry, Mock.Of<INativeWindowController>()),
                 new HotkeyManager(registry, config), permissions.Object);
             config.SetConfig(new HotkeyBlacklistConfig { Enabled = false });
             config.SetConfig(new HotkeyBlacklistConfig { Enabled = true });
-            permissions.Verify(x => x.CheckAndRequestAccessibilityPermission(), Times.Never);
+            permissions.Verify(x => x.CheckAndRequest(PermissionCapability.ReadWindow), Times.Never);
 
             viewModel.IsEnabled = false;
-            permissions.Verify(x => x.CheckAndRequestAccessibilityPermission(), Times.Never);
+            permissions.Verify(x => x.CheckAndRequest(PermissionCapability.ReadWindow), Times.Never);
             viewModel.IsEnabled = true;
             viewModel.IsEnabled = true;
-            permissions.Verify(x => x.CheckAndRequestAccessibilityPermission(), Times.Once);
+            permissions.Verify(x => x.CheckAndRequest(PermissionCapability.ReadWindow), Times.Once);
         }
         finally
         {
@@ -315,14 +318,14 @@ public class InputPermissionTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            var permissions = new Mock<IInputPermissionProvider>(MockBehavior.Strict);
-            var state = InputPermissionState.Denied;
+            var permissions = new Mock<IPermissionProvider>(MockBehavior.Strict);
+            var state = PermissionState.Denied;
             var operations = 0;
-            IReadOnlyList<InputPermissionItem> GetPermissions() =>
+            IReadOnlyList<PermissionItem> GetPermissions() =>
             [new("Permission", "Description", state, [new("Authorize", () =>
             {
                 operations++;
-                state = InputPermissionState.Available;
+                state = PermissionState.Available;
                 return Task.CompletedTask;
             })])];
             permissions.Setup(x => x.GetPermissions()).Returns(GetPermissions);
@@ -333,9 +336,9 @@ public class InputPermissionTests
             var config = new ConfigManager(Path.Combine(directory.FullName, "config.json"), migrationServices.Upgrader);
             var viewModel = new SystemSettingViewModel(config, new StaticConfig(Mock.Of<INotificationManager>()), services);
 
-            viewModel.RefreshInputPermissions();
-            Assert.IsTrue(viewModel.ShowInputPermissions);
-            var item = viewModel.InputPermissions.Single();
+            viewModel.RefreshPermissions();
+            Assert.IsTrue(viewModel.ShowPermissions);
+            var item = viewModel.Permissions.Single();
             Assert.AreEqual("Permission", item.Name);
             Assert.AreEqual("Description", item.Description);
             Assert.AreEqual(Strings.InputPermissionDenied, item.StateText);
@@ -345,12 +348,12 @@ public class InputPermissionTests
             Assert.AreEqual("Authorize", action.Text);
             await action.Command.ExecuteAsync(null);
             Assert.AreEqual(1, operations);
-            Assert.AreEqual(Strings.InputPermissionAvailable, viewModel.InputPermissions.Single().StateText);
+            Assert.AreEqual(Strings.InputPermissionAvailable, viewModel.Permissions.Single().StateText);
 
             permissions.Setup(x => x.GetPermissions()).Returns([]);
-            viewModel.RefreshInputPermissions();
-            Assert.IsFalse(viewModel.ShowInputPermissions);
-            Assert.IsEmpty(viewModel.InputPermissions);
+            viewModel.RefreshPermissions();
+            Assert.IsFalse(viewModel.ShowPermissions);
+            Assert.IsEmpty(viewModel.Permissions);
             permissions.Verify(x => x.GetPermissions(), Times.Exactly(3));
             permissions.VerifyNoOtherCalls();
         }
@@ -369,22 +372,23 @@ public class InputPermissionTests
         var native = new Mock<ILinuxBackendProvider>();
         native.Setup(x => x.GetLoadedLinuxBackend()).Returns(backend);
         var deviceChecks = 0;
-        var provider = new LinuxInputPermissionProvider(native.Object, () => false, () =>
+        var provider = new LinuxPermissionProvider(native.Object, () => false, () =>
         {
             deviceChecks++;
-            return new(InputPermissionState.NotRequired, InputPermissionState.Partial, InputPermissionState.Denied);
-        }, () => new(InputPermissionState.NotRequired, InputPermissionState.Unknown, InputPermissionState.Available));
+            return PermissionState.Partial;
+        }, () => PermissionState.Denied, Mock.Of<IThreadDispatcher>(), Mock.Of<IGlobalDialog>());
 
-        Assert.IsTrue(provider.GetSimulationStatus().CanSimulateInput);
+        Assert.AreEqual(backend == LinuxBackend.XRecord ? PermissionState.NotRequired : PermissionState.Denied,
+            provider.GetState(PermissionCapability.SimulateInput));
         Assert.AreEqual(0, deviceChecks, "Simulation should not scan keyboard-monitoring devices.");
         var entries = provider.GetPermissions();
         Assert.HasCount(count, entries);
         if (count > 0)
         {
             Assert.AreEqual("/dev/input/event*", entries[0].Name);
-            Assert.AreEqual(InputPermissionState.Partial, entries[0].State);
+            Assert.AreEqual(PermissionState.Partial, entries[0].State);
             Assert.AreEqual("/dev/uinput", entries[1].Name);
-            Assert.AreEqual(InputPermissionState.Denied, entries[1].State);
+            Assert.AreEqual(PermissionState.Denied, entries[1].State);
             Assert.IsTrue(entries.All(entry => entry.Actions.Count == 0));
         }
         Assert.AreEqual(count > 0 ? 1 : 0, deviceChecks);
@@ -409,7 +413,7 @@ public class InputPermissionTests
 
         var entry = provider.GetPermissions().Single();
         Assert.AreEqual(Strings.AccessibilityPermission, entry.Name);
-        Assert.AreEqual(InputPermissionState.Denied, entry.State);
+        Assert.AreEqual(PermissionState.Denied, entry.State);
         Assert.IsEmpty(events);
         Assert.AreEqual(Strings.RequestPermission, entry.Actions.Single().Text);
         await entry.Actions.Single().ExecuteAsync();
@@ -419,7 +423,7 @@ public class InputPermissionTests
         granted = true;
         events.Clear();
         entry = provider.GetPermissions().Single();
-        Assert.AreEqual(InputPermissionState.Available, entry.State);
+        Assert.AreEqual(PermissionState.Available, entry.State);
         Assert.AreEqual(Strings.OpenSystemSettings, entry.Actions.Single().Text);
         await entry.Actions.Single().ExecuteAsync();
         string[] settingsEvents = ["settings"];
@@ -427,23 +431,21 @@ public class InputPermissionTests
     }
 
     [TestMethod]
-    public void AllMacPermissions_UseCurrentAccessibilityState_WithoutRequesting()
+    public void MacCapabilities_RecheckCurrentAccess_WithoutRequesting()
     {
         var trusted = false;
         var provider = CreatePermissionProvider(Mock.Of<ILogger>(),
-            () => Assert.Fail("Status checks must not request permission."),
-            isAccessibilityEnabled: () => trusted);
+            () => Assert.Fail("Status checks must not request permission."), isAccessibilityEnabled: () => trusted);
 
         foreach (var granted in new[] { false, true, false })
         {
             trusted = granted;
-            var state = granted ? InputPermissionState.Available : InputPermissionState.Denied;
-            var expected = new InputPermissionStatus(state, state, state);
-            Assert.AreEqual(expected, provider.GetStatus());
-            Assert.AreEqual(expected, provider.GetSimulationStatus());
-            Assert.AreEqual(granted, provider.GetSimulationStatus().CanSimulateInput);
-            if (granted)
-                Assert.IsTrue(provider.CheckAndRequestAccessibilityPermission());
+            foreach (var capability in Enum.GetValues<PermissionCapability>())
+            {
+                Assert.AreEqual(granted ? PermissionState.Available : PermissionState.Denied, provider.GetState(capability));
+                if (granted)
+                    Assert.IsTrue(provider.CheckAndRequest(capability));
+            }
         }
     }
 
@@ -452,7 +454,7 @@ public class InputPermissionTests
     [DataRow(false, true)]
     [DataRow(true, false)]
     [DataRow(true, true)]
-    public void MacAccessibility_RequiresBothChecks_ForAllFeatures(bool ax, bool cg)
+    public void MacAccessibility_RequiresBothChecks_ForAllCapabilities(bool ax, bool cg)
     {
         var cgChecks = 0;
         var provider = CreatePermissionProvider(Mock.Of<ILogger>(),
@@ -462,48 +464,45 @@ public class InputPermissionTests
                 cgChecks++;
                 return cg;
             });
-
-        var simulationState = ax && cg ? InputPermissionState.Available : InputPermissionState.Denied;
-        var expected = new InputPermissionStatus(simulationState, simulationState, simulationState);
-        Assert.AreEqual(expected, provider.GetStatus());
-        Assert.AreEqual(expected, provider.GetSimulationStatus());
-        Assert.AreEqual(ax ? 2 : 0, cgChecks, "AX denial must not initialize the event-posting permission check.");
-
-        ax = true;
-        cg = true;
-        Assert.IsTrue(provider.GetSimulationStatus().CanSimulateInput);
+        var capabilities = Enum.GetValues<PermissionCapability>();
+        foreach (var capability in capabilities)
+            Assert.AreEqual(ax && cg ? PermissionState.Available : PermissionState.Denied, provider.GetState(capability));
+        Assert.AreEqual(ax ? capabilities.Length : 0, cgChecks, "AX denial must not initialize event-posting checks.");
     }
 
     [TestMethod]
-    public void FailedEventPostingCheck_MakesUnifiedAccessibilityUnknown()
+    [DataRow(false)]
+    [DataRow(true)]
+    public void FailedNativeCheck_MakesAllMacCapabilitiesUnknown(bool axFails)
     {
         var provider = CreatePermissionProvider(Mock.Of<ILogger>(), () => { },
-            isAccessibilityEnabled: () => true, canPostEvents: () => throw new DllNotFoundException());
-        var status = provider.GetStatus();
-        Assert.AreEqual(InputPermissionState.Unknown, status.Accessibility);
-        Assert.AreEqual(InputPermissionState.Unknown, status.InputSimulation);
-        Assert.IsFalse(status.CanSimulateInput);
+            isAccessibilityEnabled: () => axFails ? throw new DllNotFoundException() : true,
+            canPostEvents: () => throw new DllNotFoundException());
+        foreach (var capability in Enum.GetValues<PermissionCapability>())
+            Assert.AreEqual(PermissionState.Unknown, provider.GetState(capability));
     }
 
     [TestMethod]
-    public void FailedAccessibilityCheck_MakesAllMacPermissionsUnknown()
+    public void InvalidCapabilities_AreRejectedByEveryPlatform()
     {
-        var provider = CreatePermissionProvider(Mock.Of<ILogger>(), () => { },
-            isAccessibilityEnabled: () => throw new DllNotFoundException());
-        var expected = new InputPermissionStatus(
-            InputPermissionState.Unknown, InputPermissionState.Unknown, InputPermissionState.Unknown);
-        Assert.AreEqual(expected, provider.GetStatus());
-        Assert.AreEqual(expected, provider.GetSimulationStatus());
-        Assert.IsFalse(provider.GetSimulationStatus().CanSimulateInput);
+        IPermissionProvider[] providers = [new WindowsPermissionProvider(),
+            CreatePermissionProvider(Mock.Of<ILogger>(), () => Assert.Fail("Must not request access.")),
+            new LinuxPermissionProvider(Mock.Of<ILinuxBackendProvider>(), () => false,
+                () => PermissionState.Available, () => PermissionState.Available,
+                Mock.Of<IThreadDispatcher>(), Mock.Of<IGlobalDialog>())];
+        foreach (var provider in providers)
+        {
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => provider.GetState((PermissionCapability)999));
+            Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => provider.CheckAndRequest((PermissionCapability)999));
+        }
     }
 
     [TestMethod]
     public void MissingDevices_AreUnavailable_AndAreNotCreated()
     {
         var directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-        var status = LinuxInputPermissionProvider.GetLinuxDeviceStatus(directory, Path.Combine(directory, "uinput"));
-        Assert.AreEqual(InputPermissionState.Unavailable, status.KeyboardMonitoring);
-        Assert.AreEqual(InputPermissionState.Unavailable, status.InputSimulation);
+        Assert.AreEqual(PermissionState.Unavailable, LinuxPermissionProvider.GetKeyboardMonitoringState(directory));
+        Assert.AreEqual(PermissionState.Unavailable, LinuxPermissionProvider.GetInputSimulationState(Path.Combine(directory, "uinput")));
         Assert.IsFalse(Directory.Exists(directory));
     }
 
@@ -517,16 +516,14 @@ public class InputPermissionTests
             var output = Path.Combine(directory.FullName, "uinput");
             File.WriteAllText(input, "input unchanged");
             File.WriteAllText(output, "output unchanged");
-            var status = LinuxInputPermissionProvider.GetLinuxDeviceStatus(directory.FullName, output);
-            Assert.AreEqual(InputPermissionState.Available, status.KeyboardMonitoring);
-            Assert.AreEqual(InputPermissionState.Available, status.InputSimulation);
+            Assert.AreEqual(PermissionState.Available, LinuxPermissionProvider.GetKeyboardMonitoringState(directory.FullName));
+            Assert.AreEqual(PermissionState.Available, LinuxPermissionProvider.GetInputSimulationState(output));
             Assert.AreEqual("input unchanged", File.ReadAllText(input));
             Assert.AreEqual("output unchanged", File.ReadAllText(output));
 
             File.Delete(output);
-            status = LinuxInputPermissionProvider.GetLinuxDeviceStatus(directory.FullName, output);
-            Assert.AreEqual(InputPermissionState.Available, status.KeyboardMonitoring);
-            Assert.AreEqual(InputPermissionState.Unavailable, status.InputSimulation);
+            Assert.AreEqual(PermissionState.Available, LinuxPermissionProvider.GetKeyboardMonitoringState(directory.FullName));
+            Assert.AreEqual(PermissionState.Unavailable, LinuxPermissionProvider.GetInputSimulationState(output));
         }
         finally
         {
@@ -543,22 +540,16 @@ public class InputPermissionTests
             Assert.Inconclusive("Requires Linux file permissions without root privileges.");
             return;
         }
-
         var directory = Directory.CreateTempSubdirectory();
-        var input = Path.Combine(directory.FullName, "event0");
         try
         {
-            var output = Path.Combine(directory.FullName, "uinput");
+            var input = Path.Combine(directory.FullName, "event0");
             File.WriteAllText(input, "input unchanged");
-            File.WriteAllText(output, "output unchanged");
             File.SetUnixFileMode(input, UnixFileMode.UserRead);
-            var denied = LinuxInputPermissionProvider.GetLinuxDeviceStatus(directory.FullName, output);
-            Assert.AreEqual(InputPermissionState.Denied, denied.KeyboardMonitoring);
-            Assert.AreEqual(InputPermissionState.Available, denied.InputSimulation);
+            Assert.AreEqual(PermissionState.Denied, LinuxPermissionProvider.GetKeyboardMonitoringState(directory.FullName));
 
             File.SetUnixFileMode(input, UnixFileMode.UserRead | UnixFileMode.UserWrite);
-            var allowed = LinuxInputPermissionProvider.GetLinuxDeviceStatus(directory.FullName, output);
-            Assert.AreEqual(InputPermissionState.Available, allowed.KeyboardMonitoring);
+            Assert.AreEqual(PermissionState.Available, LinuxPermissionProvider.GetKeyboardMonitoringState(directory.FullName));
             Assert.AreEqual("input unchanged", File.ReadAllText(input));
         }
         finally
@@ -576,26 +567,20 @@ public class InputPermissionTests
             Assert.Inconclusive("Requires Linux file permissions without root privileges.");
             return;
         }
-
         var directory = Directory.CreateTempSubdirectory();
         var output = Path.Combine(directory.FullName, "uinput");
         try
         {
             File.WriteAllText(output, "output unchanged");
             File.SetUnixFileMode(output, UnixFileMode.UserWrite);
-            var status = LinuxInputPermissionProvider.GetLinuxSimulationStatus(output);
-            Assert.IsTrue(status.CanSimulateInput);
-            Assert.AreEqual(InputPermissionState.Unknown, status.KeyboardMonitoring);
+            Assert.IsTrue(LinuxPermissionProvider.GetInputSimulationState(output).IsGranted());
 
             File.SetUnixFileMode(output, UnixFileMode.UserRead);
-            status = LinuxInputPermissionProvider.GetLinuxSimulationStatus(output);
-            Assert.AreEqual(InputPermissionState.Denied, status.InputSimulation);
-            Assert.IsFalse(status.CanSimulateInput);
+            Assert.AreEqual(PermissionState.Denied, LinuxPermissionProvider.GetInputSimulationState(output));
             Assert.AreEqual("output unchanged", File.ReadAllText(output));
 
             File.Delete(output);
-            Assert.AreEqual(InputPermissionState.Unavailable,
-                LinuxInputPermissionProvider.GetLinuxSimulationStatus(output).InputSimulation);
+            Assert.AreEqual(PermissionState.Unavailable, LinuxPermissionProvider.GetInputSimulationState(output));
         }
         finally
         {
@@ -607,12 +592,12 @@ public class InputPermissionTests
     public void PermissionLabels_DistinguishMissingDeniedAndUnknown()
     {
         Assert.AreEqual(Strings.InputPermissionDenied,
-            InputPermissionViewModel.GetPermissionText(InputPermissionState.Denied));
+            PermissionViewModel.GetPermissionText(PermissionState.Denied));
         Assert.AreEqual(Strings.InputPermissionUnavailable,
-            InputPermissionViewModel.GetPermissionText(InputPermissionState.Unavailable));
+            PermissionViewModel.GetPermissionText(PermissionState.Unavailable));
         Assert.AreEqual(Strings.InputPermissionUnknown,
-            InputPermissionViewModel.GetPermissionText(InputPermissionState.Unknown));
-        var labels = Enum.GetValues<InputPermissionState>().Select(InputPermissionViewModel.GetPermissionText).ToArray();
+            PermissionViewModel.GetPermissionText(PermissionState.Unknown));
+        var labels = Enum.GetValues<PermissionState>().Select(PermissionViewModel.GetPermissionText).ToArray();
         Assert.AreEqual(labels.Length, labels.Distinct().Count());
     }
 }

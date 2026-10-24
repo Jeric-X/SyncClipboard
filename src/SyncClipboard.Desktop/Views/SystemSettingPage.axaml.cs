@@ -24,7 +24,7 @@ public partial class SystemSettingPage : UserControl
         DataContext = App.Current.Services.GetRequiredService<SystemSettingViewModel>();
         Loaded += (_, _) =>
         {
-            RefreshInputPermissions();
+            RefreshPermissions();
             _permissionStatusWindow = TopLevel.GetTopLevel(this) as Window;
             _permissionStatusWindow?.Activated += OnPermissionStatusWindowActivated;
         };
@@ -35,9 +35,9 @@ public partial class SystemSettingPage : UserControl
         };
     }
 
-    private void OnPermissionStatusWindowActivated(object? sender, EventArgs e) => RefreshInputPermissions();
+    private void OnPermissionStatusWindowActivated(object? sender, EventArgs e) => RefreshPermissions();
 
-    private void RefreshInputPermissions() => (DataContext as SystemSettingViewModel)?.RefreshInputPermissions();
+    private void RefreshPermissions() => (DataContext as SystemSettingViewModel)?.RefreshPermissions();
 
     public static List<KeyValuePair<string, Action>> Operations { get; } = GetOperations();
 

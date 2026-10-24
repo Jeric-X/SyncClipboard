@@ -10,6 +10,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.Keyboard;
+using SyncClipboard.Core.Models.Permissions;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer;
 using SyncClipboard.Core.RemoteServer.Adapter;
@@ -309,9 +310,8 @@ public class DownloadServiceQuickDownloadTests
                 .Returns<Func<Task>>(action => action());
             var profileEnv = new Mock<IProfileEnv>();
             profileEnv.Setup(env => env.GetPersistentDir()).Returns(_directory);
-            var permissions = new Mock<IInputPermissionProvider>();
-            permissions.Setup(p => p.GetSimulationStatus()).Returns(new InputPermissionStatus(
-                InputPermissionState.NotRequired, InputPermissionState.NotRequired, InputPermissionState.Available));
+            var permissions = new Mock<IPermissionProvider>();
+            permissions.Setup(p => p.GetState(PermissionCapability.SimulateInput)).Returns(PermissionState.Available);
             var simulator = new Mock<IEventSimulator>();
             simulator.Setup(s => s.SimulateKeyPress(KeyCode.VcV)).Callback(() => PastedTexts.Add(LocalText));
             Adapter.Setup(adapter => adapter.GetProfileAsync(It.IsAny<CancellationToken>()))
