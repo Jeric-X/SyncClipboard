@@ -115,6 +115,7 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
 
         item.Pattern = rule.Pattern;
         item.MatchMode = LocaleString<FileFilterMatchMode>.Match(MatchModes, rule.MatchMode);
+        item.ExcludeFromHistory = rule.ExcludeFromHistory;
         SaveToConfig();
     }
 
@@ -134,7 +135,7 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
         var list = FilterList
             .Where(item => !string.IsNullOrWhiteSpace(item.Pattern))
             .Select(item => item.ToRule())
-            .Distinct()
+            .DistinctBy(rule => (rule.Pattern, rule.MatchMode))
             .ToList();
 
         SynchronizeFilterList(list);
@@ -190,7 +191,8 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
     }
 
     private bool ContainsRule(FileFilterRule rule, EditableFileFilterRule? itemToIgnore = null) => FilterList.Any(
-        item => !ReferenceEquals(item, itemToIgnore) && item.ToRule() == rule);
+        item => !ReferenceEquals(item, itemToIgnore)
+            && item.ToRule().Pattern == rule.Pattern && item.MatchMode.Key == rule.MatchMode);
 
     private void SynchronizeFilterList(IReadOnlyList<FileFilterRule> rules)
     {
@@ -210,11 +212,15 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
     {
         Pattern = rule.MatchMode == FileFilterMatchMode.Regex ? rule.Pattern : rule.Pattern.Trim(),
         MatchMode = rule.MatchMode,
+        ExcludeFromHistory = rule.ExcludeFromHistory,
     };
 }
 
 public partial class EditableFileFilterRule : ObservableObject
 {
+    [ObservableProperty]
+    private bool excludeFromHistory;
+
     [ObservableProperty]
     private string pattern = "";
 
@@ -225,17 +231,22 @@ public partial class EditableFileFilterRule : ObservableObject
     {
         Pattern = rule.Pattern;
         MatchMode = LocaleString<FileFilterMatchMode>.Match(FileSyncFilterSettingViewModel.MatchModes, rule.MatchMode);
+        ExcludeFromHistory = rule.ExcludeFromHistory;
     }
 
     public FileFilterRule ToRule() => new()
     {
         Pattern = MatchMode.Key == FileFilterMatchMode.Regex ? Pattern : Pattern.Trim(),
         MatchMode = MatchMode.Key,
+        ExcludeFromHistory = ExcludeFromHistory,
     };
 }
 
 public partial class FileFilterRuleEditor : ObservableObject
 {
+    [ObservableProperty]
+    private bool excludeFromHistory;
+
     [ObservableProperty]
     private string pattern = "";
 
@@ -251,11 +262,13 @@ public partial class FileFilterRuleEditor : ObservableObject
 
         Pattern = rule.Pattern;
         MatchMode = LocaleString<FileFilterMatchMode>.Match(FileSyncFilterSettingViewModel.MatchModes, rule.MatchMode);
+        ExcludeFromHistory = rule.ExcludeFromHistory;
     }
 
     public FileFilterRule ToRule() => new()
     {
         Pattern = MatchMode.Key == FileFilterMatchMode.Regex ? Pattern : Pattern.Trim(),
         MatchMode = MatchMode.Key,
+        ExcludeFromHistory = ExcludeFromHistory,
     };
 }

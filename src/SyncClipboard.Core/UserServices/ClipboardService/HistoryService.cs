@@ -304,6 +304,44 @@ public class HistoryService : ClipboardHander
             }
         }
 
-        await historyManager.AddLocalProfile(profile, token: token);
+        var historyProfile = FilterLocalProfile(clipboardMetaInfomation, profile, configManager.GetConfig<FileFilterConfig>());
+        if (historyProfile is not null)
+        {
+            await historyManager.AddLocalProfile(historyProfile, token: token);
+        }
+    }
+
+    internal static Profile? FilterLocalProfile(ClipboardMetaInfomation meta, Profile profile, FileFilterConfig config)
+    {
+        var rules = config.FileFilterMode switch
+        {
+            "BlackList" => config.BlackList,
+            "WhiteList" => config.WhiteList,
+            _ => [],
+        };
+        var historyFilter = new FileFilterConfig
+        {
+            FileFilterMode = "BlackList",
+            BlackList = rules.Where(rule => rule.ExcludeFromHistory).ToList(),
+        };
+
+        if (profile is GroupProfile group)
+        {
+            // Upload filtering may have already removed paths; history uses its own rules and the original selection.
+            var historyGroup = new GroupProfile(meta.Files ?? group.Files, historyFilter);
+            return historyGroup.Files.Length == 0 ? null : historyGroup;
+        }
+
+        if (profile is ImageProfile && meta.Files is not { Length: > 0 })
+        {
+            return profile;
+        }
+
+        if (profile is FileProfile file && !FileFilterHelper.IsFileAvailableAfterFilter(file.FileName, historyFilter))
+        {
+            return null;
+        }
+
+        return profile;
     }
 }

@@ -13,4 +13,5 @@ public record FileFilterRule
 {
     public string Pattern { get; set; } = "";
     public FileFilterMatchMode MatchMode { get; set; } = FileFilterMatchMode.Suffix;
+    public bool ExcludeFromHistory { get; set; }
 }

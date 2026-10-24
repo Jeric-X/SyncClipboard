@@ -1628,4 +1628,7 @@ Choose whether to use the default location or select another folder.</value>
   <data name="Advanced" xml:space="preserve">
     <value>Advanced</value>
   </data>
+  <data name="ExcludeFromLocalHistory" xml:space="preserve">
+    <value>Do not add to local history</value>
+  </data>
 </root>

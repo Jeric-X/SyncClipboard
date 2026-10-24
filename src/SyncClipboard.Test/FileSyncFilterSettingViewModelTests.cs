@@ -33,6 +33,43 @@ public class FileSyncFilterSettingViewModelTests
     }
 
     [TestMethod]
+    public void RuleEditor_SavesAndReloadsHistoryExclusion()
+    {
+        _config.SetConfig(new FileFilterConfig { FileFilterMode = "BlackList" });
+        var viewModel = new FileSyncFilterSettingViewModel(_config);
+        var editor = FileSyncFilterSettingViewModel.CreateRuleEditor();
+        editor.Pattern = " .tmp ";
+        editor.ExcludeFromHistory = true;
+
+        viewModel.AddItem(editor.ToRule());
+        var reloaded = new FileSyncFilterSettingViewModel(new ConfigBase(_configPath));
+        var saved = reloaded.FilterList.Single();
+        Assert.AreEqual(".tmp", saved.Pattern);
+        Assert.IsTrue(saved.ExcludeFromHistory);
+
+        editor = FileSyncFilterSettingViewModel.CreateRuleEditor(saved.ToRule());
+        Assert.IsTrue(editor.ExcludeFromHistory);
+        editor.ExcludeFromHistory = false;
+        reloaded.UpdateItem(saved, editor.ToRule());
+
+        var config = new ConfigBase(_configPath).GetConfig<FileFilterConfig>();
+        Assert.HasCount(1, config.BlackList);
+        Assert.IsFalse(config.BlackList.Single().ExcludeFromHistory);
+    }
+
+    [TestMethod]
+    public void AddItem_DoesNotDuplicatePatternWithDifferentHistoryExclusion()
+    {
+        _config.SetConfig(new FileFilterConfig { FileFilterMode = "BlackList" });
+        var viewModel = new FileSyncFilterSettingViewModel(_config);
+        viewModel.AddItem(new FileFilterRule { Pattern = ".tmp" });
+        viewModel.AddItem(new FileFilterRule { Pattern = ".tmp", ExcludeFromHistory = true });
+
+        Assert.HasCount(1, viewModel.FilterList);
+        Assert.HasCount(1, _config.GetConfig<FileFilterConfig>().BlackList);
+    }
+
+    [TestMethod]
     public void AddItem_DoesNotAddDuplicateRule()
     {
         _config.SetConfig(new FileFilterConfig { FileFilterMode = "BlackList" });
