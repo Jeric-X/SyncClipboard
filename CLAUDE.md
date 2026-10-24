@@ -88,7 +88,7 @@ dotnet test src/SyncClipboard.Test.WinUI3   # Windows only
 dotnet test src/SyncClipboard.Test --filter "FullyQualifiedName~TestClassName"
 ```
 
-Tests use MSTest with Moq. `ServiceProviderDataSource` attributes drive DI validation tests that ensure all registered services can be resolved.
+Tests use MSTest with Moq. `SyncClipboard.Test.Desktop` includes Avalonia Headless tests for desktop UI behavior and runs in a separate CI job alongside the Core tests.
 
 #### Test organization
 
@@ -179,7 +179,7 @@ Strings are in `SyncClipboard.Core/I18n/Strings.resx` (auto-generated `Strings.D
 - Target framework: all product and test projects use `net10.0`, with `net10.0-macos` for the macOS project and `net10.0-windows10.0.19041.0` for WinUI3.
 - Nullable reference types enabled project-wide (`<Nullable>enable</Nullable>`).
 - Central package management: add/update versions only in `Directory.Packages.props`.
-- The project uses MSTest with Moq for mocking. Test data source attributes (`PlatformServiceProviderDataSource`, `SystemServiceProviderDataSource`) drive DI validation tests.
+- The project uses MSTest with Moq for mocking. Desktop UI behavior tests use Avalonia Headless.
 - Commit messages follow conventional format with Chinese description prefixes (e.g., `fix:`, `feat:`).
 - `src/.editorconfig` defines C# code style rules.
 - Keep embedded control-statement bodies on their own line (IDE2001), including `if`, `for`, `foreach`, and `while`. Use `dotnet format style --diagnostics IDE2001` to migrate violations.
