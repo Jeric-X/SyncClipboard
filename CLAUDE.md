@@ -88,8 +88,6 @@ dotnet test src/SyncClipboard.Test.WinUI3   # Windows only
 dotnet test src/SyncClipboard.Test --filter "FullyQualifiedName~TestClassName"
 ```
 
-Tests use MSTest with Moq. `SyncClipboard.Test.Desktop` includes Avalonia Headless tests for desktop UI behavior and runs in a separate CI job alongside the Core tests.
-
 #### Test organization
 
 - Mark tests that require real OS behavior with `[TestCategory("PlatformWindows")]`, `[TestCategory("PlatformMacOS")]`, or `[TestCategory("PlatformLinux")]`. Use multiple categories when appropriate; leave platform-independent tests unmarked. Platform-specific tests must also check the current OS and call `Assert.Inconclusive` on unsupported platforms before performing platform-specific setup or operations; categories alone do not skip tests when running the full suite locally.
@@ -179,7 +177,6 @@ Strings are in `SyncClipboard.Core/I18n/Strings.resx` (auto-generated `Strings.D
 - Target framework: all product and test projects use `net10.0`, with `net10.0-macos` for the macOS project and `net10.0-windows10.0.19041.0` for WinUI3.
 - Nullable reference types enabled project-wide (`<Nullable>enable</Nullable>`).
 - Central package management: add/update versions only in `Directory.Packages.props`.
-- The project uses MSTest with Moq for mocking. Desktop UI behavior tests use Avalonia Headless.
 - Commit messages follow conventional format with Chinese description prefixes (e.g., `fix:`, `feat:`).
 - `src/.editorconfig` defines C# code style rules.
 - Keep embedded control-statement bodies on their own line (IDE2001), including `if`, `for`, `foreach`, and `while`. Use `dotnet format style --diagnostics IDE2001` to migrate violations.

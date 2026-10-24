@@ -25,7 +25,7 @@ jobs:
         dotnet test src/SyncClipboard.Test/SyncClipboard.Test.csproj --configuration Release --no-restore
         --filter "TestCategory!=PlatformWindows&TestCategory!=PlatformMacOS&TestCategory!=PlatformLinux"
 
-  desktop-test:
+  avalonia-test:
     runs-on: windows-2025-vs2026
     timeout-minutes: 15
 
