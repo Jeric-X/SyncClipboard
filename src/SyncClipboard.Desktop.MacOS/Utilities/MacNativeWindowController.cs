@@ -6,13 +6,13 @@ using Foundation;
 using ObjCRuntime;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Models.Keyboard;
+using SyncClipboard.Core.Models.Permissions;
 
 namespace SyncClipboard.Desktop.MacOS.Utilities;
 
 [SupportedOSPlatform("macos")]
 internal sealed class MacNativeWindowController(
-    ILogger logger, IThreadDispatcher threadDispatcher, IInputPermissionProvider permissions) : INativeWindowController
+    ILogger logger, IThreadDispatcher threadDispatcher, IPermissionProvider permissions) : INativeWindowController
 {
     private readonly ILogger _logger = logger;
     private readonly IThreadDispatcher _threadDispatcher = threadDispatcher;
@@ -289,7 +289,7 @@ internal sealed class MacNativeWindowController(
     /// </summary>
     private (string? Title, MacInterop.CGRect? Bounds, long? WindowNumber) GetWindowInfo(int pid)
     {
-        if (permissions.GetStatus().Accessibility != InputPermissionState.Available)
+        if (!permissions.GetState(PermissionCapability.ReadWindow).IsGranted())
         {
             return (null, null, null);
         }

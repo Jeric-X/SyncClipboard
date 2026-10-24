@@ -4,12 +4,12 @@ using AppKit;
 using Foundation;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Models.Keyboard;
+using SyncClipboard.Core.Models.Permissions;
 
 namespace SyncClipboard.Desktop.MacOS.Utilities;
 
 [SupportedOSPlatform("macos")]
-internal sealed class CaretPositionProvider(ILogger logger, IInputPermissionProvider permissions) : ICaretPositionProvider
+internal sealed class CaretPositionProvider(ILogger logger, IPermissionProvider permissions) : ICaretPositionProvider
 {
     private readonly ILogger _logger = logger;
     private const string Tag = "CaretPosition";
@@ -22,7 +22,7 @@ internal sealed class CaretPositionProvider(ILogger logger, IInputPermissionProv
 
     public ScreenPosition? GetCaretPosition()
     {
-        if (permissions.GetStatus().Accessibility != InputPermissionState.Available)
+        if (!permissions.GetState(PermissionCapability.ReadCaret).IsGranted())
         {
             _logger.Write(Tag, "Accessibility permission not granted");
             return null;

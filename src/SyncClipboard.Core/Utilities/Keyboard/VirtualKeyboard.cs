@@ -6,33 +6,27 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.Keyboard;
+using SyncClipboard.Core.Models.Permissions;
 using System.Runtime.ExceptionServices;
 
 namespace SyncClipboard.Core.Utilities.Keyboard;
 
 public sealed class VirtualKeyboard : IDisposable
 {
-    private readonly IInputPermissionProvider _permissions;
+    private readonly IPermissionProvider _permissions;
     private readonly Func<IEventSimulator> _createSimulator;
-    private readonly Action? _showPermissionNotice;
     private readonly Lock _lock = new();
     private IEventSimulator? _simulator;
     private bool _disposed;
-    private bool _permissionPrompted;
+    private bool _permissionRequestAttempted;
 
-    public VirtualKeyboard(IInputPermissionProvider permissions, IThreadDispatcher dispatcher, IGlobalDialog dialog)
-        : this(permissions, CreateSimulator, () => DelegateExtention.SafeFireAndForget(
-            () => dispatcher.RunOnMainThreadAsync(() => dialog.ShowMessageAsync(
-                Strings.PermissionManagement, Strings.LinuxInputSimulationPermissionRequired, Strings.Confirm)),
-            nameof(VirtualKeyboard)))
+    public VirtualKeyboard(IPermissionProvider permissions) : this(permissions, CreateSimulator)
     { }
 
-    internal VirtualKeyboard(IInputPermissionProvider permissions, Func<IEventSimulator> createSimulator,
-        Action? showPermissionNotice = null)
+    internal VirtualKeyboard(IPermissionProvider permissions, Func<IEventSimulator> createSimulator)
     {
         _permissions = permissions;
         _createSimulator = createSimulator;
-        _showPermissionNotice = showPermissionNotice;
     }
 
     private static IEventSimulator CreateSimulator()
@@ -120,14 +114,12 @@ public sealed class VirtualKeyboard : IDisposable
     private void Execute(Action<IEventSimulator> action)
     {
         var requestPermission = false;
-        InputPermissionStatus status;
         lock (_lock)
         {
             ObjectDisposedException.ThrowIf(_disposed, this);
             try
             {
-                status = _permissions.GetSimulationStatus();
-                if (status.CanSimulateInput)
+                if (_permissions.GetState(PermissionCapability.SimulateInput).IsGranted())
                 {
                     // Failed initialization is not cached, so a later attempt can use newly granted access.
                     _simulator ??= _createSimulator();
@@ -135,13 +127,10 @@ public sealed class VirtualKeyboard : IDisposable
                     return;
                 }
 
-                if (status.Accessibility != InputPermissionState.NotRequired)
+                if (!_permissionRequestAttempted)
                 {
-                    requestPermission = !_permissions.HasRequestedAccessibilityPermission;
-                }
-                else if (!_permissionPrompted)
-                {
-                    _permissionPrompted = true;
+                    // This singleton allows one automatic attempt per app run, even after cancellation or failure.
+                    _permissionRequestAttempted = true;
                     requestPermission = true;
                 }
                 DisposeSimulator();
@@ -154,16 +143,7 @@ public sealed class VirtualKeyboard : IDisposable
         }
 
         if (requestPermission)
-        {
-            if (status.Accessibility != InputPermissionState.NotRequired)
-            {
-                _permissions.CheckAndRequestAccessibilityPermission();
-            }
-            else
-            {
-                _showPermissionNotice?.Invoke();
-            }
-        }
+            _permissions.CheckAndRequest(PermissionCapability.SimulateInput);
         // Request access for a future attempt; never replay the input that triggered the request.
         throw new InvalidOperationException(Strings.InputSimulationPermissionRequired);
     }

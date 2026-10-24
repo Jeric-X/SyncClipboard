@@ -5,6 +5,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.Permissions;
 using SyncClipboard.Core.Models.UserConfigs;
 using System.Collections.ObjectModel;
 
@@ -12,7 +13,7 @@ namespace SyncClipboard.Core.ViewModels;
 
 public partial class ClipboardOwnerFilterSettingViewModel(
     ConfigManager configManager, IClipboardChangingListener clipboardChangingListener,
-    IInputPermissionProvider permissions) : ObservableObject
+    IPermissionProvider permissions) : ObservableObject
 {
     public static readonly LocaleString<string>[] Modes =
     [
@@ -30,7 +31,7 @@ public partial class ClipboardOwnerFilterSettingViewModel(
         UpdateFilterList();
         FilterConfig = FilterConfig with { FilterMode = value.Key };
         if (enabling)
-            permissions.CheckAndRequestAccessibilityPermission();
+            permissions.CheckAndRequest(PermissionCapability.ReadWindow);
     }
 
     [ObservableProperty]

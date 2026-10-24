@@ -7,6 +7,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.Keyboard;
+using SyncClipboard.Core.Models.Permissions;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer;
 using SyncClipboard.Core.UserServices;
@@ -403,7 +404,7 @@ public partial class HistoryViewModel : ObservableObject
                 return;
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowCaretPosition = value });
             if (value)
-                _serviceProvider.GetRequiredService<IInputPermissionProvider>().CheckAndRequestAccessibilityPermission();
+                _serviceProvider.GetRequiredService<IPermissionProvider>().CheckAndRequest(PermissionCapability.ReadCaret);
         }
     }
 
@@ -416,7 +417,7 @@ public partial class HistoryViewModel : ObservableObject
                 return;
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { FollowForegroundWindowScreen = value });
             if (value)
-                _serviceProvider.GetRequiredService<IInputPermissionProvider>().CheckAndRequestAccessibilityPermission();
+                _serviceProvider.GetRequiredService<IPermissionProvider>().CheckAndRequest(PermissionCapability.ReadWindow);
         }
     }
 
