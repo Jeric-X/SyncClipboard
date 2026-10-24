@@ -4,6 +4,14 @@ using SyncClipboard.Core.Models.Permissions;
 
 namespace SyncClipboard.Core.Utilities.Permissions;
 
+/*
+ * AX = AXIsProcessTrusted，CG = CGPreflightPostEventAccess
+ * macOS 26.7.1 原生接口实测：CG 首次返回 false 后，即使用户授权，本次运行后续 CG 检查仍返回 false，必须重启应用才能生效；
+ * 但是如果只检查 AX 发现失败，此时提示用户授予权限后再检查 CG，可以得到正常的已授权状态，此时无需重启。
+ *
+ * 任何情况优先检查 AX 再检查 CG，尽量在 AX 阶段解决权限问题，防止进程缓存 CG 结果。
+ * 如果 CG 检查明确返回 false，申请权限时应提醒用户：完成授权后需要重启应用。
+ */
 public sealed class MacOSPermissionProvider : IPermissionProvider
 {
     private readonly ILogger _logger;
@@ -37,7 +45,7 @@ public sealed class MacOSPermissionProvider : IPermissionProvider
 
     public PermissionState GetState(PermissionCapability capability) => capability switch
     {
-        PermissionCapability.SimulateInput => GetPermissionState(_canPostEvents),
+        PermissionCapability.SimulateInput => GetAccessibilityState(),
         PermissionCapability.ReadWindow or PermissionCapability.ReadCaret => GetPermissionState(_isAccessibilityEnabled),
         // macOS uses Carbon hotkeys rather than a global keyboard hook.
         PermissionCapability.MonitorKeyboard => PermissionState.NotRequired,
@@ -47,10 +55,10 @@ public sealed class MacOSPermissionProvider : IPermissionProvider
     private PermissionState GetAccessibilityState()
     {
         var accessibility = GetPermissionState(_isAccessibilityEnabled);
+        if (accessibility != PermissionState.Available)
+            return accessibility;
         var postEvents = GetPermissionState(_canPostEvents);
-        if (accessibility == PermissionState.Unknown || postEvents == PermissionState.Unknown)
-            return PermissionState.Unknown;
-        return accessibility == postEvents ? accessibility : PermissionState.Partial;
+        return postEvents == PermissionState.Denied ? PermissionState.Partial : postEvents;
     }
 
     public IReadOnlyList<PermissionItem> GetPermissions()
@@ -79,10 +87,15 @@ public sealed class MacOSPermissionProvider : IPermissionProvider
         {
             await _dispatcher.RunOnMainThreadAsync(async () =>
             {
-                if (getState().IsGranted())
+                var state = getState();
+                if (state.IsGranted())
                     return;
+                var message = Strings.AccessibilityPermissionRequestMessage;
+                // Partial 表示 AX 检查通过，但 CG 检查明确未通过，必须提示用户重启应用生效。
+                if (state == PermissionState.Partial)
+                    message += $"{Environment.NewLine}{Environment.NewLine}{Strings.AccessibilityPermissionRestartRequiredMessage}";
                 if (!await _dialog.ShowConfirmationAsync(Strings.AccessibilityPermission,
-                    Strings.AccessibilityPermissionRequestMessage, Strings.RequestPermission, Strings.Cancel))
+                    message, Strings.RequestPermission, Strings.Cancel))
                     return;
                 // Access may have been granted while the confirmation was open.
                 if (getState().IsGranted())

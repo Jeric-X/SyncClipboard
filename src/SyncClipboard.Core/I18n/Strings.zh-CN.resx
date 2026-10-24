@@ -1334,13 +1334,14 @@ Shift + 左键：选中连续范围</value>
   <data name="PermissionManagement" xml:space="preserve"><value>权限管理</value></data>
   <data name="AccessibilityPermission" xml:space="preserve"><value>辅助功能</value></data>
   <data name="AccessibilityPermissionRequestMessage" xml:space="preserve"><value>此功能需要辅助功能权限。点击“请求权限”将打开系统设置并申请权限，请在辅助功能列表中开启 SyncClipboard。</value></data>
+  <data name="AccessibilityPermissionRestartRequiredMessage" xml:space="preserve"><value>完成授权后，需要完全退出并重新启动 SyncClipboard。</value></data>
   <data name="AccessibilityPermissionDescription" xml:space="preserve"><value>用于模拟复制、粘贴以及读取其他窗口的信息。</value></data>
   <data name="KeyboardMonitoringPermissionDescription" xml:space="preserve"><value>需要读写权限，用于监听全局快捷键</value></data>
   <data name="InputSimulationPermissionDescription" xml:space="preserve"><value>需要写权限，用于模拟按键实现复制、粘贴等功能</value></data>
   <data name="InputPermissionAvailable" xml:space="preserve"><value>已允许访问</value></data>
   <data name="InputPermissionDenied" xml:space="preserve"><value>未允许访问</value></data>
   <data name="InputPermissionUnavailable" xml:space="preserve"><value>设备不可用</value></data>
-  <data name="InputPermissionPartial" xml:space="preserve"><value>部分设备可访问</value></data>
+  <data name="InputPermissionPartial" xml:space="preserve"><value>部分权限已授予</value></data>
   <data name="InputPermissionNotRequired" xml:space="preserve"><value>无需额外权限</value></data>
   <data name="InputPermissionUnknown" xml:space="preserve"><value>无法确认</value></data>
   <data name="InputSimulationPermissionRequired" xml:space="preserve"><value>无法模拟键盘输入，请在系统设置中检查输入权限。</value></data>

@@ -79,12 +79,49 @@ public class KeyboardSimulationTests
         CollectionAssert.AreEqual(requestedEvents, events);
         simulator.Verify(x => x.SimulateKeyPress(It.IsAny<KeyCode>()), Times.Never);
 
+        ax = true;
         cg = true;
         keyboard.Paste();
         string[] completedEvents = ["reset", "settings", "request", "simulator"];
         CollectionAssert.AreEqual(completedEvents, events);
         simulator.Verify(x => x.SimulateKeyPress(KeyCode.VcV), Times.Once);
         simulator.Verify(x => x.SimulateKeyRelease(KeyCode.VcV), Times.Once);
+    }
+
+    [TestMethod]
+    public void MacAuthorization_DefersCGUntilAXGranted_AndBlocksRevokedAXDespiteStaleCG()
+    {
+        var ax = false;
+        var cgChecks = 0;
+        var requests = 0;
+        var provider = PermissionTests.CreatePermissionProvider(Mock.Of<ILogger>(), () =>
+        {
+            requests++;
+            Assert.AreEqual(0, cgChecks, "No CG query may precede the initial AX authorization.");
+            ax = true;
+        }, isAccessibilityEnabled: () => ax, canPostEvents: () =>
+        {
+            cgChecks++;
+            return true;
+        });
+        var simulator = new Mock<IEventSimulator>();
+        using var keyboard = new VirtualKeyboard(provider, () => simulator.Object);
+
+        Assert.AreEqual(PermissionState.Denied, provider.GetPermissions().Single().State);
+        Assert.ThrowsExactly<InvalidOperationException>(keyboard.Paste);
+        Assert.AreEqual(1, requests);
+        Assert.AreEqual(0, cgChecks);
+        simulator.Verify(x => x.SimulateKeyPress(It.IsAny<KeyCode>()), Times.Never);
+        keyboard.Paste();
+        Assert.AreEqual(1, cgChecks);
+        simulator.Verify(x => x.SimulateKeyPress(KeyCode.VcV), Times.Once);
+
+        ax = false;
+        Assert.ThrowsExactly<InvalidOperationException>(keyboard.Paste);
+        Assert.AreEqual(PermissionState.Denied, provider.GetPermissions().Single().State);
+        Assert.AreEqual(1, cgChecks);
+        Assert.AreEqual(1, requests, "Revocation must not replenish the automatic request opportunity.");
+        simulator.Verify(x => x.SimulateKeyPress(KeyCode.VcV), Times.Once);
     }
 
     [TestMethod]

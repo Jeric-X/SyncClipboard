@@ -24,14 +24,15 @@ public class PermissionTests
     internal static MacOSPermissionProvider CreatePermissionProvider(ILogger logger, Action requestAccessibilityPermission,
         Func<bool>? isAccessibilityEnabled = null,
         Func<Task<bool>>? confirm = null, Action? openSettings = null, Func<Task>? resetPermission = null,
-        Func<bool>? canPostEvents = null)
+        Func<bool>? canPostEvents = null, Action<string>? onConfirmation = null)
     {
         var dispatcher = new Mock<IThreadDispatcher>();
         dispatcher.Setup(x => x.RunOnMainThreadAsync(It.IsAny<Func<Task>>()))
             .Returns<Func<Task>>(action => action());
         var dialog = new Mock<IGlobalDialog>();
         dialog.Setup(x => x.ShowConfirmationAsync(Strings.AccessibilityPermission,
-            Strings.AccessibilityPermissionRequestMessage, Strings.RequestPermission, Strings.Cancel))
+            It.IsAny<string>(), Strings.RequestPermission, Strings.Cancel))
+            .Callback<string, string, string, string>((_, message, _, _) => onConfirmation?.Invoke(message))
             .Returns(() => confirm?.Invoke() ?? Task.FromResult(true));
         return new MacOSPermissionProvider(logger, dispatcher.Object, dialog.Object,
             openSettings ?? (() => { }), requestAccessibilityPermission, resetPermission ?? (() => Task.CompletedTask),
@@ -457,37 +458,27 @@ public class PermissionTests
     [DataRow(false, true)]
     [DataRow(true, false)]
     [DataRow(true, true)]
-    public void MacCapabilities_UseIndependentPermissions_AndSettingsAggregateBoth(bool ax, bool cg)
+    public void MacCapabilities_GatePostChecksOnAX_AndKeepWindowAccessIndependent(bool ax, bool cg)
     {
-        var axChecks = 0;
         var cgChecks = 0;
         var provider = CreatePermissionProvider(Mock.Of<ILogger>(),
             () => Assert.Fail("Status checks must not request permission."),
-            isAccessibilityEnabled: () =>
-            {
-                axChecks++;
-                return ax;
-            }, canPostEvents: () =>
+            isAccessibilityEnabled: () => ax, canPostEvents: () =>
             {
                 cgChecks++;
                 return cg;
             });
 
-        Assert.AreEqual(cg ? PermissionState.Available : PermissionState.Denied,
-            provider.GetState(PermissionCapability.SimulateInput));
-        Assert.AreEqual(0, axChecks);
-        Assert.AreEqual(1, cgChecks);
+        var expected = !ax ? PermissionState.Denied : cg ? PermissionState.Available : PermissionState.Partial;
+        Assert.AreEqual(expected, provider.GetState(PermissionCapability.SimulateInput));
+        Assert.AreEqual(ax ? 1 : 0, cgChecks);
         foreach (var capability in new[] { PermissionCapability.ReadWindow, PermissionCapability.ReadCaret })
             Assert.AreEqual(ax ? PermissionState.Available : PermissionState.Denied, provider.GetState(capability));
-        Assert.AreEqual(2, axChecks);
-        Assert.AreEqual(1, cgChecks);
         Assert.IsTrue(provider.CheckAndRequest(PermissionCapability.MonitorKeyboard));
         Assert.AreEqual(PermissionState.NotRequired, provider.GetState(PermissionCapability.MonitorKeyboard));
-        Assert.AreEqual(2, axChecks);
-        Assert.AreEqual(1, cgChecks);
-
-        var expected = ax && cg ? PermissionState.Available : ax || cg ? PermissionState.Partial : PermissionState.Denied;
+        Assert.AreEqual(ax ? 1 : 0, cgChecks);
         Assert.AreEqual(expected, provider.GetPermissions().Single().State);
+        Assert.AreEqual(ax ? 2 : 0, cgChecks);
     }
 
     [TestMethod]
@@ -498,8 +489,7 @@ public class PermissionTests
         var provider = CreatePermissionProvider(Mock.Of<ILogger>(), () => { },
             isAccessibilityEnabled: () => axFails ? throw new DllNotFoundException() : true,
             canPostEvents: () => axFails ? true : throw new DllNotFoundException());
-        Assert.AreEqual(axFails ? PermissionState.Available : PermissionState.Unknown,
-            provider.GetState(PermissionCapability.SimulateInput));
+        Assert.AreEqual(PermissionState.Unknown, provider.GetState(PermissionCapability.SimulateInput));
         foreach (var capability in new[] { PermissionCapability.ReadWindow, PermissionCapability.ReadCaret })
             Assert.AreEqual(axFails ? PermissionState.Unknown : PermissionState.Available, provider.GetState(capability));
         Assert.AreEqual(PermissionState.NotRequired, provider.GetState(PermissionCapability.MonitorKeyboard));
@@ -507,7 +497,6 @@ public class PermissionTests
     }
 
     [TestMethod]
-    [DataRow(PermissionCapability.SimulateInput)]
     [DataRow(PermissionCapability.ReadWindow)]
     [DataRow(PermissionCapability.ReadCaret)]
     public void RequestedCapabilityGrantedDuringConfirmation_DoesNotResetForUnrelatedDeniedPermission(
@@ -518,8 +507,8 @@ public class PermissionTests
         var requests = 0;
         var resets = 0;
         var provider = CreatePermissionProvider(Mock.Of<ILogger>(), () => requests++,
-            isAccessibilityEnabled: () => capability != PermissionCapability.SimulateInput && granted,
-            canPostEvents: () => capability == PermissionCapability.SimulateInput && granted,
+            isAccessibilityEnabled: () => granted,
+            canPostEvents: () => false,
             confirm: () => confirmation.Task,
             resetPermission: () =>
             {
@@ -534,6 +523,41 @@ public class PermissionTests
         Assert.AreEqual(0, requests);
         Assert.IsTrue(provider.CheckAndRequest(capability));
         Assert.AreEqual(PermissionState.Partial, provider.GetPermissions().Single().State);
+    }
+
+    [TestMethod]
+    [DataRow(false, false)]
+    [DataRow(false, true)]
+    [DataRow(true, false)]
+    [DataRow(true, true)]
+    public async Task MacAuthorization_ExplainsRestartOnlyWhenCGDeniesAccess(bool axGranted, bool fromSettings)
+    {
+        var messages = new List<string>();
+        var cgChecks = 0;
+        var events = new List<string>();
+        var provider = CreatePermissionProvider(Mock.Of<ILogger>(), () => events.Add("request"),
+            isAccessibilityEnabled: () => axGranted, canPostEvents: () =>
+            {
+                cgChecks++;
+                return false;
+            }, onConfirmation: messages.Add, openSettings: () => events.Add("settings"), resetPermission: () =>
+            {
+                events.Add("reset");
+                return Task.CompletedTask;
+            });
+
+        if (fromSettings)
+            await provider.GetPermissions().Single().Actions.Single().ExecuteAsync();
+        else
+            Assert.IsFalse(provider.CheckAndRequest(PermissionCapability.SimulateInput));
+
+        var expected = Strings.AccessibilityPermissionRequestMessage;
+        if (axGranted)
+            expected += $"{Environment.NewLine}{Environment.NewLine}{Strings.AccessibilityPermissionRestartRequiredMessage}";
+        Assert.AreEqual(expected, messages.Single());
+        Assert.AreEqual(axGranted, cgChecks > 0);
+        string[] expectedEvents = ["reset", "settings", "request"];
+        CollectionAssert.AreEqual(expectedEvents, events);
     }
 
     [TestMethod]
