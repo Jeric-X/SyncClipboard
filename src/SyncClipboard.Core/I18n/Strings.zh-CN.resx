@@ -1629,6 +1629,6 @@ Shift + 左键：选中连续范围</value>
     <value>高级</value>
   </data>
   <data name="ExcludeFromLocalHistory" xml:space="preserve">
-    <value>不添加到本地历史记录</value>
+    <value>同时也不添加到历史记录</value>
   </data>
 </root>

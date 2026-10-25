@@ -278,36 +278,6 @@ public class GroupProfile : Profile
         }
     }
 
-    public async Task<bool> IsAllowedByFileFilterAsync(FileFilterConfig config, CancellationToken token)
-    {
-        if (string.IsNullOrEmpty(config.FileFilterMode))
-            return true;
-
-        try
-        {
-            var archivePath = _transferDataPath;
-            if (archivePath is not null && await CanReuseTransferData(token))
-            {
-                using var archive = ZipFile.OpenRead(archivePath);
-                foreach (var entry in archive.Entries)
-                {
-                    token.ThrowIfCancellationRequested();
-                    if (entry.Name.Length > 0 && !FileFilterHelper.IsFileAvailableAfterFilter(entry.FullName, config))
-                        return false;
-                }
-                return true;
-            }
-
-            // A saved group has a fixed identity; filtering must not change the content uploaded for that identity.
-            var filtered = new GroupProfile(Files, config);
-            return string.Equals(await GetHash(token), await filtered.GetHash(token), StringComparison.OrdinalIgnoreCase);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            return false;
-        }
-    }
-
     public override async Task<FileHashInfo?> PrepareTransferData(string persistentDir, CancellationToken token)
     {
         var expectedHash = await GetHash(token);

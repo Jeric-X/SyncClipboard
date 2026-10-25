@@ -1,4 +1,5 @@
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.History;
@@ -304,14 +305,13 @@ public class HistoryService : ClipboardHander
             }
         }
 
-        var historyProfile = FilterLocalProfile(clipboardMetaInfomation, profile, configManager.GetConfig<FileFilterConfig>());
-        if (historyProfile is not null)
+        if (ShouldRecordLocalProfile(profile, configManager.GetConfig<FileFilterConfig>()))
         {
-            await historyManager.AddLocalProfile(historyProfile, token: token);
+            await historyManager.AddLocalProfile(profile, token: token);
         }
     }
 
-    internal static Profile? FilterLocalProfile(ClipboardMetaInfomation meta, Profile profile, FileFilterConfig config)
+    internal static bool ShouldRecordLocalProfile(Profile profile, FileFilterConfig config)
     {
         var rules = config.FileFilterMode switch
         {
@@ -324,24 +324,6 @@ public class HistoryService : ClipboardHander
             FileFilterMode = "BlackList",
             BlackList = rules.Where(rule => rule.ExcludeFromHistory).ToList(),
         };
-
-        if (profile is GroupProfile group)
-        {
-            // Upload filtering may have already removed paths; history uses its own rules and the original selection.
-            var historyGroup = new GroupProfile(meta.Files ?? group.Files, historyFilter);
-            return historyGroup.Files.Length == 0 ? null : historyGroup;
-        }
-
-        if (profile is ImageProfile && meta.Files is not { Length: > 0 })
-        {
-            return profile;
-        }
-
-        if (profile is FileProfile file && !FileFilterHelper.IsFileAvailableAfterFilter(file.FileName, historyFilter))
-        {
-            return null;
-        }
-
-        return profile;
+        return ContentControlHelper.IsFileAllowed(profile, historyFilter);
     }
 }

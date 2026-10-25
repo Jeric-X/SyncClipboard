@@ -465,14 +465,10 @@ public class HistorySyncer
         }
     }
 
-    private async Task<bool> CanUploadLocalProfileAsync(Profile profile, CancellationToken token)
+    private static async Task<bool> CanUploadLocalProfileAsync(Profile profile, CancellationToken token)
     {
         var validationError = await ContentControlHelper.IsContentValid(profile, token);
-        if (validationError is not null)
-            return false;
-
-        return profile is not GroupProfile group
-            || await group.IsAllowedByFileFilterAsync(_configManager.GetConfig<FileFilterConfig>(), token);
+        return validationError is null;
     }
 
     private async void OnHistoryRemoved(HistoryRecord record)
