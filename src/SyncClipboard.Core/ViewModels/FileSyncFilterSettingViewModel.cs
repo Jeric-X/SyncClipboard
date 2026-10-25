@@ -73,7 +73,10 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
         configManager.GetAndListenConfig<FileFilterConfig>(config => FilterConfig = config);
     }
 
-    public static FileFilterRuleEditor CreateRuleEditor(FileFilterRule? rule = null) => new(rule);
+    public FileFilterRuleEditor CreateRuleEditor(FileFilterRule? rule = null) => new(rule)
+    {
+        CanExcludeFromHistory = FilterMode.Key == "BlackList",
+    };
 
     public static string? ValidateRuleEditor(FileFilterRuleEditor editor)
     {
@@ -244,6 +247,8 @@ public partial class EditableFileFilterRule : ObservableObject
 
 public partial class FileFilterRuleEditor : ObservableObject
 {
+    public bool CanExcludeFromHistory { get; init; }
+
     [ObservableProperty]
     private bool excludeFromHistory;
 

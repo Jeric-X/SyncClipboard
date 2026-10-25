@@ -37,7 +37,7 @@ public class FileSyncFilterSettingViewModelTests
     {
         _config.SetConfig(new FileFilterConfig { FileFilterMode = "BlackList" });
         var viewModel = new FileSyncFilterSettingViewModel(_config);
-        var editor = FileSyncFilterSettingViewModel.CreateRuleEditor();
+        var editor = viewModel.CreateRuleEditor();
         editor.Pattern = " .tmp ";
         editor.ExcludeFromHistory = true;
 
@@ -47,7 +47,7 @@ public class FileSyncFilterSettingViewModelTests
         Assert.AreEqual(".tmp", saved.Pattern);
         Assert.IsTrue(saved.ExcludeFromHistory);
 
-        editor = FileSyncFilterSettingViewModel.CreateRuleEditor(saved.ToRule());
+        editor = reloaded.CreateRuleEditor(saved.ToRule());
         Assert.IsTrue(editor.ExcludeFromHistory);
         editor.ExcludeFromHistory = false;
         reloaded.UpdateItem(saved, editor.ToRule());

@@ -8,14 +8,12 @@ namespace SyncClipboard.Test;
 [TestClass]
 public class HistoryFileFilterTests
 {
-    private static readonly string[] SelectedFileNames = ["private.tmp", "ordinary.log"];
+    private static readonly string[] SelectedFileNames = ["private.tmp", "public.txt"];
 
     [TestMethod]
-    [DataRow("BlackList")]
-    [DataRow("WhiteList")]
-    public void ActiveRules_ExcludeOnlyMatchingFilesMarkedForHistory(string mode)
+    public void ActiveRules_ExcludeOnlyMatchingFilesMarkedForHistory()
     {
-        var config = CreateConfig(mode);
+        var config = CreateConfig("BlackList");
         Assert.IsFalse(ShouldRecord("private.TMP", config));
         Assert.IsFalse(ShouldRecord("secret-42.dat", config));
         Assert.IsTrue(ShouldRecord("ordinary.log", config));
@@ -50,12 +48,12 @@ public class HistoryFileFilterTests
     [TestMethod]
     public void Group_UsesUploadAnyAvailableFileDecision()
     {
-        var config = CreateConfig("WhiteList");
+        var config = CreateConfig("BlackList");
         var files = SelectedFileNames.Select(name => Path.Combine(Path.GetTempPath(), name)).ToArray();
         var group = new GroupProfile(files, config);
 
         Assert.IsTrue(HistoryService.ShouldRecordLocalProfile(group, config));
-        CollectionAssert.AreEqual(files, group.Files);
+        CollectionAssert.AreEqual(files[1..], group.Files);
         Assert.IsFalse(HistoryService.ShouldRecordLocalProfile(new GroupProfile(files[..1], config), config));
         Assert.IsFalse(HistoryService.ShouldRecordLocalProfile(new GroupProfile([]), config));
     }

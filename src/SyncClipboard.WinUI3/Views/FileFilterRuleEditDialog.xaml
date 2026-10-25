@@ -4,6 +4,7 @@
                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                xmlns:local="using:SyncClipboard.WinUI3.Views"
                xmlns:i18n="using:SyncClipboard.Core.I18n"
+               xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
                xmlns:vm="using:SyncClipboard.Core.ViewModels"
                Title="{x:Bind i18n:Strings.EditRule}"
                PrimaryButtonText="{x:Bind i18n:Strings.Confirm}"
@@ -22,7 +23,7 @@
                          Padding="0"
                          Content="{x:Bind i18n:Strings.RegularExpressionQuickReference}"
                          Click="RegularExpressionQuickReference_Click" />
-        <CheckBox Content="{x:Bind i18n:Strings.ExcludeFromLocalHistory}" IsChecked="{x:Bind Editor.ExcludeFromHistory, Mode=TwoWay}" />
+        <CheckBox Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(Editor.CanExcludeFromHistory)}" Content="{x:Bind i18n:Strings.ExcludeFromLocalHistory}" IsChecked="{x:Bind Editor.ExcludeFromHistory, Mode=TwoWay}" />
         <TextBlock x:Name="_ValidationMessage" Foreground="{ThemeResource SystemFillColorCriticalBrush}" TextWrapping="Wrap" />
     </StackPanel>
 </ContentDialog>

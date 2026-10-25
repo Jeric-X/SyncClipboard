@@ -313,12 +313,7 @@ public class HistoryService : ClipboardHander
 
     internal static bool ShouldRecordLocalProfile(Profile profile, FileFilterConfig config)
     {
-        var rules = config.FileFilterMode switch
-        {
-            "BlackList" => config.BlackList,
-            "WhiteList" => config.WhiteList,
-            _ => [],
-        };
+        var rules = config.FileFilterMode == "BlackList" ? config.BlackList : [];
         var historyFilter = new FileFilterConfig
         {
             FileFilterMode = "BlackList",

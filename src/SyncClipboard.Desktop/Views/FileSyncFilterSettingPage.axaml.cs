@@ -31,7 +31,7 @@ public partial class FileSyncFilterSettingPage : UserControl
 
     private async void AddItemClick(object? sender, RoutedEventArgs e)
     {
-        var editor = FileSyncFilterSettingViewModel.CreateRuleEditor();
+        var editor = _viewModel.CreateRuleEditor();
         var dialog = new FileFilterRuleEditDialog(editor);
         var result = await dialog.ShowAsync(App.Current.MainWindow);
         if (result == FAContentDialogResult.Primary)
@@ -47,7 +47,7 @@ public partial class FileSyncFilterSettingPage : UserControl
             return;
         }
 
-        var editor = FileSyncFilterSettingViewModel.CreateRuleEditor(item.ToRule());
+        var editor = _viewModel.CreateRuleEditor(item.ToRule());
         var dialog = new FileFilterRuleEditDialog(editor);
         var result = await dialog.ShowAsync(App.Current.MainWindow);
         if (result == FAContentDialogResult.Primary)
