@@ -1,4 +1,5 @@
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.History;
@@ -304,6 +305,20 @@ public class HistoryService : ClipboardHander
             }
         }
 
-        await historyManager.AddLocalProfile(profile, token: token);
+        if (ShouldRecordLocalProfile(profile, configManager.GetConfig<FileFilterConfig>()))
+        {
+            await historyManager.AddLocalProfile(profile, token: token);
+        }
+    }
+
+    internal static bool ShouldRecordLocalProfile(Profile profile, FileFilterConfig config)
+    {
+        var rules = config.FileFilterMode == "BlackList" ? config.BlackList : [];
+        var historyFilter = new FileFilterConfig
+        {
+            FileFilterMode = "BlackList",
+            BlackList = rules.Where(rule => rule.ExcludeFromHistory).ToList(),
+        };
+        return ContentControlHelper.IsFileAllowed(profile, historyFilter);
     }
 }

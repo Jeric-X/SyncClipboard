@@ -36,11 +36,7 @@ public static class ContentControlHelper
 
     private static string? ValidateGroupUpload(GroupProfile profile, SyncConfig config)
     {
-        var hasValidFile = profile.Files?.Any(name =>
-            Directory.Exists(name) ||
-            FileFilterHelper.IsFileAvailableAfterFilter(name, GetFileFilterConfig())) ?? false;
-
-        if (!hasValidFile)
+        if (!IsFileAllowed(profile, GetFileFilterConfig()))
             return "Skipped: No valid files found in the group.";
 
         if (!config.EnableUploadMultiFile)
@@ -51,7 +47,7 @@ public static class ContentControlHelper
 
     private static string? ValidateFileUpload(FileProfile profile, SyncConfig config)
     {
-        if (!FileFilterHelper.IsFileAvailableAfterFilter(profile.FileName, GetFileFilterConfig()))
+        if (!IsFileAllowed(profile, GetFileFilterConfig()))
             return $"Skipped: File '{profile.FileName}' is filtered out.";
 
         if (!config.EnableUploadSingleFile)
@@ -59,6 +55,15 @@ public static class ContentControlHelper
 
         return null;
     }
+
+    internal static bool IsFileAllowed(Profile profile, FileFilterConfig config) => profile switch
+    {
+        ImageProfile => true,
+        GroupProfile group => group.Files.Any(name =>
+            Directory.Exists(name) || FileFilterHelper.IsFileAvailableAfterFilter(name, config)),
+        FileProfile file => FileFilterHelper.IsFileAvailableAfterFilter(file.FileName, config),
+        _ => true,
+    };
 
     private static async Task<string?> ValidateSize(Profile profile, SyncConfig config, CancellationToken token)
     {

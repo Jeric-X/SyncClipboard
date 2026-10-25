@@ -18,7 +18,7 @@ public partial class FileFilterRuleEditDialog : FAContentDialog
     public IReadOnlyList<LocaleString<FileFilterMatchMode>> MatchModes => FileSyncFilterSettingViewModel.MatchModes;
 
     public FileFilterRuleEditDialog()
-        : this(FileSyncFilterSettingViewModel.CreateRuleEditor())
+        : this(new FileFilterRuleEditor())
     {
     }
 
