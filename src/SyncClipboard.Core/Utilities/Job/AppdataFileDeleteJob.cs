@@ -1,95 +1,131 @@
 using Quartz;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Updater;
 using System.Globalization;
 
 namespace SyncClipboard.Core.Utilities.Job;
 
-public class AppdataFileDeleteJob(ConfigManager configManager) : IJob
+public class AppdataFileDeleteJob(ConfigManager configManager, ILogger logger) : IJob
 {
-    private readonly ConfigManager _configManager = configManager;
-
     public Task Execute(IJobExecutionContext context)
     {
         return Task.Run(
-            () => PlannedTask(_configManager, context.CancellationToken),
+            () => PlannedTask(configManager.GetConfig<ProgramConfig>(), Env.AppDataDirectory, logger, context.CancellationToken),
             context.CancellationToken);
     }
 
-    private static void PlannedTask(ConfigManager configManager, CancellationToken token)
+    internal static void PlannedTask(ProgramConfig config, string appDataDirectory, ILogger logger, CancellationToken token)
     {
+        var updateFolder = new DirectoryInfo(Path.Combine(appDataDirectory, "update"));
+        TryCleanup(() => DeleteUpdatePackageFiles(updateFolder, logger, token), "updates", updateFolder.FullName, logger, token);
+
+        if (config.TempFileRemainDays != 0)
+        {
+            var tempFolder = new DirectoryInfo(Path.Combine(appDataDirectory, "file"));
+            TryCleanup(() =>
+            {
+                if (tempFolder.Exists)
+                {
+                    DeleteOutDateFile(tempFolder.EnumerateDirectories("????????"), "yyyyMMdd",
+                        TimeSpan.FromDays(config.TempFileRemainDays), "cache", logger, token);
+                }
+            }, "cache", tempFolder.FullName, logger, token);
+        }
+
+        if (config.LogRemainDays != 0)
+        {
+            var logFolder = new DirectoryInfo(Path.Combine(appDataDirectory, "log"));
+            var retention = TimeSpan.FromDays(config.LogRemainDays);
+            TryCleanup(() =>
+            {
+                if (logFolder.Exists)
+                {
+                    DeleteOutDateFile(logFolder.EnumerateFiles("????????.txt"), "yyyyMMdd", retention, "logs", logger, token);
+                }
+            }, "logs", logFolder.FullName, logger, token);
+            TryCleanup(() =>
+            {
+                if (logFolder.Exists)
+                {
+                    DeleteOutDateFile(logFolder.EnumerateFiles("????-??-?? ??-??-??.dmp"),
+                        "yyyy-MM-dd HH-mm-ss", retention, "dumps", logger, token);
+                }
+            }, "dumps", logFolder.FullName, logger, token);
+        }
+    }
+
+    private static void TryCleanup(Action action, string stage, string path, ILogger logger, CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
         try
         {
-            DeleteUpdatePackageFiles(token);
-
-            var config = configManager.GetConfig<ProgramConfig>();
-            if (config.TempFileRemainDays != 0)
-            {
-                var tempFolders = new DirectoryInfo(Env.AppDataFileFolder).EnumerateDirectories("????????");
-                foreach (var dirs in tempFolders)
-                {
-                    token.ThrowIfCancellationRequested();
-                    var isTime = DateTime.TryParseExact(dirs.Name, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var createTime);
-                    if (isTime && ((DateTime.Today - createTime) > TimeSpan.FromDays(config.TempFileRemainDays)))
-                    {
-                        dirs.Delete(true);
-                    }
-                }
-            }
-
-            var logFolder = new DirectoryInfo(Env.LogFolder);
-            if (logFolder.Exists && config.LogRemainDays != 0)
-            {
-                var logFiles = logFolder.EnumerateFiles("????????.txt");
-                var dumpFiles = logFolder.EnumerateFiles("????-??-?? ??-??-??.dmp");
-                DeleteOutDateFile(logFiles, "yyyyMMdd", TimeSpan.FromDays(config.LogRemainDays), token);
-                DeleteOutDateFile(dumpFiles, "yyyy-MM-dd HH-mm-ss", TimeSpan.FromDays(config.LogRemainDays), token);
-            }
+            action();
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested)
         {
             throw;
         }
-        catch { }
+        catch (Exception ex)
+        {
+            logger.Write(nameof(AppdataFileDeleteJob), $"Failed to clean {stage} at '{path}': {ex}");
+        }
+        token.ThrowIfCancellationRequested();
+    }
+
+    private static void DeleteEntry(FileSystemInfo entry, string stage, ILogger logger, CancellationToken token)
+    {
+        TryCleanup(() =>
+        {
+            if (entry is DirectoryInfo directory)
+            {
+                directory.Delete(true);
+            }
+            else
+            {
+                entry.Delete();
+            }
+        }, stage, entry.FullName, logger, token);
     }
 
     private static void DeleteOutDateFile(
         IEnumerable<FileSystemInfo> files,
         string format,
         TimeSpan time,
+        string stage,
+        ILogger logger,
         CancellationToken token)
     {
         foreach (var file in files)
         {
             token.ThrowIfCancellationRequested();
-            var createTime = DateTime.ParseExact(
-                Path.GetFileNameWithoutExtension(file.Name),
-                format,
-                CultureInfo.InvariantCulture
-            );
-            if ((DateTime.Today - createTime) > time)
+            if (DateTime.TryParseExact(Path.GetFileNameWithoutExtension(file.Name), format,
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out var createTime)
+                && (DateTime.Today - createTime) > time)
             {
-                file.Delete();
+                DeleteEntry(file, stage, logger, token);
             }
         }
     }
 
-    private static void DeleteUpdatePackageFiles(CancellationToken token)
+    private static void DeleteUpdatePackageFiles(DirectoryInfo updateFolder, ILogger logger, CancellationToken token)
     {
-        var updateFolder = new DirectoryInfo(Env.UpdateFolder);
         if (!updateFolder.Exists)
         {
             return;
         }
-        updateFolder.EnumerateFiles().ForEach(file =>
+
+        TryCleanup(() =>
         {
-            token.ThrowIfCancellationRequested();
-            file.Delete();
-        });
+            foreach (var file in updateFolder.EnumerateFiles())
+            {
+                DeleteEntry(file, "updates", logger, token);
+            }
+        }, "updates", updateFolder.FullName, logger, token);
 
         List<KeyValuePair<DirectoryInfo, AppVersion>> updateDirs = [];
-        updateFolder.EnumerateDirectories().ForEach(dir =>
+        foreach (var dir in updateFolder.EnumerateDirectories())
         {
             token.ThrowIfCancellationRequested();
             if (AppVersion.TryParse(dir.Name, out var appVersion))
@@ -98,13 +134,12 @@ public class AppdataFileDeleteJob(ConfigManager configManager) : IJob
             }
             else
             {
-                dir.Delete(true);
+                DeleteEntry(dir, "updates", logger, token);
             }
-        });
-        updateDirs.OrderByDescending(x => x.Value).Skip(2).ForEach(x =>
+        }
+        foreach (var entry in updateDirs.OrderByDescending(x => x.Value).Skip(2))
         {
-            token.ThrowIfCancellationRequested();
-            x.Key.Delete(true);
-        });
+            DeleteEntry(entry.Key, "updates", logger, token);
+        }
     }
 }
