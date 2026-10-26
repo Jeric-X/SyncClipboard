@@ -42,6 +42,10 @@ public class ClipboardImageTests
     public void LosslessEncodingChange_DoesNotChangeClipboardContent(MagickFormat format)
     {
         using var source = CreateImage();
+        // Keep attributes identical too: encoders otherwise add rounded chromaticities or a palette background.
+        var zero = new PrimaryInfo(0, 0, 0);
+        source.Chromaticity = new ChromaticityInfo(zero, zero, zero, zero);
+        source.Settings.SetDefine(MagickFormat.Png, "exclude-chunk", "bKGD,cHRM");
         var original = source.ToByteArray(MagickFormat.Png);
         source.Settings.SetDefine(MagickFormat.WebP, "lossless", true);
         AssertSameImage(original, source.ToByteArray(format));
@@ -64,7 +68,7 @@ public class ClipboardImageTests
         var first = new ClipboardImage(original.ToByteArray(MagickFormat.Png));
         var second = new ClipboardImage(changed.ToByteArray(MagickFormat.Png));
 
-        Assert.AreNotEqual(first.PixelHash, second.PixelHash);
+        Assert.AreNotEqual(first.ContentHash, second.ContentHash);
         Assert.AreNotEqual(first, second);
     }
 
@@ -79,94 +83,151 @@ public class ClipboardImageTests
     }
 
     [TestMethod]
-    public async Task OrientationIsAppliedToComparisonAndSavedPixels()
-    {
-        using var tagged = CreateImage();
-        tagged.Orientation = OrientationType.RightTop;
-        var taggedBytes = tagged.ToByteArray(MagickFormat.Tiff);
-        using var decoded = new MagickImage(taggedBytes);
-        Assert.AreEqual(OrientationType.RightTop, decoded.Orientation);
-        decoded.AutoOrient();
-        var expected = new ClipboardImage(decoded.ToByteArray(MagickFormat.Png));
-        var actual = new ClipboardImage(taggedBytes);
-
-        Assert.AreEqual(expected, actual);
-        var saved = await actual.SaveToBytes(TestContext.CancellationTokenSource.Token);
-        Assert.AreEqual(expected, new ClipboardImage(saved));
-    }
-
-    [TestMethod]
-    public async Task ColorProfileIsAppliedToComparisonAndSavedPixels()
+    public async Task OrientationMetadataParticipatesAndIsAppliedWhenSaving()
     {
         using var source = CreateImage();
-        source.SetProfile(ColorProfiles.AdobeRGB1998);
-        var taggedBytes = source.ToByteArray(MagickFormat.Png);
-        using var decoded = new MagickImage(taggedBytes);
-        Assert.IsTrue(decoded.TransformColorSpace(ColorProfiles.SRGB));
-        decoded.Depth = decoded.DetermineBitDepth();
-        var expected = new ClipboardImage(decoded.ToByteArray(MagickFormat.Png));
-        var actual = new ClipboardImage(taggedBytes);
-        using var untagged = CreateImage();
-
-        Assert.AreEqual(expected, actual);
-        Assert.AreNotEqual(new ClipboardImage(untagged.ToByteArray(MagickFormat.Png)), actual);
-        var saved = await actual.SaveToBytes(TestContext.CancellationTokenSource.Token);
-        Assert.AreEqual(expected, new ClipboardImage(saved));
-    }
-
-    [TestMethod]
-    public async Task GammaChangesRemainDistinctAndSurviveSaving()
-    {
-        using var source = CreateImage();
-        using (var sourcePixels = source.GetPixels())
-        {
-            sourcePixels.SetPixel(0, 0, [ushort.MaxValue, 100 * 257, 30 * 257, 128 * 257]);
-        }
+        var plain = new ClipboardImage(source.ToByteArray(MagickFormat.Png));
+        source.Orientation = OrientationType.RightTop;
         var bytes = source.ToByteArray(MagickFormat.Png);
-        var standard = new ClipboardImage(bytes);
-        var custom = new ClipboardImage(WithPngGamma(bytes, 70000));
+        using var decoded = new MagickImage(bytes);
+        Assert.AreEqual(OrientationType.RightTop, decoded.Orientation);
+        var rotated = new ClipboardImage(bytes);
+        Assert.AreNotEqual(plain, rotated);
+        decoded.AutoOrient();
+        using var saved = new MagickImage(await rotated.SaveToBytes(TestContext.CancellationTokenSource.Token));
+        Assert.AreEqual(decoded.Width, saved.Width);
+        Assert.AreEqual(decoded.Height, saved.Height);
+        using var expectedPixels = decoded.GetPixels();
+        using var actualPixels = saved.GetPixels();
+        CollectionAssert.AreEqual(expectedPixels.ToShortArray(PixelMapping.RGBA), actualPixels.ToShortArray(PixelMapping.RGBA));
+    }
 
-        Assert.AreNotEqual(standard, custom);
+    [TestMethod]
+    public async Task ColorProfileParticipatesAndIsPreserved()
+    {
+        using var source = CreateImage();
+        var plain = new ClipboardImage(source.ToByteArray(MagickFormat.Png));
+        source.SetProfile(ColorProfiles.AdobeRGB1998);
+        var bytes = source.ToByteArray(MagickFormat.Png);
+        var tagged = new ClipboardImage(bytes);
+        Assert.AreNotEqual(plain, tagged);
+        var saved = await tagged.SaveToBytes(TestContext.CancellationTokenSource.Token);
+        using var decoded = new MagickImage(saved);
+        CollectionAssert.AreEqual(ColorProfiles.AdobeRGB1998.ToByteArray(), decoded.GetColorProfile()!.ToByteArray());
+        Assert.AreEqual(tagged, new ClipboardImage(saved));
+    }
+
+    [TestMethod]
+    public void ExplicitSrgbIccIsNotDiscardedDuringComparison()
+    {
+        using var source = CreateImage();
+        var plain = source.ToByteArray(MagickFormat.Png);
+        source.SetProfile(ColorProfiles.SRGB);
+        source.Settings.SetDefine(MagickFormat.Png, "preserve-iCCP", true);
+        var tagged = source.ToByteArray(MagickFormat.Png);
+        Assert.AreNotEqual(new ClipboardImage(plain), new ClipboardImage(tagged));
+    }
+
+    [TestMethod]
+    public async Task CmykIccIsAppliedWhenSavingToPng()
+    {
+        using var source = new MagickImage();
+        source.ReadPixels([30, 80, 120, 40], new PixelReadSettings(1, 1, StorageType.Char, PixelMapping.CMYK));
+        source.SetProfile(ColorProfiles.USWebCoatedSWOP);
+        var bytes = source.ToByteArray(MagickFormat.Tiff);
+        using var expected = new MagickImage(bytes);
+        Assert.IsTrue(expected.TransformColorSpace(ColorProfiles.SRGB));
+        var clipboardImage = new ClipboardImage(bytes);
+        using var actual = new MagickImage(await clipboardImage.SaveToBytes(TestContext.CancellationTokenSource.Token));
+        using var expectedPixels = expected.GetPixels();
+        using var actualPixels = actual.GetPixels();
+        CollectionAssert.AreEqual(expectedPixels.ToShortArray(PixelMapping.RGBA), actualPixels.ToShortArray(PixelMapping.RGBA));
+    }
+
+    [TestMethod]
+    public async Task GammaMetadataParticipatesAndDoesNotChangeSavedPixels()
+    {
+        using var source = CreateImage();
+        var original = source.ToByteArray(MagickFormat.Png);
+        var bytes = WithPngGamma(original, 70000);
+        var custom = new ClipboardImage(bytes);
+        Assert.AreNotEqual(new ClipboardImage(original), custom);
         var saved = await custom.SaveToBytes(TestContext.CancellationTokenSource.Token);
         using var decoded = new MagickImage(saved);
-        Assert.AreEqual(1 / 2.2, decoded.Gamma, 0.00001);
-        using var pixels = decoded.GetPixels();
-        Assert.IsGreaterThan((ushort)(100 * 257), pixels.GetPixel(0, 0).ToColor().G);
-        Assert.AreEqual((ushort)(128 * 257), pixels.GetPixel(0, 0).ToColor().A);
+        Assert.AreEqual(0.7, decoded.Gamma, 0.00001);
+        using var beforePixels = source.GetPixels();
+        using var afterPixels = decoded.GetPixels();
+        CollectionAssert.AreEqual(beforePixels.ToShortArray(PixelMapping.RGBA), afterPixels.ToShortArray(PixelMapping.RGBA));
         Assert.AreEqual(custom, new ClipboardImage(saved));
     }
 
     [TestMethod]
-    public async Task CustomGammaGrayscaleAndRgbEncodingsHaveSamePixels()
+    [DataRow("Comment")]
+    [DataRow("Author")]
+    [DataRow("Software")]
+    [DataRow("Creation Time")]
+    public void AllowlistedTextDoesNotChangeIdentity(string keyword)
     {
-        using var source = new MagickImage(new MagickColor(25700, 25700, 25700), 3, 2);
-        source.Settings.SetDefine(MagickFormat.Png, "color-type", 2);
-        var rgb = new ClipboardImage(WithPngGamma(source.ToByteArray(MagickFormat.Png), 70000));
-        source.Settings.SetDefine(MagickFormat.Png, "color-type", 0);
-        var grayscaleBytes = WithPngGamma(source.ToByteArray(MagickFormat.Png), 70000);
-        using var decoded = new MagickImage(grayscaleBytes);
-        Assert.AreEqual(ColorSpace.Gray, decoded.ColorSpace);
-        var grayscale = new ClipboardImage(grayscaleBytes);
-
-        Assert.AreEqual(rgb, grayscale);
-        var saved = await grayscale.SaveToBytes(TestContext.CancellationTokenSource.Token);
-        Assert.AreEqual(rgb, new ClipboardImage(saved));
+        using var source = CreateImage();
+        var original = source.ToByteArray(MagickFormat.Png);
+        source.SetAttribute(keyword, "descriptive metadata");
+        AssertSameImage(original, source.ToByteArray(MagickFormat.Png));
     }
 
     [TestMethod]
-    public async Task ExplicitSrgbOverridesConflictingGamma()
+    [DataRow("PrivateSetting")]
+    [DataRow("Comment:PrivateSetting")]
+    [DataRow("XML:com.adobe.xmp")]
+    public void UnlistedTextParticipatesInComparison(string keyword)
     {
         using var source = CreateImage();
-        var bytes = source.ToByteArray(MagickFormat.Png);
-        var taggedBytes = WithPngGamma(bytes, 70000, declareSrgb: true);
-        using var decoded = new MagickImage(taggedBytes);
-        Assert.IsNotNull(decoded.GetAttribute("png:sRGB"));
-        var expected = new ClipboardImage(bytes);
-        var actual = new ClipboardImage(taggedBytes);
+        var original = source.ToByteArray(MagickFormat.Png);
+        source.SetAttribute(keyword, "custom metadata");
+        var changed = source.ToByteArray(MagickFormat.Png);
+        Assert.AreNotEqual(new ClipboardImage(original), new ClipboardImage(changed));
+    }
 
-        Assert.AreEqual(expected, actual);
-        var saved = await actual.SaveToBytes(TestContext.CancellationTokenSource.Token);
-        Assert.AreEqual(expected, new ClipboardImage(saved));
+    [TestMethod]
+    public void PixelAspectRatioParticipatesInComparison()
+    {
+        using var source = CreateImage();
+        source.Density = new Density(100, 200);
+        var original = source.ToByteArray(MagickFormat.Png);
+        source.Density = new Density(200, 400);
+        AssertSameImage(original, source.ToByteArray(MagickFormat.Png));
+        source.Density = new Density(200, 200);
+        Assert.AreNotEqual(new ClipboardImage(original), new ClipboardImage(source.ToByteArray(MagickFormat.Png)));
+    }
+
+    [TestMethod]
+    public void UnknownPngChunkParticipatesInComparison()
+    {
+        using var source = CreateImage();
+        var original = source.ToByteArray(MagickFormat.Png);
+        var changed = InsertPngChunk(original, "scPr", [1, 2, 3]);
+        Assert.AreNotEqual(new ClipboardImage(original), new ClipboardImage(changed));
+    }
+
+    [TestMethod]
+    public void LosslessPngRecompressionDoesNotChangeIdentity()
+    {
+        using var source = CreateImage();
+        source.Settings.SetDefine(MagickFormat.Png, "compression-level", 0);
+        var original = source.ToByteArray(MagickFormat.Png);
+        source.Settings.SetDefine(MagickFormat.Png, "compression-level", 9);
+        AssertSameImage(original, source.ToByteArray(MagickFormat.Png));
+    }
+
+    [TestMethod]
+    public void DifferentLaterAnimationFramesAreDifferent()
+    {
+        using var frames = new MagickImageCollection();
+        frames.Add(new MagickImage(MagickColors.Red, 3, 2));
+        frames.Add(new MagickImage(MagickColors.Blue, 3, 2));
+        var original = frames.ToByteArray(MagickFormat.Gif);
+        frames[1].Colorize(MagickColors.Green, new Percentage(100));
+        var changed = frames.ToByteArray(MagickFormat.Gif);
+        Assert.AreNotEqual(new ClipboardImage(original), new ClipboardImage(changed));
     }
 
     [TestMethod]
@@ -222,7 +283,7 @@ public class ClipboardImageTests
         CollectionAssert.AreNotEqual(firstBytes, secondBytes);
         var first = new ClipboardImage(firstBytes);
         var second = new ClipboardImage(secondBytes);
-        Assert.AreEqual(first.PixelHash, second.PixelHash);
+        Assert.AreEqual(first.ContentHash, second.ContentHash);
         Assert.AreEqual(first, second);
         Assert.AreEqual(first.GetHashCode(), second.GetHashCode());
         Assert.AreEqual(new ClipboardMetaInfomation { Image = first }, new ClipboardMetaInfomation { Image = second });
@@ -241,32 +302,11 @@ public class ClipboardImageTests
         return image;
     }
 
-    private static byte[] WithPngGamma(byte[] png, uint gamma, bool declareSrgb = false)
+    private static byte[] WithPngGamma(byte[] png, uint gamma)
     {
         using var output = new MemoryStream();
-        output.Write(png.AsSpan(0, 33)); // PNG signature and IHDR chunk.
-        Span<byte> chunk = stackalloc byte[16];
-        BinaryPrimitives.WriteUInt32BigEndian(chunk, 4);
-        "gAMA"u8.CopyTo(chunk[4..]);
-        BinaryPrimitives.WriteUInt32BigEndian(chunk[8..], gamma);
-        uint crc = uint.MaxValue;
-        foreach (var value in chunk[4..12])
-        {
-            crc ^= value;
-            for (int bit = 0; bit < 8; bit++)
-            {
-                crc = (crc >> 1) ^ ((crc & 1) == 0 ? 0 : 0xEDB88320u);
-            }
-        }
-        BinaryPrimitives.WriteUInt32BigEndian(chunk[12..], ~crc);
-        output.Write(chunk);
-        if (declareSrgb)
-        {
-            // An sRGB chunk declaring perceptual rendering intent, including its CRC.
-            output.Write(Convert.FromHexString("000000017352474200AECE1CE9"));
-        }
-
-        for (int offset = 33; offset < png.Length;)
+        output.Write(png.AsSpan(0, 8));
+        for (int offset = 8; offset < png.Length;)
         {
             int length = checked((int)BinaryPrimitives.ReadUInt32BigEndian(png.AsSpan(offset)) + 12);
             var type = png.AsSpan(offset + 4, 4);
@@ -276,6 +316,31 @@ public class ClipboardImageTests
             }
             offset += length;
         }
+        var value = new byte[4];
+        BinaryPrimitives.WriteUInt32BigEndian(value, gamma);
+        return InsertPngChunk(output.ToArray(), "gAMA", value);
+    }
+
+    private static byte[] InsertPngChunk(byte[] png, string type, byte[] value)
+    {
+        using var output = new MemoryStream();
+        output.Write(png.AsSpan(0, 33)); // Signature and IHDR.
+        var chunk = new byte[value.Length + 12];
+        BinaryPrimitives.WriteUInt32BigEndian(chunk, (uint)value.Length);
+        System.Text.Encoding.ASCII.GetBytes(type).CopyTo(chunk, 4);
+        value.CopyTo(chunk, 8);
+        uint crc = uint.MaxValue;
+        foreach (var b in chunk.AsSpan(4, value.Length + 4))
+        {
+            crc ^= b;
+            for (int bit = 0; bit < 8; bit++)
+            {
+                crc = (crc >> 1) ^ ((crc & 1) == 0 ? 0 : 0xEDB88320u);
+            }
+        }
+        BinaryPrimitives.WriteUInt32BigEndian(chunk.AsSpan(value.Length + 8), ~crc);
+        output.Write(chunk);
+        output.Write(png.AsSpan(33));
         return output.ToArray();
     }
 }

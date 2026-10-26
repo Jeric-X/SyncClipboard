@@ -10,7 +10,7 @@ namespace SyncClipboard.Core.Clipboard;
 
 public abstract class ClipboardFactoryBase : IClipboardFactory
 {
-    private const string ImageCacheType = "ClipboardImagePixelsV2";
+    private const string ImageCacheType = "ClipboardImageMetadataV1";
     private static readonly SemaphoreSlim ImageCacheSemaphore = new(1, 1);
 
     protected abstract ILogger Logger { get; set; }
@@ -79,7 +79,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
         await ImageCacheSemaphore.WaitAsync(ctk);
         using var guard = new ScopeGuard(() => ImageCacheSemaphore.Release());
 
-        var hash = image.PixelHash;
+        var hash = image.ContentHash;
         var cachedPath = await FileCacheManager.GetCachedFilePathAsync(ImageCacheType, hash, ctk);
         if (cachedPath is not null)
         {
