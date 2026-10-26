@@ -103,6 +103,103 @@ public class ClipboardImageTests
     }
 
     [TestMethod]
+    [DataRow(OrientationType.TopRight)]
+    [DataRow(OrientationType.BottomRight)]
+    [DataRow(OrientationType.BottomLeft)]
+    [DataRow(OrientationType.LeftTop)]
+    [DataRow(OrientationType.RightTop)]
+    [DataRow(OrientationType.RightBottom)]
+    [DataRow(OrientationType.LeftBottom)]
+    public async Task OrientationAndMirroringMatchBakedPixels(OrientationType orientation)
+    {
+        using var source = CreateImage();
+        source.Orientation = orientation;
+        source.Density = new Density(100, 200);
+        var tagged = source.ToByteArray(MagickFormat.Png);
+        source.AutoOrient();
+        if (orientation is >= OrientationType.LeftTop and <= OrientationType.LeftBottom)
+        {
+            source.Density = new Density(200, 100);
+        }
+        AssertSameImage(tagged, source.ToByteArray(MagickFormat.Png));
+        var clipboardImage = new ClipboardImage(tagged);
+        var saved = await clipboardImage.SaveToBytes(TestContext.CancellationTokenSource.Token);
+        Assert.AreEqual(clipboardImage, new ClipboardImage(saved));
+    }
+
+    [TestMethod]
+    [DataRow(OrientationType.RightTop)]
+    [DataRow(OrientationType.RightBottom)]
+    public async Task ExifOrientationMatchesBakedPixels(OrientationType orientation)
+    {
+        using var source = CreateImage();
+        var profile = new ExifProfile();
+        profile.SetValue(ExifTag.Orientation, (ushort)orientation);
+        profile.SetValue(ExifTag.PixelXDimension, new Number(source.Width));
+        profile.SetValue(ExifTag.PixelYDimension, new Number(source.Height));
+        source.SetProfile(profile);
+        source.Orientation = orientation;
+        var tagged = source.ToByteArray(MagickFormat.Png);
+        source.RemoveProfile("exif");
+        source.AutoOrient();
+        var baked = source.ToByteArray(MagickFormat.Png);
+        AssertSameImage(tagged, baked);
+        var image = new ClipboardImage(tagged);
+        var saved = await image.SaveToBytes(TestContext.CancellationTokenSource.Token);
+        Assert.AreEqual(image, new ClipboardImage(saved));
+        var cached = await new ClipboardImage(baked).SaveToBytes(TestContext.CancellationTokenSource.Token);
+        Assert.AreEqual(image, new ClipboardImage(cached));
+    }
+
+    [TestMethod]
+    public void EquivalentSrgbAndRedundantExifMetadataMatch()
+    {
+        // Reproduce the user's two PNGs without committing their private screenshot:
+        // sRGB + EXIF dimensions versus cHRM + orNT + DPI + TIFF encoder attributes.
+        using var source = CreateImage();
+        var profile = new ExifProfile();
+        profile.SetValue(ExifTag.ColorSpace, (ushort)1);
+        profile.SetValue(ExifTag.PixelXDimension, new Number(source.Width));
+        profile.SetValue(ExifTag.PixelYDimension, new Number(source.Height));
+        source.SetProfile(profile);
+        source.Settings.SetDefine(MagickFormat.Png, "exclude-chunk", "sRGB,gAMA");
+        var original = InsertPngChunk(source.ToByteArray(MagickFormat.Png), "sRGB", [0]);
+        source.RemoveProfile("exif");
+        source.Orientation = OrientationType.TopLeft;
+        source.Density = new Density(72);
+        source.SetAttribute("tiff:alpha", "associated");
+        source.SetAttribute("date:modify", "2026-10-26T09:13:29+00:00");
+        AssertSameImage(original, source.ToByteArray(MagickFormat.Png));
+    }
+
+    [TestMethod]
+    public void DifferentColorPrimariesRemainDifferent()
+    {
+        using var source = CreateImage();
+        source.Settings.SetDefine(MagickFormat.Png, "exclude-chunk", "sRGB");
+        var original = source.ToByteArray(MagickFormat.Png);
+        var chromaticity = source.Chromaticity;
+        source.Chromaticity = new ChromaticityInfo(new PrimaryInfo(0.63, 0.33, 0.04),
+            chromaticity.Green, chromaticity.Blue, chromaticity.White);
+        Assert.AreNotEqual(new ClipboardImage(original), new ClipboardImage(source.ToByteArray(MagickFormat.Png)));
+    }
+
+    [TestMethod]
+    public void UnhandledExifAndMalformedExifRemainDistinct()
+    {
+        using var source = CreateImage();
+        var original = source.ToByteArray(MagickFormat.Png);
+        var profile = new ExifProfile();
+        profile.SetValue(ExifTag.Model, "unknown camera-specific interpretation");
+        source.SetProfile(profile);
+        Assert.AreNotEqual(new ClipboardImage(original), new ClipboardImage(source.ToByteArray(MagickFormat.Png)));
+        // Unsupported TIFF field type: do not silently discard what an EXIF decoder cannot expose.
+        byte[] malformed = [0x49, 0x49, 42, 0, 8, 0, 0, 0, 1, 0,
+            0x01, 0xA0, 99, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0];
+        Assert.AreNotEqual(new ClipboardImage(original), new ClipboardImage(InsertPngChunk(original, "eXIf", malformed)));
+    }
+
+    [TestMethod]
     public async Task ColorProfileParticipatesAndIsPreserved()
     {
         using var source = CreateImage();
@@ -126,6 +223,22 @@ public class ClipboardImageTests
         source.Settings.SetDefine(MagickFormat.Png, "preserve-iCCP", true);
         var tagged = source.ToByteArray(MagickFormat.Png);
         Assert.AreNotEqual(new ClipboardImage(plain), new ClipboardImage(tagged));
+    }
+
+    [TestMethod]
+    public async Task SrgbIccIsPreservedWhenApplyingOrientation()
+    {
+        using var source = CreateImage();
+        source.SetProfile(ColorProfiles.SRGB);
+        source.Settings.SetDefine(MagickFormat.Png, "preserve-iCCP", true);
+        source.Orientation = OrientationType.RightTop;
+        var image = new ClipboardImage(source.ToByteArray(MagickFormat.Png));
+        var saved = await image.SaveToBytes(TestContext.CancellationTokenSource.Token);
+        using var decoded = new MagickImage();
+        decoded.Settings.SetDefine(MagickFormat.Png, "preserve-iCCP", true);
+        decoded.Read(saved);
+        CollectionAssert.AreEqual(ColorProfiles.SRGB.ToByteArray(), decoded.GetColorProfile()!.ToByteArray());
+        Assert.AreEqual(image, new ClipboardImage(saved));
     }
 
     [TestMethod]
@@ -228,6 +341,20 @@ public class ClipboardImageTests
         frames[1].Colorize(MagickColors.Green, new Percentage(100));
         var changed = frames.ToByteArray(MagickFormat.Gif);
         Assert.AreNotEqual(new ClipboardImage(original), new ClipboardImage(changed));
+    }
+
+    [TestMethod]
+    public void AnimatedPngOrientationIsNotComparedUsingOnlyFirstFrame()
+    {
+        // Synthetic 3x2 APNG: solid red first frame, blue upper-left pixel in the second frame.
+        // A 180-degree turn leaves frame 1 identical but changes frame 2.
+        var original = Convert.FromBase64String(
+            "iVBORw0KGgoAAAANSUhEUgAAAAMAAAACCAYAAACddGYaAAAACGFjVEwAAAACAAAAAPONk3AAAAAaZmNU" +
+            "TAAAAAAAAAADAAAAAgAAAAAAAAAAAAEACgAAP7ZcWAAAABRJREFUeJxj/M/A8J8BCphgDBANAC8fAgK0" +
+            "KqlqAAAAGmZjVEwAAAABAAAAAQAAAAEAAAAAAAAAAAABAAoAAMEM2gQAAAARZmRBVAAAAAJ4nGNgYPj/" +
+            "HwADAgH/9Xul1wAAAABJRU5ErkJggg==");
+        var rotated = InsertPngChunk(original, "orNT", [(byte)OrientationType.BottomRight]);
+        Assert.AreNotEqual(new ClipboardImage(original), new ClipboardImage(rotated));
     }
 
     [TestMethod]

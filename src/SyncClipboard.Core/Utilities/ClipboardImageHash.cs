@@ -9,7 +9,7 @@ namespace SyncClipboard.Core.Utilities;
 
 internal static class ClipboardImageHash
 {
-    // Exact attribute names, never prefixes: unknown attributes and all profiles participate in comparison.
+    // Exact attribute names, never prefixes: unknown attributes/profiles still participate in comparison.
     private static readonly HashSet<string> IgnoredAttributes = new(StringComparer.OrdinalIgnoreCase)
     {
         "Title", "Author", "Description", "Copyright", "Creation Time", "Software",
@@ -25,18 +25,21 @@ internal static class ClipboardImageHash
 
     internal static string Compute(MagickImage image, ReadOnlySpan<byte> source)
     {
-        // ClipboardImage decodes one frame. Do not merge multi-frame containers based on that frame alone.
-        if (image.Format is not (MagickFormat.Png or MagickFormat.Bmp or MagickFormat.Bmp2 or MagickFormat.Bmp3) &&
-            MagickImageInfo.ReadCollection(source).Skip(1).Any())
+        // PNG ReadCollection only exposes the first APNG frame. Never orient/deduplicate an animation by that frame.
+        if (image.GetAttribute("png:acTL") is not null ||
+            (image.Format is not (MagickFormat.Png or MagickFormat.Bmp or MagickFormat.Bmp2 or MagickFormat.Bmp3) &&
+                MagickImageInfo.ReadCollection(source).Skip(1).Any()))
         {
             return Convert.ToHexString(SHA256.HashData(source));
         }
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        var orientation = image.Orientation;
+        ApplyOrientation(image);
         AppendMetadata(hash, image);
         // ImageMagick drops unknown PNG chunks, so include them directly rather than silently ignoring them.
         if (IsPng(source))
         {
-            AppendUnknownPngChunks(hash, source);
+            AppendUnknownPngChunks(hash, source, orientation);
         }
         Append(hash, []);
 
@@ -44,17 +47,40 @@ internal static class ClipboardImageHash
         return Convert.ToHexString(hash.GetHashAndReset());
     }
 
+    internal static void ApplyOrientation(MagickImage image)
+    {
+        // Remove only verified redundant EXIF before rotation makes its stored width/height stale.
+        ClipboardImageExif.RemoveRedundantProfile(image);
+        bool swapsAxes = image.Orientation is >= OrientationType.LeftTop and <= OrientationType.LeftBottom;
+        bool fullCanvas = image.Page.Width == image.Width && image.Page.Height == image.Height &&
+            image.Page.X == 0 && image.Page.Y == 0;
+        var density = image.Density;
+        image.AutoOrient();
+        if (fullCanvas)
+        {
+            // ImageMagick transpose/transverse can leave the old virtual canvas even for a whole image.
+            image.ResetPage();
+        }
+        if (swapsAxes)
+        {
+            image.Density = new Density(density.Y, density.X, density.Units);
+        }
+    }
+
     private static void AppendMetadata(IncrementalHash hash, MagickImage image)
     {
-        // No AutoOrient, color-space conversion or gamma correction: retain original pixel interpretation.
+        // Only reorder pixels for orientation. Never transform colors or quantize Q16 pixel values.
         Append(hash, JsonSerializer.SerializeToUtf8Bytes(new
         {
             image.Width,
             image.Height,
             image.ColorSpace,
             image.Gamma,
-            image.Chromaticity,
-            Orientation = image.Orientation == OrientationType.Undefined ? OrientationType.TopLeft : image.Orientation,
+            Chromaticity = new[]
+            {
+                NormalizePrimary(image.Chromaticity.Red), NormalizePrimary(image.Chromaticity.Green),
+                NormalizePrimary(image.Chromaticity.Blue), NormalizePrimary(image.Chromaticity.White)
+            },
             Background = image.BackgroundColor?.ToString(),
             image.RenderingIntent,
             Page = image.Page.ToString(),
@@ -67,7 +93,7 @@ internal static class ClipboardImageHash
 
         foreach (string name in image.AttributeNames.Order(StringComparer.Ordinal))
         {
-            if (!IgnoredAttributes.Contains(name))
+            if (!IgnoredAttributes.Contains(name) && name != "png:sRGB")
             {
                 Append(hash, Encoding.UTF8.GetBytes(name));
                 Append(hash, Encoding.UTF8.GetBytes(image.GetAttribute(name) ?? ""));
@@ -81,6 +107,10 @@ internal static class ClipboardImageHash
         }
         Append(hash, []);
     }
+
+    // PNG cHRM has five decimal places; keep those distinctions without the decoder's floating-point tails.
+    private static double[] NormalizePrimary(IPrimaryInfo primary) =>
+        [Math.Round(primary.X, 8), Math.Round(primary.Y, 8), Math.Round(primary.Z, 8)];
 
     private static void AppendPixels(IncrementalHash hash, MagickImage image)
     {
@@ -111,7 +141,7 @@ internal static class ClipboardImageHash
         hash.AppendData(value);
     }
 
-    private static void AppendUnknownPngChunks(IncrementalHash hash, ReadOnlySpan<byte> source)
+    private static void AppendUnknownPngChunks(IncrementalHash hash, ReadOnlySpan<byte> source, OrientationType orientation)
     {
         for (int offset = 8; offset <= source.Length - 12;)
         {
@@ -124,7 +154,9 @@ internal static class ClipboardImageHash
             var type = source.Slice(offset + 4, 4);
             string name = Encoding.ASCII.GetString(type);
             // Pixels, explicit descriptive metadata, and properties/profiles handled above.
-            if (name is not ("IHDR" or "PLTE" or "IDAT" or "IEND" or "tRNS" or
+            bool appliedOrientation = name == "orNT" && length == 1 && source[offset + 8] is >= 1 and <= 8 &&
+                source[offset + 8] == (byte)orientation;
+            if (!appliedOrientation && name is not ("IHDR" or "PLTE" or "IDAT" or "IEND" or "tRNS" or
                 "pHYs" or "tIME" or "tEXt" or "zTXt" or "iTXt" or "iCCP" or "eXIf" or
                 "bKGD" or "cHRM" or "gAMA" or "sRGB"))
             {

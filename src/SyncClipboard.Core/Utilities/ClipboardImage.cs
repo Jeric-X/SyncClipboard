@@ -68,15 +68,23 @@ public class ClipboardImage : IClipboardImage
             {
                 return _imageBytes;
             }
-            using var image = new MagickImage(_imageBytes);
+            using var image = new MagickImage();
+            image.Settings.SetDefine(MagickFormat.Png, "preserve-iCCP", true);
+            image.Read(_imageBytes);
             // PNG consumers such as Avalonia do not apply orientation metadata themselves.
-            image.AutoOrient();
+            ClipboardImageHash.ApplyOrientation(image);
             // PNG cannot represent CMYK. Convert only for output, never for the comparison fingerprint.
             if (image.ColorSpace is not (ColorSpace.sRGB or ColorSpace.RGB or ColorSpace.Gray or ColorSpace.LinearGray) &&
                 image.GetColorProfile() is not null)
             {
                 image.TransformColorSpace(ColorProfiles.SRGB);
                 image.Depth = image.DetermineBitDepth();
+            }
+            if (image.Density.Units == DensityUnit.PixelsPerCentimeter)
+            {
+                // PNG truncates cm * 100: avoid 39.37 becoming 3936 instead of 3937 pixels per meter.
+                image.Density = new Density(Math.BitIncrement(image.Density.X), Math.BitIncrement(image.Density.Y),
+                    DensityUnit.PixelsPerCentimeter);
             }
             return image.ToByteArray(MagickFormat.Png);
         }, token);
