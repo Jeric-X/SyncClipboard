@@ -114,7 +114,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
         {
             using var stream = new MemoryStream();
             bitmap.Save(stream, PngBitmapEncoderOptions.Default);
-            meta.Image = ClipboardImage.TryCreateImage(stream.ToArray());
+            meta.Image = await ClipboardImage.TryCreateImageAsync(stream.ToArray(), token);
         }
     }
 }

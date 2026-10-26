@@ -34,14 +34,33 @@ public class ClipboardImage : IClipboardImage
         return null;
     }
 
+    public static Task<ClipboardImage?> TryCreateImageAsync(byte[]? imageBytes, CancellationToken token)
+    {
+        return Task.Run(() => TryCreateImage(imageBytes), token).WaitAsync(token);
+    }
+
     private static void Normalize(MagickImage image)
     {
         // Orientation and color profiles affect the displayed pixels; apply them before ignoring metadata.
         image.AutoOrient();
-        if (!image.TransformColorSpace(ColorProfiles.SRGB))
+        if (image.GetColorProfile() is not null)
+        {
+            image.TransformColorSpace(ColorProfiles.SRGB);
+        }
+        else if (image.GetAttribute("png:sRGB") is null && image.ColorSpace is ColorSpace.sRGB or ColorSpace.Gray &&
+            image.Gamma > 0 && Math.Round(image.Gamma * 100000) != 45455)
+        {
+            // Without ICC or explicit sRGB, a nonstandard PNG gAMA defines a power transfer function.
+            // Decode it to linear light, then encode sRGB. Only color channels change, never alpha.
+            image.GammaCorrect(image.Gamma, Channels.RGB);
+            image.SetAttribute("colorspace", "RGB");
+            image.ColorSpace = ColorSpace.sRGB;
+        }
+        else
         {
             image.ColorSpace = ColorSpace.sRGB;
         }
+        image.SetAttribute("gamma", "0.45454545454545453");
     }
 
     private static string ComputePixelHash(MagickImage image)
@@ -95,7 +114,6 @@ public class ClipboardImage : IClipboardImage
             Normalize(image);
             // Color conversion can introduce precision beyond the source file's bit depth.
             image.Depth = image.DetermineBitDepth();
-            image.Strip();
             return image.ToByteArray(MagickFormat.Png);
         }, token);
         token.ThrowIfCancellationRequested();
