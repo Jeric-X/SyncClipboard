@@ -32,6 +32,20 @@ internal static class ClipboardImageHash
             return Convert.ToHexString(SHA256.HashData(source));
         }
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        AppendMetadata(hash, image);
+        // ImageMagick drops unknown PNG chunks, so include them directly rather than silently ignoring them.
+        if (IsPng(source))
+        {
+            AppendUnknownPngChunks(hash, source);
+        }
+        Append(hash, []);
+
+        AppendPixels(hash, image);
+        return Convert.ToHexString(hash.GetHashAndReset());
+    }
+
+    private static void AppendMetadata(IncrementalHash hash, MagickImage image)
+    {
         // No AutoOrient, color-space conversion or gamma correction: retain original pixel interpretation.
         Append(hash, JsonSerializer.SerializeToUtf8Bytes(new
         {
@@ -66,13 +80,10 @@ internal static class ClipboardImageHash
             Append(hash, image.GetProfile(name)!.ToByteArray());
         }
         Append(hash, []);
-        // ImageMagick drops unknown PNG chunks, so include them directly rather than silently ignoring them.
-        if (IsPng(source))
-        {
-            AppendUnknownPngChunks(hash, source);
-        }
-        Append(hash, []);
+    }
 
+    private static void AppendPixels(IncrementalHash hash, MagickImage image)
+    {
         using var pixels = image.GetPixels();
         for (int y = 0; y < image.Height; y++)
         {
@@ -84,7 +95,6 @@ internal static class ClipboardImageHash
             }
             hash.AppendData(MemoryMarshal.AsBytes(row.AsSpan()));
         }
-        return Convert.ToHexString(hash.GetHashAndReset());
     }
 
     private static double[] GetAspectRatio(Density density)
