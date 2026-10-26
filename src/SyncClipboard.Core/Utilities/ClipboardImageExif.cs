@@ -57,7 +57,7 @@ internal static class ClipboardImageExif
         }
         int start = (int)offset;
         int count = Read16(data[start..], littleEndian);
-        int end = start + 2 + count * 12;
+        int end = start + 2 + (count * 12);
         if (end > data.Length - 4 || Read32(data[end..], littleEndian) != 0)
         {
             return false;
