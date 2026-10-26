@@ -4,6 +4,9 @@ namespace SyncClipboard.Core.Utilities;
 
 public class ClipboardImage : IClipboardImage
 {
+    private static readonly Lock SourceCacheLock = new();
+    private static ClipboardImage? SourceCache;
+
     private static string? CacheHash;
     private static byte[]? CacheBytes;
     private static readonly SemaphoreSlim CacheSemaphore = new(1, 1);
@@ -28,7 +31,18 @@ public class ClipboardImage : IClipboardImage
     {
         try
         {
-            return new ClipboardImage(imageBytes);
+            ArgumentNullException.ThrowIfNull(imageBytes);
+            // Reuse the last immutable source snapshot before decoding; serialize concurrent cache misses.
+            lock (SourceCacheLock)
+            {
+                if (SourceCache is not null && imageBytes.AsSpan().SequenceEqual(SourceCache._imageBytes))
+                {
+                    return SourceCache;
+                }
+                var image = new ClipboardImage(imageBytes);
+                SourceCache = image;
+                return image;
+            }
         }
         catch { }
         return null;

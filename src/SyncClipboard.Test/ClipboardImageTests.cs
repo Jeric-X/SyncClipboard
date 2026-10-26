@@ -358,6 +358,57 @@ public class ClipboardImageTests
     }
 
     [TestMethod]
+    public async Task IdenticalSourceBytes_ReuseImageAcrossConcurrentReads()
+    {
+        using var source = CreateImage();
+        var bytes = source.ToByteArray(MagickFormat.Png);
+        var token = TestContext.CancellationTokenSource.Token;
+        var images = await Task.WhenAll(Enumerable.Range(0, 8)
+            .Select(_ => ClipboardImage.TryCreateImageAsync((byte[])bytes.Clone(), token)));
+
+        Assert.IsNotNull(images[0]);
+        foreach (var image in images)
+        {
+            Assert.AreSame(images[0], image);
+        }
+        Assert.AreSame(images[0], ClipboardImage.TryCreateImage(bytes));
+    }
+
+    [TestMethod]
+    public void ChangedSourceBuffer_DoesNotReuseStaleImage()
+    {
+        using var source = CreateImage();
+        var bytes = source.ToByteArray(MagickFormat.Bmp3);
+        var original = ClipboardImage.TryCreateImage(bytes);
+        Assert.IsNotNull(original);
+        // Change one pixel in the same caller-owned buffer, retaining its reference and length.
+        int pixelOffset = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(10));
+        bytes[pixelOffset] ^= 1;
+        var changed = ClipboardImage.TryCreateImage(bytes);
+
+        Assert.IsNotNull(changed);
+        Assert.AreNotSame(original, changed);
+        Assert.AreNotEqual(original.ContentHash, changed.ContentHash);
+        Assert.AreSame(changed, ClipboardImage.TryCreateImage((byte[])bytes.Clone()));
+    }
+
+    [TestMethod]
+    public void InvalidSource_DoesNotReplaceOrMutateCachedImage()
+    {
+        using var source = CreateImage();
+        var bytes = source.ToByteArray(MagickFormat.Png);
+        var snapshot = (byte[])bytes.Clone();
+        var original = ClipboardImage.TryCreateImage(bytes);
+        Assert.IsNotNull(original);
+        Array.Clear(bytes);
+
+        Assert.IsNull(ClipboardImage.TryCreateImage(bytes));
+        Assert.IsNull(ClipboardImage.TryCreateImage(null));
+        Assert.AreSame(original, ClipboardImage.TryCreateImage(snapshot));
+        Assert.AreEqual(new ClipboardImage(snapshot).ContentHash, original.ContentHash);
+    }
+
+    [TestMethod]
     public async Task BackgroundCreationValidatesImagesAndHonorsCancellation()
     {
         using var source = CreateImage();
