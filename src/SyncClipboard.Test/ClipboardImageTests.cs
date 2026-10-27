@@ -26,16 +26,6 @@ public class ClipboardImageTests
     }
 
     [TestMethod]
-    public void PngMetadataChange_DoesNotChangeClipboardContent()
-    {
-        using var source = CreateImage();
-        var original = source.ToByteArray(MagickFormat.Png);
-        source.Density = new Density(300);
-        source.SetAttribute("comment", "different metadata");
-        AssertSameImage(original, source.ToByteArray(MagickFormat.Png));
-    }
-
-    [TestMethod]
     [DataRow(MagickFormat.Bmp3)]
     [DataRow(MagickFormat.Tiff)]
     [DataRow(MagickFormat.WebP)]
@@ -64,7 +54,8 @@ public class ClipboardImageTests
             pixel[channel]--;
             pixels.SetPixel(0, 0, pixel);
         }
-        changed.Depth = 16;
+        original.Settings.SetDefine(MagickFormat.Png, "bit-depth", 16);
+        changed.Settings.SetDefine(MagickFormat.Png, "bit-depth", 16);
         var first = new ClipboardImage(original.ToByteArray(MagickFormat.Png));
         var second = new ClipboardImage(changed.ToByteArray(MagickFormat.Png));
 
@@ -83,26 +74,6 @@ public class ClipboardImageTests
     }
 
     [TestMethod]
-    public async Task OrientationMetadataParticipatesAndIsAppliedWhenSaving()
-    {
-        using var source = CreateImage();
-        var plain = new ClipboardImage(source.ToByteArray(MagickFormat.Png));
-        source.Orientation = OrientationType.RightTop;
-        var bytes = source.ToByteArray(MagickFormat.Png);
-        using var decoded = new MagickImage(bytes);
-        Assert.AreEqual(OrientationType.RightTop, decoded.Orientation);
-        var rotated = new ClipboardImage(bytes);
-        Assert.AreNotEqual(plain, rotated);
-        decoded.AutoOrient();
-        using var saved = new MagickImage(await rotated.SaveToBytes(TestContext.CancellationTokenSource.Token));
-        Assert.AreEqual(decoded.Width, saved.Width);
-        Assert.AreEqual(decoded.Height, saved.Height);
-        using var expectedPixels = decoded.GetPixels();
-        using var actualPixels = saved.GetPixels();
-        CollectionAssert.AreEqual(expectedPixels.ToShortArray(PixelMapping.RGBA), actualPixels.ToShortArray(PixelMapping.RGBA));
-    }
-
-    [TestMethod]
     [DataRow(OrientationType.TopRight)]
     [DataRow(OrientationType.BottomRight)]
     [DataRow(OrientationType.BottomLeft)]
@@ -113,8 +84,9 @@ public class ClipboardImageTests
     public async Task OrientationAndMirroringMatchBakedPixels(OrientationType orientation)
     {
         using var source = CreateImage();
-        source.Orientation = orientation;
         source.Density = new Density(100, 200);
+        var plain = new ClipboardImage(source.ToByteArray(MagickFormat.Png));
+        source.Orientation = orientation;
         var tagged = source.ToByteArray(MagickFormat.Png);
         source.AutoOrient();
         if (orientation is >= OrientationType.LeftTop and <= OrientationType.LeftBottom)
@@ -123,7 +95,14 @@ public class ClipboardImageTests
         }
         AssertSameImage(tagged, source.ToByteArray(MagickFormat.Png));
         var clipboardImage = new ClipboardImage(tagged);
+        Assert.AreNotEqual(plain, clipboardImage);
         var saved = await clipboardImage.SaveToBytes(TestContext.CancellationTokenSource.Token);
+        using var decoded = new MagickImage(saved);
+        Assert.AreEqual(source.Width, decoded.Width);
+        Assert.AreEqual(source.Height, decoded.Height);
+        using var expectedPixels = source.GetPixels();
+        using var actualPixels = decoded.GetPixels();
+        CollectionAssert.AreEqual(expectedPixels.ToShortArray(PixelMapping.RGBA), actualPixels.ToShortArray(PixelMapping.RGBA));
         Assert.AreEqual(clipboardImage, new ClipboardImage(saved));
     }
 
@@ -253,9 +232,10 @@ public class ClipboardImageTests
         Assert.IsTrue(expected.TransformColorSpace(ColorProfiles.SRGB));
         var clipboardImage = new ClipboardImage(bytes);
         using var actual = new MagickImage(await clipboardImage.SaveToBytes(TestContext.CancellationTokenSource.Token));
+        Assert.AreEqual(8u, actual.Depth);
         using var expectedPixels = expected.GetPixels();
         using var actualPixels = actual.GetPixels();
-        CollectionAssert.AreEqual(expectedPixels.ToShortArray(PixelMapping.RGBA), actualPixels.ToShortArray(PixelMapping.RGBA));
+        CollectionAssert.AreEqual(expectedPixels.ToByteArray(PixelMapping.RGBA), actualPixels.ToByteArray(PixelMapping.RGBA));
     }
 
     [TestMethod]
@@ -309,28 +289,6 @@ public class ClipboardImageTests
         source.SetAttribute(keyword, "custom metadata");
         var changed = source.ToByteArray(MagickFormat.Png);
         Assert.AreNotEqual(new ClipboardImage(original), new ClipboardImage(changed));
-    }
-
-    [TestMethod]
-    public void PixelAspectRatioParticipatesInComparison()
-    {
-        using var source = CreateImage();
-        source.Density = new Density(100, 200);
-        var original = source.ToByteArray(MagickFormat.Png);
-        source.Density = new Density(200, 400);
-        AssertSameImage(original, source.ToByteArray(MagickFormat.Png));
-        source.Density = new Density(200, 200);
-        Assert.AreNotEqual(new ClipboardImage(original), new ClipboardImage(source.ToByteArray(MagickFormat.Png)));
-    }
-
-    [TestMethod]
-    public void LosslessPngRecompressionDoesNotChangeIdentity()
-    {
-        using var source = CreateImage();
-        source.Settings.SetDefine(MagickFormat.Png, "compression-level", 0);
-        var original = source.ToByteArray(MagickFormat.Png);
-        source.Settings.SetDefine(MagickFormat.Png, "compression-level", 9);
-        AssertSameImage(original, source.ToByteArray(MagickFormat.Png));
     }
 
     [TestMethod]
@@ -423,7 +381,7 @@ public class ClipboardImageTests
     }
 
     [TestMethod]
-    public async Task BackgroundCreationValidatesImagesAndHonorsCancellation()
+    public async Task AsyncCreationValidatesInputAndHonorsCancellation()
     {
         using var source = CreateImage();
         var bytes = source.ToByteArray(MagickFormat.Png);
@@ -436,25 +394,23 @@ public class ClipboardImageTests
     }
 
     [TestMethod]
-    public async Task EquivalentImages_SaveSamePixelsAndProtectCachedBytes()
+    public async Task MutatingReturnedBytesDoesNotChangeCachedOutputOrSavedFile()
     {
         using var source = CreateImage();
         var input = source.ToByteArray(MagickFormat.Png);
         var original = new ClipboardImage(input);
-        source.Density = new Density(300);
-        var equivalent = new ClipboardImage(source.ToByteArray(MagickFormat.Png));
         var token = TestContext.CancellationTokenSource.Token;
-        var results = await Task.WhenAll(original.SaveToBytes(token), equivalent.SaveToBytes(token));
-        CollectionAssert.AreEqual(results[0], results[1]);
-        Array.Clear(results[0]);
+        var returned = await original.SaveToBytes(token);
+        var expected = (byte[])returned.Clone();
+        Array.Clear(returned);
 
         var directory = Directory.CreateTempSubdirectory("ClipboardImage-");
         try
         {
             var path = Path.Combine(directory.FullName, "image.png");
-            await equivalent.Save(path, token);
-            Assert.AreEqual(original, new ClipboardImage(await File.ReadAllBytesAsync(path, token)));
-            CollectionAssert.AreEqual(results[1], await original.SaveToBytes(token));
+            await original.Save(path, token);
+            CollectionAssert.AreEqual(expected, await File.ReadAllBytesAsync(path, token));
+            CollectionAssert.AreEqual(expected, await original.SaveToBytes(token));
         }
         finally
         {
@@ -463,19 +419,20 @@ public class ClipboardImageTests
     }
 
     [TestMethod]
-    public async Task IndependentEncodingOfEquivalentImagesProducesSameFileAndHistoryKey()
+    [DataRow(8)]
+    [DataRow(16)]
+    public async Task IndependentEncodingOfEquivalentImagesProducesSameFileAndHistoryKey(int depth)
     {
         using var source = CreateImage();
         source.Density = new Density(72);
         source.Settings.SetDefine(MagickFormat.Png, "compression-level", 0);
-        source.Settings.SetDefine(MagickFormat.Png, "bit-depth", 16);
+        source.Settings.SetDefine(MagickFormat.Png, "bit-depth", depth);
         source.Settings.SetDefine(MagickFormat.Png, "color-type", 2);
         source.SetAttribute("Comment", "first description");
         var first = source.ToByteArray(MagickFormat.Png);
         source.Density = new Density(0);
         source.Settings.Interlace = Interlace.Png;
         source.Settings.SetDefine(MagickFormat.Png, "compression-level", 9);
-        source.Settings.SetDefine(MagickFormat.Png, "bit-depth", 8);
         source.Settings.SetDefine(MagickFormat.Png, "color-type", 6);
         source.SetAttribute("Comment", "second description");
         source.SetAttribute("date:modify", "2000-01-01T00:00:00Z");
@@ -492,9 +449,13 @@ public class ClipboardImageTests
         var directory = Directory.CreateTempSubdirectory("StableImage-");
         try
         {
-            string fileName = SyncClipboard.Shared.Profiles.ImageProfile.CreateImageFileName(new ClipboardImage(first).ContentHash);
+            string contentHash = new ClipboardImage(first).ContentHash;
+            string fileName = SyncClipboard.Shared.Profiles.ImageProfile.CreateImageFileName(contentHash);
+            string secondFileName = SyncClipboard.Shared.Profiles.ImageProfile.CreateImageFileName(new ClipboardImage(second).ContentHash);
+            Assert.AreEqual($"Image_{contentHash[..32]}.png", fileName);
+            Assert.AreEqual(fileName, secondFileName);
             var firstPath = Path.Combine(Directory.CreateDirectory(Path.Combine(directory.FullName, "first")).FullName, fileName);
-            var secondPath = Path.Combine(Directory.CreateDirectory(Path.Combine(directory.FullName, "second")).FullName, fileName);
+            var secondPath = Path.Combine(Directory.CreateDirectory(Path.Combine(directory.FullName, "second")).FullName, secondFileName);
             var token = TestContext.CancellationTokenSource.Token;
             await File.WriteAllBytesAsync(firstPath, firstPng, token);
             await File.WriteAllBytesAsync(secondPath, secondPng, token);
@@ -505,6 +466,25 @@ public class ClipboardImageTests
         {
             directory.Delete(true);
         }
+    }
+
+    [TestMethod]
+    public async Task SourceBitDepthIsPreservedAndParticipatesInIdentity()
+    {
+        using var source = CreateImage();
+        source.Settings.SetDefine(MagickFormat.Png, "bit-depth", 8);
+        var eightBit = new ClipboardImage(source.ToByteArray(MagickFormat.Png));
+        source.Settings.SetDefine(MagickFormat.Png, "bit-depth", 16);
+        var sixteenBit = new ClipboardImage(source.ToByteArray(MagickFormat.Png));
+        var token = TestContext.CancellationTokenSource.Token;
+        using var savedEight = new MagickImage(await eightBit.SaveToBytes(token));
+        using var savedSixteen = new MagickImage(await sixteenBit.SaveToBytes(token));
+        Assert.AreEqual(8u, savedEight.Depth);
+        Assert.AreEqual(16u, savedSixteen.Depth);
+        using var eightPixels = savedEight.GetPixels();
+        using var sixteenPixels = savedSixteen.GetPixels();
+        CollectionAssert.AreEqual(eightPixels.ToShortArray(PixelMapping.RGBA), sixteenPixels.ToShortArray(PixelMapping.RGBA));
+        Assert.AreNotEqual(eightBit.ContentHash, sixteenBit.ContentHash);
     }
 
     [TestMethod]
@@ -528,7 +508,7 @@ public class ClipboardImageTests
     }
 
     [TestMethod]
-    public void IndependentEncodingNormalizesResolutionWithoutChangingPixelAspectRatio()
+    public void PixelAspectRatioIsPreservedAndParticipatesInIdentity()
     {
         using var source = CreateImage();
         source.Density = new Density(100, 200);
@@ -537,7 +517,10 @@ public class ClipboardImageTests
         var second = source.ToByteArray(MagickFormat.Png);
         var saved = ClipboardImage.EncodeImage(first);
         CollectionAssert.AreEqual(saved, ClipboardImage.EncodeImage(second));
+        AssertSameImage(first, second);
         Assert.AreEqual(new ClipboardImage(first), new ClipboardImage(saved));
+        source.Density = new Density(200, 200);
+        Assert.AreNotEqual(new ClipboardImage(first), new ClipboardImage(source.ToByteArray(MagickFormat.Png)));
     }
 
     [TestMethod]
@@ -559,6 +542,8 @@ public class ClipboardImageTests
         CollectionAssert.AreEqual(saved, ClipboardImage.EncodeImage(saved));
         decoded.Density = new Density(300);
         decoded.SetAttribute("Comment", "another description");
+        // Change only descriptive metadata; avoid palette conversion rewriting the background color.
+        decoded.Settings.SetDefine(MagickFormat.Png, "color-type", 6);
         CollectionAssert.AreEqual(saved, ClipboardImage.EncodeImage(decoded.ToByteArray(MagickFormat.Png)));
     }
 
@@ -630,13 +615,6 @@ public class ClipboardImageTests
         using var after = new MagickImage(saved);
         Assert.AreEqual(before.RenderingIntent, after.RenderingIntent);
         Assert.AreEqual(new ClipboardImage(original), new ClipboardImage(saved));
-    }
-
-    [TestMethod]
-    public void InvalidImage_IsRejected()
-    {
-        Assert.IsNull(ClipboardImage.TryCreateImage(null));
-        Assert.IsNull(ClipboardImage.TryCreateImage([1, 2, 3]));
     }
 
     private static void AssertSameImage(byte[] firstBytes, byte[] secondBytes)

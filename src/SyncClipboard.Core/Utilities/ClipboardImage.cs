@@ -116,6 +116,8 @@ public class ClipboardImage : IClipboardImage
 
     private static byte[] EncodePng(MagickImage image)
     {
+        // Expanded RGBA/gray-alpha PNG supports 8 or 16 bits per channel.
+        uint depth = image.Depth <= 8 ? 8u : 16u;
         // PNG consumers such as Avalonia do not apply orientation metadata themselves.
         ClipboardImageHash.ApplyOrientation(image);
         // PNG cannot represent CMYK. The fingerprint will be computed from the converted output.
@@ -125,8 +127,7 @@ public class ClipboardImage : IClipboardImage
             image.TransformColorSpace(ColorProfiles.SRGB);
         }
         ClipboardImageHash.PreparePngMetadata(image);
-        // Fixed Q16 storage also preserves background-color samples independently of source bit depth.
-        image.Depth = 16;
+        image.Depth = depth;
         image.Settings.Interlace = Interlace.NoInterlace;
         image.Settings.SetDefine(MagickFormat.Png, "bit-depth", (int)image.Depth);
         image.Settings.SetDefine(MagickFormat.Png, "color-type",

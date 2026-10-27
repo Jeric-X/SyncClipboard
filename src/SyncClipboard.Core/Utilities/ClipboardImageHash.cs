@@ -120,6 +120,7 @@ internal static class ClipboardImageHash
         {
             image.Width,
             image.Height,
+            image.Depth,
             image.ColorSpace,
             image.Gamma,
             Chromaticity = new[]
