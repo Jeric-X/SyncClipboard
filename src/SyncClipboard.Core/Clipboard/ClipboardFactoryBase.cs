@@ -10,7 +10,7 @@ namespace SyncClipboard.Core.Clipboard;
 
 public abstract class ClipboardFactoryBase : IClipboardFactory
 {
-    private const string ImageCacheType = "ClipboardImageMetadataV3";
+    private const string ImageCacheType = "ClipboardImageMetadataV4";
     private static readonly SemaphoreSlim ImageCacheSemaphore = new(1, 1);
 
     protected abstract ILogger Logger { get; set; }
@@ -86,7 +86,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
             return new ImageProfile(cachedPath);
         }
 
-        var tempPath = Path.Combine(Env.TemplateFileFolder, ImageProfile.CreateImageFileName());
+        var tempPath = Path.Combine(Env.TemplateFileFolder, ImageProfile.CreateImageFileName(hash));
         await image.Save(tempPath, ctk);
 
         var imageProfile = new ImageProfile(tempPath);
