@@ -120,12 +120,7 @@ public class ClipboardImage : IClipboardImage
         uint depth = image.Depth <= 8 ? 8u : 16u;
         // PNG consumers such as Avalonia do not apply orientation metadata themselves.
         ClipboardImageHash.ApplyOrientation(image);
-        // PNG cannot represent CMYK. The fingerprint will be computed from the converted output.
-        if (image.ColorSpace is not (ColorSpace.sRGB or ColorSpace.RGB or ColorSpace.Gray or ColorSpace.LinearGray) &&
-            image.GetColorProfile() is not null)
-        {
-            image.TransformColorSpace(ColorProfiles.SRGB);
-        }
+        PreparePngColorSpace(image);
         ClipboardImageHash.PreparePngMetadata(image);
         image.Depth = depth;
         image.Settings.Interlace = Interlace.NoInterlace;
@@ -148,6 +143,16 @@ public class ClipboardImage : IClipboardImage
             }
         }
         return bytes;
+    }
+
+    private static void PreparePngColorSpace(MagickImage image)
+    {
+        // PNG cannot represent CMYK. The fingerprint will be computed from the converted output.
+        if (image.ColorSpace is not (ColorSpace.sRGB or ColorSpace.RGB or ColorSpace.Gray or ColorSpace.LinearGray) &&
+            image.GetColorProfile() is not null)
+        {
+            image.TransformColorSpace(ColorProfiles.SRGB);
+        }
     }
 
     public override bool Equals(object? obj)

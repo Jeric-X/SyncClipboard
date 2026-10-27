@@ -311,7 +311,6 @@ public class ClipboardImageTests
         using var decoded = new MagickImageCollection(saved);
         Assert.AreEqual(2, decoded.Count);
         Assert.AreEqual(image, new ClipboardImage(saved));
-
     }
 
     [TestMethod]
