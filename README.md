@@ -106,6 +106,8 @@ winget install --id JericX.SyncClipboard --exact --source winget
 
 ### macOS
 
+系统要求：Apple Silicon（arm64）需要 macOS 12.7 或更高版本；Intel（x64）需要 macOS 13.3 或更高版本。
+
 #### 手动安装
 在[Release](https://github.com/Jeric-X/SyncClipboard/releases/latest)页面下载名字以`SyncClipboard_macos_`开头的安装包，双击后拖动SyncClipboard图标到Applications文件夹
 

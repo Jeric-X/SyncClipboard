@@ -9,6 +9,8 @@
     <ApplicationVersion>$(VersionPrefix)</ApplicationVersion>
     <SelfContained>true</SelfContained>
     <SupportedOSPlatformVersion>12.7</SupportedOSPlatformVersion>
+    <!-- Magick.NET's Intel native library requires libc++ symbols introduced in macOS 13.3. -->
+    <SupportedOSPlatformVersion Condition="'$(RuntimeIdentifier)' == 'osx-x64'">13.3</SupportedOSPlatformVersion>
     <Platforms>x64;ARM64;AnyCPU</Platforms>
     <CreatePackage>false</CreatePackage>
     <NullabilityInfoContextSupport>true</NullabilityInfoContextSupport>

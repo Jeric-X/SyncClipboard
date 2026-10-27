@@ -102,6 +102,8 @@ winget install --id JericX.SyncClipboard --exact --source winget
 
 ### macOS
 
+System requirements: macOS 12.7 or later for Apple Silicon (arm64), and macOS 13.3 or later for Intel (x64).
+
 #### Manual Installation
 Download the installation package starting with `SyncClipboard_macos_` from the [Release](https://github.com/Jeric-X/SyncClipboard/releases/latest) page. Double-click it and drag the SyncClipboard icon to the Applications folder.
 
