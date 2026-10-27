@@ -135,6 +135,7 @@ public class ClipboardImageTests
         using var source = CreateImage();
         var profile = new ExifProfile();
         profile.SetValue(ExifTag.Orientation, (ushort)orientation);
+        profile.SetValue(ExifTag.Model, "Camera metadata does not affect decoded pixels");
         profile.SetValue(ExifTag.PixelXDimension, new Number(source.Width));
         profile.SetValue(ExifTag.PixelYDimension, new Number(source.Height));
         source.SetProfile(profile);
@@ -152,7 +153,7 @@ public class ClipboardImageTests
     }
 
     [TestMethod]
-    public void EquivalentSrgbAndRedundantExifMetadataMatch()
+    public void EquivalentSrgbAndExifMetadataMatch()
     {
         // Reproduce the user's two PNGs without committing their private screenshot:
         // sRGB + EXIF dimensions versus cHRM + orNT + DPI + TIFF encoder attributes.
@@ -185,18 +186,16 @@ public class ClipboardImageTests
     }
 
     [TestMethod]
-    public void UnhandledExifAndMalformedExifRemainDistinct()
+    public void BigEndianExifWithLongDimensionsMatchesPixels()
     {
         using var source = CreateImage();
         var original = source.ToByteArray(MagickFormat.Png);
-        var profile = new ExifProfile();
-        profile.SetValue(ExifTag.Model, "unknown camera-specific interpretation");
-        source.SetProfile(profile);
-        Assert.AreNotEqual(new ClipboardImage(original), new ClipboardImage(source.ToByteArray(MagickFormat.Png)));
-        // Unsupported TIFF field type: do not silently discard what an EXIF decoder cannot expose.
-        byte[] malformed = [0x49, 0x49, 42, 0, 8, 0, 0, 0, 1, 0,
-            0x01, 0xA0, 99, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0];
-        Assert.AreNotEqual(new ClipboardImage(original), new ClipboardImage(InsertPngChunk(original, "eXIf", malformed)));
+        // Synthetic equivalent of the user's EXIF layout: big endian, sRGB, LONG width/height.
+        var exif = Convert.FromHexString(
+            "4D4D002A00000008000187690004000000010000001A000000000003" +
+            "A00100030000000100010000A00200040000000100000003A0030004000000010000000200000000");
+
+        AssertSameImage(original, InsertPngChunk(original, "eXIf", exif));
     }
 
     [TestMethod]
@@ -375,34 +374,33 @@ public class ClipboardImageTests
     }
 
     [TestMethod]
-    public void ChangedSourceBuffer_DoesNotReuseStaleImage()
+    public void DifferentSourceBytes_DoNotReuseStaleImage()
     {
         using var source = CreateImage();
         var bytes = source.ToByteArray(MagickFormat.Bmp3);
+        var changedBytes = (byte[])bytes.Clone();
         var original = ClipboardImage.TryCreateImage(bytes);
         Assert.IsNotNull(original);
-        // Change one pixel in the same caller-owned buffer, retaining its reference and length.
-        int pixelOffset = BinaryPrimitives.ReadInt32LittleEndian(bytes.AsSpan(10));
-        bytes[pixelOffset] ^= 1;
-        var changed = ClipboardImage.TryCreateImage(bytes);
+        // Change one pixel in a separate buffer before transferring ownership, retaining the same length.
+        int pixelOffset = BinaryPrimitives.ReadInt32LittleEndian(changedBytes.AsSpan(10));
+        changedBytes[pixelOffset] ^= 1;
+        var changed = ClipboardImage.TryCreateImage(changedBytes);
 
         Assert.IsNotNull(changed);
         Assert.AreNotSame(original, changed);
         Assert.AreNotEqual(original.ContentHash, changed.ContentHash);
-        Assert.AreSame(changed, ClipboardImage.TryCreateImage((byte[])bytes.Clone()));
+        Assert.AreSame(changed, ClipboardImage.TryCreateImage((byte[])changedBytes.Clone()));
     }
 
     [TestMethod]
-    public void InvalidSource_DoesNotReplaceOrMutateCachedImage()
+    public void InvalidSource_DoesNotReplaceCachedImage()
     {
         using var source = CreateImage();
         var bytes = source.ToByteArray(MagickFormat.Png);
         var snapshot = (byte[])bytes.Clone();
         var original = ClipboardImage.TryCreateImage(bytes);
         Assert.IsNotNull(original);
-        Array.Clear(bytes);
-
-        Assert.IsNull(ClipboardImage.TryCreateImage(bytes));
+        Assert.IsNull(ClipboardImage.TryCreateImage(new byte[bytes.Length]));
         Assert.IsNull(ClipboardImage.TryCreateImage(null));
         Assert.AreSame(original, ClipboardImage.TryCreateImage(snapshot));
         Assert.AreEqual(new ClipboardImage(snapshot).ContentHash, original.ContentHash);
@@ -429,7 +427,6 @@ public class ClipboardImageTests
         var original = new ClipboardImage(input);
         source.Density = new Density(300);
         var equivalent = new ClipboardImage(source.ToByteArray(MagickFormat.Png));
-        Array.Clear(input);
         var token = TestContext.CancellationTokenSource.Token;
         var results = await Task.WhenAll(original.SaveToBytes(token), equivalent.SaveToBytes(token));
         CollectionAssert.AreEqual(results[0], results[1]);

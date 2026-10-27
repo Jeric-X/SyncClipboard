@@ -9,7 +9,7 @@ namespace SyncClipboard.Core.Utilities;
 
 internal static class ClipboardImageHash
 {
-    // Exact attribute names, never prefixes: unknown attributes/profiles still participate in comparison.
+    // Non-EXIF metadata uses exact names; other unknown attributes/profiles still participate in comparison.
     private static readonly HashSet<string> IgnoredAttributes = new(StringComparer.OrdinalIgnoreCase)
     {
         "Title", "Author", "Description", "Copyright", "Creation Time", "Software",
@@ -49,8 +49,15 @@ internal static class ClipboardImageHash
 
     internal static void ApplyOrientation(MagickImage image)
     {
-        // Remove only verified redundant EXIF before rotation makes its stored width/height stale.
-        ClipboardImageExif.RemoveRedundantProfile(image);
+        // ImageMagick has decoded orientation and display properties. Ignore the remaining EXIF payload,
+        // and remove it before rotation makes embedded dimensions or orientation stale.
+        image.RemoveProfile("exif");
+        var exifAttributes = image.AttributeNames
+            .Where(name => name.StartsWith("exif:", StringComparison.OrdinalIgnoreCase)).ToArray();
+        foreach (string name in exifAttributes)
+        {
+            image.RemoveAttribute(name);
+        }
         bool swapsAxes = image.Orientation is >= OrientationType.LeftTop and <= OrientationType.LeftBottom;
         bool fullCanvas = image.Page.Width == image.Width && image.Page.Height == image.Height &&
             image.Page.X == 0 && image.Page.Y == 0;

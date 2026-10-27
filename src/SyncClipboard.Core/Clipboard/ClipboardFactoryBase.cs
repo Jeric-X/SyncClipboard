@@ -10,7 +10,7 @@ namespace SyncClipboard.Core.Clipboard;
 
 public abstract class ClipboardFactoryBase : IClipboardFactory
 {
-    private const string ImageCacheType = "ClipboardImageMetadataV2";
+    private const string ImageCacheType = "ClipboardImageMetadataV3";
     private static readonly SemaphoreSlim ImageCacheSemaphore = new(1, 1);
 
     protected abstract ILogger Logger { get; set; }

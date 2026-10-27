@@ -7,19 +7,23 @@ public class ClipboardImage : IClipboardImage
     private static readonly Lock SourceCacheLock = new();
     private static ClipboardImage? SourceCache;
 
-    private static string? CacheHash;
-    private static byte[]? CacheBytes;
-    private static readonly SemaphoreSlim CacheSemaphore = new(1, 1);
+    private static string? PngCacheContentHash;
+    private static byte[]? PngCacheBytes;
+    private static readonly SemaphoreSlim PngCacheSemaphore = new(1, 1);
 
     private readonly byte[] _imageBytes;
     private readonly bool _requiresOrientation;
 
     public string ContentHash { get; }
 
+    /// <summary>Creates an image by taking ownership of the encoded bytes without copying them.</summary>
+    /// <param name="imageBytes">
+    /// Ownership is transferred on entry; callers must not modify or reuse the array as a writable buffer.
+    /// </param>
     public ClipboardImage(byte[]? imageBytes)
     {
         ArgumentNullException.ThrowIfNull(imageBytes);
-        _imageBytes = (byte[])imageBytes.Clone();
+        _imageBytes = imageBytes;
         using var image = new MagickImage();
         image.Settings.SetDefine(MagickFormat.Png, "preserve-iCCP", true);
         image.Read(_imageBytes);
@@ -27,12 +31,17 @@ public class ClipboardImage : IClipboardImage
         ContentHash = ClipboardImageHash.Compute(image, _imageBytes);
     }
 
+    /// <summary>Creates or reuses an image, returning null if the input cannot be decoded.</summary>
+    /// <param name="imageBytes">
+    /// Ownership is transferred on entry, including on cache hits or failure;
+    /// callers must not modify or reuse the array as a writable buffer.
+    /// </param>
     public static ClipboardImage? TryCreateImage(byte[]? imageBytes)
     {
         try
         {
             ArgumentNullException.ThrowIfNull(imageBytes);
-            // Reuse the last immutable source snapshot before decoding; serialize concurrent cache misses.
+            // Reuse the last owned source buffer before decoding; serialize concurrent cache misses.
             lock (SourceCacheLock)
             {
                 if (SourceCache is not null && imageBytes.AsSpan().SequenceEqual(SourceCache._imageBytes))
@@ -48,6 +57,12 @@ public class ClipboardImage : IClipboardImage
         return null;
     }
 
+    /// <summary>Creates or reuses an image on a background thread.</summary>
+    /// <param name="imageBytes">
+    /// Ownership is transferred when called; callers must not modify or reuse the array as a writable buffer,
+    /// even after cancellation or failure.
+    /// </param>
+    /// <param name="token">Cancels waiting; decoding already in progress may continue using the transferred array.</param>
     public static Task<ClipboardImage?> TryCreateImageAsync(byte[]? imageBytes, CancellationToken token)
     {
         return Task.Run(() => TryCreateImage(imageBytes), token).WaitAsync(token);
@@ -67,11 +82,11 @@ public class ClipboardImage : IClipboardImage
 
     private async Task<byte[]> GetPngBytes(CancellationToken token)
     {
-        await CacheSemaphore.WaitAsync(token);
-        using var guard = new ScopeGuard(() => CacheSemaphore.Release());
-        if (CacheHash == ContentHash && CacheBytes is not null)
+        await PngCacheSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => PngCacheSemaphore.Release());
+        if (PngCacheContentHash == ContentHash && PngCacheBytes is not null)
         {
-            return CacheBytes;
+            return PngCacheBytes;
         }
 
         // Decoding and encoding are synchronous native operations, so keep them off the UI thread.
@@ -105,8 +120,8 @@ public class ClipboardImage : IClipboardImage
         token.ThrowIfCancellationRequested();
 
         // Publish only a complete result; a canceled or failed encode must not poison the cache.
-        CacheBytes = bytes;
-        CacheHash = ContentHash;
+        PngCacheBytes = bytes;
+        PngCacheContentHash = ContentHash;
         return bytes;
     }
 
