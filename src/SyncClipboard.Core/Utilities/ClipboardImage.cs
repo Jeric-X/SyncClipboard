@@ -1,4 +1,5 @@
 using ImageMagick;
+using System.Security.Cryptography;
 
 namespace SyncClipboard.Core.Utilities;
 
@@ -7,12 +8,8 @@ public class ClipboardImage : IClipboardImage
     private static readonly Lock SourceCacheLock = new();
     private static ClipboardImage? SourceCache;
 
-    private static string? PngCacheContentHash;
-    private static byte[]? PngCacheBytes;
-    private static readonly SemaphoreSlim PngCacheSemaphore = new(1, 1);
-
     private readonly byte[] _imageBytes;
-    private readonly bool _requiresOrientation;
+    private readonly byte[] _encodedBytes;
 
     public string ContentHash { get; }
 
@@ -24,11 +21,19 @@ public class ClipboardImage : IClipboardImage
     {
         ArgumentNullException.ThrowIfNull(imageBytes);
         _imageBytes = imageBytes;
-        using var image = new MagickImage();
-        image.Settings.SetDefine(MagickFormat.Png, "preserve-iCCP", true);
-        image.Read(_imageBytes);
-        _requiresOrientation = image.Orientation is not (OrientationType.Undefined or OrientationType.TopLeft);
-        ContentHash = ClipboardImageHash.Compute(image, _imageBytes);
+        using (var image = ReadImage(imageBytes))
+        {
+            if (IsMultiFrame(image, imageBytes))
+            {
+                _encodedBytes = imageBytes;
+                ContentHash = Convert.ToHexString(SHA256.HashData(imageBytes));
+                return;
+            }
+            _encodedBytes = EncodePng(image);
+        }
+        // Compare the pixels and properties actually saved, including the encoder's metadata decisions.
+        using var encoded = ReadImage(_encodedBytes);
+        ContentHash = ClipboardImageHash.Compute(encoded);
     }
 
     /// <summary>Creates or reuses an image, returning null if the input cannot be decoded.</summary>
@@ -68,60 +73,79 @@ public class ClipboardImage : IClipboardImage
         return Task.Run(() => TryCreateImage(imageBytes), token).WaitAsync(token);
     }
 
-    public async Task Save(string path, CancellationToken token)
+    public Task Save(string path, CancellationToken token)
     {
-        var bytes = await GetPngBytes(token);
-        await File.WriteAllBytesAsync(path, bytes, token);
+        return File.WriteAllBytesAsync(path, _encodedBytes, token);
     }
 
-    public async Task<byte[]> SaveToBytes(CancellationToken token)
+    public Task<byte[]> SaveToBytes(CancellationToken token)
     {
-        var bytes = await GetPngBytes(token);
-        return (byte[])bytes.Clone();
-    }
-
-    private async Task<byte[]> GetPngBytes(CancellationToken token)
-    {
-        await PngCacheSemaphore.WaitAsync(token);
-        using var guard = new ScopeGuard(() => PngCacheSemaphore.Release());
-        if (PngCacheContentHash == ContentHash && PngCacheBytes is not null)
-        {
-            return PngCacheBytes;
-        }
-
-        // Decoding and encoding are synchronous native operations, so keep them off the UI thread.
-        var bytes = await Task.Run(() =>
-        {
-            // Preserve original PNG chunks when no rotation/mirroring is needed for clipboard consumers.
-            if (!_requiresOrientation && ClipboardImageHash.IsPng(_imageBytes))
-            {
-                return _imageBytes;
-            }
-            using var image = new MagickImage();
-            image.Settings.SetDefine(MagickFormat.Png, "preserve-iCCP", true);
-            image.Read(_imageBytes);
-            // PNG consumers such as Avalonia do not apply orientation metadata themselves.
-            ClipboardImageHash.ApplyOrientation(image);
-            // PNG cannot represent CMYK. Convert only for output, never for the comparison fingerprint.
-            if (image.ColorSpace is not (ColorSpace.sRGB or ColorSpace.RGB or ColorSpace.Gray or ColorSpace.LinearGray) &&
-                image.GetColorProfile() is not null)
-            {
-                image.TransformColorSpace(ColorProfiles.SRGB);
-                image.Depth = image.DetermineBitDepth();
-            }
-            if (image.Density.Units == DensityUnit.PixelsPerCentimeter)
-            {
-                // PNG truncates cm * 100: avoid 39.37 becoming 3936 instead of 3937 pixels per meter.
-                image.Density = new Density(Math.BitIncrement(image.Density.X), Math.BitIncrement(image.Density.Y),
-                    DensityUnit.PixelsPerCentimeter);
-            }
-            return image.ToByteArray(MagickFormat.Png);
-        }, token);
         token.ThrowIfCancellationRequested();
+        return Task.FromResult((byte[])_encodedBytes.Clone());
+    }
 
-        // Publish only a complete result; a canceled or failed encode must not poison the cache.
-        PngCacheBytes = bytes;
-        PngCacheContentHash = ContentHash;
+    private static MagickImage ReadImage(byte[] source)
+    {
+        var image = new MagickImage();
+        try
+        {
+            image.Settings.SetDefine(MagickFormat.Png, "preserve-iCCP", true);
+            image.Read(source);
+            return image;
+        }
+        catch
+        {
+            image.Dispose();
+            throw;
+        }
+    }
+
+    private static bool IsMultiFrame(MagickImage image, byte[] source)
+    {
+        // PNG ReadCollection exposes only the default APNG image, so also check its animation control chunk.
+        return image.GetAttribute("png:acTL") is not null ||
+            (image.Format is not (MagickFormat.Png or MagickFormat.Bmp or MagickFormat.Bmp2 or MagickFormat.Bmp3) &&
+                MagickImageInfo.ReadCollection(source).Skip(1).Any());
+    }
+
+    internal static byte[] EncodeImage(byte[] source)
+    {
+        using var image = ReadImage(source);
+        return IsMultiFrame(image, source) ? source : EncodePng(image);
+    }
+
+    private static byte[] EncodePng(MagickImage image)
+    {
+        // PNG consumers such as Avalonia do not apply orientation metadata themselves.
+        ClipboardImageHash.ApplyOrientation(image);
+        // PNG cannot represent CMYK. The fingerprint will be computed from the converted output.
+        if (image.ColorSpace is not (ColorSpace.sRGB or ColorSpace.RGB or ColorSpace.Gray or ColorSpace.LinearGray) &&
+            image.GetColorProfile() is not null)
+        {
+            image.TransformColorSpace(ColorProfiles.SRGB);
+        }
+        ClipboardImageHash.PreparePngMetadata(image);
+        // Fixed Q16 storage also preserves background-color samples independently of source bit depth.
+        image.Depth = 16;
+        image.Settings.Interlace = Interlace.NoInterlace;
+        image.Settings.SetDefine(MagickFormat.Png, "bit-depth", (int)image.Depth);
+        image.Settings.SetDefine(MagickFormat.Png, "color-type",
+            image.ColorSpace is ColorSpace.Gray or ColorSpace.LinearGray ? 4 : 6);
+        image.Settings.SetDefine(MagickFormat.Png, "compression-level", 6);
+        image.Settings.SetDefine(MagickFormat.Png, "compression-filter", 1);
+        image.Settings.SetDefine(MagickFormat.Png, "compression-strategy", 0);
+        image.Settings.SetDefine(MagickFormat.Png, "exclude-chunk", "date,tIME,eXIf");
+        image.Settings.SetDefine(MagickFormat.Png, "include-chunk", "cHRM,bKGD,gAMA");
+        var bytes = image.ToByteArray(MagickFormat.Png);
+        if (image.ColorSpace is ColorSpace.RGB or ColorSpace.LinearGray)
+        {
+            // The encoder can replace a linear color description. Use its resulting chunk layout consistently.
+            using var encoded = ReadImage(bytes);
+            if (encoded.ColorSpace != image.ColorSpace)
+            {
+                return EncodePng(encoded);
+            }
+        }
         return bytes;
     }
 

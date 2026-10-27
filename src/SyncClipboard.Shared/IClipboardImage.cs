@@ -3,7 +3,8 @@ namespace SyncClipboard.Shared;
 public interface IClipboardImage
 {
     /// <summary>
-    /// SHA256 of oriented pixels and decoded image attributes, excluding raw EXIF and allowlisted metadata.
+    /// SHA256 of the encoded output's pixels and attributes, excluding allowlisted metadata.
+    /// Multi-frame images use the original file's SHA256.
     /// </summary>
     public string ContentHash { get; }
 

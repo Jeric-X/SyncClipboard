@@ -9,7 +9,7 @@ namespace SyncClipboard.Core.Utilities;
 
 internal static class ClipboardImageHash
 {
-    // Non-EXIF metadata uses exact names; other unknown attributes/profiles still participate in comparison.
+    // Metadata retained by the PNG encoder participates, except for these descriptive/diagnostic fields.
     private static readonly HashSet<string> IgnoredAttributes = new(StringComparer.OrdinalIgnoreCase)
     {
         "Title", "Author", "Description", "Copyright", "Creation Time", "Software",
@@ -17,32 +17,15 @@ internal static class ClipboardImageHash
         "png:tIME", "png:pHYs",
         // Decoder diagnostics describe storage, or duplicate properties hashed below.
         "png:IHDR.bit-depth-orig", "png:IHDR.bit_depth", "png:IHDR.color-type-orig", "png:IHDR.color_type",
-        "png:IHDR.interlace_method", "png:IHDR.width,height", "png:PLTE.number_colors", "png:text",
+        "png:IHDR.interlace_method", "png:IHDR.width,height", "png:PLTE.number_colors", "png:text", "png:tRNS",
         "png:bKGD", "png:cHRM", "png:gAMA", "tiff:endian", "tiff:rows-per-strip", "tiff:photometric", "tiff:alpha"
     };
 
-    internal static bool IsPng(ReadOnlySpan<byte> data) => data.StartsWith((ReadOnlySpan<byte>)[137, 80, 78, 71, 13, 10, 26, 10]);
-
-    internal static string Compute(MagickImage image, ReadOnlySpan<byte> source)
+    internal static string Compute(MagickImage image)
     {
-        // PNG ReadCollection only exposes the first APNG frame. Never orient/deduplicate an animation by that frame.
-        if (image.GetAttribute("png:acTL") is not null ||
-            (image.Format is not (MagickFormat.Png or MagickFormat.Bmp or MagickFormat.Bmp2 or MagickFormat.Bmp3) &&
-                MagickImageInfo.ReadCollection(source).Skip(1).Any()))
-        {
-            return Convert.ToHexString(SHA256.HashData(source));
-        }
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-        var orientation = image.Orientation;
-        ApplyOrientation(image);
         AppendMetadata(hash, image);
-        // ImageMagick drops unknown PNG chunks, so include them directly rather than silently ignoring them.
-        if (IsPng(source))
-        {
-            AppendUnknownPngChunks(hash, source, orientation);
-        }
         Append(hash, []);
-
         AppendPixels(hash, image);
         return Convert.ToHexString(hash.GetHashAndReset());
     }
@@ -74,9 +57,65 @@ internal static class ClipboardImageHash
         }
     }
 
+    internal static void PreparePngMetadata(MagickImage image)
+    {
+        var attributes = image.AttributeNames.Order(StringComparer.Ordinal)
+            .Where(name => !IgnoredAttributes.Contains(name) && name != "png:sRGB")
+            .Select(name => (Name: name, Value: image.GetAttribute(name)!)).ToArray();
+        foreach (string name in image.AttributeNames.ToArray())
+        {
+            image.RemoveAttribute(name);
+        }
+        foreach (var (name, value) in attributes)
+        {
+            image.SetAttribute(name, value);
+        }
+
+        var density = image.Density;
+        if (density.X == density.Y)
+        {
+            // Fixed square-pixel resolution, regardless of missing/zero/absolute source DPI.
+            image.Density = new Density(96);
+        }
+        else
+        {
+            NormalizePixelAspectRatio(image, density);
+        }
+        if (image.Density.Units == DensityUnit.PixelsPerCentimeter)
+        {
+            // Avoid truncation of decoded PNG pixels-per-meter values on re-encoding.
+            image.Density = new Density(Math.BitIncrement(image.Density.X), Math.BitIncrement(image.Density.Y),
+                DensityUnit.PixelsPerCentimeter);
+        }
+    }
+
+    private static void NormalizePixelAspectRatio(MagickImage image, Density density)
+    {
+        double scale = density.Units switch
+        {
+            DensityUnit.PixelsPerCentimeter => 100,
+            DensityUnit.PixelsPerInch => 100 / 2.54,
+            _ => 1
+        };
+        double x = Math.Round(density.X * scale);
+        double y = Math.Round(density.Y * scale);
+        if (x is < 1 or > uint.MaxValue || y is < 1 or > uint.MaxValue ||
+            !double.IsFinite(x) || !double.IsFinite(y) || x / y != density.X / density.Y)
+        {
+            return; // Do not approximate an aspect ratio that cannot be represented exactly this way.
+        }
+        uint a = (uint)x;
+        uint b = (uint)y;
+        while (b != 0)
+        {
+            (a, b) = (b, a % b);
+        }
+        image.Density = new Density(x / a, y / a, DensityUnit.Undefined);
+    }
+
     private static void AppendMetadata(IncrementalHash hash, MagickImage image)
     {
-        // Only reorder pixels for orientation. Never transform colors or quantize Q16 pixel values.
+        // Hash the actual PNG output, without further color conversion or pixel quantization.
         Append(hash, JsonSerializer.SerializeToUtf8Bytes(new
         {
             image.Width,
@@ -124,8 +163,7 @@ internal static class ClipboardImageHash
         using var pixels = image.GetPixels();
         for (int y = 0; y < image.Height; y++)
         {
-            var mapping = image.ColorSpace == ColorSpace.CMYK ? PixelMapping.CMYKA : PixelMapping.RGBA;
-            var row = pixels.ToShortArray(0, y, image.Width, 1, mapping)!;
+            var row = pixels.ToShortArray(0, y, image.Width, 1, PixelMapping.RGBA)!;
             if (!BitConverter.IsLittleEndian)
             {
                 BinaryPrimitives.ReverseEndianness(row, row);
@@ -146,38 +184,5 @@ internal static class ClipboardImageHash
         BinaryPrimitives.WriteInt32LittleEndian(length, value.Length);
         hash.AppendData(length);
         hash.AppendData(value);
-    }
-
-    private static void AppendUnknownPngChunks(IncrementalHash hash, ReadOnlySpan<byte> source, OrientationType orientation)
-    {
-        for (int offset = 8; offset <= source.Length - 12;)
-        {
-            uint length = BinaryPrimitives.ReadUInt32BigEndian(source[offset..]);
-            if (length > source.Length - offset - 12)
-            {
-                Append(hash, source[offset..]);
-                return;
-            }
-            var type = source.Slice(offset + 4, 4);
-            string name = Encoding.ASCII.GetString(type);
-            // Pixels, explicit descriptive metadata, and properties/profiles handled above.
-            bool appliedOrientation = name == "orNT" && length == 1 && source[offset + 8] is >= 1 and <= 8 &&
-                source[offset + 8] == (byte)orientation;
-            if (!appliedOrientation && name is not ("IHDR" or "PLTE" or "IDAT" or "IEND" or "tRNS" or
-                "pHYs" or "tIME" or "tEXt" or "zTXt" or "iTXt" or "iCCP" or "eXIf" or
-                "bKGD" or "cHRM" or "gAMA" or "sRGB"))
-            {
-                Append(hash, source.Slice(offset + 4, (int)length + 4));
-            }
-            offset += (int)length + 12;
-            if (name == "IEND")
-            {
-                if (offset < source.Length)
-                {
-                    Append(hash, source[offset..]);
-                }
-                return;
-            }
-        }
     }
 }
