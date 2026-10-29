@@ -112,6 +112,7 @@ brew install --cask Jeric-X/tap/syncclipboard
 ```
 
 #### Troubleshooting
+- System requirements: macOS 12.7 or later for Apple Silicon (arm64), and macOS 13.3 or later for Intel (x64).
 - System prompts `“SyncClipboard” cannot be opened because the developer cannot be verified`: Go to `Settings` -> `Privacy & Security` on macOS, and click `Open Anyway`.
 - System prompts `"SyncClipboard" is damaged, can't be opened`: Run the following command in the terminal: `sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
 - Some features require Accessibility permissions. SyncClipboard will prompt for authorization when needed. If permission has been granted in System Settings but SyncClipboard still reports it as missing, remove SyncClipboard from the Accessibility permissions list, then restart SyncClipboard to request permission again.
@@ -132,7 +133,7 @@ After installation, you can launch it from the menu. If launching via the comman
 
 #### Troubleshooting
 
-- Requires **glibc 2.38 or later**. Run `ldd --version` to check your installed version.
+- Packages other than `AppImage` require **glibc 2.38 or later**. Run `ldd --version` to check your installed version.
 - Clipboard sync is delayed, fails, or uploads garbled text: It is recommended to install `xclip` (for X11) or `wl-clipboard` (for Wayland) on your system. SyncClipboard will use these tools to help access the clipboard and improve stability. Use the commands `xclip -version` or `wl-paste -version` to check if they are installed.
 - When upgrading using `deb` or `rpm` installation packages, if the upgrade fails, please uninstall the old version before installing the new one.
 - When using the `AppImage` package, please ensure that the AppImage file has executable permissions.

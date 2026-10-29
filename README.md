@@ -116,6 +116,7 @@ brew install --cask Jeric-X/tap/syncclipboard
 ```
 
 #### 故障排除
+- 系统要求：Apple Silicon（arm64）需要 macOS 12.7 或更高版本；Intel（x64）需要 macOS 13.3 或更高版本。
 - 系统提示`由于开发者无法验证，“SyncClipboard”无法打开`： 
 在macOS的`设置`->`隐私与安全性`页面，点击`仍要打开`
 - 系统提示`“SyncClipboard”已损坏，无法打开`：在终端中执行`sudo xattr -d com.apple.quarantine /Applications/SyncClipboard.app`
@@ -137,7 +138,7 @@ paru -Sy syncclipboard-desktop
 
 #### 故障排除
 
-- 要求系统使用 **glibc 2.38 或更高版本**，可运行 `ldd --version` 查看当前版本。
+- 使用非 `AppImage` 安装包时，要求系统使用 **glibc 2.38 或更高版本**，可运行 `ldd --version` 查看当前版本。
 - 剪贴板同步不及时、无法同步、上传乱码：建议在系统内安装`xclip`（X11）或`wl-clipboard`（Wayland），SyncClipboard会使用这些工具辅助获取剪贴板以增强稳定性。使用`xclip -version`或`wl-paste -version`命令确认是否已安装
 - 使用`deb`、`rpm`安装包时，升级安装失败时，请先删除旧版再安装新版
 - 使用`AppImage`包时，请确认AppImage文件具有可执行权限
