@@ -27,7 +27,7 @@ internal partial class ClipboardFactory
             meta.OriginalType = ClipboardMetaInfomation.ImageType;
             using var stream = new MemoryStream();
             bitmap.Save(stream, PngBitmapEncoderOptions.Default);
-            meta.Image = ClipboardImage.TryCreateImage(stream.ToArray());
+            meta.Image = await ClipboardImage.TryCreateImageAsync(stream.ToArray(), token);
         }
 
         // 文件：使用 Avalonia 通用格式

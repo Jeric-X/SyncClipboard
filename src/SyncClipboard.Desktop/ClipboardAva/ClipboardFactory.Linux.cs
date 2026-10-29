@@ -162,7 +162,7 @@ internal partial class ClipboardFactory
                     continue;
                 }
 
-                meta.Image = ClipboardImage.TryCreateImage(bytes);
+                meta.Image = await ClipboardImage.TryCreateImageAsync(bytes, token);
                 if (meta.Image != null)
                 {
                     break;

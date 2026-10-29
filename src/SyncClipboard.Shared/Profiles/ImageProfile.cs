@@ -20,8 +20,8 @@ public class ImageProfile : FileProfile
     {
     }
 
-    public static string CreateImageFileName()
+    public static string CreateImageFileName(string contentHash)
     {
-        return $"Image_{Utility.CreateTimeBasedFileName()}.png";
+        return $"Image_{Utility.NormalizeRequiredSHA256(contentHash)[..32]}.png";
     }
 }

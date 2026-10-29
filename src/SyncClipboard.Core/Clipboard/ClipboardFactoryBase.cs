@@ -10,6 +10,9 @@ namespace SyncClipboard.Core.Clipboard;
 
 public abstract class ClipboardFactoryBase : IClipboardFactory
 {
+    private const string ImageCacheType = "ClipboardImageMetadataV1";
+    private static readonly SemaphoreSlim ImageCacheSemaphore = new(1, 1);
+
     protected abstract ILogger Logger { get; set; }
     protected abstract IServiceProvider ServiceProvider { get; set; }
     protected ConfigManager Config => ServiceProvider.GetRequiredService<ConfigManager>();
@@ -72,14 +75,18 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
 
     private async Task<ImageProfile> CreateImageProfileWithCache(IClipboardImage image, CancellationToken ctk)
     {
-        var hash = image.GetHashCode().ToString();
-        var cachedPath = await FileCacheManager.GetCachedFilePathAsync(nameof(IClipboardImage), hash, ctk);
+        // Keep lookup and creation atomic when clipboard notifications overlap.
+        await ImageCacheSemaphore.WaitAsync(ctk);
+        using var guard = new ScopeGuard(() => ImageCacheSemaphore.Release());
+
+        var hash = image.ContentHash;
+        var cachedPath = await FileCacheManager.GetCachedFilePathAsync(ImageCacheType, hash, ctk);
         if (cachedPath is not null)
         {
             return new ImageProfile(cachedPath);
         }
 
-        var tempPath = Path.Combine(Env.TemplateFileFolder, ImageProfile.CreateImageFileName());
+        var tempPath = Path.Combine(Env.TemplateFileFolder, ImageProfile.CreateImageFileName(hash));
         await image.Save(tempPath, ctk);
 
         var imageProfile = new ImageProfile(tempPath);
@@ -94,7 +101,7 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
             await imageProfile.SetTransferData(dataPath, false, ctk);
         }
 
-        await FileCacheManager.SaveCacheEntryAsync(nameof(IClipboardImage), hash, dataPath, ctk);
+        await FileCacheManager.SaveCacheEntryAsync(ImageCacheType, hash, dataPath, ctk);
         return imageProfile;
     }
 
