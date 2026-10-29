@@ -936,12 +936,7 @@ public partial class HistoryViewModel : ObservableObject
 
     private async Task ToggleStarForSelectedItemAsync()
     {
-        var count = HistoryItemCount;
-        if (SelectedIndex < 0 || SelectedIndex >= count)
-            return;
-
-        var selectedItem = ((IList<HistoryRecordVM>)HistoryItems)[SelectedIndex];
-        if (selectedItem == null)
+        if (SelectedItem is not { } selectedItem)
             return;
 
         await ChangeStarStatus(selectedItem);
@@ -957,12 +952,7 @@ public partial class HistoryViewModel : ObservableObject
 
     private async Task DeleteSelectedItemAsync()
     {
-        var count = HistoryItemCount;
-        if (SelectedIndex < 0 || SelectedIndex >= count)
-            return;
-
-        var selectedItem = ((IList<HistoryRecordVM>)HistoryItems)[SelectedIndex];
-        if (selectedItem == null)
+        if (SelectedItem is not { } selectedItem)
             return;
 
         await DeleteItem(selectedItem);
@@ -970,12 +960,7 @@ public partial class HistoryViewModel : ObservableObject
 
     private async void HandleEnterKey(bool isAltPressed)
     {
-        var count = HistoryItemCount;
-        if (SelectedIndex < 0 || SelectedIndex >= count)
-            return;
-
-        var selectedItem = ((IList<HistoryRecordVM>)HistoryItems)[SelectedIndex];
-        if (selectedItem == null)
+        if (SelectedItem is not { } selectedItem)
             return;
 
         // Alt键表示不粘贴到剪贴板，只是复制操作
@@ -1015,8 +1000,6 @@ public partial class HistoryViewModel : ObservableObject
     public async Task Init(IWindow window)
     {
         this.window = window;
-        // Both desktop views bind HistoryItems before calling Init. Subscribe here
-        // so the controls process collection changes before selection is adjusted.
         HistoryItems.CollectionChanged -= OnHistoryItemsCollectionChanged;
         HistoryItems.CollectionChanged += OnHistoryItemsCollectionChanged;
         if (!OperatingSystem.IsLinux())
@@ -1126,7 +1109,10 @@ public partial class HistoryViewModel : ObservableObject
     {
         try
         {
-            var selectionAfterReplacement = PrepareSelectionForRecordReplacement(oldR);
+            var wasPreviewedInMultiSelect = IsMultiSelecting && ReferenceEquals(SelectedItem, oldR);
+            var selectionAfterReplacement = PrepareSelectionForRecordRemoval(oldR);
+            if (wasPreviewedInMultiSelect)
+                selectionAfterReplacement = newR;
             ClearVisibleRecordSelection(oldR);
             allHistoryItems.Remove(oldR);
             if (newR != null)

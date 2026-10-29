@@ -167,9 +167,6 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
             case nameof(HistoryViewModel.IsMultiSelecting):
                 ApplyListViewSelectionMode();
                 break;
-            case nameof(HistoryViewModel.SelectedIndex):
-                ApplySelectedIndex();
-                break;
             case nameof(HistoryViewModel.IsCurrentFilterFullySelected):
                 UpdateSelectAllIcon();
                 break;
@@ -189,6 +186,8 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
 
     private void ApplyListViewSelectionMode()
     {
+        // Detach before changing mode so the control cannot clear the preview in the VM.
+        _ListView.ClearValue(ListView.SelectedItemProperty);
         HistoryListModeProxy.Current.IsMultiSelecting = _viewModel.IsMultiSelecting;
         var selectionMode = _viewModel.IsMultiSelecting
             ? ListViewSelectionMode.Multiple
@@ -199,13 +198,12 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         if (selectionMode == ListViewSelectionMode.Multiple)
             ApplyVisibleSelectionSnapshot();
         else
-            ApplySelectedIndex();
-    }
-
-    private void ApplySelectedIndex()
-    {
-        if (!_viewModel.IsMultiSelecting)
-            _ListView.SelectedIndex = _viewModel.SelectedIndex;
+            _ListView.SetBinding(ListView.SelectedItemProperty, new Binding
+            {
+                Source = _viewModel,
+                Path = new PropertyPath(nameof(HistoryViewModel.SelectedItem)),
+                Mode = BindingMode.TwoWay
+            });
     }
 
     private void ApplyCompactListMode(bool isCompactListMode)

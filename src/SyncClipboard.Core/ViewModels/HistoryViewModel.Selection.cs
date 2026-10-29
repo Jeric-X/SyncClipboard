@@ -30,19 +30,35 @@ public partial class HistoryViewModel
         public bool Starred { get; set; } = starred;
     }
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(SelectedItem))]
-    private int selectedIndex = -1;
+    private HistoryRecordVM? selectedItem;
 
-    partial void OnSelectedIndexChanged(int value) => PreviewedHistoryItem = SelectedItem;
+    /// <summary>The current preview/navigation record, independent of the batch selection.</summary>
+    public HistoryRecordVM? SelectedItem
+    {
+        get => selectedItem;
+        set
+        {
+            // Records with the same key can be different instances after an update.
+            if (ReferenceEquals(selectedItem, value))
+                return;
 
-    /// <summary>The record currently shown by the preview panel, independent of the batch selection.</summary>
-    [ObservableProperty]
-    private HistoryRecordVM? previewedHistoryItem;
+            OnPropertyChanging();
+            selectedItem = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(PreviewedHistoryItem));
+        }
+    }
 
-    public HistoryRecordVM? SelectedItem => SelectedIndex >= 0 && SelectedIndex < HistoryItemCount
-        ? ((IList<HistoryRecordVM>)HistoryItems)[SelectedIndex]
-        : null;
+    public HistoryRecordVM? PreviewedHistoryItem => SelectedItem;
+
+    // Resolve positions only when navigating; collection changes do not need to maintain an index.
+    private int SelectedIndex
+    {
+        get => SelectedItem is { } record ? HistoryItems.IndexOf(record) : -1;
+        set => SelectedItem = value >= 0 && value < HistoryItemCount
+            ? ((IList<HistoryRecordVM>)HistoryItems)[value]
+            : null;
+    }
 
     private int HistoryItemCount => ((ICollection)HistoryItems).Count;
 
@@ -108,39 +124,23 @@ public partial class HistoryViewModel
             SetVisibleRecordSelection(record, selectedHistoryRecords.ContainsKey(record.Key));
 
         if (IsMultiSelecting)
+        {
             RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
-
-        AdjustSelectedIndexForInsertedItems(e);
-
-        if (IsMultiSelecting)
             return;
+        }
 
         if (e.Action != NotifyCollectionChangedAction.Add
-            || SelectedIndex != -1
+            || SelectedItem is not null
             || e.NewItems?.Count <= 0)
             return;
 
         await Task.Delay(1);
         if (!IsMultiSelecting
-            && SelectedIndex == -1
+            && SelectedItem is null
             && HistoryItemCount > 0)
         {
             SelectedIndex = 0;
         }
-    }
-
-    private void AdjustSelectedIndexForInsertedItems(NotifyCollectionChangedEventArgs e)
-    {
-        if (e.Action != NotifyCollectionChangedAction.Add
-            || SelectedIndex < 0
-            || e.NewStartingIndex < 0
-            || e.NewStartingIndex > SelectedIndex
-            || e.NewItems?.Count is not > 0)
-            return;
-
-        var adjustedIndex = SelectedIndex + e.NewItems.Count;
-        if (adjustedIndex < HistoryItemCount)
-            SelectedIndex = adjustedIndex;
     }
 
     public void HandleRecordClick(HistoryRecordVM record, bool ctrlPressed, bool shiftPressed)
@@ -192,7 +192,7 @@ public partial class HistoryViewModel
         if (index < 0)
             return false;
 
-        SelectedIndex = index;
+        SelectedItem = ((IList<HistoryRecordVM>)HistoryItems)[index];
         return true;
     }
 
@@ -213,20 +213,19 @@ public partial class HistoryViewModel
         return removedIndex - 1;
     }
 
-    private HistoryRecordVM? PrepareSelectionForRecordReplacement(HistoryRecordVM removedRecord)
+    private HistoryRecordVM? PrepareSelectionForRecordRemoval(HistoryRecordVM removedRecord)
     {
-        if (IsMultiSelecting || SelectedItem is null)
+        if (!ReferenceEquals(SelectedItem, removedRecord))
             return null;
 
         var items = (IList<HistoryRecordVM>)HistoryItems;
-        var targetIndex = GetSelectionTargetIndexBeforeRemoval(
-            items.Count,
-            SelectedIndex,
-            items.IndexOf(removedRecord));
+        var removedIndex = items.IndexOf(removedRecord);
+        var targetIndex = IsMultiSelecting ? -1 : GetSelectionTargetIndexBeforeRemoval(
+            items.Count, removedIndex, removedIndex);
         var target = targetIndex >= 0 ? items[targetIndex] : null;
 
         // Reset the UI selection before the collection emits remove/add events.
-        // The target is restored by identity after the record has been repositioned.
+        // The adjacent record is selected after removal, independently of index changes.
         ClearSelectedItem();
         return target;
     }
@@ -634,44 +633,22 @@ public partial class HistoryViewModel
     {
         var key = HistoryRecordKey.From(record);
         var visibleRecord = allHistoryItems.FirstOrDefault(item => item.Key == key);
-        int? selectedIndexAfterRemoval = null;
-
-        if (visibleRecord is not null)
-        {
-            var removedIndex = HistoryItems.IndexOf(visibleRecord);
-            var currentIndex = SelectedIndex;
-            if (removedIndex >= 0 && currentIndex >= 0 && currentIndex < HistoryItemCount)
-            {
-                if (removedIndex < currentIndex)
-                {
-                    selectedIndexAfterRemoval = currentIndex - 1;
-                }
-                else if (removedIndex == currentIndex)
-                {
-                    selectedIndexAfterRemoval = IsMultiSelecting
-                        ? -1
-                        : currentIndex < HistoryItemCount - 1
-                            ? currentIndex
-                            : currentIndex - 1;
-                }
-            }
-        }
-
-        if (selectedIndexAfterRemoval.HasValue)
-            ClearSelectedItem();
+        var selectionAfterRemoval = visibleRecord is not null
+            ? PrepareSelectionForRecordRemoval(visibleRecord)
+            : null;
 
         RemoveRecordFromSelection(record);
         if (visibleRecord is not null)
             allHistoryItems.Remove(visibleRecord);
 
-        if (selectedIndexAfterRemoval >= 0 && selectedIndexAfterRemoval < HistoryItemCount)
-            SelectedIndex = selectedIndexAfterRemoval.Value;
+        if (selectionAfterRemoval is not null)
+            SelectSingleRecord(selectionAfterRemoval);
     }
 
     private void ClearVisibleRecordSelection(HistoryRecordVM record) =>
         SetVisibleRecordSelection(record, false);
 
-    private void ClearSelectedItem() => SelectedIndex = -1;
+    private void ClearSelectedItem() => SelectedItem = null;
 
     private void ClearVisibleSelectedItems()
     {

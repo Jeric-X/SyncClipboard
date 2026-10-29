@@ -47,7 +47,6 @@ public class HistoryViewModelSelectionTests
         SetField("_loader", runner);
         SetField("_updateQueueCts", new CancellationTokenSource());
         SetField("allHistoryItems", records);
-        SetField("selectedIndex", -1);
         var reload = (Task)typeof(HistoryViewModel).GetMethod("Reload", BindingFlags.Instance | BindingFlags.NonPublic)!
             .Invoke(viewModel, null)!;
         Assert.IsTrue(pageToken.IsCancellationRequested);
@@ -74,7 +73,6 @@ public class HistoryViewModelSelectionTests
         var logger = new Mock<ILogger>();
         SetField("_updateQueueCts", new CancellationTokenSource());
         SetField("allHistoryItems", records);
-        SetField("selectedIndex", -1);
         SetField("window", Mock.Of<IWindow>());
         SetField("_loader", runner);
         SetField("logger", logger.Object);
@@ -138,7 +136,6 @@ public class HistoryViewModelSelectionTests
         SetField("window", window.Object);
         SetField("_updateQueueCts", new CancellationTokenSource());
         SetField("allHistoryItems", new ObservableList<HistoryRecordVM>());
-        SetField("selectedIndex", -1);
         var releasePage = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var page = failBeforeReloadBody ? runner.Run(async token =>
         {
