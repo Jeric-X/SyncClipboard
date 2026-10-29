@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Data;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
@@ -97,11 +98,6 @@ public partial class HistoryWindow : Window, IWindow
             else if (e.PropertyName == nameof(HistoryViewModel.IsMultiSelecting))
             {
                 ApplyListBoxSelectionMode();
-            }
-            else if (e.PropertyName == nameof(HistoryViewModel.SelectedIndex)
-                     && !_viewModel.IsMultiSelecting)
-            {
-                ApplySelectedIndex();
             }
             else if (e.PropertyName == nameof(HistoryViewModel.IsCurrentFilterFullySelected))
             {
@@ -245,9 +241,13 @@ public partial class HistoryWindow : Window, IWindow
     }
 
     private ScrollViewer? _scrollViewer = null;
+    private BindingExpressionBase? _selectedItemBinding;
 
     private void ApplyListBoxSelectionMode()
     {
+        // Detach before changing mode so the control cannot clear the preview in the VM.
+        _selectedItemBinding?.Dispose();
+        _selectedItemBinding = null;
         var selectionMode = _viewModel.IsMultiSelecting
             ? SelectionMode.Multiple
             : SelectionMode.Single;
@@ -257,13 +257,11 @@ public partial class HistoryWindow : Window, IWindow
         if (selectionMode == SelectionMode.Multiple)
             ApplyVisibleSelectionSnapshot();
         else
-            ApplySelectedIndex();
-    }
-
-    private void ApplySelectedIndex()
-    {
-        if (!_viewModel.IsMultiSelecting)
-            _ListBox.SelectedIndex = _viewModel.SelectedIndex;
+            _selectedItemBinding = _ListBox.Bind(ListBox.SelectedItemProperty, new Binding(nameof(HistoryViewModel.SelectedItem))
+            {
+                Source = _viewModel,
+                Mode = BindingMode.TwoWay
+            });
     }
 
     private void ApplyVisibleSelectionSnapshot()
