@@ -30,6 +30,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     private static readonly List<KeyValuePair<string, FormatHandler>> FormatHandlerlist =
     [
         new (StandardDataFormats.Text, HanleText),
+        new ("PNG", HandlePng),
         new (StandardDataFormats.Bitmap, HanleBitmap),
         new ("DeviceIndependentBitmap", HanleDib),
         new (StandardDataFormats.Html, HanleHtml),
@@ -74,6 +75,15 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
         using MemoryStream ms = new();
         await stream.CopyToAsync(ms, ctk);
         return ms.ToArray();
+    }
+
+    private static async Task HandlePng(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
+    {
+        if (meta.Image is not null)
+            return;
+        var res = await ClipboardData.GetDataAsync("PNG").AsTask().WaitAsync(ctk);
+        using var stream = res.As<IRandomAccessStream>();
+        meta.Image = await ClipboardImage.TryCreateImageAsync(await RandomStreamToBytes(stream, ctk), ctk);
     }
 
     private static async Task HanleBitmap(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk)
@@ -177,12 +187,13 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
             return meta;
         }
 
-        var formats = ClipboardData.AvailableFormats;
+        // Snapshot the WinRT collection before awaiting: the source can disconnect during image conversion.
+        var formats = ClipboardData.AvailableFormats.ToHashSet(StringComparer.Ordinal);
         for (int i = 0; formats.Count == 0 && i < 10; i++)
         {
             await Task.Delay(200, ctk);
             ClipboardData = Clipboard.GetContent();
-            formats = ClipboardData.AvailableFormats;
+            formats = ClipboardData.AvailableFormats.ToHashSet(StringComparer.Ordinal);
             await Logger.WriteAsync(LOG_TAG, "retry times: " + (i + 1));
         }
 
@@ -193,23 +204,24 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
             return meta;
         }
 
-        int errortimes = 0;
+        const int maxAttempts = 3;
         foreach (var handler in FormatHandlerlist)
         {
-            for (int i = 0; i < 3; i++)
+            if (!formats.Contains(handler.Key))
+                continue;
+            for (int i = 0; i < maxAttempts; i++)
             {
                 try
                 {
-                    if (formats.Contains(handler.Key))
-                    {
-                        await handler.Value(ClipboardData, meta, ctk);
-                    }
+                    ctk.ThrowIfCancellationRequested();
+                    await handler.Value(ClipboardData, meta, ctk);
+                    break;
                 }
                 catch (Exception ex) when (ctk.IsCancellationRequested is false)
                 {
-                    errortimes += 1;
                     await Logger.WriteAsync(LOG_TAG, ex.ToString());
-                    await Task.Delay(100, ctk);
+                    if (i < maxAttempts - 1)
+                        await Task.Delay(100, ctk);
                 }
             }
         }
