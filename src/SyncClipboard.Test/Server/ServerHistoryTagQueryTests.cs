@@ -16,7 +16,7 @@ using SyncClipboard.Server.Core.Services.History;
 using SyncClipboard.Server.Core.Utilities.History;
 using SyncClipboard.Shared.Profiles;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Server;
 
 [TestClass]
 public class ServerHistoryTagQueryTests
