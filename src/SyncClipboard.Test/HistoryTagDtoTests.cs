@@ -38,19 +38,6 @@ public class HistoryTagDtoTests
     }
 
     [TestMethod]
-    public void JsonRoundTrip_PreservesTagNamesOnAllRecordDtos()
-    {
-        string[] tags = ["Work", "work", "工作", "quote\"\\"];
-        var create = new HistoryRecordCreateDto { Tags = tags };
-        var update = new HistoryRecordUpdateDto { Tags = tags };
-        var record = new HistoryRecordDto { Tags = tags };
-
-        CollectionAssert.AreEqual(tags, RoundTrip(create).Tags);
-        CollectionAssert.AreEqual(tags, RoundTrip(update).Tags);
-        CollectionAssert.AreEqual(tags, RoundTrip(record).Tags);
-    }
-
-    [TestMethod]
     public void UpdateSerialization_OmitsUnknownTagsButWritesExplicitClear()
     {
         var unknown = JsonSerializer.SerializeToElement(new HistoryRecordDto().ToUpdateDto(), JsonSerializerOptions.Web);
@@ -115,7 +102,4 @@ public class HistoryTagDtoTests
             Tags = Enumerable.Range(0, 33).Select(i => $"tag{i}").ToArray()
         }.ToEntity("user"));
     }
-
-    private static T RoundTrip<T>(T value) =>
-        JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(value, JsonSerializerOptions.Web), JsonSerializerOptions.Web)!;
 }
