@@ -60,6 +60,10 @@ namespace SyncClipboard.Core.Migrations
                     b.Property<int>("SyncStatus")
                         .HasColumnType("INTEGER");
 
+                    b.PrimitiveCollection<string>("Tags")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("Text")
                         .IsRequired()
                         .HasColumnType("TEXT");

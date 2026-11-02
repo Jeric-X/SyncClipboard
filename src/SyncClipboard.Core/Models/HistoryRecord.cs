@@ -20,6 +20,7 @@ public class HistoryRecord
         set => DateTimePropertyHelper.SetDateTimeProperty(value, ref timestamp);
     }
 
+    public string[] Tags { get; set; } = [];
     public bool Stared { get; set; }
     public bool Pinned { get; set; }
     public HistorySyncStatus SyncStatus { get; set; } = HistorySyncStatus.LocalOnly;
