@@ -8,7 +8,7 @@ namespace SyncClipboard.Server.Core.Models;
 public class HistoryQueryDto
 {
     /// <summary>Match any of these exact tag names, after normalization.</summary>
-    [FromForm(Name = "tag")]
+    [FromForm(Name = "Tag")]
     public string[]? Tags { get; set; }
 
     /// <summary>Only records without tags; cannot be combined with a nonempty tag filter.</summary>
