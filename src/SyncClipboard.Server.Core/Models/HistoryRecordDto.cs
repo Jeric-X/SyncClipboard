@@ -1,9 +1,11 @@
 using System.Text.Json.Serialization;
+using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Server.Core.Models;
 
 public class HistoryRecordDto
 {
+    public string[]? Tags { get; set; }
     public string Hash { get; set; } = string.Empty;
     public string Text { get; set; } = string.Empty;
     [JsonConverter(typeof(JsonStringEnumConverter))]
@@ -28,6 +30,7 @@ public class HistoryRecordDto
             CreateTime = new DateTimeOffset(e.CreateTime, TimeSpan.Zero),
             LastModified = new DateTimeOffset(e.LastModified, TimeSpan.Zero),
             LastAccessed = new DateTimeOffset(e.LastAccessed, TimeSpan.Zero),
+            Tags = [.. e.Tags],
             Starred = e.Stared,
             Pinned = e.Pinned,
             Size = e.Size,
@@ -48,6 +51,7 @@ public class HistoryRecordDto
             CreateTime = this.CreateTime.UtcDateTime,
             LastAccessed = this.LastAccessed.UtcDateTime,
             LastModified = this.LastModified.UtcDateTime,
+            Tags = HistoryTags.Normalize(this.Tags ?? []),
             Stared = this.Starred,
             Pinned = this.Pinned,
             Size = this.Size,
