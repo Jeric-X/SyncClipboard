@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using SyncClipboard.Server.Core.Utilities;
 
 namespace SyncClipboard.Server.Core.Models;
 
@@ -7,8 +8,9 @@ namespace SyncClipboard.Server.Core.Models;
 /// </summary>
 public class HistoryQueryDto
 {
-    /// <summary>Match any of these exact tag names, after normalization.</summary>
-    [FromForm(Name = "Tag")]
+    /// <summary>Match any of these exact tag names, after normalization. Form value is a JSON array.</summary>
+    [FromForm]
+    [ModelBinder(BinderType = typeof(JsonStringArrayFormBinder))]
     public string[]? Tags { get; set; }
 
     /// <summary>Only records without tags; cannot be combined with a nonempty tag filter.</summary>

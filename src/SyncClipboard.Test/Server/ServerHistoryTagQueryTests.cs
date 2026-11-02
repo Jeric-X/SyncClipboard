@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
@@ -163,12 +164,28 @@ public class ServerHistoryTagQueryTests
     [TestMethod]
     [DataRow("")]
     [DataRow("   ")]
-    public async Task Query_FormBindingRejectsExplicitBlankTags(string value)
+    [DataRow("not-json")]
+    [DataRow("\"A\"")]
+    [DataRow("{}")]
+    [DataRow("[1]")]
+    [DataRow("[\"A\"")]
+    public async Task Query_FormBindingRejectsMalformedTagArrays(string value)
     {
-        await using var f = await Fixture.CreateAsync(Token);
-        var query = await BindFormAsync(new() { ["Tag"] = value });
+        var (_, state) = await BindFormAsync(new() { ["Tags"] = value });
 
-        Assert.IsInstanceOfType<BadRequestObjectResult>((await f.Controller.QueryHistory(query)).Result);
+        Assert.IsFalse(state.IsValid);
+        Assert.IsGreaterThan(0, state["Tags"]!.Errors.Count);
+    }
+
+    [TestMethod]
+    public async Task Query_FormBindingRejectsMultipleArrayFields()
+    {
+        var (_, state) = await BindFormAsync(new()
+        {
+            ["Tags"] = new StringValues(["[\"A\"]", "[\"B\"]"])
+        });
+
+        Assert.IsFalse(state.IsValid);
     }
 
     [TestMethod]
@@ -179,17 +196,23 @@ public class ServerHistoryTagQueryTests
         f.Add("other", ["B"]);
         await f.Db.SaveChangesAsync(Token);
 
-        Assert.HasCount(2, await f.QueryAsync(await BindFormAsync([])));
-        var single = await f.QueryAsync(await BindFormAsync(new() { ["Tag"] = " A " }));
-        Assert.AreEqual("match", single.Single().Hash);
-        var query = await BindFormAsync(new() { ["Tag"] = new StringValues(["A", "B"]) });
-        string[] expected = ["A", "B"];
-        CollectionAssert.AreEqual(expected, query.Tags);
-        var multiple = await f.QueryAsync(query);
-        Assert.HasCount(2, multiple);
+        foreach (var value in new string?[] { null, "null", "[]" })
+        {
+            var (unfiltered, state) = await BindFormAsync(value is null ? [] : new() { ["Tags"] = value });
+            Assert.IsTrue(state.IsValid);
+            Assert.HasCount(2, await f.QueryAsync(unfiltered));
+        }
+
+        var (single, singleState) = await BindFormAsync(new() { ["Tags"] = "[\" A \"]" });
+        Assert.IsTrue(singleState.IsValid);
+        Assert.AreEqual("match", (await f.QueryAsync(single)).Single().Hash);
+        var (multiple, multipleState) = await BindFormAsync(new() { ["Tags"] = "[\"A\",\"B\"]" });
+        Assert.IsTrue(multipleState.IsValid);
+        Assert.HasCount(2, await f.QueryAsync(multiple));
     }
 
-    private static async Task<HistoryQueryDto> BindFormAsync(Dictionary<string, StringValues> form)
+    private static async Task<(HistoryQueryDto Query, ModelStateDictionary State)> BindFormAsync(
+        Dictionary<string, StringValues> form)
     {
         var services = new ServiceCollection();
         services.AddLogging();
@@ -209,7 +232,8 @@ public class ServerHistoryTagQueryTests
         var context = DefaultModelBindingContext.CreateBindingContext(action, values, metadata, bindingInfo, "");
         await binder.BindModelAsync(context);
         Assert.IsTrue(context.Result.IsModelSet);
-        return (HistoryQueryDto)context.Result.Model!;
+        provider.GetRequiredService<IObjectModelValidator>().Validate(action, null, "", context.Result.Model);
+        return ((HistoryQueryDto)context.Result.Model!, action.ModelState);
     }
 
     private sealed class Fixture : IAsyncDisposable
