@@ -6,7 +6,7 @@ using SyncClipboard.Shared.Utilities;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-namespace SyncClipboard.Test.Client;
+namespace SyncClipboard.Test.Client.History;
 
 [TestClass]
 public class HistoryTagEditingTests
