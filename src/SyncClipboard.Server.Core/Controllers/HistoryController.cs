@@ -115,6 +115,15 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             return BadRequest("after must be less than before");
         }
 
+        try
+        {
+            NormalizeTagQuery(query);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+
         DateTime? modifiedAfterDt = query.ModifiedAfter?.UtcDateTime;
 
         var list = await _historyService.GetListAsync(
@@ -127,8 +136,19 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             query.SearchText,
             query.Starred,
             modifiedAfterDt,
-            query.SortByLastAccessed);
+            query.SortByLastAccessed,
+            query.OnlyUntagged,
+            query.Tags,
+            HttpContext.RequestAborted);
         return Ok(list);
+    }
+
+    private static void NormalizeTagQuery(HistoryQueryDto query)
+    {
+        if (query.Tags is not null)
+            query.Tags = HistoryTags.NormalizeNames(query.Tags);
+        if (query.Tags?.Length > 0 && query.OnlyUntagged)
+            throw new ArgumentException("A tag and untagged filter cannot be combined.");
     }
 
     /// <summary>

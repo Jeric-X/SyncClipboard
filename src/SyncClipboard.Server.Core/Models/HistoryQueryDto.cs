@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Mvc;
+
 namespace SyncClipboard.Server.Core.Models;
 
 /// <summary>
@@ -5,6 +7,13 @@ namespace SyncClipboard.Server.Core.Models;
 /// </summary>
 public class HistoryQueryDto
 {
+    /// <summary>Match any of these exact tag names, after normalization.</summary>
+    [FromForm(Name = "Tag")]
+    public string[]? Tags { get; set; }
+
+    /// <summary>Only records without tags; cannot be combined with a nonempty tag filter.</summary>
+    public bool OnlyUntagged { get; set; }
+
     /// <summary>
     /// Page index starting from 1 (default 1). Page size is fixed to 50 (max 50).
     /// </summary>
