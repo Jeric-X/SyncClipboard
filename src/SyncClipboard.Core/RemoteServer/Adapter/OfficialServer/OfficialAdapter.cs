@@ -374,7 +374,7 @@ public sealed class OfficialAdapter(
             };
 
             if (dto.Tags is not null)
-                content.Add(new StringContent(JsonSerializer.Serialize(dto.Tags)), "tags");
+                content.Add(new StringContent(JsonSerializer.Serialize(dto.Tags)), nameof(HistoryRecordDto.Tags));
 
             using var request = new HttpRequestMessage(HttpMethod.Post, url)
             {
