@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using SyncClipboard.Server.Core.Hubs;
+using SyncClipboard.Server.Core.Models;
 using Microsoft.AspNetCore.StaticFiles;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
@@ -56,6 +57,12 @@ public class SyncClipboardController(
     public IActionResult GetVersion()
     {
         return Ok(SyncClipboardProperty.AppVersion);
+    }
+
+    [HttpGet("api/capabilities")]
+    public ActionResult<ServerCapabilitiesDto> GetCapabilities()
+    {
+        return Ok(new ServerCapabilitiesDto { HistorySync = true, HistoryTags = true });
     }
 
     [AcceptVerbs("PROPFIND")]
