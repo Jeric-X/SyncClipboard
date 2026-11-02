@@ -67,9 +67,21 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             return (null, null);
         }
 
+        ApplyOptionalUpdateFields(existing, dto);
+        existing.LastModified = dto.LastModified.Value.UtcDateTime;
+        existing.Version = dto.Version.Value;
+
+        await _dbContext.SaveChangesAsync(token);
+        await NotifyProfileChangeAsync(existing);
+        await DeleteProfileDataIfNeed(existing, token);
+
+        return (true, HistoryRecordDto.FromEntity(existing));
+    }
+
+    private static void ApplyOptionalUpdateFields(HistoryRecordEntity existing, HistoryRecordUpdateDto dto)
+    {
         var tags = dto.Tags is null ? null : HistoryTags.Normalize(dto.Tags);
 
-        // 部分字段更新
         if (tags is not null)
             existing.Tags = tags;
         if (dto.Starred.HasValue)
@@ -79,16 +91,8 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         if (dto.IsDelete.HasValue)
             existing.IsDeleted = dto.IsDelete.Value;
 
-        existing.LastModified = dto.LastModified.Value.UtcDateTime;
         if (dto.LastAccessed.HasValue)
             existing.LastAccessed = dto.LastAccessed.Value.UtcDateTime;
-        existing.Version = dto.Version.Value;
-
-        await _dbContext.SaveChangesAsync(token);
-        await NotifyProfileChangeAsync(existing);
-        await DeleteProfileDataIfNeed(existing, token);
-
-        return (true, HistoryRecordDto.FromEntity(existing));
     }
 
     private async Task NotifyProfileChangeAsync(HistoryRecordEntity entity)
