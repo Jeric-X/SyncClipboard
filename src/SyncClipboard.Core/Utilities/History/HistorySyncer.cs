@@ -208,6 +208,7 @@ public class HistorySyncer
         {
             var dto = new HistoryRecordUpdateDto
             {
+                Tags = [.. record.Tags],
                 Starred = record.Stared,
                 Pinned = record.Pinned,
                 IsDelete = record.IsDeleted,
