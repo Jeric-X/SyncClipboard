@@ -252,6 +252,7 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot ./
     "UserName": "your_username",
     "Password": "your_password",
     "MaxSavedHistoryCount": 1000, // 历史记录数量上限，0 表示不限数量；保留时长限制仍生效
+    "AutoDeleteTaggedRecords": false, // 是否自动删除仅带标签但未收藏、未置顶的记录
     "HistoryRetentionMinutes": 0 // 历史记录保留时长（分钟），0 表示不限时长；数量限制仍生效
   }
 }
