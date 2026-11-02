@@ -67,17 +67,8 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             return (null, null);
         }
 
-        // 部分字段更新
-        if (dto.Starred.HasValue)
-            existing.Stared = dto.Starred.Value;
-        if (dto.Pinned.HasValue)
-            existing.Pinned = dto.Pinned.Value;
-        if (dto.IsDelete.HasValue)
-            existing.IsDeleted = dto.IsDelete.Value;
-
+        ApplyOptionalUpdateFields(existing, dto);
         existing.LastModified = dto.LastModified.Value.UtcDateTime;
-        if (dto.LastAccessed.HasValue)
-            existing.LastAccessed = dto.LastAccessed.Value.UtcDateTime;
         existing.Version = dto.Version.Value;
 
         await _dbContext.SaveChangesAsync(token);
@@ -85,6 +76,23 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         await DeleteProfileDataIfNeed(existing, token);
 
         return (true, HistoryRecordDto.FromEntity(existing));
+    }
+
+    private static void ApplyOptionalUpdateFields(HistoryRecordEntity existing, HistoryRecordUpdateDto dto)
+    {
+        var tags = dto.Tags is null ? null : HistoryTags.Normalize(dto.Tags);
+
+        if (tags is not null)
+            existing.Tags = tags;
+        if (dto.Starred.HasValue)
+            existing.Stared = dto.Starred.Value;
+        if (dto.Pinned.HasValue)
+            existing.Pinned = dto.Pinned.Value;
+        if (dto.IsDelete.HasValue)
+            existing.IsDeleted = dto.IsDelete.Value;
+
+        if (dto.LastAccessed.HasValue)
+            existing.LastAccessed = dto.LastAccessed.Value.UtcDateTime;
     }
 
     private async Task NotifyProfileChangeAsync(HistoryRecordEntity entity)
@@ -320,6 +328,9 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         string userId, HistoryRecordDto incoming, string? declaredTransferDataHash,
         Stream? transferFileStream, CancellationToken token = default)
     {
+        if (incoming.Tags is not null)
+            incoming.Tags = HistoryTags.Normalize(incoming.Tags);
+
         await _sem.WaitAsync(token);
         using var guard = new ScopeGuard(() => _sem.Release());
 
@@ -345,7 +356,10 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         if (ShouldUpdateExistingRecord(existing, incoming))
         {
             incoming.Version = Math.Max(incoming.Version, existing.Version + 1);
-            UpdateEntityFields(incoming.ToEntity(userId), existing);
+            var updatedEntity = incoming.ToEntity(userId);
+            if (incoming.Tags is null)
+                updatedEntity.Tags = [.. existing.Tags];
+            UpdateEntityFields(updatedEntity, existing);
             await _dbContext.SaveChangesAsync(token);
             await NotifyProfileChangeAsync(existing);
             await DeleteProfileDataIfNeed(existing, token);
@@ -412,6 +426,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         dstEntity.CreateTime = srcEntity.CreateTime;
         dstEntity.LastAccessed = srcEntity.LastAccessed;
         dstEntity.LastModified = srcEntity.LastModified;
+        dstEntity.Tags = [.. srcEntity.Tags];
         dstEntity.Stared = srcEntity.Stared;
         dstEntity.Pinned = srcEntity.Pinned;
         dstEntity.Version = srcEntity.Version;
