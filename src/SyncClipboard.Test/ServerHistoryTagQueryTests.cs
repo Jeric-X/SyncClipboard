@@ -38,8 +38,8 @@ public class ServerHistoryTagQueryTests
         f.Add("other-user", ["工作"], userId: "other");
         await f.Db.SaveChangesAsync(Token);
         var query = multiple
-            ? new HistoryQueryDto { Tag = " 工作 ", Tags = ["e\u0301", "工作", "work"] }
-            : new HistoryQueryDto { Tag = " 工作 " };
+            ? new HistoryQueryDto { Tags = [" 工作 ", "e\u0301", "工作", "work"] }
+            : new HistoryQueryDto { Tags = [" 工作 "] };
 
         var records = await f.QueryAsync(query);
 
@@ -133,46 +133,40 @@ public class ServerHistoryTagQueryTests
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task Query_InvalidTagNamesReturnBadRequest(bool multiple)
+    public async Task Query_InvalidTagNamesReturnBadRequest()
     {
         await using var f = await Fixture.CreateAsync(Token);
         string[] invalidNames = [" ", "bad\nname", new string('x', 65), "\ud800"];
         foreach (var name in invalidNames)
         {
-            var query = multiple ? new HistoryQueryDto { Tags = [name] } : new HistoryQueryDto { Tag = name };
+            var query = new HistoryQueryDto { Tags = [name] };
             Assert.IsInstanceOfType<BadRequestObjectResult>((await f.Controller.QueryHistory(query)).Result);
             await Assert.ThrowsExactlyAsync<ArgumentException>(() => f.Service.GetListAsync(
                 HistoryService.HARD_CODED_USER_ID, 1, 50,
-                tag: multiple ? null : name, tags: multiple ? [name] : null, token: Token));
+                tags: [name], token: Token));
         }
         Assert.IsInstanceOfType<BadRequestObjectResult>(
             (await f.Controller.QueryHistory(new() { Tags = [null!] })).Result);
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task Query_RejectsTagAndUntaggedCombination(bool multiple)
+    public async Task Query_RejectsTagAndUntaggedCombination()
     {
         await using var f = await Fixture.CreateAsync(Token);
-        var query = new HistoryQueryDto { OnlyUntagged = true, Tag = multiple ? null : "A", Tags = multiple ? ["A"] : null };
+        var query = new HistoryQueryDto { OnlyUntagged = true, Tags = ["A"] };
         Assert.IsInstanceOfType<BadRequestObjectResult>((await f.Controller.QueryHistory(query)).Result);
         await Assert.ThrowsExactlyAsync<ArgumentException>(() => f.Service.GetListAsync(
             HistoryService.HARD_CODED_USER_ID, 1, 50,
-            tag: query.Tag, onlyUntagged: true, tags: query.Tags, token: Token));
+            onlyUntagged: true, tags: query.Tags, token: Token));
     }
 
     [TestMethod]
-    [DataRow("Tag", "")]
-    [DataRow("Tag", "   ")]
-    [DataRow("Tags", "")]
-    [DataRow("Tags", "   ")]
-    public async Task Query_FormBindingRejectsExplicitBlankTags(string key, string value)
+    [DataRow("")]
+    [DataRow("   ")]
+    public async Task Query_FormBindingRejectsExplicitBlankTags(string value)
     {
         await using var f = await Fixture.CreateAsync(Token);
-        var query = await BindFormAsync(new() { [key] = value });
+        var query = await BindFormAsync(new() { ["Tags"] = value });
 
         Assert.IsInstanceOfType<BadRequestObjectResult>((await f.Controller.QueryHistory(query)).Result);
     }
@@ -186,7 +180,7 @@ public class ServerHistoryTagQueryTests
         await f.Db.SaveChangesAsync(Token);
 
         Assert.HasCount(2, await f.QueryAsync(await BindFormAsync([])));
-        var single = await f.QueryAsync(await BindFormAsync(new() { ["Tag"] = " A " }));
+        var single = await f.QueryAsync(await BindFormAsync(new() { ["Tags"] = " A " }));
         Assert.AreEqual("match", single.Single().Hash);
         var multiple = await f.QueryAsync(await BindFormAsync(new() { ["Tags"] = new StringValues(["A", "B"]) }));
         Assert.HasCount(2, multiple);

@@ -119,7 +119,6 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         bool? starred = null,
         DateTime? modifiedAfter = null,
         bool sortByLastAccessed = false,
-        string? tag = null,
         bool onlyUntagged = false,
         IReadOnlyCollection<string>? tags = null,
         CancellationToken token = default)
@@ -133,7 +132,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         var query = _dbContext.HistoryRecords
             .Where(r => r.UserId == userId);
 
-        query = ApplyTagFilter(query, tag, tags, onlyUntagged);
+        query = ApplyTagFilter(query, tags, onlyUntagged);
 
         if (after.HasValue)
         {
@@ -197,9 +196,9 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
     }
 
     private static IQueryable<HistoryRecordEntity> ApplyTagFilter(
-        IQueryable<HistoryRecordEntity> query, string? tag, IReadOnlyCollection<string>? tags, bool onlyUntagged)
+        IQueryable<HistoryRecordEntity> query, IReadOnlyCollection<string>? tags, bool onlyUntagged)
     {
-        var names = HistoryTags.NormalizeNames((tags ?? []).Concat(tag is null ? [] : [tag]));
+        var names = HistoryTags.NormalizeNames(tags ?? []);
         if (names.Length > 0 && onlyUntagged)
             throw new ArgumentException("Tags and untagged filter cannot be combined.");
         if (names.Length > 0)

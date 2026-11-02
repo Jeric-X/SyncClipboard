@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace SyncClipboard.Server.Core.Models;
 
 /// <summary>
@@ -7,10 +5,6 @@ namespace SyncClipboard.Server.Core.Models;
 /// </summary>
 public class HistoryQueryDto
 {
-    /// <summary>Exact tag name to match; combined with Tags using OR.</summary>
-    [DisplayFormat(ConvertEmptyStringToNull = false)]
-    public string? Tag { get; set; }
-
     /// <summary>Match any of these exact tag names, after normalization.</summary>
     public string[]? Tags { get; set; }
 
