@@ -25,7 +25,7 @@ public class ServerHistoryTagSettingsTests
     [DataRow(false, true)]
     [DataRow(true, false)]
     [DataRow(true, true)]
-    public async Task Cleanup_RespectsTagSettingAndBroadcastsDeletedRecords(bool? allowTagged, bool countLimit)
+    public async Task Cleanup_RespectsTagSettingAndBroadcastsDeletedRecords(bool? protectTagged, bool countLimit)
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.CancellationTokenSource.Token);
         cts.CancelAfter(TimeSpan.FromMinutes(1));
@@ -45,8 +45,8 @@ public class ServerHistoryTagSettingsTests
                 .Callback<HistoryRecordDto>(notifications.Add).Returns(Task.CompletedTask);
             var hub = new Mock<IHubContext<SyncClipboardHub, ISyncClipboardClient>>();
             hub.Setup(x => x.Clients.All).Returns(client.Object);
-            var options = allowTagged.HasValue
-                ? Options.Create(new AppSettings { AutoDeleteTaggedRecords = allowTagged.Value })
+            var options = protectTagged.HasValue
+                ? Options.Create(new AppSettings { ProtectTaggedRecords = protectTagged.Value })
                 : Options.Create(new AppSettings());
             var service = new HistoryService(db, env.Object, hub.Object, options);
             var records = CreateRecords(countLimit);
@@ -60,7 +60,7 @@ public class ServerHistoryTagSettingsTests
 
             var saved = await db.HistoryRecords.AsNoTracking().ToDictionaryAsync(r => r.Hash, token);
             Assert.IsTrue(saved["UNTAGGED"].IsDeleted);
-            Assert.AreEqual(allowTagged == true, saved["TAGGED"].IsDeleted);
+            Assert.AreEqual(protectTagged == false, saved["TAGGED"].IsDeleted);
             Assert.IsFalse(saved["STARRED"].IsDeleted);
             Assert.IsFalse(saved["PINNED"].IsDeleted);
             Assert.AreEqual(0, saved["ALREADY-DELETED"].Version);
@@ -70,7 +70,7 @@ public class ServerHistoryTagSettingsTests
                 Assert.IsFalse(saved["RECENT-MODIFIED"].IsDeleted);
             }
 
-            string[] expected = allowTagged == true ? ["UNTAGGED", "TAGGED"] : ["UNTAGGED"];
+            string[] expected = protectTagged == false ? ["UNTAGGED", "TAGGED"] : ["UNTAGGED"];
             CollectionAssert.AreEquivalent(expected, notifications.Select(r => r.Hash).ToArray());
             foreach (var notification in notifications)
             {

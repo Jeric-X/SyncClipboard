@@ -607,7 +607,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         await _historyManagerHelper.RemoveExpiredInBatchesAsync(
             r => r.UserId == HARD_CODED_USER_ID && !r.IsDeleted && !r.Stared && !r.Pinned
-                 && (_options.Value.AutoDeleteTaggedRecords || r.Tags.Length == 0)
+                 && (!_options.Value.ProtectTaggedRecords || r.Tags.Length == 0)
                  && r.LastModified < cutoff && r.LastAccessed < cutoff, token);
     }
 
@@ -640,7 +640,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
     public Expression<Func<HistoryRecordEntity, bool>> QueryCount => entity => !entity.IsDeleted;
     public Expression<Func<HistoryRecordEntity, bool>> QueryToDeleteByOverCount =>
         entity => !entity.Stared && !entity.Pinned && !entity.IsDeleted
-                  && (_options.Value.AutoDeleteTaggedRecords || entity.Tags.Length == 0);
+                  && (!_options.Value.ProtectTaggedRecords || entity.Tags.Length == 0);
     public Expression<Func<HistoryRecordEntity, DateTime>> QueryDeleteOrderBy => entity => entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;
 
     public async Task MarkForDeletionAsync(HistoryRecordEntity entity, CancellationToken token)
