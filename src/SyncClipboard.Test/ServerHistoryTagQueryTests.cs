@@ -166,7 +166,7 @@ public class ServerHistoryTagQueryTests
     public async Task Query_FormBindingRejectsExplicitBlankTags(string value)
     {
         await using var f = await Fixture.CreateAsync(Token);
-        var query = await BindFormAsync(new() { ["Tags"] = value });
+        var query = await BindFormAsync(new() { ["tag"] = value });
 
         Assert.IsInstanceOfType<BadRequestObjectResult>((await f.Controller.QueryHistory(query)).Result);
     }
@@ -180,9 +180,12 @@ public class ServerHistoryTagQueryTests
         await f.Db.SaveChangesAsync(Token);
 
         Assert.HasCount(2, await f.QueryAsync(await BindFormAsync([])));
-        var single = await f.QueryAsync(await BindFormAsync(new() { ["Tags"] = " A " }));
+        var single = await f.QueryAsync(await BindFormAsync(new() { ["tag"] = " A " }));
         Assert.AreEqual("match", single.Single().Hash);
-        var multiple = await f.QueryAsync(await BindFormAsync(new() { ["Tags"] = new StringValues(["A", "B"]) }));
+        var query = await BindFormAsync(new() { ["tag"] = new StringValues(["A", "B"]) });
+        string[] expected = ["A", "B"];
+        CollectionAssert.AreEqual(expected, query.Tags);
+        var multiple = await f.QueryAsync(query);
         Assert.HasCount(2, multiple);
     }
 
