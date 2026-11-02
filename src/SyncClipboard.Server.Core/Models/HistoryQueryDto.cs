@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace SyncClipboard.Server.Core.Models;
 
 /// <summary>
@@ -5,6 +7,16 @@ namespace SyncClipboard.Server.Core.Models;
 /// </summary>
 public class HistoryQueryDto
 {
+    /// <summary>Exact tag name to match; combined with Tags using OR.</summary>
+    [DisplayFormat(ConvertEmptyStringToNull = false)]
+    public string? Tag { get; set; }
+
+    /// <summary>Match any of these exact tag names, after normalization.</summary>
+    public string[]? Tags { get; set; }
+
+    /// <summary>Only records without tags; cannot be combined with a nonempty tag filter.</summary>
+    public bool OnlyUntagged { get; set; }
+
     /// <summary>
     /// Page index starting from 1 (default 1). Page size is fixed to 50 (max 50).
     /// </summary>

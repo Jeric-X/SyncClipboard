@@ -119,6 +119,9 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         bool? starred = null,
         DateTime? modifiedAfter = null,
         bool sortByLastAccessed = false,
+        string? tag = null,
+        bool onlyUntagged = false,
+        IReadOnlyCollection<string>? tags = null,
         CancellationToken token = default)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
@@ -129,6 +132,8 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         var query = _dbContext.HistoryRecords
             .Where(r => r.UserId == userId);
+
+        query = ApplyTagFilter(query, tag, tags, onlyUntagged);
 
         if (after.HasValue)
         {
@@ -189,6 +194,20 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             .ToListAsync(token);
 
         return list.Select(HistoryRecordDto.FromEntity).ToList();
+    }
+
+    private static IQueryable<HistoryRecordEntity> ApplyTagFilter(
+        IQueryable<HistoryRecordEntity> query, string? tag, IReadOnlyCollection<string>? tags, bool onlyUntagged)
+    {
+        var names = HistoryTags.NormalizeNames((tags ?? []).Concat(tag is null ? [] : [tag]));
+        if (names.Length > 0 && onlyUntagged)
+            throw new ArgumentException("Tags and untagged filter cannot be combined.");
+        if (names.Length > 0)
+            query = query.Where(r => r.Tags.Any(name => names.Contains(name)));
+        if (onlyUntagged)
+            query = query.Where(r => r.Tags.Length == 0);
+
+        return query;
     }
 
     public async Task AddProfile(string userId, Profile profile, CancellationToken token)
