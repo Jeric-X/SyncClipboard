@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Shared.Models;
 using SyncClipboard.Server.Core.Utilities.History;
@@ -14,6 +15,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 {
     public const string HARD_CODED_USER_ID = "default_user";
 
+    private readonly IOptions<AppSettings> _options;
     private readonly HistoryDbContext _dbContext;
     private readonly string _persistentDir;
     private readonly IHubContext<SyncClipboardHub, ISyncClipboardClient> _hubContext;
@@ -22,8 +24,10 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
     public HistoryService(HistoryDbContext dbContext,
         IProfileEnv profileEnv,
-        IHubContext<SyncClipboardHub, ISyncClipboardClient> hubContext)
+        IHubContext<SyncClipboardHub, ISyncClipboardClient> hubContext,
+        IOptions<AppSettings>? options = null)
     {
+        _options = options ?? Options.Create(new AppSettings());
         _dbContext = dbContext;
         _persistentDir = profileEnv.GetPersistentDir();
         _sem = _dbContext.Database.IsSqlite() ? _processSem : new SemaphoreSlim(1, 1);
@@ -603,6 +607,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         await _historyManagerHelper.RemoveExpiredInBatchesAsync(
             r => r.UserId == HARD_CODED_USER_ID && !r.IsDeleted && !r.Stared && !r.Pinned
+                 && (!_options.Value.ProtectTaggedRecords || r.Tags.Length == 0)
                  && r.LastModified < cutoff && r.LastAccessed < cutoff, token);
     }
 
@@ -633,7 +638,9 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
     public DbSet<HistoryRecordEntity> RecordDbSet => _dbContext.HistoryRecords;
 
     public Expression<Func<HistoryRecordEntity, bool>> QueryCount => entity => !entity.IsDeleted;
-    public Expression<Func<HistoryRecordEntity, bool>> QueryToDeleteByOverCount => entity => !entity.Stared && !entity.Pinned && !entity.IsDeleted;
+    public Expression<Func<HistoryRecordEntity, bool>> QueryToDeleteByOverCount =>
+        entity => !entity.Stared && !entity.Pinned && !entity.IsDeleted
+                  && (!_options.Value.ProtectTaggedRecords || entity.Tags.Length == 0);
     public Expression<Func<HistoryRecordEntity, DateTime>> QueryDeleteOrderBy => entity => entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;
 
     public async Task MarkForDeletionAsync(HistoryRecordEntity entity, CancellationToken token)

@@ -229,6 +229,7 @@ dotnet /path/to/SyncClipboard.Server.dll --contentRoot /path/to/contentRoot
     "UserName": "your_username",
     "Password": "your_password",
     "MaxSavedHistoryCount": 1000, // Maximum history count; 0 means no count limit. The retention time limit still applies.
+    "ProtectTaggedRecords": true, // Protect tagged records from automatic cleanup; starred and pinned records stay protected.
     "HistoryRetentionMinutes": 0 // Retention in minutes; 0 means no time limit. The history count limit still applies.
   }
 }
