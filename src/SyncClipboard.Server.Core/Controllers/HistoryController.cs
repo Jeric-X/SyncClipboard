@@ -117,12 +117,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
 
         try
         {
-            if (query.Tag is not null)
-                query.Tag = HistoryTags.NormalizeName(query.Tag);
-            if (query.Tags is not null)
-                query.Tags = HistoryTags.NormalizeNames(query.Tags);
-            if ((query.Tag is not null || query.Tags?.Length > 0) && query.OnlyUntagged)
-                return BadRequest("A tag and untagged filter cannot be combined.");
+            NormalizeTagQuery(query);
         }
         catch (ArgumentException ex)
         {
@@ -147,6 +142,16 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             query.Tags,
             HttpContext.RequestAborted);
         return Ok(list);
+    }
+
+    private static void NormalizeTagQuery(HistoryQueryDto query)
+    {
+        if (query.Tag is not null)
+            query.Tag = HistoryTags.NormalizeName(query.Tag);
+        if (query.Tags is not null)
+            query.Tags = HistoryTags.NormalizeNames(query.Tags);
+        if ((query.Tag is not null || query.Tags?.Length > 0) && query.OnlyUntagged)
+            throw new ArgumentException("A tag and untagged filter cannot be combined.");
     }
 
     /// <summary>
