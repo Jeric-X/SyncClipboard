@@ -373,6 +373,9 @@ public sealed class OfficialAdapter(
                 { new StringContent(dto.HasData.ToString()), "hasData" }
             };
 
+            if (dto.Tags is not null)
+                content.Add(new StringContent(JsonSerializer.Serialize(dto.Tags)), "tags");
+
             using var request = new HttpRequestMessage(HttpMethod.Post, url)
             {
                 Content = content,
