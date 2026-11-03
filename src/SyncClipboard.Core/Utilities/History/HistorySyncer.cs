@@ -112,7 +112,7 @@ public class HistorySyncer
     public async Task RemoveRemoteHistorys(CancellationToken token)
     {
         var records = await _historyManager.GetHistory(token).ConfigureAwait(false);
-        var autoDeleteMissingLocalFiles = _configManager.GetConfig<HistoryConfig>().AutoDeleteMissingLocalFiles;
+        var cleanupConfig = _configManager.GetConfig<HistoryConfig>();
 
         await Task.Run(async () =>
         {
@@ -124,7 +124,7 @@ public class HistorySyncer
                     record.SyncStatus = HistorySyncStatus.LocalOnly;
                 }
 
-                if (ShouldDeleteLocalRecord(record, autoDeleteMissingLocalFiles))
+                if (ShouldDeleteLocalRecord(record, cleanupConfig))
                 {
                     await _historyManager.RemoveHistory(record, token).ConfigureAwait(false);
                     continue;
@@ -142,12 +142,10 @@ public class HistorySyncer
 
     private async Task CleanupLocalRecordsAsync(CancellationToken token)
     {
-        var autoDeleteMissingLocalFiles = _configManager
-            .GetConfig<HistoryConfig>()
-            .AutoDeleteMissingLocalFiles;
+        var cleanupConfig = _configManager.GetConfig<HistoryConfig>();
         var records = await _historyManager.GetHistory(token);
 
-        foreach (var record in records.Where(r => ShouldDeleteLocalRecord(r, autoDeleteMissingLocalFiles)))
+        foreach (var record in records.Where(r => ShouldDeleteLocalRecord(r, cleanupConfig)))
         {
             await _historyManager.RemoveHistory(record, token);
         }
@@ -155,10 +153,11 @@ public class HistorySyncer
 
     private static bool ShouldDeleteLocalRecord(
         HistoryRecord record,
-        bool autoDeleteMissingLocalFiles)
+        HistoryConfig cleanupConfig)
     {
         return record.SyncStatus == HistorySyncStatus.LocalOnly &&
-               (record.IsDeleted || (autoDeleteMissingLocalFiles && !record.IsLocalFileReady));
+               (record.IsDeleted || (cleanupConfig.AutoDeleteMissingLocalFiles && !record.Stared && !record.Pinned
+                   && (!cleanupConfig.ProtectTaggedRecords || record.Tags.Length == 0) && !record.IsLocalFileReady));
     }
 
     /// <summary>

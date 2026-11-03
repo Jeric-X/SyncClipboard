@@ -531,7 +531,6 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             if (_runtimeHistoryConfig.EnableSyncHistory)
             {
                 await RemoveSoftDeletedOutOfDateRecords(token);
-                return;
             }
 
             if (_historyConfig.HistoryRetentionMinutes == 0)
@@ -548,7 +547,8 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
 
             var deleted = await _historyManagerHelper.RemoveExpiredInBatchesAsync(
                 r => r.LastModified < cutoffTime && r.LastAccessed < cutoffTime &&
-                    !r.Stared && !r.Pinned && r.SyncStatus == HistorySyncStatus.LocalOnly, token);
+                    !r.Stared && !r.Pinned && (!_historyConfig.ProtectTaggedRecords || r.Tags.Length == 0)
+                    && r.SyncStatus == HistorySyncStatus.LocalOnly, token);
 
             if (deleted > 0)
             {
@@ -917,7 +917,8 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     }
 
     public Expression<Func<HistoryRecord, bool>> QueryToDeleteByOverCount => entity => !entity.Stared &&
-        !entity.Pinned && entity.SyncStatus == HistorySyncStatus.LocalOnly;
+        !entity.Pinned && (!_historyConfig.ProtectTaggedRecords || entity.Tags.Length == 0)
+        && entity.SyncStatus == HistorySyncStatus.LocalOnly;
 
     public Expression<Func<HistoryRecord, DateTime>> QueryDeleteOrderBy => entity =>
         entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;

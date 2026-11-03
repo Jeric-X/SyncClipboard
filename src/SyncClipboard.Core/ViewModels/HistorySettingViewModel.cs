@@ -63,7 +63,7 @@ public partial class HistorySettingViewModel : ObservableObject
 
     private HistoryConfig GetCurrentRecord()
     {
-        return new HistoryConfig
+        return _configManager.GetConfig<HistoryConfig>() with
         {
             EnableHistory = EnableHistory,
             EnableSyncHistory = EnableSyncHistory,
