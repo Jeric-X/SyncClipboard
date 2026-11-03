@@ -28,9 +28,28 @@ public class HistoryUploadCoordinationTests
 {
     public TestContext TestContext { get; set; } = null!;
     private CancellationToken Token => TestContext.CancellationTokenSource.Token;
+    private static readonly string[] ExpectedEditedTags = ["工作"];
     private static TaskCompletionSource<bool> Signal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
     private static void SetObjectField(object target, string name, object value) =>
         target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(target, value);
+
+    [TestMethod]
+    public async Task LateSyncAcknowledgement_PreservesNewerLocalTagsAndPendingState()
+    {
+        await using var fixture = await Fixture.CreateAsync(Token);
+        var record = new HistoryRecord { Type = ProfileType.Text, Hash = "pending", SyncStatus = HistorySyncStatus.NeedSync };
+        fixture.Db.Add(record);
+        await fixture.Db.SaveChangesAsync(Token);
+        var sent = await fixture.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
+        Assert.IsNotNull(sent);
+        await fixture.Manager.EditTagsAsync([HistoryRecordKey.From(record)], ["工作"], [], Token);
+        sent.SyncStatus = HistorySyncStatus.Synced;
+        await fixture.Manager.TryApplySyncResponseAsync(sent, sent.Version, sent.LastModified, Token);
+        var saved = await fixture.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
+        Assert.IsNotNull(saved);
+        CollectionAssert.AreEqual(ExpectedEditedTags, saved.Tags);
+        Assert.AreEqual(HistorySyncStatus.NeedSync, saved.SyncStatus);
+    }
 
     [TestMethod]
     [DataRow(false)]

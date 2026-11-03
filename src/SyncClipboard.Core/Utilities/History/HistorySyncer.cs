@@ -147,6 +147,12 @@ public class HistorySyncer
             return;
         }
 
+        var snapshot = await _historyManager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), token);
+        if (snapshot is null)
+            return;
+        record = snapshot;
+        var sentVersion = record.Version;
+        var sentModified = record.LastModified;
         try
         {
             var dto = new HistoryRecordUpdateDto
@@ -161,21 +167,22 @@ public class HistorySyncer
             };
             await remoteServer.UpdateHistoryAsync(record.Type, record.Hash, dto, token);
             record.SyncStatus = HistorySyncStatus.Synced;
-            await _historyManager.PersistServerSyncedAsync(record, token);
+            await _historyManager.TryApplySyncResponseAsync(record, sentVersion, sentModified, token);
         }
         catch (RemoteHistoryConflictException ex)
         {
             if (ex.ServerRecord != null)
             {
                 record.ApplyFromServerUpdateDto(ex.ServerRecord);
-                await _historyManager.PersistServerSyncedAsync(record, token);
+                if (await _historyManager.TryApplySyncResponseAsync(record, sentVersion, sentModified, token))
+                    _logger.Write("HistorySyncer", $"并发冲突，已回写服务器版本[{record.Hash}]");
             }
-            _logger.Write("HistorySyncer", $"并发冲突，已回写服务器版本[{record.Hash}]");
         }
         catch (RemoteHistoryNotFoundException)
         {
             record.SyncStatus = HistorySyncStatus.LocalOnly;
-            await _historyManager.PersistServerSyncedAsync(record, token);
+            if (!await _historyManager.TryApplySyncResponseAsync(record, sentVersion, sentModified, token))
+                return;
             if (!record.IsDeleted)
             {
                 var profile = record.ToProfile();

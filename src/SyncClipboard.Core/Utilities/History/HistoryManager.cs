@@ -241,6 +241,22 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         return await Query(type, hash, token);
     }
 
+    public async Task<HistoryRecord?> GetSyncSnapshotAsync(HistoryRecordKey key, CancellationToken token = default)
+    {
+        await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        var entity = await Query(key.Type, key.Hash, token).ConfigureAwait(false);
+        return entity is null ? null : CreateSyncSnapshot(entity);
+    }
+
+    private HistoryRecord CreateSyncSnapshot(HistoryRecord entity)
+    {
+        var snapshot = (HistoryRecord)_dbContext.Entry(entity).CurrentValues.ToObject();
+        snapshot.Tags = [.. entity.Tags];
+        snapshot.FilePath = [.. entity.FilePath];
+        return snapshot;
+    }
+
     public async Task<HistoryRecord> GetOrCreateHistoryRecord(Profile profile, CancellationToken token)
     {
         await _dbSemaphore.WaitAsync(token);
@@ -256,9 +272,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             HistoryAdded?.Invoke(entity);
         }
         // Network operations must not mutate EF's tracked entity outside the database lock.
-        var snapshot = (HistoryRecord)_dbContext.Entry(entity).CurrentValues.ToObject();
-        snapshot.FilePath = [.. entity.FilePath];
-        return snapshot;
+        return CreateSyncSnapshot(entity);
     }
 
     public async Task UpdateHistoryProperty(HistoryRecord record, CancellationToken token = default)
@@ -348,14 +362,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             return record;
         }
 
-        // 同步服务器返回的并发字段与状态
-        entity.Stared = record.Stared;
-        entity.Pinned = record.Pinned;
-        entity.IsDeleted = record.IsDeleted;
-        entity.Version = record.Version;
-        entity.LastModified = record.LastModified;
-        entity.LastAccessed = record.LastAccessed;
-        entity.SyncStatus = record.SyncStatus; // 期望为 Synced
+        ApplyServerSyncedProperties(record, entity);
         if (record.IsLocalFileReady || !entity.IsLocalFileReady)
         {
             CopyLocalTransferDataBinding(record, entity);
@@ -364,6 +371,35 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         await _dbContext.SaveChangesAsync(token);
         TriggleUpdateOrDeleteEvent(entity);
         return entity;
+    }
+
+    public async Task<bool> TryApplySyncResponseAsync(
+        HistoryRecord record, int expectedVersion, DateTime expectedModified, CancellationToken token = default)
+    {
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
+        var entity = await Query(record.Type, record.Hash, token);
+        if (entity is null || entity.ID != record.ID || entity.Version != expectedVersion || entity.LastModified != expectedModified)
+            return false;
+
+        entity.Tags = [.. record.Tags];
+        ApplyServerSyncedProperties(record, entity);
+        await _dbContext.SaveChangesAsync(token);
+        TriggleUpdateOrDeleteEvent(entity);
+        return true;
+    }
+
+    private static void ApplyServerSyncedProperties(HistoryRecord record, HistoryRecord entity)
+    {
+        // 同步服务器返回的并发字段与状态
+        entity.Stared = record.Stared;
+        entity.Pinned = record.Pinned;
+        entity.IsDeleted = record.IsDeleted;
+        entity.Version = record.Version;
+        entity.LastModified = record.LastModified;
+        entity.LastAccessed = record.LastAccessed;
+        entity.SyncStatus = record.SyncStatus; // 期望为 Synced
     }
 
     public async Task DeleteHistory(HistoryRecord record, CancellationToken token = default)
