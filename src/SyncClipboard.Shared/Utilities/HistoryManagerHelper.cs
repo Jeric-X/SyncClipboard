@@ -61,7 +61,10 @@ public class HistoryManagerHelper<TEntity, TDeleteOrderKey>(IHistoryEntityReposi
         return deleted;
     }
 
-    public async Task<uint> RemoveExpiredInBatchesAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken token = default)
+    public async Task<uint> RemoveExpiredInBatchesAsync(
+        Expression<Func<TEntity, bool>> eligibleForDeletion,
+        Expression<Func<TEntity, bool>> expiredPredicate,
+        CancellationToken token = default)
     {
         const int BatchSize = 500;
         uint deleted = 0;
@@ -71,7 +74,7 @@ public class HistoryManagerHelper<TEntity, TDeleteOrderKey>(IHistoryEntityReposi
             await repository.OnBatchStartAsync(token);
             try
             {
-                var batch = await records.Where(predicate)
+                var batch = await records.Where(eligibleForDeletion).Where(expiredPredicate)
                     .OrderBy(repository.QueryDeleteOrderBy)
                     .Take(BatchSize)
                     .ToListAsync(token);
