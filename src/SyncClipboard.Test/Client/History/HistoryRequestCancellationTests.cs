@@ -13,7 +13,7 @@ using SyncClipboard.Shared.Profiles;
 using System.Reflection;
 using ClientHistoryService = SyncClipboard.Core.UserServices.ClipboardService.HistoryService;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Client.History;
 
 [TestClass]
 public class HistoryRequestCancellationTests
@@ -48,7 +48,7 @@ public class HistoryRequestCancellationTests
         var manager = (HistoryManager)RuntimeHelpers.GetUninitializedObject(typeof(HistoryManager));
         using var dbSemaphore = new SemaphoreSlim(1, 1);
         SetField(manager, "_dbSemaphore", dbSemaphore);
-        var syncer = new HistorySyncer(manager, factory, Mock.Of<ILogger>(), null!, null!, runtime, session);
+        var syncer = new HistorySyncer(manager, factory, Mock.Of<ILogger>(), null!, runtime, session);
         server.Setup(s => s.GetServerTimeAsync(It.IsAny<CancellationToken>())).ReturnsAsync(() => DateTimeOffset.Now);
         using var queue = new HistoryTransferQueue(Mock.Of<ILogger>(), factory, manager, null!, null!, runtime);
         var service = (ClientHistoryService)RuntimeHelpers.GetUninitializedObject(typeof(ClientHistoryService));
@@ -92,7 +92,7 @@ public class HistoryRequestCancellationTests
         runtime.SetConfig(new RuntimeHistoryConfig { EnableSyncHistory = true });
         using var session = new HistorySyncSession(factory, runtime);
         var manager = (HistoryManager)RuntimeHelpers.GetUninitializedObject(typeof(HistoryManager));
-        var syncer = new HistorySyncer(manager, factory, Mock.Of<ILogger>(), null!, null!, runtime, session);
+        var syncer = new HistorySyncer(manager, factory, Mock.Of<ILogger>(), null!, runtime, session);
         var record = new HistoryRecord { Hash = "CANCEL", SyncStatus = HistorySyncStatus.NeedSync, Version = 3 };
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         HistoryRecordUpdateDto? sentUpdate = null;

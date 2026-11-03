@@ -126,13 +126,11 @@ public class HistoryRetentionTests
         }
         f.Db.AddRange(records);
         await f.Db.SaveChangesAsync(Token);
-        var syncer = f.CreateCleanupSyncer();
 
         if (disableSync)
-            await syncer.RemoveRemoteHistorys(Token);
+            await f.Manager.ConvertToLocalRecordsAsync(Token);
         else
-            await (Task)typeof(HistorySyncer).GetMethod("CleanupLocalRecordsAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
-                .Invoke(syncer, [Token])!;
+            await f.Manager.RemoveDeletedOrMissingLocalRecordsAsync(Token);
 
         var hashes = await f.Db.HistoryRecords.Select(record => record.Hash).ToArrayAsync(Token);
         Assert.AreEqual(!deleteMissing || protectTagged, hashes.Contains(tagged.Hash));
@@ -699,19 +697,6 @@ public class HistoryRetentionTests
             SetField("_historyConfig", Config);
             SetField("_runtimeHistoryConfig", RuntimeConfig);
             SetField("_historyManagerHelper", new HistoryManagerHelper<HistoryRecord, DateTime>(Manager));
-        }
-
-        public HistorySyncer CreateCleanupSyncer()
-        {
-            var constructor = typeof(ConfigManager).GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
-                .Single(c => c.GetParameters().Length == 2 && c.GetParameters()[0].ParameterType != typeof(string));
-            var config = (ConfigManager)constructor.Invoke([null, null]);
-            typeof(ConfigBase).GetProperty(nameof(ConfigBase.Path))!.SetValue(config, Path.Combine(root.FullName, "config.json"));
-            config.SetConfig(Config);
-            var syncer = (HistorySyncer)RuntimeHelpers.GetUninitializedObject(typeof(HistorySyncer));
-            typeof(HistorySyncer).GetField("_historyManager", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(syncer, Manager);
-            typeof(HistorySyncer).GetField("_configManager", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(syncer, config);
-            return syncer;
         }
 
         private void SetField(string name, object value) => typeof(HistoryManager)
