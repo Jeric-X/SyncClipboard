@@ -29,9 +29,45 @@ public class HistoryUploadCoordinationTests
     public TestContext TestContext { get; set; } = null!;
     private CancellationToken Token => TestContext.CancellationTokenSource.Token;
     private static readonly string[] ExpectedEditedTags = ["工作"];
+    private static readonly string[] ExpectedLocalTags = ["local"];
+    private static readonly string[] ExpectedRemoteTags = ["Prompt", "工作"];
     private static TaskCompletionSource<bool> Signal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
     private static void SetObjectField(object target, string name, object value) =>
         target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(target, value);
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("[]")]
+    [DataRow("[\" 工作 \",\"Prompt\",\"Prompt\"]")]
+    public async Task ContentUpload409_AppliesRemoteTagsBeforeMarkingSynced(string? tagsJson)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var profile = new TextProfile("upload tag conflict");
+        await f.Manager.AddLocalProfile(profile, token: Token);
+        var record = await f.Db.HistoryRecords.SingleAsync(Token);
+        record.Tags = ["local"];
+        record.Version = 2;
+        await f.Db.SaveChangesAsync(Token);
+        var tags = tagsJson is null ? null : System.Text.Json.JsonSerializer.Deserialize<string[]>(tagsJson);
+        f.Server.Setup(x => x.UploadHistoryAsync(It.IsAny<HistoryRecordDto>(), It.IsAny<FileHashInfo?>(),
+            It.IsAny<IProgress<HttpDownloadProgress>?>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new RemoteHistoryConflictException("conflict", new HistoryRecordUpdateDto
+            {
+                Tags = tags,
+                Version = 3,
+                Starred = true,
+                LastModified = new DateTimeOffset(record.LastModified.AddSeconds(1))
+            }));
+
+        await f.Queue.Upload(profile, ct: Token);
+
+        var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        var expectedTags = tagsJson is null ? ExpectedLocalTags : tagsJson == "[]" ? [] : ExpectedRemoteTags;
+        CollectionAssert.AreEqual(expectedTags, saved.Tags);
+        Assert.AreEqual(3, saved.Version);
+        Assert.IsTrue(saved.Stared);
+        Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
+    }
 
     [TestMethod]
     public async Task LateSyncAcknowledgement_PreservesNewerLocalTagsAndPendingState()

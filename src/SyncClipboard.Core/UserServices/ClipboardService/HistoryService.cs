@@ -251,21 +251,25 @@ public class HistoryService : ClipboardHander
         try
         {
             var token = syncSession.Token;
-            var record = historyRecordDto.ToHistoryRecord();
-            record = await historyManager.PersistServerSyncedAsync(record, token);
-
-            if (record.IsLocalFileReady)
-            {
-                return;
-            }
-            var profile = record.ToProfile();
-            await historyTransferQueue.EnqueueDownload(profile, forceResume: false, token);
+            await ApplyRemoteHistoryChangeAsync(historyRecordDto, token);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex)
         {
             Logger?.Write($"[HistoryService] Failed to process remote history change: {ex.Message}");
         }
+    }
+
+    internal async Task ApplyRemoteHistoryChangeAsync(HistoryRecordDto dto, CancellationToken token)
+    {
+        // Merge the DTO before converting it: missing tags preserve local values, and older pushes
+        // must not overwrite pending local edits. Use the same rules as paged history sync.
+        await historyManager.SyncRemoteHistoryAsync([dto], token);
+        var record = await historyManager.GetSyncSnapshotAsync(new(dto.Type, dto.Hash), token);
+        if (record is null || record.IsDeleted || record.IsLocalFileReady)
+            return;
+        var profile = record.ToProfile();
+        await historyTransferQueue.EnqueueDownload(profile, forceResume: false, token);
     }
 
     protected override async Task HandleClipboard(ClipboardMetaInfomation clipboardMetaInfomation, Profile profile, CancellationToken token)

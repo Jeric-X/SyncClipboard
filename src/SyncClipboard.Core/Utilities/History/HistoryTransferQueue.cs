@@ -676,6 +676,8 @@ public class HistoryTransferQueue : IDisposable
 
     private static HistoryRecordDto ApplyUploadUpdate(HistoryRecordDto record, HistoryRecordUpdateDto update)
     {
+        if (update.Tags is not null)
+            record.Tags = HistoryTags.Normalize(update.Tags);
         record.Starred = update.Starred ?? record.Starred;
         record.Pinned = update.Pinned ?? record.Pinned;
         record.IsDeleted = update.IsDelete ?? record.IsDeleted;
