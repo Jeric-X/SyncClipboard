@@ -36,7 +36,6 @@ public class OfficialServerCapabilitiesTests
             using var adapter = CreateAdapter(handler, notifications.Object, config, dispatcher.Object);
             await adapter.NotifyCapabilitiesOnConfigChangedAsync();
             var firstNotice = notifications.Invocations.Single(i => i.Method.Name == "Show");
-            Assert.Contains("https://history.test", (string)firstNotice.Arguments[1]);
             var button = ((IEnumerable<ActionButton>)firstNotice.Arguments[2]).Single();
 
             adapter.SetConfig(new OfficialConfig { RemoteURL = "https://other.test" }, new SyncConfig());

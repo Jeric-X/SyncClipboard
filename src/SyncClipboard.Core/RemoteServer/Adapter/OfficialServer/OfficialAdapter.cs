@@ -268,7 +268,7 @@ public sealed class OfficialAdapter(
             ? [new(Strings.HistoryTagsDontNotifyServer, () => DelegateExtention.SafeFireAndForget(
                 () => dispatcher.RunOnMainThreadAsync(() => IgnoreHistoryTagsNotification(serverAddress)), nameof(OfficialAdapter)))]
             : [];
-        notifications?.Show(Strings.HistoryTagsSyncTitle, string.Format(Strings.HistoryTagsUpgrade, serverAddress), buttons);
+        notifications?.Show(Strings.HistoryTagsSyncTitle, Strings.HistoryTagsUpgrade, buttons);
     }
 
     private void IgnoreHistoryTagsNotification(string serverAddress)
