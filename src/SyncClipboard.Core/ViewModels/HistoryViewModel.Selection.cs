@@ -466,9 +466,9 @@ public partial class HistoryViewModel
     {
         if (SelectedFilter == HistoryFilterType.Transferring)
             return allHistoryItems.Select(record => new FilteredHistoryRecord(record.Key, record.Stared)).ToList();
-        var (types, starred, searchText) = BuildQueryParameters();
+        var query = BuildQueryParameters();
         var records = await historyManager.GetHistoryAsync(
-            types, starred, null, int.MaxValue, searchText, SortByLastAccessed, token: token);
+            query, sortByLastAccessed: SortByLastAccessed, token: token);
         return records.Select(record => new FilteredHistoryRecord(HistoryRecordKey.From(record), record.Stared)).ToList();
     }
 
@@ -487,14 +487,9 @@ public partial class HistoryViewModel
             }
             else
             {
-                var (types, starred, searchText) = BuildQueryParameters();
+                var query = BuildQueryParameters();
                 (currentRecordCount, selectedInCurrentFilter) =
-                    await historyManager.GetHistorySelectionCountsAsync(
-                        types,
-                        starred,
-                        searchText,
-                        selectedKeys,
-                        token: token);
+                    await historyManager.GetHistorySelectionCountsAsync(query, selectedKeys, token);
             }
 
             if (!HasSameSelectedHistoryKeys(selectedKeys))

@@ -304,13 +304,8 @@ public class HistorySyncer
     {
         // 获取本地该范围内标记为 Synced 或 NeedSync 的记录
         var localRecords = await _historyManager.GetHistoryAsync(
-            types,
-            starred,
-            before,
-            int.MaxValue,
-            searchText,
-            false,
-            token: token).ConfigureAwait(false);
+            new HistoryQueryPara { TypeFilter = types, Starred = starred, SearchText = searchText },
+            before: before, token: token).ConfigureAwait(false);
 
         await Task.Run(async () =>
         {
@@ -349,13 +344,8 @@ public class HistorySyncer
         CancellationToken token)
     {
         var localRecords = await _historyManager.GetHistoryAsync(
-            types,
-            starred,
-            before,
-            int.MaxValue,
-            searchText,
-            false,
-            token: token);
+            new HistoryQueryPara { TypeFilter = types, Starred = starred, SearchText = searchText },
+            before: before, token: token);
 
         var needSync = localRecords
             .Where(r => r.SyncStatus == HistorySyncStatus.NeedSync
