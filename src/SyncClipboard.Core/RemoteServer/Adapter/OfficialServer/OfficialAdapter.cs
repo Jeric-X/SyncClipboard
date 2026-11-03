@@ -17,6 +17,7 @@ using System.Net;
 using SyncClipboard.Core.Exceptions;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Utilities.Updater;
+using SyncClipboard.Core.Utilities;
 using System.Security.Cryptography;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
@@ -24,7 +25,9 @@ namespace SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 public sealed class OfficialAdapter(
     ILogger logger,
     IAppConfig appConfig,
-    INotificationManager? notifications = null)
+    INotificationManager? notifications = null,
+    ConfigManager? configManager = null,
+    IThreadDispatcher? dispatcher = null)
     : IServerAdapter<OfficialConfig>, IOfficialServerAdapter, IOfficialSyncServer, IDisposable
 {
     private const int DownloadBufferSize = 102400;
@@ -232,14 +235,47 @@ public sealed class OfficialAdapter(
         try
         {
             var capabilities = await CheckHistorySupportAsync(client, CancellationToken.None);
-            if (!_disposed && ReferenceEquals(client, _httpClient) && Equals(config, _officialConfig)
-                && !capabilities.HistoryTags)
-                notifications?.Show(Strings.HistoryTagsSyncTitle, Strings.HistoryTagsUpgrade);
+            if (capabilities.HistoryTags)
+                return;
+
+            void NotifyIfCurrent()
+            {
+                if (!_disposed && ReferenceEquals(client, _httpClient) && Equals(config, _officialConfig))
+                    ShowHistoryTagsNotification(config);
+            }
+
+            if (dispatcher is null)
+                NotifyIfCurrent();
+            else
+                await dispatcher.RunOnMainThreadAsync(NotifyIfCurrent);
         }
         catch (Exception ex)
         {
             _logger.Write("OfficialAdapter", $"Failed to check history capabilities: {ex.Message}");
         }
+    }
+
+    private void ShowHistoryTagsNotification(OfficialConfig config)
+    {
+        var serverAddress = new Uri(config.RemoteURL).GetComponents(
+            UriComponents.SchemeAndServer | UriComponents.Path, UriFormat.UriEscaped).TrimEnd('/');
+        if (configManager?.GetConfig<HistoryNotificationConfig>().IgnoredTagSyncServers.Contains(serverAddress, StringComparer.Ordinal) is true)
+            return;
+
+        ActionButton[] buttons = configManager is not null && dispatcher is not null
+            ? [new(Strings.HistoryTagsDontNotifyServer, () => DelegateExtention.SafeFireAndForget(
+                () => dispatcher.RunOnMainThreadAsync(() => IgnoreHistoryTagsNotification(serverAddress)), nameof(OfficialAdapter)))]
+            : [];
+        notifications?.Show(Strings.HistoryTagsSyncTitle, string.Format(Strings.HistoryTagsUpgrade, serverAddress), buttons);
+    }
+
+    private void IgnoreHistoryTagsNotification(string serverAddress)
+    {
+        if (configManager is null)
+            return;
+        var config = configManager.GetConfig<HistoryNotificationConfig>();
+        if (!config.IgnoredTagSyncServers.Contains(serverAddress, StringComparer.Ordinal))
+            configManager.SetConfig(config with { IgnoredTagSyncServers = [.. config.IgnoredTagSyncServers, serverAddress] });
     }
 
     internal static async Task<ServerCapabilitiesDto> CheckHistorySupportAsync(HttpClient client, CancellationToken token)

@@ -16,6 +16,54 @@ public class OfficialServerCapabilitiesTests
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
+    public async Task IgnoreTagNotice_PersistsForOriginalServerAfterSwitch()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"history-notification-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            using var configurationServices = new ConfigurationTestServices();
+            var path = Path.Combine(directory, "config.json");
+            var config = new ConfigManager(path, configurationServices.Upgrader);
+            using var handler = new CapabilityHandler { Capabilities = "{\"historySync\":true}" };
+            var notifications = new Mock<INotificationManager>();
+            var dispatcher = new Mock<IThreadDispatcher>();
+            dispatcher.Setup(d => d.RunOnMainThreadAsync(It.IsAny<Action>()))
+                .Returns((Action action) =>
+                {
+                    action();
+                    return Task.CompletedTask;
+                });
+            using var adapter = CreateAdapter(handler, notifications.Object, config, dispatcher.Object);
+            await adapter.NotifyCapabilitiesOnConfigChangedAsync();
+            var firstNotice = notifications.Invocations.Single(i => i.Method.Name == "Show");
+            Assert.Contains("https://history.test", (string)firstNotice.Arguments[1]);
+            var button = ((IEnumerable<ActionButton>)firstNotice.Arguments[2]).Single();
+
+            adapter.SetConfig(new OfficialConfig { RemoteURL = "https://other.test" }, new SyncConfig());
+            await adapter.NotifyCapabilitiesOnConfigChangedAsync();
+            Assert.AreEqual(2, notifications.Invocations.Count(i => i.Method.Name == "Show"));
+            Assert.IsNotNull(button.Callback);
+            await Task.Run(button.Callback, TestContext.CancellationTokenSource.Token);
+
+            var reloadedConfig = new ConfigManager(path, configurationServices.Upgrader);
+            var reloadedNotifications = new Mock<INotificationManager>();
+            using var reloadedHandler = new CapabilityHandler { Capabilities = "{\"historySync\":true}" };
+            using var reloadedAdapter = CreateAdapter(reloadedHandler, reloadedNotifications.Object, reloadedConfig, dispatcher.Object);
+            reloadedAdapter.SetConfig(new OfficialConfig { RemoteURL = "https://HISTORY.test:443/" }, new SyncConfig());
+            await reloadedAdapter.NotifyCapabilitiesOnConfigChangedAsync();
+            Assert.IsEmpty(reloadedNotifications.Invocations);
+            reloadedAdapter.SetConfig(new OfficialConfig { RemoteURL = "https://other.test" }, new SyncConfig());
+            await reloadedAdapter.NotifyCapabilitiesOnConfigChangedAsync();
+            Assert.AreEqual(1, reloadedNotifications.Invocations.Count(i => i.Method.Name == "Show"));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
     public async Task ConfigChanges_NotifyOncePerConfiguration(bool hasCapabilities)
@@ -121,9 +169,11 @@ public class OfficialServerCapabilitiesTests
         Assert.AreEqual(1, handler.VersionRequests);
     }
 
-    private static OfficialAdapter CreateAdapter(HttpMessageHandler handler, INotificationManager? notifications = null)
+    private static OfficialAdapter CreateAdapter(HttpMessageHandler handler, INotificationManager? notifications = null,
+        ConfigManager? config = null, IThreadDispatcher? dispatcher = null)
     {
-        var adapter = new OfficialAdapter(Mock.Of<ILogger>(), Mock.Of<IAppConfig>(), notifications);
+        var adapter = new OfficialAdapter(Mock.Of<ILogger>(), Mock.Of<IAppConfig>(), notifications, config, dispatcher);
+        adapter.SetConfig(new OfficialConfig { RemoteURL = "https://history.test" }, new SyncConfig());
         var field = typeof(OfficialAdapter).GetField("_httpClient", BindingFlags.Instance | BindingFlags.NonPublic)!;
         ((HttpClient)field.GetValue(adapter)!).Dispose();
         field.SetValue(adapter, new HttpClient(handler) { BaseAddress = new Uri("https://history.test/") });

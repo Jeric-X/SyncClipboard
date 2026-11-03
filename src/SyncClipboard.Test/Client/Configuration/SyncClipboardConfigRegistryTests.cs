@@ -8,7 +8,7 @@ using SyncClipboard.Shared.Attributes;
 using SyncClipboard.Shared.Models;
 using System.Reflection;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Client.Configuration;
 
 [TestClass]
 public class SyncClipboardConfigRegistryTests
@@ -29,7 +29,7 @@ public class SyncClipboardConfigRegistryTests
     [TestMethod]
     public void ConfigRegistry_ScansBaseAndOptionalKeyAttributes()
     {
-        Assert.HasCount(23, SyncClipboardConfigRegistry.Configurations);
+        Assert.HasCount(24, SyncClipboardConfigRegistry.Configurations);
 
         foreach (var registration in SyncClipboardConfigRegistry.Configurations)
         {
