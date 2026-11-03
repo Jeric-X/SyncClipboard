@@ -5,7 +5,7 @@ using SyncClipboard.Shared.Profiles;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Client.History;
 
 [TestClass]
 public class HistoryQueryCompatibilityTests
@@ -25,7 +25,7 @@ public class HistoryQueryCompatibilityTests
 
         var records = await fixture.Manager.GetHistoryAsync(filter, token: TestContext.CancellationTokenSource.Token);
         var (totalCount, selectedCount) = await fixture.Manager.GetHistorySelectionCountsAsync(
-            filter, null, null, selected, TestContext.CancellationTokenSource.Token);
+            filter, null, null, selected, token: TestContext.CancellationTokenSource.Token);
 
         Assert.AreEqual(expectedCount, records.Count);
         Assert.AreEqual(expectedCount, totalCount);
@@ -45,7 +45,7 @@ public class HistoryQueryCompatibilityTests
         var records = await fixture.Manager.GetHistoryAsync(ProfileTypeFilter.Text, started: true,
             before: record.Timestamp.AddSeconds(1), minSize: 1, searchText: "keep", token: TestContext.CancellationTokenSource.Token);
         var counts = await fixture.Manager.GetHistorySelectionCountsAsync(ProfileTypeFilter.Text, true, "keep",
-            [HistoryRecordKey.From(record)], TestContext.CancellationTokenSource.Token);
+            [HistoryRecordKey.From(record)], token: TestContext.CancellationTokenSource.Token);
 
         Assert.HasCount(1, records);
         Assert.AreEqual("text", records[0].Hash);

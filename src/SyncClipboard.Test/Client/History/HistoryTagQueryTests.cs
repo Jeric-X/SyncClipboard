@@ -34,7 +34,7 @@ public class HistoryTagQueryTests
         DateTime? cursor = null;
         for (var pageNumber = 0; pageNumber < 5; pageNumber++)
         {
-            var page = await f.Manager.GetHistoryAsync(["A", "B"], ProfileTypeFilter.All, before: cursor,
+            var page = await f.Manager.GetHistoryAsync(ProfileTypeFilter.All, tags: ["A", "B"], before: cursor,
                 minSize: 10, sortByLastAccessed: sortByLastAccessed, token: Token);
             if (pageNumber == 4)
             {
@@ -46,8 +46,9 @@ public class HistoryTagQueryTests
             cursor = sortByLastAccessed ? page[^1].LastAccessed : page[^1].Timestamp;
         }
         CollectionAssert.AreEqual(expectedHashes, actual);
-        var counts = await f.Manager.GetHistorySelectionCountsAsync(["A", "B"], ProfileTypeFilter.All, null, null,
-            [new(ProfileType.Text, "record0"), new(ProfileType.Text, "record1"), new(ProfileType.Text, "record2")], token: Token);
+        var counts = await f.Manager.GetHistorySelectionCountsAsync(ProfileTypeFilter.All, null, null,
+            [new(ProfileType.Text, "record0"), new(ProfileType.Text, "record1"), new(ProfileType.Text, "record2")],
+            tags: ["A", "B"], token: Token);
         Assert.AreEqual((40, 2), counts);
     }
 
@@ -66,12 +67,12 @@ public class HistoryTagQueryTests
         f.Add("tie-third", ["A"]);
         await f.Db.SaveChangesAsync(Token);
 
-        var page = await f.Manager.GetHistoryAsync(["A"], ProfileTypeFilter.All, minSize: 1,
+        var page = await f.Manager.GetHistoryAsync(ProfileTypeFilter.All, tags: ["A"], minSize: 1,
             sortByLastAccessed: sortByLastAccessed, token: Token);
         string[] expected = ["tie-third", "tie-second", "tie-first"];
         CollectionAssert.AreEqual(expected, page.Select(r => r.Hash).ToArray());
         var cursor = sortByLastAccessed ? page[^1].LastAccessed : page[^1].Timestamp;
-        var next = await f.Manager.GetHistoryAsync(["A"], ProfileTypeFilter.All, before: cursor, minSize: 1,
+        var next = await f.Manager.GetHistoryAsync(ProfileTypeFilter.All, tags: ["A"], before: cursor, minSize: 1,
             sortByLastAccessed: sortByLastAccessed, token: Token);
         Assert.HasCount(1, next);
         Assert.AreEqual("older-match", next[0].Hash);
@@ -88,11 +89,12 @@ public class HistoryTagQueryTests
         await f.Db.SaveChangesAsync(Token);
 
         string[] tags = [" Cafe\u0301 ", "Work", "Work"];
-        var records = await f.Manager.GetHistoryAsync(tags, ProfileTypeFilter.All, token: Token);
+        var records = await f.Manager.GetHistoryAsync(ProfileTypeFilter.All, tags: tags, token: Token);
         Assert.HasCount(1, records);
         Assert.AreEqual("match", records[0].Hash);
-        var counts = await f.Manager.GetHistorySelectionCountsAsync(tags, ProfileTypeFilter.All, null, null,
-            [new(ProfileType.Text, "match"), new(ProfileType.Text, "wrong-case"), new(ProfileType.Text, "deleted")], token: Token);
+        var counts = await f.Manager.GetHistorySelectionCountsAsync(ProfileTypeFilter.All, null, null,
+            [new(ProfileType.Text, "match"), new(ProfileType.Text, "wrong-case"), new(ProfileType.Text, "deleted")],
+            tags: tags, token: Token);
         Assert.AreEqual((1, 1), counts);
     }
 
@@ -114,12 +116,12 @@ public class HistoryTagQueryTests
         untagged.Text = "keep text";
         await f.Db.SaveChangesAsync(Token);
 
-        var records = await f.Manager.GetHistoryAsync(["A"], ProfileTypeFilter.Text, started: true,
+        var records = await f.Manager.GetHistoryAsync(ProfileTypeFilter.Text, tags: ["A"], started: true,
             searchText: "keep", token: Token);
         Assert.HasCount(1, records);
         Assert.AreEqual("match", records[0].Hash);
-        var counts = await f.Manager.GetHistorySelectionCountsAsync(["A"], ProfileTypeFilter.Text, true, "keep",
-            [HistoryRecordKey.From(match), HistoryRecordKey.From(image), HistoryRecordKey.From(untagged)], token: Token);
+        var counts = await f.Manager.GetHistorySelectionCountsAsync(ProfileTypeFilter.Text, true, "keep",
+            [HistoryRecordKey.From(match), HistoryRecordKey.From(image), HistoryRecordKey.From(untagged)], tags: ["A"], token: Token);
         Assert.AreEqual((1, 1), counts);
     }
 
@@ -132,11 +134,11 @@ public class HistoryTagQueryTests
         f.Add("deleted-empty", []).IsDeleted = true;
         await f.Db.SaveChangesAsync(Token);
 
-        var records = await f.Manager.GetHistoryAsync(null, ProfileTypeFilter.All, onlyUntagged: true, token: Token);
+        var records = await f.Manager.GetHistoryAsync(ProfileTypeFilter.All, tags: null, onlyUntagged: true, token: Token);
         Assert.HasCount(1, records);
         Assert.AreEqual("empty", records[0].Hash);
-        var counts = await f.Manager.GetHistorySelectionCountsAsync([], ProfileTypeFilter.All, null, null,
-            [HistoryRecordKey.From(empty), HistoryRecordKey.From(tagged)], onlyUntagged: true, token: Token);
+        var counts = await f.Manager.GetHistorySelectionCountsAsync(ProfileTypeFilter.All, null, null,
+            [HistoryRecordKey.From(empty), HistoryRecordKey.From(tagged)], tags: [], onlyUntagged: true, token: Token);
         Assert.AreEqual((1, 1), counts);
     }
 
@@ -151,11 +153,11 @@ public class HistoryTagQueryTests
         f.Add("deleted", ["A"]).IsDeleted = true;
         await f.Db.SaveChangesAsync(Token);
         string[]? tags = emptyArray ? [] : null;
-        var records = await f.Manager.GetHistoryAsync(tags, ProfileTypeFilter.All, token: Token);
+        var records = await f.Manager.GetHistoryAsync(ProfileTypeFilter.All, tags: tags, token: Token);
         string[] expected = ["empty", "tagged"];
         CollectionAssert.AreEquivalent(expected, records.Select(r => r.Hash).ToArray());
-        var counts = await f.Manager.GetHistorySelectionCountsAsync(tags, ProfileTypeFilter.All, null, null,
-            [HistoryRecordKey.From(empty), HistoryRecordKey.From(tagged)], token: Token);
+        var counts = await f.Manager.GetHistorySelectionCountsAsync(ProfileTypeFilter.All, null, null,
+            [HistoryRecordKey.From(empty), HistoryRecordKey.From(tagged)], tags: tags, token: Token);
         Assert.AreEqual((2, 2), counts);
     }
 
@@ -167,9 +169,9 @@ public class HistoryTagQueryTests
     {
         await using var f = await Fixture.CreateAsync(Token);
         await Assert.ThrowsExactlyAsync<ArgumentException>(() => f.Manager.GetHistoryAsync(
-            [tag], ProfileTypeFilter.All, onlyUntagged: onlyUntagged, token: Token));
+            ProfileTypeFilter.All, tags: [tag], onlyUntagged: onlyUntagged, token: Token));
         await Assert.ThrowsExactlyAsync<ArgumentException>(() => f.Manager.GetHistorySelectionCountsAsync(
-            [tag], ProfileTypeFilter.All, null, null, [], onlyUntagged: onlyUntagged, token: Token));
+            ProfileTypeFilter.All, null, null, [], tags: [tag], onlyUntagged: onlyUntagged, token: Token));
     }
 
     private sealed class Fixture : IAsyncDisposable

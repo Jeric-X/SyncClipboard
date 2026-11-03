@@ -468,7 +468,7 @@ public partial class HistoryViewModel
             return allHistoryItems.Select(record => new FilteredHistoryRecord(record.Key, record.Stared)).ToList();
         var (types, starred, searchText) = BuildQueryParameters();
         var records = await historyManager.GetHistoryAsync(
-            types, starred, null, int.MaxValue, searchText, SortByLastAccessed, token);
+            types, starred, null, int.MaxValue, searchText, SortByLastAccessed, token: token);
         return records.Select(record => new FilteredHistoryRecord(HistoryRecordKey.From(record), record.Stared)).ToList();
     }
 
@@ -494,7 +494,7 @@ public partial class HistoryViewModel
                         starred,
                         searchText,
                         selectedKeys,
-                        token);
+                        token: token);
             }
 
             if (!HasSameSelectedHistoryKeys(selectedKeys))

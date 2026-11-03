@@ -310,7 +310,7 @@ public class HistorySyncer
             int.MaxValue,
             searchText,
             false,
-            token).ConfigureAwait(false);
+            token: token).ConfigureAwait(false);
 
         await Task.Run(async () =>
         {
@@ -355,7 +355,7 @@ public class HistorySyncer
             int.MaxValue,
             searchText,
             false,
-            token);
+            token: token);
 
         var needSync = localRecords
             .Where(r => r.SyncStatus == HistorySyncStatus.NeedSync

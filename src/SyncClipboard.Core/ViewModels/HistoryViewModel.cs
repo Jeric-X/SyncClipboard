@@ -1269,7 +1269,7 @@ public partial class HistoryViewModel : ObservableObject
             size,
             string.IsNullOrEmpty(searchText) ? null : searchText,
             SortByLastAccessed,
-            token);
+            token: token);
 
         _isLocalEnd = records.Count == 0;
         if (_isLocalEnd)

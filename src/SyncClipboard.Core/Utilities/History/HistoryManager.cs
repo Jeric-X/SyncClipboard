@@ -640,8 +640,14 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     private IQueryable<HistoryRecord> BuildHistoryQuery(
         ProfileTypeFilter typeFilter,
         bool? starred,
-        string? searchText)
+        string? searchText,
+        IReadOnlyCollection<string>? tags,
+        bool onlyUntagged)
     {
+        var names = HistoryTags.NormalizeNames(tags ?? []);
+        if (names.Length > 0 && onlyUntagged)
+            throw new ArgumentException("Tags and untagged filter cannot be combined.");
+
         var query = _dbContext.HistoryRecords.Where(record => !record.IsDeleted);
 
         if (typeFilter != ProfileTypeFilter.All)
@@ -659,34 +665,29 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         if (!string.IsNullOrEmpty(searchText))
             query = query.Where(record => EF.Functions.Like(record.Text, $"%{searchText}%"));
 
+        if (names.Length > 0)
+            query = query.Where(record => record.Tags.Any(name => names.Contains(name)));
+        if (onlyUntagged)
+            query = query.Where(record => record.Tags.Length == 0);
+
         return query;
     }
 
-    public Task<List<HistoryRecord>> GetHistoryAsync(
-        ProfileTypeFilter typeFilter,
-        bool? started = null,
-        DateTime? before = null,
-        int minSize = int.MaxValue,
-        string? searchText = null,
-        bool sortByLastAccessed = false,
-        CancellationToken token = default)
-        => GetHistoryAsync(null, typeFilter, false, started, before, minSize, searchText, sortByLastAccessed, token);
-
     public async Task<List<HistoryRecord>> GetHistoryAsync(
-        IReadOnlyCollection<string>? tags,
         ProfileTypeFilter typeFilter,
-        bool onlyUntagged = false,
         bool? started = null,
         DateTime? before = null,
         int minSize = int.MaxValue,
         string? searchText = null,
         bool sortByLastAccessed = false,
+        IReadOnlyCollection<string>? tags = null,
+        bool onlyUntagged = false,
         CancellationToken token = default)
     {
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        var query = ApplyTagFilter(BuildHistoryQuery(typeFilter, started, searchText), tags, onlyUntagged);
+        var query = BuildHistoryQuery(typeFilter, started, searchText, tags, onlyUntagged);
 
         if (before.HasValue)
         {
@@ -733,27 +734,19 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         return initialRecords;
     }
 
-    public Task<(int TotalCount, int SelectedCount)> GetHistorySelectionCountsAsync(
-        ProfileTypeFilter typeFilter,
-        bool? starred,
-        string? searchText,
-        IReadOnlyCollection<HistoryRecordKey> selectedKeys,
-        CancellationToken token = default)
-        => GetHistorySelectionCountsAsync(null, typeFilter, starred, searchText, selectedKeys, false, token);
-
     public async Task<(int TotalCount, int SelectedCount)> GetHistorySelectionCountsAsync(
-        IReadOnlyCollection<string>? tags,
         ProfileTypeFilter typeFilter,
         bool? starred,
         string? searchText,
         IReadOnlyCollection<HistoryRecordKey> selectedKeys,
+        IReadOnlyCollection<string>? tags = null,
         bool onlyUntagged = false,
         CancellationToken token = default)
     {
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        var query = ApplyTagFilter(BuildHistoryQuery(typeFilter, starred, searchText), tags, onlyUntagged);
+        var query = BuildHistoryQuery(typeFilter, starred, searchText, tags, onlyUntagged);
 
         var totalCount = await query.CountAsync(token).ConfigureAwait(false);
         var selectedCount = 0;

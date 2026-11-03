@@ -5,19 +5,6 @@ namespace SyncClipboard.Core.Utilities.History;
 
 public partial class HistoryManager
 {
-    private static IQueryable<HistoryRecord> ApplyTagFilter(
-        IQueryable<HistoryRecord> query, IReadOnlyCollection<string>? tags, bool onlyUntagged)
-    {
-        var names = HistoryTags.NormalizeNames(tags ?? []);
-        if (names.Length > 0 && onlyUntagged)
-            throw new ArgumentException("Tags and untagged filter cannot be combined.");
-        if (names.Length > 0)
-            query = query.Where(record => record.Tags.Any(name => names.Contains(name)));
-        if (onlyUntagged)
-            query = query.Where(record => record.Tags.Length == 0);
-        return query;
-    }
-
     public async Task<Dictionary<string, int>> GetTagCountsAsync(CancellationToken token = default)
     {
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
