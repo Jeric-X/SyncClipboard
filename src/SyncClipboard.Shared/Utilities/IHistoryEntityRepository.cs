@@ -11,10 +11,12 @@ public interface IHistoryEntityRepository<TEntity, TDeleteOrderKey> where TEntit
     public Expression<Func<TEntity, bool>> QueryCount { get; }
     public Expression<Func<TEntity, bool>> AutoDeletePredicate { get; }
 
+    public Expression<Func<TEntity, DateTime>> QueryLastActivityTime { get; }
+
     /// <summary>
-    /// 返回本次清理的过期条件，固定截止时间；保留时长为 0 时不匹配任何记录。
+    /// 自动清理的保留分钟数，0 表示不限制保留时长。
     /// </summary>
-    public Expression<Func<TEntity, bool>> ExpiredPredicate { get; }
+    public uint HistoryRetentionMinutes { get; }
     public Expression<Func<TEntity, TDeleteOrderKey>> QueryDeleteOrderBy { get; }
 
     /// <summary>

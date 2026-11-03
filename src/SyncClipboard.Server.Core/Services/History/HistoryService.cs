@@ -595,15 +595,9 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         }
     }
 
-    public async Task RemoveOutOfRetentionRecords(CancellationToken token = default)
+    public Task RemoveOutOfRetentionRecords(CancellationToken token = default)
     {
-        // 0 means no limit
-        if (_options.Value.HistoryRetentionMinutes == 0)
-        {
-            return;
-        }
-
-        await _historyManagerHelper.RemoveExpiredInBatchesAsync(token);
+        return _historyManagerHelper.RemoveExpiredInBatchesAsync(token);
     }
 
     public async Task<int> ClearAllAsync(string userId, CancellationToken token = default)
@@ -632,23 +626,14 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
     public DbSet<HistoryRecordEntity> RecordDbSet => _dbContext.HistoryRecords;
 
-    public Expression<Func<HistoryRecordEntity, bool>> QueryCount => entity => !entity.IsDeleted;
+    public Expression<Func<HistoryRecordEntity, bool>> QueryCount => entity => entity.UserId == HARD_CODED_USER_ID && !entity.IsDeleted;
     public Expression<Func<HistoryRecordEntity, bool>> AutoDeletePredicate =>
-        entity => !entity.Stared && !entity.Pinned && !entity.IsDeleted
+        entity => entity.UserId == HARD_CODED_USER_ID && !entity.Stared && !entity.Pinned && !entity.IsDeleted
                   && (!_options.Value.ProtectTaggedRecords || entity.Tags.Length == 0);
-    public Expression<Func<HistoryRecordEntity, bool>> ExpiredPredicate
-    {
-        get
-        {
-            var retentionMinutes = _options.Value.HistoryRetentionMinutes;
-            if (retentionMinutes == 0)
-                return _ => false;
+    public Expression<Func<HistoryRecordEntity, DateTime>> QueryLastActivityTime => entity =>
+        entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;
 
-            var cutoff = DateTime.UtcNow.AddMinutes(-retentionMinutes);
-            return record => record.UserId == HARD_CODED_USER_ID
-                && record.LastModified < cutoff && record.LastAccessed < cutoff;
-        }
-    }
+    public uint HistoryRetentionMinutes => _options.Value.HistoryRetentionMinutes;
 
     public Expression<Func<HistoryRecordEntity, DateTime>> QueryDeleteOrderBy => entity => entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;
 

@@ -533,11 +533,6 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
                 await RemoveSoftDeletedOutOfDateRecords(token);
             }
 
-            if (_historyConfig.HistoryRetentionMinutes == 0)
-            {
-                return;
-            }
-
             await _dbSemaphore.WaitAsync(token);
             using var guard = new ScopeGuard(() => _dbSemaphore.Release());
             if (!EnableCleanup)
@@ -915,18 +910,10 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         !entity.Pinned && (!_historyConfig.ProtectTaggedRecords || entity.Tags.Length == 0)
         && entity.SyncStatus == HistorySyncStatus.LocalOnly;
 
-    public Expression<Func<HistoryRecord, bool>> ExpiredPredicate
-    {
-        get
-        {
-            var retentionMinutes = _historyConfig.HistoryRetentionMinutes;
-            if (retentionMinutes == 0)
-                return _ => false;
+    public Expression<Func<HistoryRecord, DateTime>> QueryLastActivityTime => entity =>
+        entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;
 
-            var cutoff = DateTime.UtcNow.AddMinutes(-retentionMinutes);
-            return record => record.LastModified < cutoff && record.LastAccessed < cutoff;
-        }
-    }
+    public uint HistoryRetentionMinutes => _historyConfig.HistoryRetentionMinutes;
 
     public Expression<Func<HistoryRecord, DateTime>> QueryDeleteOrderBy => entity =>
         entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;

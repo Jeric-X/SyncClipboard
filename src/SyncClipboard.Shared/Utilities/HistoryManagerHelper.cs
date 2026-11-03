@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 
 namespace SyncClipboard.Shared.Utilities;
@@ -62,8 +63,16 @@ public class HistoryManagerHelper<TEntity, TDeleteOrderKey>(IHistoryEntityReposi
 
     public async Task<uint> RemoveExpiredInBatchesAsync(CancellationToken token = default)
     {
+        var retentionMinutes = repository.HistoryRetentionMinutes;
+        if (retentionMinutes == 0)
+            return 0;
+
+        var cutoff = DateTime.UtcNow.AddMinutes(-retentionMinutes);
+        Expression<Func<DateTime>> cutoffExpression = () => cutoff;
+        var lastActivityTime = repository.QueryLastActivityTime;
+        var expiredPredicate = Expression.Lambda<Func<TEntity, bool>>(
+            Expression.LessThan(lastActivityTime.Body, cutoffExpression.Body), lastActivityTime.Parameters);
         var eligibleForDeletion = repository.AutoDeletePredicate;
-        var expiredPredicate = repository.ExpiredPredicate;
         const int BatchSize = 500;
         uint deleted = 0;
 
