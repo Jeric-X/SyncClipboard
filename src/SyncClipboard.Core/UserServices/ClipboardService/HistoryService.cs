@@ -199,7 +199,7 @@ public class HistoryService : ClipboardHander
         {
             _lastSyncTime = null;
             trayIcon.SetStatusString(SERVICE_NAME, "Organizing local history records...", false);
-            await historySyncer.RemoveRemoteHistorys(token).ConfigureAwait(false);
+            await historyManager.ConvertToLocalRecordsAsync(token).ConfigureAwait(false);
             trayIcon.SetStatusString(SERVICE_NAME, "Syncing Disabled.", false);
             return;
         }

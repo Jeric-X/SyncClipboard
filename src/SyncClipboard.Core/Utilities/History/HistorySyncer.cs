@@ -98,16 +98,10 @@ public class HistorySyncer
         {
             await DetectOrphanDataAsync(null, null, remoteRecords, ProfileTypeFilter.All, null, null, token);
         }
-        await _historyManager.CleanupLocalRecordsAsync(token);
         await PushLocalRangeAsync(null, null, ProfileTypeFilter.All, null, null, token);
         await SyncPendingHistoryDataAsync(token);
         await _historyTransferQueue.WaitAllTasks(token);
         await _historyManager.CleanupLocalRecordsAsync(token);
-    }
-
-    public Task RemoveRemoteHistorys(CancellationToken token)
-    {
-        return _historyManager.ConvertToLocalRecordsAsync(token);
     }
 
     /// <summary>

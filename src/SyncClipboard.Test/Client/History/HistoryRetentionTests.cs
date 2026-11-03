@@ -126,10 +126,9 @@ public class HistoryRetentionTests
         }
         f.Db.AddRange(records);
         await f.Db.SaveChangesAsync(Token);
-        var syncer = f.CreateCleanupSyncer();
 
         if (disableSync)
-            await syncer.RemoveRemoteHistorys(Token);
+            await f.Manager.ConvertToLocalRecordsAsync(Token);
         else
             await f.Manager.CleanupLocalRecordsAsync(Token);
 
@@ -698,13 +697,6 @@ public class HistoryRetentionTests
             SetField("_historyConfig", Config);
             SetField("_runtimeHistoryConfig", RuntimeConfig);
             SetField("_historyManagerHelper", new HistoryManagerHelper<HistoryRecord, DateTime>(Manager));
-        }
-
-        public HistorySyncer CreateCleanupSyncer()
-        {
-            var syncer = (HistorySyncer)RuntimeHelpers.GetUninitializedObject(typeof(HistorySyncer));
-            typeof(HistorySyncer).GetField("_historyManager", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(syncer, Manager);
-            return syncer;
         }
 
         private void SetField(string name, object value) => typeof(HistoryManager)
