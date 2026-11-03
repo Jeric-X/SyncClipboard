@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
@@ -94,6 +95,15 @@ public class HistoryRequestCancellationTests
         var manager = (HistoryManager)RuntimeHelpers.GetUninitializedObject(typeof(HistoryManager));
         var syncer = new HistorySyncer(manager, factory, Mock.Of<ILogger>(), null!, runtime, session);
         var record = new HistoryRecord { Hash = "CANCEL", SyncStatus = HistorySyncStatus.NeedSync, Version = 3 };
+        await using var db = new HistoryDbContext();
+        db.Database.SetConnectionString("Data Source=:memory:");
+        await db.Database.OpenConnectionAsync(TestContext.CancellationTokenSource.Token);
+        await db.Database.EnsureCreatedAsync(TestContext.CancellationTokenSource.Token);
+        using var semaphore = new SemaphoreSlim(1, 1);
+        SetField(manager, "_dbContext", db);
+        SetField(manager, "_dbSemaphore", semaphore);
+        db.Add(record);
+        await db.SaveChangesAsync(TestContext.CancellationTokenSource.Token);
         var started = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         HistoryRecordUpdateDto? sentUpdate = null;
         server.Setup(s => s.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
