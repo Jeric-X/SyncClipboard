@@ -308,7 +308,7 @@ public class HistoryUploadCoordinationTests
             var runtime = new ConfigBase(Path.Combine(f.GetPersistentDir(), "runtime.json"));
             runtime.SetConfig(new RuntimeHistoryConfig { EnableSyncHistory = true });
             using var session = new HistorySyncSession(f.Factory, runtime);
-            _ = new HistorySyncer(f.Manager, f.Factory, Mock.Of<ILogger>(), f.Queue, config, runtime, session);
+            _ = new HistorySyncer(f.Manager, f.Factory, Mock.Of<ILogger>(), f.Queue, runtime, session);
             var completed = Signal();
             f.Queue.TaskStatusChanged += (_, task) =>
             {
@@ -762,7 +762,7 @@ public class HistoryUploadCoordinationTests
         var runtime = new ConfigBase(Path.Combine(f.GetPersistentDir(), "runtime-pull.json"));
         runtime.SetConfig(new RuntimeHistoryConfig { EnableSyncHistory = true });
         using var session = new HistorySyncSession(f.Factory, runtime);
-        _ = new HistorySyncer(f.Manager, f.Factory, Mock.Of<ILogger>(), f.Queue, f.UserConfig, runtime, session);
+        _ = new HistorySyncer(f.Manager, f.Factory, Mock.Of<ILogger>(), f.Queue, runtime, session);
         var remote = new HistoryRecordDto
         {
             Type = ProfileType.Text,
@@ -961,7 +961,7 @@ public class HistoryUploadCoordinationTests
         }
 
         public HistorySyncer CreateSyncer() =>
-            new(Manager, Factory, Mock.Of<ILogger>(), Queue, UserConfig, Runtime, Session);
+            new(Manager, Factory, Mock.Of<ILogger>(), Queue, Runtime, Session);
 
         public ScopeGuard UseApplication()
         {

@@ -17,7 +17,6 @@ public class HistorySyncer
     private readonly ILogger _logger;
     private readonly HistoryTransferQueue _historyTransferQueue;
     private readonly ConfigBase _runtimeConfig;
-    private readonly ConfigManager _configManager;
     private readonly HistorySyncSession _syncSession;
 
     public HistorySyncer(
@@ -25,7 +24,6 @@ public class HistorySyncer
         RemoteClipboardServerFactory remoteServerFactory,
         ILogger logger,
         HistoryTransferQueue historyTransferQueue,
-        ConfigManager configManager,
         [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig,
         HistorySyncSession syncSession)
     {
@@ -33,7 +31,6 @@ public class HistorySyncer
         _remoteServerFactory = remoteServerFactory;
         _logger = logger;
         _historyTransferQueue = historyTransferQueue;
-        _configManager = configManager;
         _runtimeConfig = runtimeConfig;
         _syncSession = syncSession;
 
@@ -72,7 +69,7 @@ public class HistorySyncer
 
         var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
         await DetectOrphanDataAsync(before, after, remoteRecords, types, searchText, starred, token);
-        await CleanupLocalRecordsAsync(token);
+        await _historyManager.CleanupLocalRecordsAsync(token);
         await PushLocalRangeAsync(before, after, types, searchText, starred, token);
         return addedRecords;
     }
@@ -101,63 +98,16 @@ public class HistorySyncer
         {
             await DetectOrphanDataAsync(null, null, remoteRecords, ProfileTypeFilter.All, null, null, token);
         }
-        await CleanupLocalRecordsAsync(token);
+        await _historyManager.CleanupLocalRecordsAsync(token);
         await PushLocalRangeAsync(null, null, ProfileTypeFilter.All, null, null, token);
         await SyncPendingHistoryDataAsync(token);
         await _historyTransferQueue.WaitAllTasks(token);
-        await CleanupLocalRecordsAsync(token);
+        await _historyManager.CleanupLocalRecordsAsync(token);
     }
 
-    // 关闭历史记录同步功能后，将所有记录转为纯本地语义，再按本地记录清理规则处理。
-    public async Task RemoveRemoteHistorys(CancellationToken token)
+    public Task RemoveRemoteHistorys(CancellationToken token)
     {
-        var records = await _historyManager.GetHistory(token).ConfigureAwait(false);
-        var cleanupConfig = _configManager.GetConfig<HistoryConfig>();
-
-        await Task.Run(async () =>
-        {
-            foreach (var record in records)
-            {
-                var syncStatusChanged = record.SyncStatus is HistorySyncStatus.Synced or HistorySyncStatus.NeedSync;
-                if (syncStatusChanged)
-                {
-                    record.SyncStatus = HistorySyncStatus.LocalOnly;
-                }
-
-                if (ShouldDeleteLocalRecord(record, cleanupConfig))
-                {
-                    await _historyManager.RemoveHistory(record, token).ConfigureAwait(false);
-                    continue;
-                }
-
-                if (syncStatusChanged)
-                {
-                    await _historyManager.PersistServerSyncedAsync(record, token).ConfigureAwait(false);
-                }
-            }
-        }, token).ConfigureAwait(false);
-
-        await _historyManager.EnforceMaxItemCountAsync(token).ConfigureAwait(false);
-    }
-
-    private async Task CleanupLocalRecordsAsync(CancellationToken token)
-    {
-        var cleanupConfig = _configManager.GetConfig<HistoryConfig>();
-        var records = await _historyManager.GetHistory(token);
-
-        foreach (var record in records.Where(r => ShouldDeleteLocalRecord(r, cleanupConfig)))
-        {
-            await _historyManager.RemoveHistory(record, token);
-        }
-    }
-
-    private static bool ShouldDeleteLocalRecord(
-        HistoryRecord record,
-        HistoryConfig cleanupConfig)
-    {
-        return record.SyncStatus == HistorySyncStatus.LocalOnly &&
-               (record.IsDeleted || (cleanupConfig.AutoDeleteMissingLocalFiles && !record.Stared && !record.Pinned
-                   && (!cleanupConfig.ProtectTaggedRecords || record.Tags.Length == 0) && !record.IsLocalFileReady));
+        return _historyManager.ConvertToLocalRecordsAsync(token);
     }
 
     /// <summary>

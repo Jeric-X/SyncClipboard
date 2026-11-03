@@ -131,8 +131,7 @@ public class HistoryRetentionTests
         if (disableSync)
             await syncer.RemoveRemoteHistorys(Token);
         else
-            await (Task)typeof(HistorySyncer).GetMethod("CleanupLocalRecordsAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
-                .Invoke(syncer, [Token])!;
+            await f.Manager.CleanupLocalRecordsAsync(Token);
 
         var hashes = await f.Db.HistoryRecords.Select(record => record.Hash).ToArrayAsync(Token);
         Assert.AreEqual(!deleteMissing || protectTagged, hashes.Contains(tagged.Hash));
@@ -703,14 +702,8 @@ public class HistoryRetentionTests
 
         public HistorySyncer CreateCleanupSyncer()
         {
-            var constructor = typeof(ConfigManager).GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
-                .Single(c => c.GetParameters().Length == 2 && c.GetParameters()[0].ParameterType != typeof(string));
-            var config = (ConfigManager)constructor.Invoke([null, null]);
-            typeof(ConfigBase).GetProperty(nameof(ConfigBase.Path))!.SetValue(config, Path.Combine(root.FullName, "config.json"));
-            config.SetConfig(Config);
             var syncer = (HistorySyncer)RuntimeHelpers.GetUninitializedObject(typeof(HistorySyncer));
             typeof(HistorySyncer).GetField("_historyManager", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(syncer, Manager);
-            typeof(HistorySyncer).GetField("_configManager", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(syncer, config);
             return syncer;
         }
 

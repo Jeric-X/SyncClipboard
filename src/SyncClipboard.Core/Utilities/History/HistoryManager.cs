@@ -524,6 +524,58 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         _logger.Write("HistoryManager", $"Cleared attachment data for {clearedCount} deleted history records");
     }
 
+    // 关闭历史记录同步功能后，将所有记录转为纯本地语义，再按本地记录清理规则处理。
+    public async Task ConvertToLocalRecordsAsync(CancellationToken token)
+    {
+        var records = await GetHistory(token).ConfigureAwait(false);
+        var cleanupConfig = _historyConfig;
+
+        await Task.Run(async () =>
+        {
+            foreach (var record in records)
+            {
+                var syncStatusChanged = record.SyncStatus is HistorySyncStatus.Synced or HistorySyncStatus.NeedSync;
+                if (syncStatusChanged)
+                {
+                    record.SyncStatus = HistorySyncStatus.LocalOnly;
+                }
+
+                if (ShouldDeleteLocalRecord(record, cleanupConfig))
+                {
+                    await RemoveHistory(record, token).ConfigureAwait(false);
+                    continue;
+                }
+
+                if (syncStatusChanged)
+                {
+                    await PersistServerSyncedAsync(record, token).ConfigureAwait(false);
+                }
+            }
+        }, token).ConfigureAwait(false);
+
+        await EnforceMaxItemCountAsync(token).ConfigureAwait(false);
+    }
+
+    public async Task CleanupLocalRecordsAsync(CancellationToken token)
+    {
+        var cleanupConfig = _historyConfig;
+        var records = await GetHistory(token);
+
+        foreach (var record in records.Where(r => ShouldDeleteLocalRecord(r, cleanupConfig)))
+        {
+            await RemoveHistory(record, token);
+        }
+    }
+
+    private static bool ShouldDeleteLocalRecord(
+        HistoryRecord record,
+        HistoryConfig cleanupConfig)
+    {
+        return record.SyncStatus == HistorySyncStatus.LocalOnly &&
+               (record.IsDeleted || (cleanupConfig.AutoDeleteMissingLocalFiles && !record.Stared && !record.Pinned
+                   && (!cleanupConfig.ProtectTaggedRecords || record.Tags.Length == 0) && !record.IsLocalFileReady));
+    }
+
     public async Task CleanupExpiredHistory(CancellationToken token = default)
     {
         try
