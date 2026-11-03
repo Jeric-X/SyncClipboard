@@ -662,8 +662,20 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         return query;
     }
 
-    public async Task<List<HistoryRecord>> GetHistoryAsync(
+    public Task<List<HistoryRecord>> GetHistoryAsync(
         ProfileTypeFilter typeFilter,
+        bool? started = null,
+        DateTime? before = null,
+        int minSize = int.MaxValue,
+        string? searchText = null,
+        bool sortByLastAccessed = false,
+        CancellationToken token = default)
+        => GetHistoryAsync(null, typeFilter, false, started, before, minSize, searchText, sortByLastAccessed, token);
+
+    public async Task<List<HistoryRecord>> GetHistoryAsync(
+        IReadOnlyCollection<string>? tags,
+        ProfileTypeFilter typeFilter,
+        bool onlyUntagged = false,
         bool? started = null,
         DateTime? before = null,
         int minSize = int.MaxValue,
@@ -674,7 +686,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        var query = BuildHistoryQuery(typeFilter, started, searchText);
+        var query = ApplyTagFilter(BuildHistoryQuery(typeFilter, started, searchText), tags, onlyUntagged);
 
         if (before.HasValue)
         {
@@ -721,17 +733,27 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         return initialRecords;
     }
 
-    public async Task<(int TotalCount, int SelectedCount)> GetHistorySelectionCountsAsync(
+    public Task<(int TotalCount, int SelectedCount)> GetHistorySelectionCountsAsync(
         ProfileTypeFilter typeFilter,
         bool? starred,
         string? searchText,
         IReadOnlyCollection<HistoryRecordKey> selectedKeys,
         CancellationToken token = default)
+        => GetHistorySelectionCountsAsync(null, typeFilter, starred, searchText, selectedKeys, false, token);
+
+    public async Task<(int TotalCount, int SelectedCount)> GetHistorySelectionCountsAsync(
+        IReadOnlyCollection<string>? tags,
+        ProfileTypeFilter typeFilter,
+        bool? starred,
+        string? searchText,
+        IReadOnlyCollection<HistoryRecordKey> selectedKeys,
+        bool onlyUntagged = false,
+        CancellationToken token = default)
     {
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        var query = BuildHistoryQuery(typeFilter, starred, searchText);
+        var query = ApplyTagFilter(BuildHistoryQuery(typeFilter, starred, searchText), tags, onlyUntagged);
 
         var totalCount = await query.CountAsync(token).ConfigureAwait(false);
         var selectedCount = 0;
