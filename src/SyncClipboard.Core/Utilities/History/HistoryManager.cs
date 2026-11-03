@@ -637,44 +637,48 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         _dbContext.Database.EnsureCreated();
     }
 
-    private IQueryable<HistoryRecord> BuildHistoryQuery(
-        ProfileTypeFilter typeFilter,
-        bool? starred,
-        string? searchText)
+    private IQueryable<HistoryRecord> BuildHistoryQuery(HistoryQueryPara queryPara)
     {
+        var names = HistoryTags.NormalizeNames(queryPara.Tags ?? []);
+        if (names.Length > 0 && queryPara.OnlyUntagged)
+            throw new ArgumentException("Tags and untagged filter cannot be combined.");
+
         var query = _dbContext.HistoryRecords.Where(record => !record.IsDeleted);
 
-        if (typeFilter != ProfileTypeFilter.All)
+        if (queryPara.TypeFilter != ProfileTypeFilter.All)
         {
             var includedTypes = Enum.GetValues<ProfileType>()
-                .Where(t => (typeFilter & (ProfileTypeFilter)(1 << (int)t)) != 0)
+                .Where(t => (queryPara.TypeFilter & (ProfileTypeFilter)(1 << (int)t)) != 0)
                 .ToArray();
             // Keep array membership in EF expression trees on LINQ rather than the C# 14 span overload.
             query = query.Where(r => Enumerable.Contains(includedTypes, r.Type));
         }
 
-        if (starred.HasValue)
-            query = query.Where(record => record.Stared == starred.Value);
+        if (queryPara.Starred.HasValue)
+            query = query.Where(record => record.Stared == queryPara.Starred.Value);
 
-        if (!string.IsNullOrEmpty(searchText))
-            query = query.Where(record => EF.Functions.Like(record.Text, $"%{searchText}%"));
+        if (!string.IsNullOrEmpty(queryPara.SearchText))
+            query = query.Where(record => EF.Functions.Like(record.Text, $"%{queryPara.SearchText}%"));
+
+        if (names.Length > 0)
+            query = query.Where(record => record.Tags.Any(name => names.Contains(name)));
+        if (queryPara.OnlyUntagged)
+            query = query.Where(record => record.Tags.Length == 0);
 
         return query;
     }
 
     public async Task<List<HistoryRecord>> GetHistoryAsync(
-        ProfileTypeFilter typeFilter,
-        bool? started = null,
+        HistoryQueryPara queryPara,
         DateTime? before = null,
         int minSize = int.MaxValue,
-        string? searchText = null,
         bool sortByLastAccessed = false,
         CancellationToken token = default)
     {
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        var query = BuildHistoryQuery(typeFilter, started, searchText);
+        var query = BuildHistoryQuery(queryPara);
 
         if (before.HasValue)
         {
@@ -722,16 +726,14 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     }
 
     public async Task<(int TotalCount, int SelectedCount)> GetHistorySelectionCountsAsync(
-        ProfileTypeFilter typeFilter,
-        bool? starred,
-        string? searchText,
+        HistoryQueryPara queryPara,
         IReadOnlyCollection<HistoryRecordKey> selectedKeys,
         CancellationToken token = default)
     {
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        var query = BuildHistoryQuery(typeFilter, starred, searchText);
+        var query = BuildHistoryQuery(queryPara);
 
         var totalCount = await query.CountAsync(token).ConfigureAwait(false);
         var selectedCount = 0;

@@ -5,7 +5,7 @@ using SyncClipboard.Shared.Profiles;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Client.History;
 
 [TestClass]
 public class HistoryQueryCompatibilityTests
@@ -23,9 +23,10 @@ public class HistoryQueryCompatibilityTests
         await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
         HistoryRecordKey[] selected = [new(ProfileType.Text, "text"), new(ProfileType.Image, "image")];
 
-        var records = await fixture.Manager.GetHistoryAsync(filter, token: TestContext.CancellationTokenSource.Token);
+        var query = new HistoryQueryPara { TypeFilter = filter };
+        var records = await fixture.Manager.GetHistoryAsync(query, token: TestContext.CancellationTokenSource.Token);
         var (totalCount, selectedCount) = await fixture.Manager.GetHistorySelectionCountsAsync(
-            filter, null, null, selected, TestContext.CancellationTokenSource.Token);
+            query, selected, token: TestContext.CancellationTokenSource.Token);
 
         Assert.AreEqual(expectedCount, records.Count);
         Assert.AreEqual(expectedCount, totalCount);
@@ -42,16 +43,23 @@ public class HistoryQueryCompatibilityTests
         record.Stared = true;
         await fixture.Db.SaveChangesAsync(TestContext.CancellationTokenSource.Token);
 
-        var records = await fixture.Manager.GetHistoryAsync(ProfileTypeFilter.Text, started: true,
-            before: record.Timestamp.AddSeconds(1), minSize: 1, searchText: "keep", token: TestContext.CancellationTokenSource.Token);
-        var counts = await fixture.Manager.GetHistorySelectionCountsAsync(ProfileTypeFilter.Text, true, "keep",
-            [HistoryRecordKey.From(record)], TestContext.CancellationTokenSource.Token);
+        var query = new HistoryQueryPara
+        {
+            TypeFilter = ProfileTypeFilter.Text,
+            Starred = true,
+            SearchText = "keep"
+        };
+        var records = await fixture.Manager.GetHistoryAsync(
+            query, before: record.Timestamp.AddSeconds(1), minSize: 1, token: TestContext.CancellationTokenSource.Token);
+        var counts = await fixture.Manager.GetHistorySelectionCountsAsync(
+            query, [HistoryRecordKey.From(record)], token: TestContext.CancellationTokenSource.Token);
 
         Assert.HasCount(1, records);
         Assert.AreEqual("text", records[0].Hash);
         Assert.AreEqual((1, 1), counts);
-        Assert.IsEmpty(await fixture.Manager.GetHistoryAsync(ProfileTypeFilter.Text,
-            before: record.Timestamp, minSize: 1, token: TestContext.CancellationTokenSource.Token));
+        Assert.IsEmpty(await fixture.Manager.GetHistoryAsync(
+            new HistoryQueryPara { TypeFilter = ProfileTypeFilter.Text }, before: record.Timestamp, minSize: 1,
+            token: TestContext.CancellationTokenSource.Token));
     }
 
     [TestMethod]

@@ -715,7 +715,7 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
-    private (ProfileTypeFilter types, bool? starred, string? searchText) BuildQueryParameters()
+    private HistoryQueryPara BuildQueryParameters()
     {
         bool? starred = IsStarredScopeActive ? true : null;
         string? searchText = string.IsNullOrEmpty(SearchText) ? null : SearchText;
@@ -726,7 +726,7 @@ public partial class HistoryViewModel : ObservableObject
             HistoryFilterType.File => ProfileTypeFilter.FileAndGroup,
             _ => ProfileTypeFilter.All,
         };
-        return (types, starred, searchText);
+        return new HistoryQueryPara { TypeFilter = types, Starred = starred, SearchText = searchText };
     }
 
     private int GetSelectedFilterOptionIndex()
@@ -1252,7 +1252,7 @@ public partial class HistoryViewModel : ObservableObject
             return;
         }
 
-        var (types, starred, searchText) = BuildQueryParameters();
+        var query = BuildQueryParameters();
 
         if (_isLocalEnd)
         {
@@ -1262,14 +1262,7 @@ public partial class HistoryViewModel : ObservableObject
         IsLoadingLocal = true;
         using var guard = new ScopeGuard(() => IsLoadingLocal = false);
 
-        var records = await historyManager.GetHistoryAsync(
-            types,
-            starred,
-            _timeCursor,
-            size,
-            string.IsNullOrEmpty(searchText) ? null : searchText,
-            SortByLastAccessed,
-            token);
+        var records = await historyManager.GetHistoryAsync(query, _timeCursor, size, SortByLastAccessed, token);
 
         _isLocalEnd = records.Count == 0;
         if (_isLocalEnd)
