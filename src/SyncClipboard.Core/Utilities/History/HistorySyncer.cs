@@ -69,7 +69,7 @@ public class HistorySyncer
 
         var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
         await DetectOrphanDataAsync(before, after, remoteRecords, types, searchText, starred, token);
-        await _historyManager.CleanupLocalRecordsAsync(token);
+        await _historyManager.RemoveDeletedOrMissingLocalRecordsAsync(token);
         await PushLocalRangeAsync(before, after, types, searchText, starred, token);
         return addedRecords;
     }
@@ -101,7 +101,7 @@ public class HistorySyncer
         await PushLocalRangeAsync(null, null, ProfileTypeFilter.All, null, null, token);
         await SyncPendingHistoryDataAsync(token);
         await _historyTransferQueue.WaitAllTasks(token);
-        await _historyManager.CleanupLocalRecordsAsync(token);
+        await _historyManager.RemoveDeletedOrMissingLocalRecordsAsync(token);
     }
 
     /// <summary>

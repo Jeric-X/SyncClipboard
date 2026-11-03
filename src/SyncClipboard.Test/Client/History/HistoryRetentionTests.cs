@@ -130,7 +130,7 @@ public class HistoryRetentionTests
         if (disableSync)
             await f.Manager.ConvertToLocalRecordsAsync(Token);
         else
-            await f.Manager.CleanupLocalRecordsAsync(Token);
+            await f.Manager.RemoveDeletedOrMissingLocalRecordsAsync(Token);
 
         var hashes = await f.Db.HistoryRecords.Select(record => record.Hash).ToArrayAsync(Token);
         Assert.AreEqual(!deleteMissing || protectTagged, hashes.Contains(tagged.Hash));

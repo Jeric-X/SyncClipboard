@@ -556,7 +556,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         await EnforceMaxItemCountAsync(token).ConfigureAwait(false);
     }
 
-    public async Task CleanupLocalRecordsAsync(CancellationToken token)
+    public async Task RemoveDeletedOrMissingLocalRecordsAsync(CancellationToken token)
     {
         var cleanupConfig = _historyConfig;
         var records = await GetHistory(token);
