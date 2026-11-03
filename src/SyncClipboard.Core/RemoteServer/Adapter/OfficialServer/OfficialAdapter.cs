@@ -260,7 +260,8 @@ public sealed class OfficialAdapter(
     {
         var serverAddress = new Uri(config.RemoteURL).GetComponents(
             UriComponents.SchemeAndServer | UriComponents.Path, UriFormat.UriEscaped).TrimEnd('/');
-        if (runtimeConfig?.GetConfig<HistoryNotificationConfig>().IgnoredTagSyncServers.Contains(serverAddress, StringComparer.Ordinal) is true)
+        if (runtimeConfig?.GetConfig<HistoryNotificationConfig>().SuppressedTagSyncNotificationServers
+            .Contains(serverAddress, StringComparer.Ordinal) is true)
             return;
 
         ActionButton[] buttons = runtimeConfig is not null && dispatcher is not null
@@ -275,8 +276,11 @@ public sealed class OfficialAdapter(
         if (runtimeConfig is null)
             return;
         var config = runtimeConfig.GetConfig<HistoryNotificationConfig>();
-        if (!config.IgnoredTagSyncServers.Contains(serverAddress, StringComparer.Ordinal))
-            runtimeConfig.SetConfig(config with { IgnoredTagSyncServers = [.. config.IgnoredTagSyncServers, serverAddress] });
+        if (!config.SuppressedTagSyncNotificationServers.Contains(serverAddress, StringComparer.Ordinal))
+            runtimeConfig.SetConfig(config with
+            {
+                SuppressedTagSyncNotificationServers = [.. config.SuppressedTagSyncNotificationServers, serverAddress]
+            });
     }
 
     internal static async Task<ServerCapabilitiesDto> CheckHistorySupportAsync(HttpClient client, CancellationToken token)

@@ -7,5 +7,5 @@ public sealed record HistoryNotificationConfig
 {
     public const string ConfigKey = "HistoryNotification";
 
-    public string[] IgnoredTagSyncServers { get; init; } = [];
+    public string[] SuppressedTagSyncNotificationServers { get; init; } = [];
 }
