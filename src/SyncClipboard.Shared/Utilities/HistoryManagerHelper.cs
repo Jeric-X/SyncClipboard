@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 
 namespace SyncClipboard.Shared.Utilities;
@@ -31,7 +30,7 @@ public class HistoryManagerHelper<TEntity, TDeleteOrderKey>(IHistoryEntityReposi
                 }
 
                 var take = (int)Math.Min(BatchSize, count - maxCount);
-                var batch = await records.Where(repository.QueryToDeleteByOverCount)
+                var batch = await records.Where(repository.AutoDeletePredicate)
                     .OrderBy(repository.QueryDeleteOrderBy)
                     .Take(take)
                     .ToListAsync(token);
@@ -61,11 +60,10 @@ public class HistoryManagerHelper<TEntity, TDeleteOrderKey>(IHistoryEntityReposi
         return deleted;
     }
 
-    public async Task<uint> RemoveExpiredInBatchesAsync(
-        Expression<Func<TEntity, bool>> eligibleForDeletion,
-        Expression<Func<TEntity, bool>> expiredPredicate,
-        CancellationToken token = default)
+    public async Task<uint> RemoveExpiredInBatchesAsync(CancellationToken token = default)
     {
+        var eligibleForDeletion = repository.AutoDeletePredicate;
+        var expiredPredicate = repository.ExpiredPredicate;
         const int BatchSize = 500;
         uint deleted = 0;
 

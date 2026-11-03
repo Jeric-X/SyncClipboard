@@ -538,16 +538,12 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
                 return;
             }
 
-            var cutoffTime = DateTime.UtcNow.AddMinutes(-_historyConfig.HistoryRetentionMinutes);
-
             await _dbSemaphore.WaitAsync(token);
             using var guard = new ScopeGuard(() => _dbSemaphore.Release());
             if (!EnableCleanup)
                 return;
 
-            var deleted = await _historyManagerHelper.RemoveExpiredInBatchesAsync(
-                AutoDeletePredicate,
-                r => r.LastModified < cutoffTime && r.LastAccessed < cutoffTime, token);
+            var deleted = await _historyManagerHelper.RemoveExpiredInBatchesAsync(token);
 
             if (deleted > 0)
             {
@@ -915,11 +911,22 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         HistoryRemoved?.Invoke(entity);
     }
 
-    private Expression<Func<HistoryRecord, bool>> AutoDeletePredicate => entity => !entity.Stared &&
+    public Expression<Func<HistoryRecord, bool>> AutoDeletePredicate => entity => !entity.Stared &&
         !entity.Pinned && (!_historyConfig.ProtectTaggedRecords || entity.Tags.Length == 0)
         && entity.SyncStatus == HistorySyncStatus.LocalOnly;
 
-    public Expression<Func<HistoryRecord, bool>> QueryToDeleteByOverCount => AutoDeletePredicate;
+    public Expression<Func<HistoryRecord, bool>> ExpiredPredicate
+    {
+        get
+        {
+            var retentionMinutes = _historyConfig.HistoryRetentionMinutes;
+            if (retentionMinutes == 0)
+                return _ => false;
+
+            var cutoff = DateTime.UtcNow.AddMinutes(-retentionMinutes);
+            return record => record.LastModified < cutoff && record.LastAccessed < cutoff;
+        }
+    }
 
     public Expression<Func<HistoryRecord, DateTime>> QueryDeleteOrderBy => entity =>
         entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;

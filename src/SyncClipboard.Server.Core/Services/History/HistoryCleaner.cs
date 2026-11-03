@@ -31,7 +31,7 @@ class HistoryCleaner(IServiceProvider serviceProvider, IOptions<AppSettings> opt
                 {
                     using var scope = serviceProvider.CreateScope();
                     var historyService = scope.ServiceProvider.GetRequiredService<HistoryService>();
-                    await historyService.RemoveOutOfRetentionRecords(options.Value.HistoryRetentionMinutes, _cts.Token);
+                    await historyService.RemoveOutOfRetentionRecords(_cts.Token);
                     await historyService.SetRecordsMaxCount(options.Value.MaxSavedHistoryCount, _cts.Token);
                 }
                 catch (Exception ex) when (!_cts.IsCancellationRequested)

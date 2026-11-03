@@ -46,8 +46,8 @@ public class ServerHistoryTagSettingsTests
             var hub = new Mock<IHubContext<SyncClipboardHub, ISyncClipboardClient>>();
             hub.Setup(x => x.Clients.All).Returns(client.Object);
             var options = protectTagged.HasValue
-                ? Options.Create(new AppSettings { ProtectTaggedRecords = protectTagged.Value })
-                : Options.Create(new AppSettings());
+                ? Options.Create(new AppSettings { ProtectTaggedRecords = protectTagged.Value, HistoryRetentionMinutes = 60 })
+                : Options.Create(new AppSettings { HistoryRetentionMinutes = 60 });
             var service = new HistoryService(db, env.Object, hub.Object, options);
             var records = CreateRecords(countLimit);
             db.AddRange(records);
@@ -56,7 +56,7 @@ public class ServerHistoryTagSettingsTests
             if (countLimit)
                 await service.SetRecordsMaxCount(1, token);
             else
-                await service.RemoveOutOfRetentionRecords(60, token);
+                await service.RemoveOutOfRetentionRecords(token);
 
             var saved = await db.HistoryRecords.AsNoTracking().ToDictionaryAsync(r => r.Hash, token);
             Assert.IsTrue(saved["UNTAGGED"].IsDeleted);

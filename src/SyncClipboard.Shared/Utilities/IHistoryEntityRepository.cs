@@ -9,7 +9,12 @@ public interface IHistoryEntityRepository<TEntity, TDeleteOrderKey> where TEntit
     public DbSet<TEntity> RecordDbSet { get; }
 
     public Expression<Func<TEntity, bool>> QueryCount { get; }
-    public Expression<Func<TEntity, bool>> QueryToDeleteByOverCount { get; }
+    public Expression<Func<TEntity, bool>> AutoDeletePredicate { get; }
+
+    /// <summary>
+    /// 返回本次清理的过期条件，固定截止时间；保留时长为 0 时不匹配任何记录。
+    /// </summary>
+    public Expression<Func<TEntity, bool>> ExpiredPredicate { get; }
     public Expression<Func<TEntity, TDeleteOrderKey>> QueryDeleteOrderBy { get; }
 
     /// <summary>
