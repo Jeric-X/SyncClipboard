@@ -9,7 +9,14 @@ public interface IHistoryEntityRepository<TEntity, TDeleteOrderKey> where TEntit
     public DbSet<TEntity> RecordDbSet { get; }
 
     public Expression<Func<TEntity, bool>> QueryCount { get; }
-    public Expression<Func<TEntity, bool>> QueryToDeleteByOverCount { get; }
+    public Expression<Func<TEntity, bool>> AutoDeletePredicate { get; }
+
+    public Expression<Func<TEntity, DateTime>> QueryLastActivityTime { get; }
+
+    /// <summary>
+    /// 自动清理的保留分钟数，0 表示不限制保留时长。
+    /// </summary>
+    public uint HistoryRetentionMinutes { get; }
     public Expression<Func<TEntity, TDeleteOrderKey>> QueryDeleteOrderBy { get; }
 
     /// <summary>
