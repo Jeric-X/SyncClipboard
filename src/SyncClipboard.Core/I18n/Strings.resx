@@ -1631,4 +1631,16 @@ Choose whether to use the default location or select another folder.</value>
   <data name="ExcludeFromLocalHistory" xml:space="preserve">
     <value>Do not add to local history</value>
   </data>
+  <data name="HistoryTagsSyncTitle" xml:space="preserve">
+    <value>Tags will not sync</value>
+  </data>
+  <data name="HistoryTagsUpgrade" xml:space="preserve">
+    <value>The current server does not support tag sync. Automatic cleanup only protects starred records. Upgrade the server for full tag support.</value>
+  </data>
+  <data name="HistorySyncUnsupported" xml:space="preserve">
+    <value>This server does not support history sync.</value>
+  </data>
+  <data name="HistoryTagsDontNotifyServer" xml:space="preserve">
+    <value>Don’t notify for this server</value>
+  </data>
 </root>
