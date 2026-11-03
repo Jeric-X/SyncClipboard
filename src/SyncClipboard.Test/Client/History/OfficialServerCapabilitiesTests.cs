@@ -22,9 +22,8 @@ public class OfficialServerCapabilitiesTests
         Directory.CreateDirectory(directory);
         try
         {
-            using var configurationServices = new ConfigurationTestServices();
-            var path = Path.Combine(directory, "config.json");
-            var config = new ConfigManager(path, configurationServices.Upgrader);
+            var path = Path.Combine(directory, Env.RuntimeConfigName);
+            var config = new ConfigBase(path);
             using var handler = new CapabilityHandler { Capabilities = "{\"historySync\":true}" };
             var notifications = new Mock<INotificationManager>();
             var dispatcher = new Mock<IThreadDispatcher>();
@@ -46,7 +45,7 @@ public class OfficialServerCapabilitiesTests
             Assert.IsNotNull(button.Callback);
             await Task.Run(button.Callback, TestContext.CancellationTokenSource.Token);
 
-            var reloadedConfig = new ConfigManager(path, configurationServices.Upgrader);
+            var reloadedConfig = new ConfigBase(path);
             var reloadedNotifications = new Mock<INotificationManager>();
             using var reloadedHandler = new CapabilityHandler { Capabilities = "{\"historySync\":true}" };
             using var reloadedAdapter = CreateAdapter(reloadedHandler, reloadedNotifications.Object, reloadedConfig, dispatcher.Object);
@@ -170,7 +169,7 @@ public class OfficialServerCapabilitiesTests
     }
 
     private static OfficialAdapter CreateAdapter(HttpMessageHandler handler, INotificationManager? notifications = null,
-        ConfigManager? config = null, IThreadDispatcher? dispatcher = null)
+        ConfigBase? config = null, IThreadDispatcher? dispatcher = null)
     {
         var adapter = new OfficialAdapter(Mock.Of<ILogger>(), Mock.Of<IAppConfig>(), notifications, config, dispatcher);
         adapter.SetConfig(new OfficialConfig { RemoteURL = "https://history.test" }, new SyncConfig());

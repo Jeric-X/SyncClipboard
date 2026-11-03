@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.DependencyInjection;
 using NativeNotification.Interface;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
@@ -26,7 +27,7 @@ public sealed class OfficialAdapter(
     ILogger logger,
     IAppConfig appConfig,
     INotificationManager? notifications = null,
-    ConfigManager? configManager = null,
+    [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase? runtimeConfig = null,
     IThreadDispatcher? dispatcher = null)
     : IServerAdapter<OfficialConfig>, IOfficialServerAdapter, IOfficialSyncServer, IDisposable
 {
@@ -259,10 +260,10 @@ public sealed class OfficialAdapter(
     {
         var serverAddress = new Uri(config.RemoteURL).GetComponents(
             UriComponents.SchemeAndServer | UriComponents.Path, UriFormat.UriEscaped).TrimEnd('/');
-        if (configManager?.GetConfig<HistoryNotificationConfig>().IgnoredTagSyncServers.Contains(serverAddress, StringComparer.Ordinal) is true)
+        if (runtimeConfig?.GetConfig<HistoryNotificationConfig>().IgnoredTagSyncServers.Contains(serverAddress, StringComparer.Ordinal) is true)
             return;
 
-        ActionButton[] buttons = configManager is not null && dispatcher is not null
+        ActionButton[] buttons = runtimeConfig is not null && dispatcher is not null
             ? [new(Strings.HistoryTagsDontNotifyServer, () => DelegateExtention.SafeFireAndForget(
                 () => dispatcher.RunOnMainThreadAsync(() => IgnoreHistoryTagsNotification(serverAddress)), nameof(OfficialAdapter)))]
             : [];
@@ -271,11 +272,11 @@ public sealed class OfficialAdapter(
 
     private void IgnoreHistoryTagsNotification(string serverAddress)
     {
-        if (configManager is null)
+        if (runtimeConfig is null)
             return;
-        var config = configManager.GetConfig<HistoryNotificationConfig>();
+        var config = runtimeConfig.GetConfig<HistoryNotificationConfig>();
         if (!config.IgnoredTagSyncServers.Contains(serverAddress, StringComparer.Ordinal))
-            configManager.SetConfig(config with { IgnoredTagSyncServers = [.. config.IgnoredTagSyncServers, serverAddress] });
+            runtimeConfig.SetConfig(config with { IgnoredTagSyncServers = [.. config.IgnoredTagSyncServers, serverAddress] });
     }
 
     internal static async Task<ServerCapabilitiesDto> CheckHistorySupportAsync(HttpClient client, CancellationToken token)
