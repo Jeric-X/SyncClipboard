@@ -1,4 +1,4 @@
-<UserControl x:Class="SyncClipboard.Desktop.Views.AccountConfigEditPage"
+﻿<UserControl x:Class="SyncClipboard.Desktop.Views.AccountConfigEditPage"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -35,13 +35,21 @@
 
             <!--  错误信息显示  -->
             <ui:FAInfoBar Title="{x:Static i18n:Strings.Error}"
-                        Grid.Row="0"
-                        Margin="0,0,12,10"
-                        IsVisible="{Binding HasError}"
-                        Severity="Error"
-                        IsOpen="True"
-                        Message="{Binding ErrorMessage}"
-                        IsClosable="False" />
+                          Grid.Row="0"
+                          Margin="0,0,12,10"
+                          IsVisible="{Binding HasError}"
+                          Severity="Error"
+                          IsOpen="True"
+                          Message="{Binding ErrorMessage}"
+                          IsClosable="False" />
+
+            <ui:FAInfoBar Grid.Row="0"
+                          Margin="0,0,12,10"
+                          IsVisible="{Binding HasWarning}"
+                          Severity="Warning"
+                          IsOpen="True"
+                          Message="{Binding WarningMessage}"
+                          IsClosable="False" />
 
             <!--  滚动内容区域  -->
             <ScrollViewer Grid.Row="1" Padding="0,0,12,0" VerticalScrollBarVisibility="Auto">

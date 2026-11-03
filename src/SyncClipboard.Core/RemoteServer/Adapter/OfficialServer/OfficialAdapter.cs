@@ -155,9 +155,21 @@ public sealed class OfficialAdapter(
 
     public async Task TestConnectionAsync(CancellationToken cancellationToken = default)
     {
-        await _webDavAdapter.TestConnectionAsync(cancellationToken);
+        await TestHistoryConnectionAsync(cancellationToken);
+    }
 
-        await CheckHistorySupportAsync(_httpClient, cancellationToken);
+    public async Task<string?> TestConfigurationAsync(CancellationToken cancellationToken = default)
+    {
+        _webDavAdapter.ApplyConfig();
+        ReCreateHttpClient();
+        var capabilities = await TestHistoryConnectionAsync(cancellationToken);
+        return capabilities.HistoryTags ? null : Strings.HistoryTagsUpgrade;
+    }
+
+    private async Task<ServerCapabilitiesDto> TestHistoryConnectionAsync(CancellationToken token)
+    {
+        await _webDavAdapter.TestConnectionAsync(token);
+        return await CheckHistorySupportAsync(_httpClient, token);
     }
 
     public Task InitializeAsync(CancellationToken cancellationToken = default)

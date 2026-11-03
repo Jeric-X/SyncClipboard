@@ -37,6 +37,14 @@
                      Message="{x:Bind _viewModel.ErrorMessage, Mode=OneWay}"
                      IsClosable="False" />
 
+            <InfoBar Grid.Row="0"
+                     Margin="0,0,10,10"
+                     IsOpen="True"
+                     Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.HasWarning), Mode=OneWay}"
+                     Severity="Warning"
+                     Message="{x:Bind _viewModel.WarningMessage, Mode=OneWay}"
+                     IsClosable="False" />
+
             <!--  滚动内容区域  -->
             <ScrollViewer Grid.Row="1" Padding="0,0,10,0" VerticalScrollBarVisibility="Auto">
                 <!--  动态属性输入  -->
