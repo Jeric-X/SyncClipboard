@@ -212,6 +212,7 @@ public sealed class HistoryImporter
     {
         var type = ValidateRecordType(item);
         ValidateRecordMetadata(item);
+        HistoryTags.Normalize(item.Tags ?? []);
         ValidateRecordTimestamps(item);
         if (type != ProfileType.Text && item.TransferData is null)
             throw new InvalidDataException("Transfer data is missing.");
@@ -265,6 +266,7 @@ public sealed class HistoryImporter
             Timestamp = item.Timestamp.ToUniversalTime(),
             LastModified = item.LastModified.ToUniversalTime(),
             LastAccessed = item.LastAccessed.ToUniversalTime(),
+            Tags = HistoryTags.Normalize(item.Tags ?? []),
             Stared = item.Starred,
             Pinned = item.Pinned,
             From = item.From,

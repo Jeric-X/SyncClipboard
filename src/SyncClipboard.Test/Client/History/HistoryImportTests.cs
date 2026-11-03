@@ -22,7 +22,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Client.History;
 
 [TestClass]
 [DoNotParallelize]
@@ -154,7 +154,7 @@ public class HistoryImportTests
         foreach (var profile in profiles)
         {
             var record = await f.RecordAsync(profile, Token);
-            records.Add(record with { Hash = record.Hash.ToLowerInvariant() });
+            records.Add(record with { Hash = record.Hash.ToLowerInvariant(), Tags = ["Prompt", "工作"] });
         }
         var backup = await f.ExportAsync([.. records], Token);
         using (var zip = ZipFile.Open(backup, ZipArchiveMode.Update))
@@ -189,6 +189,7 @@ public class HistoryImportTests
 
             Assert.IsTrue(restored.Stared && restored.Pinned);
             Assert.AreEqual(original.From, restored.From);
+            CollectionAssert.AreEqual(original.Tags, restored.Tags);
             Assert.AreEqual(HistorySyncStatus.LocalOnly, restored.SyncStatus);
             var profile = Profile.Create(f.GetHistoryPersistentDir(), new ProfilePersistentInfo
             {
