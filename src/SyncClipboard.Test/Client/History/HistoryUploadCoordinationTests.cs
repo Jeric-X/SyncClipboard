@@ -20,7 +20,7 @@ using SyncClipboard.Shared.Utilities;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Client.History;
 
 [TestClass]
 [DoNotParallelize]
@@ -251,6 +251,40 @@ public class HistoryUploadCoordinationTests
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
         Assert.AreEqual(3, saved.Version);
         Assert.IsTrue(saved.Stared);
+        Assert.AreEqual(0, f.Uploads);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task TagEdit_SynchronizesReplacementOrClearBeforeMarkingSynced(bool clear)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var profile = new TextProfile("tag editing");
+        await f.Manager.AddLocalProfile(profile, token: Token);
+        var record = await f.Db.HistoryRecords.SingleAsync(Token);
+        record.Tags = ["old"];
+        record.SyncStatus = HistorySyncStatus.Synced;
+        await f.Db.SaveChangesAsync(Token);
+        f.RemoteRecord = record.ToHistoryRecordDto();
+        _ = f.CreateSyncer();
+        var synced = Signal();
+        f.Manager.HistoryUpdated += updated =>
+        {
+            if (updated.SyncStatus == HistorySyncStatus.Synced
+                && f.Db.HistoryRecords.AsNoTracking().Single(r => r.ID == updated.ID).SyncStatus == HistorySyncStatus.Synced)
+                synced.TrySetResult(true);
+        };
+
+        await f.Manager.EditTagsAsync([HistoryRecordKey.From(record)], clear ? [] : ["new"], ["old"], Token);
+        await synced.Task.WaitAsync(TimeSpan.FromSeconds(5), Token);
+
+        string[] expected = clear ? [] : ["new"];
+        CollectionAssert.AreEqual(expected, f.RemoteRecord.Tags);
+        var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        CollectionAssert.AreEqual(expected, saved.Tags);
+        Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
+        Assert.AreEqual(1, f.Updates);
         Assert.AreEqual(0, f.Uploads);
     }
 
@@ -905,6 +939,8 @@ public class HistoryUploadCoordinationTests
                     if (RemoteRecord is null)
                         throw new RemoteHistoryNotFoundException("missing");
                     Interlocked.Increment(ref Updates);
+                    if (dto.Tags is not null)
+                        RemoteRecord.Tags = [.. dto.Tags];
                     RemoteRecord.Version = dto.Version!.Value;
                     RemoteRecord.LastModified = dto.LastModified!.Value;
                     RemoteRecord.LastAccessed = dto.LastAccessed!.Value;
