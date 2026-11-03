@@ -255,15 +255,11 @@ public sealed class OfficialAdapter(
             return new() { HistorySync = true, HistoryTags = false };
         }
         response.EnsureSuccessStatusCode();
-        using var document = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(token), cancellationToken: token);
-        var root = document.RootElement;
-        if (root.ValueKind != JsonValueKind.Object
-            || !root.TryGetProperty("historySync", out var sync) || sync.ValueKind is not (JsonValueKind.True or JsonValueKind.False)
-            || !root.TryGetProperty("historyTags", out var tags) || tags.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
-            throw new InvalidDataException("Invalid server capabilities response.");
-        if (!sync.GetBoolean())
+        var capabilities = await response.Content.ReadFromJsonAsync<ServerCapabilitiesDto>(JsonSerializerOptions.Web, token)
+            ?? throw new InvalidDataException("Invalid server capabilities response.");
+        if (!capabilities.HistorySync)
             throw new InvalidOperationException(Strings.HistorySyncUnsupported);
-        return new() { HistorySync = true, HistoryTags = tags.GetBoolean() };
+        return capabilities;
     }
 
     private static async Task<string> ReadVersionAsync(HttpClient client, CancellationToken token)

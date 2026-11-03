@@ -20,7 +20,7 @@ public class OfficialServerCapabilitiesTests
     [DataRow(true)]
     public async Task ConfigChanges_NotifyOncePerConfiguration(bool hasCapabilities)
     {
-        using var handler = new CapabilityHandler { Capabilities = hasCapabilities ? "{\"historySync\":true,\"historyTags\":false}" : null };
+        using var handler = new CapabilityHandler { Capabilities = hasCapabilities ? "{\"historySync\":true}" : null };
         var notifications = new Mock<INotificationManager>();
         using var adapter = CreateAdapter(handler, notifications.Object);
         await adapter.NotifyCapabilitiesOnConfigChangedAsync();
@@ -64,9 +64,11 @@ public class OfficialServerCapabilitiesTests
     }
 
     [TestMethod]
-    public async Task HistorySyncUnsupported_RejectsConnectionWithoutVersionFallback()
+    [DataRow("{\"historySync\":false,\"historyTags\":true}")]
+    [DataRow("{}")]
+    public async Task HistorySyncUnsupported_RejectsConnectionWithoutVersionFallback(string json)
     {
-        using var handler = new CapabilityHandler { Capabilities = "{\"historySync\":false,\"historyTags\":true}" };
+        using var handler = new CapabilityHandler { Capabilities = json };
         using var client = new HttpClient(handler) { BaseAddress = new Uri("https://history.test/") };
         await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => OfficialAdapter.CheckHistorySupportAsync(client, TestContext.CancellationTokenSource.Token));
         Assert.AreEqual(0, handler.VersionRequests);
@@ -86,22 +88,20 @@ public class OfficialServerCapabilitiesTests
     }
 
     [TestMethod]
-    [DataRow("null")]
-    [DataRow("{}")]
-    [DataRow("{\"historySync\":true}")]
-    [DataRow("{\"historySync\":\"true\",\"historyTags\":false}")]
-    public async Task InvalidCapabilities_DoesNotFallBackToVersion(string json)
+    public async Task NullCapabilities_DoesNotFallBackToVersion()
     {
-        using var handler = new CapabilityHandler { Capabilities = json };
+        using var handler = new CapabilityHandler { Capabilities = "null" };
         using var client = new HttpClient(handler) { BaseAddress = new Uri("https://history.test/") };
         await Assert.ThrowsExactlyAsync<InvalidDataException>(() => OfficialAdapter.CheckHistorySupportAsync(client, TestContext.CancellationTokenSource.Token));
         Assert.AreEqual(0, handler.VersionRequests);
     }
 
     [TestMethod]
-    public async Task MalformedCapabilities_DoesNotFallBackToVersion()
+    [DataRow("not json")]
+    [DataRow("{\"historySync\":\"true\",\"historyTags\":false}")]
+    public async Task MalformedCapabilities_DoesNotFallBackToVersion(string json)
     {
-        using var handler = new CapabilityHandler { Capabilities = "not json" };
+        using var handler = new CapabilityHandler { Capabilities = json };
         using var client = new HttpClient(handler) { BaseAddress = new Uri("https://history.test/") };
         await Assert.ThrowsAsync<JsonException>(() => OfficialAdapter.CheckHistorySupportAsync(client, TestContext.CancellationTokenSource.Token));
         Assert.AreEqual(0, handler.VersionRequests);
