@@ -607,8 +607,8 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         await _historyManagerHelper.RemoveExpiredInBatchesAsync(
             r => r.UserId == HARD_CODED_USER_ID && !r.IsDeleted && !r.Stared && !r.Pinned
-                 && (!_options.Value.ProtectTaggedRecords || r.Tags.Length == 0)
-                 && r.LastModified < cutoff && r.LastAccessed < cutoff, token);
+                 && (!_options.Value.ProtectTaggedRecords || r.Tags.Length == 0),
+            r => r.LastModified < cutoff && r.LastAccessed < cutoff, token);
     }
 
     public async Task<int> ClearAllAsync(string userId, CancellationToken token = default)

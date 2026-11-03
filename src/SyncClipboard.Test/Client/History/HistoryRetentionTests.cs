@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using SyncClipboard.Core.Commons;
@@ -15,7 +16,7 @@ using SyncClipboard.Shared.Utilities;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Client.History;
 
 [TestClass]
 public class HistoryRetentionTests
@@ -24,6 +25,125 @@ public class HistoryRetentionTests
     private CancellationToken Token => TestContext.CancellationTokenSource.Token;
 
     private static readonly string[] ExpectedAttachmentPaths = ["data.bin"];
+
+    [TestMethod]
+    public async Task ChangingHistorySettings_PreservesConfiguredTagProtection()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        using var configurationServices = new ConfigurationTestServices();
+        var config = new ConfigManager(Path.Combine(f.GetPersistentDir(), "config.json"), configurationServices.Upgrader);
+        config.SetConfig(new HistoryConfig { ProtectTaggedRecords = false });
+        using var services = new ServiceCollection().AddSingleton(config).AddSingleton(Mock.Of<ILogger>())
+            .AddSingleton<AccountManager>().BuildServiceProvider();
+        using var factory = new RemoteClipboardServerFactory(services);
+        var viewModel = new HistorySettingViewModel(config, f.Manager, Mock.Of<IMainWindowDialog>(), factory,
+            Mock.Of<IHistoryExportDialog>(), Mock.Of<IHistoryImportDialog>())
+        {
+            MaxItemCount = 250,
+            HistoryRetentionMinutes = 120
+        };
+        config.Reload();
+
+        var saved = config.GetConfig<HistoryConfig>();
+        Assert.IsFalse(saved.ProtectTaggedRecords);
+        Assert.AreEqual(250u, saved.MaxItemCount);
+        Assert.AreEqual(120u, saved.HistoryRetentionMinutes);
+    }
+
+    [TestMethod]
+    [DataRow(false, false)]
+    [DataRow(false, true)]
+    [DataRow(true, false)]
+    [DataRow(true, true)]
+    public async Task TaggedCleanup_RespectsSettingAndProtectsSyncedStarredAndPinned(bool protectTagged, bool countLimit)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        f.Config.ProtectTaggedRecords = protectTagged;
+        f.RuntimeConfig.EnableSyncHistory = true;
+        f.Config.MaxItemCount = 1;
+        var old = DateTime.UtcNow.AddDays(-10);
+        var tagged = Record("tagged-only", old, old);
+        var starred = Record("starred-tag", old, old);
+        starred.Stared = true;
+        var pinned = Record("pinned-tag", old, old);
+        pinned.Pinned = true;
+        var synced = Record("synced-tag", old, old);
+        synced.SyncStatus = HistorySyncStatus.Synced;
+        var pending = Record("pending-tag", old, old);
+        pending.SyncStatus = HistorySyncStatus.NeedSync;
+        foreach (var record in new[] { tagged, starred, pinned, synced, pending })
+            record.Tags = ["work"];
+        var untagged = Record("untagged", old, old);
+        f.Db.AddRange(tagged, starred, pinned, synced, pending, untagged);
+        await f.Db.SaveChangesAsync(Token);
+        if (countLimit)
+            await f.Manager.EnforceMaxItemCountAsync(Token);
+        else
+            await f.Manager.CleanupExpiredHistory(Token);
+        var hashes = await f.Db.HistoryRecords.Select(r => r.Hash).ToArrayAsync(Token);
+        Assert.AreEqual(protectTagged, hashes.Contains(tagged.Hash));
+        Assert.DoesNotContain(untagged.Hash, hashes);
+        foreach (var retained in new[] { starred, pinned, synced, pending })
+            Assert.Contains(retained.Hash, hashes);
+    }
+
+    [TestMethod]
+    [DataRow(true, true, false)]
+    [DataRow(false, true, false)]
+    [DataRow(true, true, true)]
+    [DataRow(false, true, true)]
+    [DataRow(false, false, false)]
+    [DataRow(false, false, true)]
+    public async Task MissingFileCleanup_RespectsProtectionAndExplicitDeletion(
+        bool protectTagged, bool deleteMissing, bool disableSync)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        f.Config.ProtectTaggedRecords = protectTagged;
+        f.Config.AutoDeleteMissingLocalFiles = deleteMissing;
+        var now = DateTime.UtcNow;
+        var tagged = Record("missing-tagged", now, now);
+        tagged.Tags = ["work"];
+        var untagged = Record("missing-untagged", now, now);
+        var starred = Record("missing-starred", now, now);
+        starred.Stared = true;
+        var pinned = Record("missing-pinned", now, now);
+        pinned.Pinned = true;
+        var synced = Record("missing-synced", now, now);
+        synced.SyncStatus = HistorySyncStatus.Synced;
+        var pending = Record("missing-pending", now, now);
+        pending.SyncStatus = HistorySyncStatus.NeedSync;
+        var deleted = Record("explicitly-deleted", now, now);
+        deleted.IsDeleted = true;
+        deleted.Tags = ["work"];
+        deleted.Stared = true;
+        var ready = Record("ready", now, now);
+        ready.IsLocalFileReady = true;
+        var records = new[] { tagged, untagged, starred, pinned, synced, pending, deleted, ready };
+        foreach (var record in records)
+        {
+            record.Type = ProfileType.File;
+            record.IsLocalFileReady = record == ready;
+        }
+        f.Db.AddRange(records);
+        await f.Db.SaveChangesAsync(Token);
+        var syncer = f.CreateCleanupSyncer();
+
+        if (disableSync)
+            await syncer.RemoveRemoteHistorys(Token);
+        else
+            await (Task)typeof(HistorySyncer).GetMethod("CleanupLocalRecordsAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(syncer, [Token])!;
+
+        var hashes = await f.Db.HistoryRecords.Select(record => record.Hash).ToArrayAsync(Token);
+        Assert.AreEqual(!deleteMissing || protectTagged, hashes.Contains(tagged.Hash));
+        Assert.AreEqual(!deleteMissing, hashes.Contains(untagged.Hash));
+        Assert.AreEqual(!disableSync || !deleteMissing, hashes.Contains(synced.Hash));
+        Assert.AreEqual(!disableSync || !deleteMissing, hashes.Contains(pending.Hash));
+        Assert.Contains(starred.Hash, hashes);
+        Assert.Contains(pinned.Hash, hashes);
+        Assert.Contains(ready.Hash, hashes);
+        Assert.DoesNotContain(deleted.Hash, hashes);
+    }
 
     [TestMethod]
     public async Task Expiration_RequiresBothActivityTimesToBeOldAndPreservesProtectedRecords()
@@ -39,13 +159,15 @@ public class HistoryRetentionTests
         expired.Timestamp = recent;
         var starred = Record("starred", old, old);
         starred.Stared = true;
+        var tagged = Record("tagged", old, old);
+        tagged.Tags = ["工作"];
         var pinned = Record("pinned", old, old);
         pinned.Pinned = true;
         var synced = Record("synced", old, old);
         synced.SyncStatus = HistorySyncStatus.Synced;
         var pending = Record("pending", old, old);
         pending.SyncStatus = HistorySyncStatus.NeedSync;
-        f.Db.HistoryRecords.AddRange(accessed, modified, expired, starred, pinned, synced, pending);
+        f.Db.HistoryRecords.AddRange(accessed, modified, expired, starred, pinned, synced, pending, tagged);
         await f.Db.SaveChangesAsync(Token);
 
         using var export = new HistoryExportViewModel(f.Manager, new HistoryExporter(f));
@@ -65,7 +187,7 @@ public class HistoryRetentionTests
         await f.Manager.CleanupExpiredHistory(Token);
 
         var hashes = await f.Db.HistoryRecords.Select(r => r.Hash).ToListAsync(Token);
-        string[] expected = ["accessed", "modified", "starred", "pinned", "synced", "pending"];
+        string[] expected = ["accessed", "modified", "starred", "pinned", "synced", "pending", "tagged"];
         CollectionAssert.AreEquivalent(expected, hashes);
         await f.Db.Entry(accessed).ReloadAsync(Token);
         await f.Db.Entry(modified).ReloadAsync(Token);
@@ -220,6 +342,7 @@ public class HistoryRetentionTests
         var recentText = Record("recent-text", recent, recent);
         var expiredText = Record("expired-text", expired, expired);
         var active = Record(new string('C', 64), expired, expired);
+        active.SyncStatus = HistorySyncStatus.Synced;
         var attachments = new[] { recentFile, expiredFile, active };
         foreach (var record in attachments)
         {
@@ -576,6 +699,19 @@ public class HistoryRetentionTests
             SetField("_historyConfig", Config);
             SetField("_runtimeHistoryConfig", RuntimeConfig);
             SetField("_historyManagerHelper", new HistoryManagerHelper<HistoryRecord, DateTime>(Manager));
+        }
+
+        public HistorySyncer CreateCleanupSyncer()
+        {
+            var constructor = typeof(ConfigManager).GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
+                .Single(c => c.GetParameters().Length == 2 && c.GetParameters()[0].ParameterType != typeof(string));
+            var config = (ConfigManager)constructor.Invoke([null, null]);
+            typeof(ConfigBase).GetProperty(nameof(ConfigBase.Path))!.SetValue(config, Path.Combine(root.FullName, "config.json"));
+            config.SetConfig(Config);
+            var syncer = (HistorySyncer)RuntimeHelpers.GetUninitializedObject(typeof(HistorySyncer));
+            typeof(HistorySyncer).GetField("_historyManager", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(syncer, Manager);
+            typeof(HistorySyncer).GetField("_configManager", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(syncer, config);
+            return syncer;
         }
 
         private void SetField(string name, object value) => typeof(HistoryManager)
