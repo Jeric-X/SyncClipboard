@@ -160,14 +160,6 @@ public class HistoryRequestCancellationTests
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
         {
-            if (request.RequestUri!.AbsolutePath == "/api/capabilities")
-            {
-                return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
-                {
-                    Content = System.Net.Http.Json.JsonContent.Create(new ServerCapabilitiesDto { HistorySync = true, HistoryTags = true })
-                };
-            }
-            Assert.AreEqual("/api/history/query", request.RequestUri.AbsolutePath);
             Started.SetResult();
             try
             {

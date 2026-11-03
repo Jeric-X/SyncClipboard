@@ -37,6 +37,8 @@ public sealed class OfficialAdapter(
     private OfficialConfig _officialConfig = new OfficialConfig();
     private HttpClient _httpClient = new HttpClient();
     private IWebProxy _proxy = new WebProxy();
+    private bool _notifyCapabilitiesOnApply = true;
+    private bool _disposed;
 
     public event Action<ProfileDto>? ProfileDtoChanged;
     public event Action<HistoryRecordDto>? HistoryChanged;
@@ -45,12 +47,7 @@ public sealed class OfficialAdapter(
 
     public void SetConfig(OfficialConfig config, SyncConfig syncConfig)
     {
-        if (!Equals(_officialConfig, config))
-        {
-            _capabilities = null;
-            Interlocked.Increment(ref _configurationVersion);
-            _historyTagsNotified = 0;
-        }
+        _notifyCapabilitiesOnApply |= !Equals(_officialConfig, config);
         _officialConfig = config;
         _webDavAdapter.SetConfig(new WebDavConfig
         {
@@ -74,6 +71,7 @@ public sealed class OfficialAdapter(
             _webDavAdapter.ApplyConfig();
             ReCreateHttpClient();
             ReConnectSignalR();
+            _ = NotifyCapabilitiesOnConfigChangedAsync();
         }
         catch (Exception ex)
         {
@@ -112,6 +110,11 @@ public sealed class OfficialAdapter(
             ProfileDtoChanged?.Invoke(profile);
         });
 
+        _hubConnection.On<HistoryRecordDto>(nameof(ISyncClipboardClient.RemoteHistoryChanged), historyRecord =>
+        {
+            HistoryChanged?.Invoke(historyRecord);
+        });
+
         StartSignalRConnectiron(_hubConnection);
     }
 
@@ -119,15 +122,6 @@ public sealed class OfficialAdapter(
     {
         try
         {
-            var capabilities = await CheckHistoryCapabilitiesAsync(forceRefresh: true, CancellationToken.None);
-            lock (_hubLock)
-            {
-                if (_disposed || !ReferenceEquals(_hubConnection, hubConnection))
-                    return;
-                // Bind the confirmed capabilities to this connection; receiving an event must not depend on another HTTP request.
-                hubConnection.On<HistoryRecordDto>(nameof(ISyncClipboardClient.RemoteHistoryChanged), historyRecord =>
-                    HistoryChanged?.Invoke(ReadHistoryTags(historyRecord, capabilities.HistoryTags)!));
-            }
             await hubConnection.StartAsync();
             hubConnection.Closed += arg =>
             {
@@ -159,7 +153,7 @@ public sealed class OfficialAdapter(
     {
         await _webDavAdapter.TestConnectionAsync(cancellationToken);
 
-        await CheckHistoryCapabilitiesAsync(forceRefresh: false, cancellationToken);
+        await CheckHistorySupportAsync(_httpClient, cancellationToken);
     }
 
     public Task InitializeAsync(CancellationToken cancellationToken = default)
@@ -228,47 +222,27 @@ public sealed class OfficialAdapter(
         }
     }
 
-    private sealed record CapabilityCache(HttpClient Client, int ConfigurationVersion, DateTime CheckedAt, ServerCapabilitiesDto Value);
-
-    private CapabilityCache? _capabilities;
-    private readonly SemaphoreSlim _capabilitiesLock = new(1, 1);
-    private int _configurationVersion;
-    private int _historyTagsNotified;
-    private bool _disposed;
-
-    private async Task<ServerCapabilitiesDto> CheckHistoryCapabilitiesAsync(bool forceRefresh, CancellationToken token)
+    internal async Task NotifyCapabilitiesOnConfigChangedAsync()
     {
-        await _capabilitiesLock.WaitAsync(token);
+        if (!_notifyCapabilitiesOnApply || _disposed)
+            return;
+        _notifyCapabilitiesOnApply = false;
+        var client = _httpClient;
+        var config = _officialConfig;
         try
         {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-            var client = _httpClient;
-            var configurationVersion = Volatile.Read(ref _configurationVersion);
-            var cached = _capabilities;
-            if (forceRefresh || cached is null || !ReferenceEquals(cached.Client, client)
-                || cached.ConfigurationVersion != configurationVersion
-                || DateTime.UtcNow - cached.CheckedAt > TimeSpan.FromMinutes(1))
-            {
-                var capabilities = await ReadCapabilitiesAsync(client, token);
-                ObjectDisposedException.ThrowIf(_disposed, this);
-                if (!ReferenceEquals(client, _httpClient) || configurationVersion != Volatile.Read(ref _configurationVersion))
-                    throw new OperationCanceledException("Server changed during capability check.");
-                cached = new(client, configurationVersion, DateTime.UtcNow, capabilities);
-                _capabilities = cached;
-            }
-            if (!cached.Value.HistorySync)
-                throw new InvalidOperationException("Server does not support history sync. Please upgrade your server.");
-            if (!cached.Value.HistoryTags && Interlocked.Exchange(ref _historyTagsNotified, 1) == 0)
+            var capabilities = await CheckHistorySupportAsync(client, CancellationToken.None);
+            if (!_disposed && ReferenceEquals(client, _httpClient) && Equals(config, _officialConfig)
+                && !capabilities.HistoryTags)
                 notifications?.Show(Strings.HistoryTagsSyncTitle, Strings.HistoryTagsUpgrade);
-            return cached.Value;
         }
-        finally
+        catch (Exception ex)
         {
-            _capabilitiesLock.Release();
+            _logger.Write("OfficialAdapter", $"Failed to check history capabilities: {ex.Message}");
         }
     }
 
-    private static async Task<ServerCapabilitiesDto> ReadCapabilitiesAsync(HttpClient client, CancellationToken token)
+    internal static async Task<ServerCapabilitiesDto> CheckHistorySupportAsync(HttpClient client, CancellationToken token)
     {
         using var response = await client.GetAsync("api/capabilities", token);
         if (response.StatusCode == HttpStatusCode.NotFound)
@@ -287,25 +261,10 @@ public sealed class OfficialAdapter(
             || !root.TryGetProperty("historySync", out var sync) || sync.ValueKind is not (JsonValueKind.True or JsonValueKind.False)
             || !root.TryGetProperty("historyTags", out var tags) || tags.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
             throw new InvalidDataException("Invalid server capabilities response.");
-        return new() { HistorySync = sync.GetBoolean(), HistoryTags = tags.GetBoolean() };
+        if (!sync.GetBoolean())
+            throw new InvalidOperationException(Strings.HistorySyncUnsupported);
+        return new() { HistorySync = true, HistoryTags = tags.GetBoolean() };
     }
-
-    private static HistoryRecordDto? ReadHistoryTags(HistoryRecordDto? record, bool supportsHistoryTags)
-    {
-        if (record is not null && !supportsHistoryTags)
-            record.Tags = null;
-        return record;
-    }
-
-    private static HistoryRecordUpdateDto? ReadHistoryTags(HistoryRecordUpdateDto? record, bool supportsHistoryTags)
-    {
-        if (record is not null && !supportsHistoryTags)
-            record.Tags = null;
-        return record;
-    }
-
-    public Task<string> GetVersionAsync(CancellationToken cancellationToken = default) =>
-        ReadVersionAsync(_httpClient, cancellationToken);
 
     private static async Task<string> ReadVersionAsync(HttpClient client, CancellationToken token)
     {
@@ -314,12 +273,29 @@ public sealed class OfficialAdapter(
         return await response.Content.ReadAsStringAsync(token);
     }
 
+    public async Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var url = $"{_officialConfig.RemoteURL.TrimEnd('/')}/api/version";
+            var response = await _httpClient.GetAsync(url, cancellationToken);
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadAsStringAsync(cancellationToken);
+            return result ?? "Unknown";
+        }
+        catch (Exception ex)
+        {
+            _logger.Write($"[OFFICIAL_ADAPTER] Failed to get version: {ex.Message}");
+            throw;
+        }
+    }
+
     public async Task<IEnumerable<HistoryRecordDto>> GetHistoryAsync(
         int page = 1, DateTimeOffset? before = null, DateTimeOffset? after = null, DateTimeOffset? modifiedAfter = null,
         ProfileTypeFilter types = ProfileTypeFilter.All, string? searchText = null, bool? starred = null,
         bool sortByLastAccessed = false, CancellationToken token = default)
     {
-        var capabilities = await CheckHistoryCapabilitiesAsync(forceRefresh: false, token);
         try
         {
             var url = new Uri(_httpClient.BaseAddress!, "api/history/query");
@@ -343,8 +319,6 @@ public sealed class OfficialAdapter(
             var records = await JsonSerializer.DeserializeAsync<List<HistoryRecordDto>>(
                 stream, JsonSerializerOptions.Web, token);
 
-            foreach (var record in records ?? [])
-                ReadHistoryTags(record, capabilities.HistoryTags);
             return records ?? [];
         }
         catch (Exception ex)
@@ -356,7 +330,6 @@ public sealed class OfficialAdapter(
 
     public async Task<HistoryRecordDto?> GetHistoryByProfileIdAsync(string profileId, CancellationToken cancellationToken = default)
     {
-        var capabilities = await CheckHistoryCapabilitiesAsync(forceRefresh: false, cancellationToken);
         try
         {
             var url = new Uri(_httpClient.BaseAddress!, $"api/history/{HttpUtility.UrlEncode(profileId)}");
@@ -374,7 +347,7 @@ public sealed class OfficialAdapter(
             {
                 return null;
             }
-            return ReadHistoryTags(dto, capabilities.HistoryTags);
+            return dto;
         }
         catch (Exception ex)
         {
@@ -385,21 +358,10 @@ public sealed class OfficialAdapter(
 
     public async Task UpdateHistoryAsync(ProfileType type, string hash, HistoryRecordUpdateDto dto, CancellationToken cancellationToken = default)
     {
-        var capabilities = await CheckHistoryCapabilitiesAsync(forceRefresh: false, cancellationToken);
         try
         {
             var url = new Uri(_httpClient.BaseAddress!, $"api/history/{type}/{hash}");
-            var payload = new HistoryRecordUpdateDto
-            {
-                Tags = capabilities.HistoryTags ? dto.Tags : null,
-                Starred = dto.Starred,
-                Pinned = dto.Pinned,
-                IsDelete = dto.IsDelete,
-                Version = dto.Version,
-                LastModified = dto.LastModified,
-                LastAccessed = dto.LastAccessed
-            };
-            using var response = await _httpClient.PatchAsJsonAsync(url, payload, cancellationToken);
+            using var response = await _httpClient.PatchAsJsonAsync(url, dto, cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
@@ -408,7 +370,7 @@ public sealed class OfficialAdapter(
             if (response.StatusCode == HttpStatusCode.Conflict)
             {
                 var serverDto = await response.Content.ReadFromJsonAsync<HistoryRecordUpdateDto>(cancellationToken: cancellationToken);
-                throw new RemoteHistoryConflictException($"History update conflict {type}/{hash}", ReadHistoryTags(serverDto, capabilities.HistoryTags));
+                throw new RemoteHistoryConflictException($"History update conflict {type}/{hash}", serverDto);
             }
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
@@ -429,7 +391,6 @@ public sealed class OfficialAdapter(
         HistoryRecordDto dto, FileHashInfo? file, IProgress<HttpDownloadProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        var capabilities = await CheckHistoryCapabilitiesAsync(forceRefresh: false, cancellationToken);
         try
         {
             var url = new Uri(_httpClient.BaseAddress!, $"api/history");
@@ -450,7 +411,7 @@ public sealed class OfficialAdapter(
                 { new StringContent(dto.HasData.ToString()), "hasData" }
             };
 
-            if (capabilities.HistoryTags && dto.Tags is not null)
+            if (dto.Tags is not null)
                 content.Add(new StringContent(JsonSerializer.Serialize(dto.Tags)), nameof(HistoryRecordDto.Tags));
 
             using var request = new HttpRequestMessage(HttpMethod.Post, url)
@@ -476,8 +437,8 @@ public sealed class OfficialAdapter(
             }
 
             using var response = await _httpClient.SendAsync(request, cancellationToken);
-            await EnsureHistoryUploadSucceeded(dto, response, capabilities, cancellationToken);
-            return ReadHistoryTags(await response.Content.ReadFromJsonAsync<HistoryRecordDto>(cancellationToken: cancellationToken), capabilities.HistoryTags)
+            await EnsureHistoryUploadSucceeded(dto, response, cancellationToken);
+            return await response.Content.ReadFromJsonAsync<HistoryRecordDto>(cancellationToken: cancellationToken)
                 ?? throw new InvalidDataException("History upload response did not contain a record.");
         }
         catch (Exception ex)
@@ -488,7 +449,7 @@ public sealed class OfficialAdapter(
     }
 
     private static async Task EnsureHistoryUploadSucceeded(
-        HistoryRecordDto dto, HttpResponseMessage response, ServerCapabilitiesDto capabilities, CancellationToken cancellationToken)
+        HistoryRecordDto dto, HttpResponseMessage response, CancellationToken cancellationToken)
     {
         if (response.IsSuccessStatusCode)
         {
@@ -508,7 +469,7 @@ public sealed class OfficialAdapter(
             }
             throw new RemoteHistoryConflictException(
                 $"History already exists {dto.Type}/{dto.Hash}",
-                ReadHistoryTags(serverDto, capabilities.HistoryTags));
+                serverDto);
         }
 
         var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -525,7 +486,6 @@ public sealed class OfficialAdapter(
         string profileId, string localPath, IProgress<HttpDownloadProgress>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        await CheckHistoryCapabilitiesAsync(forceRefresh: false, cancellationToken);
         try
         {
             var url = new Uri(_httpClient.BaseAddress!, $"api/history/{HttpUtility.UrlEncode(profileId)}/data");

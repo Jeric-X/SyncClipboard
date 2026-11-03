@@ -1635,6 +1635,9 @@ Choose whether to use the default location or select another folder.</value>
     <value>Tags will not sync</value>
   </data>
   <data name="HistoryTagsUpgrade" xml:space="preserve">
-    <value>This server does not support tag sync. Tags stay on this device; other properties still sync. Upgrade the server to enable tag sync.</value>
+    <value>This server does not support tag sync. Upgrade the server to use this feature.</value>
+  </data>
+  <data name="HistorySyncUnsupported" xml:space="preserve">
+    <value>This server does not support history sync.</value>
   </data>
 </root>

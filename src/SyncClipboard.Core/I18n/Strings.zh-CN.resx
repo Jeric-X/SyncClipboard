@@ -1635,6 +1635,9 @@ Shift + 左键：选中连续范围</value>
     <value>标签不会同步</value>
   </data>
   <data name="HistoryTagsUpgrade" xml:space="preserve">
-    <value>此服务器不支持标签同步：标签仅保存在本机，其他属性仍会同步。建议升级服务器以启用标签同步。</value>
+    <value>当前服务器不支持标签同步，请升级服务器以使用此功能。</value>
+  </data>
+  <data name="HistorySyncUnsupported" xml:space="preserve">
+    <value>服务器不支持历史记录同步。</value>
   </data>
 </root>

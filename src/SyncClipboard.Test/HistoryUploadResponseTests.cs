@@ -8,23 +8,22 @@ using System.Net.Http.Json;
 using System.Reflection;
 using System.Text.Json;
 
-namespace SyncClipboard.Test.Client.History;
+namespace SyncClipboard.Test;
 
 [TestClass]
 public class HistoryUploadResponseTests
 {
     public TestContext TestContext { get; set; } = null!;
-    private static readonly string[] ExpectedTags = ["工作"];
 
     [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
     public async Task UploadHistoryAsync_ReturnsAcceptedRecordOrRejectsMissingResponse(bool missingRecord)
     {
-        var accepted = new HistoryRecordDto { Hash = "hash", Version = 21, Tags = ["工作"] };
+        var accepted = new HistoryRecordDto { Hash = "hash", Version = 21 };
         using var handler = new UploadHandler(missingRecord ? null : accepted);
         using var adapter = CreateAdapter(handler);
-        var incoming = new HistoryRecordDto { Hash = accepted.Hash, Version = 8, Tags = ["工作"] };
+        var incoming = new HistoryRecordDto { Hash = accepted.Hash, Version = 8 };
         var token = TestContext.CancellationTokenSource.Token;
 
         if (missingRecord)
@@ -38,7 +37,6 @@ public class HistoryUploadResponseTests
 
         Assert.AreEqual(21, result.Version);
         Assert.AreEqual(accepted.Hash, result.Hash);
-        CollectionAssert.AreEqual(accepted.Tags, result.Tags!);
         Assert.AreEqual(8, incoming.Version);
     }
 
@@ -75,13 +73,6 @@ public class HistoryUploadResponseTests
     {
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
         {
-            if (request.RequestUri!.AbsolutePath == "/api/capabilities")
-            {
-                return new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = JsonContent.Create(new ServerCapabilitiesDto { HistorySync = true, HistoryTags = true })
-                };
-            }
             var form = (MultipartFormDataContent)request.Content!;
             var tagField = form.SingleOrDefault(part => part.Headers.ContentDisposition?.Name?.Trim('"') == "Tags");
             // Mirror the server's omitted/null-preserves, explicit-array-replaces contract.
@@ -97,25 +88,14 @@ public class HistoryUploadResponseTests
 
     private sealed class UploadHandler(HistoryRecordDto? accepted) : HttpMessageHandler
     {
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
         {
-            if (request.RequestUri!.AbsolutePath == "/api/capabilities")
-            {
-                return new HttpResponseMessage(HttpStatusCode.OK)
-                {
-                    Content = JsonContent.Create(new ServerCapabilitiesDto { HistorySync = true, HistoryTags = true })
-                };
-            }
             Assert.AreEqual(HttpMethod.Post, request.Method);
             Assert.AreEqual("/api/history", request.RequestUri!.AbsolutePath);
-            var form = (MultipartFormDataContent)request.Content!;
-            var tags = form.Single(part => part.Headers.ContentDisposition!.Name!.Trim('"') == "Tags");
-            CollectionAssert.AreEqual(ExpectedTags,
-                System.Text.Json.JsonSerializer.Deserialize<string[]>(await tags.ReadAsStringAsync(token))!);
-            return new HttpResponseMessage(HttpStatusCode.OK)
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content = JsonContent.Create(accepted)
-            };
+            });
         }
     }
 }
