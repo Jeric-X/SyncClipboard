@@ -46,6 +46,33 @@ namespace SyncClipboard.WinUI3.Views;
 
 public sealed partial class HistoryWindow : Window, IWindow, IDisposable
 {
+    private void TagFilterItems_LayoutUpdated(object? _, object __)
+    {
+        if (_TagFilterItems.ItemsPanelRoot is not { } panel)
+            return;
+
+        var rows = 0;
+        var rowTop = double.NegativeInfinity;
+        var height = 0d;
+        foreach (var child in panel.Children.OfType<FrameworkElement>())
+        {
+            var bounds = LayoutInformation.GetLayoutSlot(child);
+            if (bounds.Height <= 0)
+                continue;
+            if (bounds.Y > rowTop + 0.5)
+            {
+                if (++rows > 3)
+                    break;
+                rowTop = bounds.Y;
+            }
+            height = Math.Max(height, bounds.Bottom);
+        }
+
+        var maxHeight = rows > 3 ? height : double.PositiveInfinity;
+        if (Math.Abs(_TagFilterScroll.MaxHeight - maxHeight) > 0.5)
+            _TagFilterScroll.MaxHeight = maxHeight;
+    }
+
     private readonly HistoryViewModel _viewModel;
     public HistoryViewModel ViewModel => _viewModel;
     private bool _windowLoaded = false;

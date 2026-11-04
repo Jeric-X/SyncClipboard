@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.Collections.ObjectModel;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Runner;
@@ -12,13 +13,15 @@ public sealed partial class HistoryTagFilter : ObservableObject
     public HistoryTagFilter(string? name, int count, bool showCount, Action<HistoryTagFilter> select)
     {
         Name = name;
-        Count = count;
+        this.count = count;
         this.showCount = showCount;
         SelectCommand = new RelayCommand(() => select(this));
     }
 
     public string? Name { get; }
-    public int Count { get; }
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Text))]
+    private int count;
     public string Text => Name is null ? Strings.HistoryFilterAll : ShowCount ? $"{Name} ({Count})" : Name;
 
     [ObservableProperty]
@@ -35,7 +38,7 @@ public partial class HistoryViewModel
     private CoalescingTask<bool>? _tagRefresh;
 
     [ObservableProperty]
-    private IReadOnlyList<HistoryTagFilter> tagOptions = [];
+    private ObservableCollection<HistoryTagFilter> tagOptions = [];
 
     public bool ShowTagBar
     {
@@ -101,10 +104,34 @@ public partial class HistoryViewModel
         await _threadDispatcher.RunOnMainThreadAsync(() =>
         {
             var selected = SelectedTags;
-            TagOptions = counts.Keys.Concat(selected).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)
-                .Select(name => new HistoryTagFilter(name, counts.GetValueOrDefault(name), ShowTagCounts, ToggleTagFilter))
-                .Prepend(new HistoryTagFilter(null, 0, ShowTagCounts, ToggleTagFilter)).ToArray();
-            UpdateTagSelection();
+            var names = counts.Keys.Concat(selected).ToHashSet(StringComparer.Ordinal);
+            for (var i = TagOptions.Count - 1; i >= 0; i--)
+            {
+                if (TagOptions[i].Name is { } name && !names.Contains(name))
+                    TagOptions.RemoveAt(i);
+            }
+
+            var index = 0;
+            foreach (var name in names.Order(StringComparer.Ordinal).Cast<string?>().Prepend(null))
+            {
+                var count = name is null ? 0 : counts.GetValueOrDefault(name);
+                var isSelected = name is null ? selected.Length == 0 : selected.Contains(name, StringComparer.Ordinal);
+                if (index < TagOptions.Count && string.Equals(TagOptions[index].Name, name, StringComparison.Ordinal))
+                {
+                    var option = TagOptions[index];
+                    option.Count = count;
+                    option.ShowCount = ShowTagCounts;
+                    option.IsSelected = isSelected;
+                }
+                else
+                {
+                    TagOptions.Insert(index, new HistoryTagFilter(name, count, ShowTagCounts, ToggleTagFilter)
+                    {
+                        IsSelected = isSelected
+                    });
+                }
+                index++;
+            }
         });
     }
 }

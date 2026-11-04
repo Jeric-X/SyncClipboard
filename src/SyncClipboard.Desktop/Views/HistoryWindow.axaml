@@ -167,8 +167,10 @@
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.CloseHistoryWindowWhenLostFocus}" IsChecked="{Binding CloseWhenLostFocus, Mode=TwoWay}" />
                             <ui:FAMenuFlyoutSeparator />
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowSyncStatus}" IsChecked="{Binding ShowSyncState, Mode=TwoWay}" />
+                            <ui:FAMenuFlyoutSeparator />
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowTagBar}" IsChecked="{Binding ShowTagBar, Mode=TwoWay}" />
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowTagCounts}" IsChecked="{Binding ShowTagCounts, Mode=TwoWay}" />
+                            <ui:FAMenuFlyoutSeparator />
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowStarredFilter}" IsChecked="{Binding ShowStarredFilter, Mode=TwoWay}" />
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.SortByLastAccessed}" IsChecked="{Binding SortByLastAccessed, Mode=TwoWay}" />
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.CompactListWhenPreview}" IsChecked="{Binding CompactListWhenPreview, Mode=TwoWay}" />
@@ -223,15 +225,22 @@
                     </Button>
                 </StackPanel>
             </Grid>
-            <ScrollViewer Grid.Row="2"
-                          Margin="20,0,12,8"
+            <ScrollViewer x:Name="_TagFilterScroll"
+                          Grid.Row="2"
+                          Margin="20,0,12,0"
                           IsVisible="{Binding IsTagBarVisible}"
-                          HorizontalScrollBarVisibility="Auto"
-                          VerticalScrollBarVisibility="Disabled">
-                <ItemsControl ItemsSource="{Binding TagOptions}">
+                          HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <ScrollViewer.Resources>
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="{DynamicResource ControlStrokeColorDefault}" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrushPointerOver" Color="{DynamicResource ControlStrokeColorDefault}" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{DynamicResource ControlStrokeColorOnAccentDefault}" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="{DynamicResource ControlStrokeColorOnAccentDefault}" />
+                </ScrollViewer.Resources>
+                <ItemsControl x:Name="_TagFilterItems" ItemsSource="{Binding TagOptions}" LayoutUpdated="TagFilterItems_LayoutUpdated">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" Spacing="6" />
+                            <WrapPanel />
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                     <ItemsControl.ItemTemplate>
@@ -241,6 +250,7 @@
                                           Command="{Binding SelectCommand}"
                                           CornerRadius="14"
                                           Padding="10,4"
+                                          Margin="0,0,6,6"
                                           MinHeight="28"
                                           MaxWidth="220"
                                           FontSize="12"

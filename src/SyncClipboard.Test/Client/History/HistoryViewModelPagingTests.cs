@@ -179,6 +179,58 @@ public class HistoryViewModelPagingTests
     }
 
     [TestMethod]
+    public async Task TagBar_HistoryUpdatesPreserveSelectedItemsAndUpdateCountsInPlace()
+    {
+        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
+        await fixture.AddTagsAsync();
+        fixture.InitializeTags();
+        fixture.ViewModel.ShowTagCounts = true;
+        await fixture.ViewModel.RefreshTagOptionsAsync();
+        var options = fixture.ViewModel.TagOptions;
+        var all = options[0];
+        var red = options.Single(option => option.Name == "Red");
+        var blue = options.Single(option => option.Name == "Blue");
+        red.SelectCommand.Execute(null);
+        await fixture.ReloadAsync();
+        var selectionChanges = 0;
+        red.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(HistoryTagFilter.IsSelected))
+                selectionChanges++;
+        };
+        var textChanges = 0;
+        red.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(HistoryTagFilter.Text))
+                textChanges++;
+        };
+        var collectionChanges = 0;
+        options.CollectionChanged += (_, _) => collectionChanges++;
+
+        await fixture.ViewModel.RefreshTagOptionsAsync();
+        Assert.AreEqual(0, collectionChanges);
+        await fixture.ChangeStoredTagsAsync(2, ["Blue"]);
+        await fixture.ViewModel.RefreshTagOptionsAsync();
+        Assert.AreSame(options, fixture.ViewModel.TagOptions);
+        Assert.AreSame(red, options.Single(option => option.Name == "Red"));
+        Assert.AreEqual("Red (49)", red.Text);
+        Assert.AreEqual("Blue (35)", blue.Text);
+        Assert.IsGreaterThan(0, textChanges);
+        Assert.AreEqual(0, collectionChanges);
+
+        await fixture.ReplaceTagsAsync("Blue", "Amber");
+        await fixture.ViewModel.RefreshTagOptionsAsync();
+        Assert.AreSame(all, options[0]);
+        Assert.AreSame(red, options.Single(option => option.Name == "Red"));
+        Assert.AreEqual("Amber (35)", options[1].Text);
+        Assert.DoesNotContain(blue, options);
+        Assert.IsTrue(red.IsSelected);
+        Assert.AreEqual(0, selectionChanges);
+        Assert.AreEqual(2, collectionChanges);
+        fixture.Logger.VerifyNoOtherCalls();
+    }
+
+    [TestMethod]
     public async Task TagBar_RefreshCoalescesChangesAndRetainsAnEmptySelectedTag()
     {
         await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
@@ -264,6 +316,7 @@ public class HistoryViewModelPagingTests
             SetField(queue, "_activeTasks", new ConcurrentDictionary<string, TransferTask>());
             SetField(ViewModel, "historyManager", manager);
             SetField(ViewModel, "runtimeConfig", RuntimeConfig);
+            ViewModel.TagOptions = [];
             SetField(ViewModel, "_transferQueue", queue);
             SetField(ViewModel, "allHistoryItems", Records);
             var view = Records.CreateView(record => record);
