@@ -1647,6 +1647,6 @@ Shift + 左键：选中连续范围</value>
     <value>保护带标签的记录</value>
   </data>
   <data name="ServerProtectTaggedRecordsDescription" xml:space="preserve">
-    <value>自动清理时，像收藏记录一样保留带标签的服务器记录。关闭后，按数量和保留时长规则清理，并同步删除到客户端。默认开启。</value>
+    <value>自动清理时，像收藏记录一样保留带标签的服务器记录。默认开启。</value>
   </data>
 </root>
