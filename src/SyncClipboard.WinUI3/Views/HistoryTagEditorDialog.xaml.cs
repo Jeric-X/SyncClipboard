@@ -1,4 +1,3 @@
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.ViewModels;
@@ -18,15 +17,6 @@ public sealed partial class HistoryTagEditorDialog : ContentDialog
         _save = save;
         InitializeComponent();
         DataContext = editor;
-    }
-
-    private void OnTagClick(object sender, RoutedEventArgs _)
-    {
-        if (sender is CheckBox { DataContext: HistoryTagChoice choice })
-        {
-            // The one-way binding preserves the model's previous mixed state until this click.
-            choice.IsChecked = choice.IsChecked != true;
-        }
     }
 
     private async void OnPrimaryButtonClick(ContentDialog _, ContentDialogButtonClickEventArgs args)

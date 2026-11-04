@@ -17,7 +17,7 @@
                     Content="{x:Static i18n:Strings.HistoryTagsAdd}"
                     Command="{Binding AddCommand}" />
         </Grid>
-        <ScrollViewer MaxHeight="280">
+        <ScrollViewer Height="200">
             <ItemsControl ItemsSource="{Binding FilteredChoices}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:HistoryTagChoice">
@@ -26,6 +26,6 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
-        <TextBlock Text="{Binding Error}" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding Error}" TextWrapping="Wrap" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
     </StackPanel>
 </ui:FAContentDialog>

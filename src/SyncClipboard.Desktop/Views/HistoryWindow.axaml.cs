@@ -1,3 +1,5 @@
+using SyncClipboard.Core.Utilities.History;
+using SyncClipboard.Desktop.Services;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data;
@@ -361,10 +363,30 @@ public partial class HistoryWindow : Window, IWindow
             flyout.Items.Clear();
             return;
         }
+        if (_viewModel.IsMultiSelecting)
+        {
+            flyout.Items.Clear();
+            var tags = new FAMenuFlyoutItem { Text = Strings.HistoryTagsEdit, IsEnabled = _viewModel.SelectedHistoryCount > 0 };
+            tags.Click += async (_, _) => await EditTagsAsync(_viewModel.GetTagEditSelection());
+            flyout.Items.Add(tags);
+            flyout.Items.Add(new FAMenuFlyoutItem { Text = Strings.HistoryMultiSelectDelete, Command = _viewModel.ConfirmDeleteSelectedCommand });
+            flyout.Items.Add(new FAMenuFlyoutItem
+            {
+                Text = _viewModel.AreSelectedRecordsStarred ? Strings.HistoryMultiSelectUnstar : Strings.HistoryMultiSelectStar,
+                Command = _viewModel.ConfirmToggleSelectedStarredCommand
+            });
+            flyout.Items.Add(new FAMenuFlyoutItem { Text = Strings.HistoryExportSelected, Command = _viewModel.ExportSelectedCommand });
+            flyout.Items.Add(new FAMenuFlyoutItem { Text = Strings.HistoryMultiSelectAll, Command = _viewModel.ToggleCurrentFilterSelectionCommand });
+            flyout.Items.Add(new FAMenuFlyoutItem { Text = Strings.HistoryMultiSelectExit, Command = _viewModel.ExitMultiSelectCommand });
+            return;
+        }
         _viewModel.SelectSingleRecord(record);
 
         var actions = await _viewModel.BuildActionsAsync(record);
         flyout.Items.Clear();
+        var editTags = new FAMenuFlyoutItem { Text = Strings.HistoryTagsEdit };
+        editTags.Click += async (_, _) => await EditTagsAsync([record.Key]);
+        flyout.Items.Add(editTags);
         foreach (var action in actions)
         {
             var item = new FAMenuFlyoutItem { Text = action.Text };
@@ -373,6 +395,63 @@ public partial class HistoryWindow : Window, IWindow
                 item.Click += (_, __) => action.Action();
             }
             flyout.Items.Add(item);
+        }
+    }
+
+    private async Task EditTagsAsync(HistoryRecordKey[] keys)
+    {
+        using var hold = _viewModel.HoldForModalOperation();
+        var messages = new AvaloniaDialog(this);
+        try
+        {
+            if (keys.Length == 0)
+            {
+                await messages.ShowMessageAsync(Strings.HistoryTagsEdit, Strings.HistoryTagsNoSelection);
+                return;
+            }
+            var manager = App.Current.Services.GetRequiredService<HistoryManager>();
+            var assignments = new List<string[]>();
+            foreach (var key in keys)
+            {
+                var record = await manager.GetSyncSnapshotAsync(key);
+                if (record is { IsDeleted: false })
+                    assignments.Add([.. record.Tags]);
+            }
+            if (assignments.Count == 0)
+            {
+                await messages.ShowMessageAsync(Strings.HistoryTagsEdit, Strings.HistoryTagsNoSelection);
+                return;
+            }
+            var counts = await manager.GetTagCountsAsync();
+            var editor = new HistoryTagEditorViewModel(counts.Keys, assignments);
+            var dialog = new HistoryTagEditorDialog(editor);
+            // Keep validation errors in the editor so the user can correct the selection.
+            dialog.PrimaryButtonClick += async (_, args) =>
+            {
+                var deferral = args.GetDeferral();
+                try
+                {
+                    await manager.EditTagsAsync(keys, editor.Added, editor.Removed);
+                }
+                catch (Exception ex)
+                {
+                    args.Cancel = true;
+                    editor.Error = ex is ArgumentException ? Strings.HistoryTagsInvalid : ex.Message;
+                }
+                finally
+                {
+                    deferral.Complete();
+                }
+            };
+            await dialog.ShowAsync(this);
+        }
+        catch (Exception ex)
+        {
+            await messages.ShowMessageAsync(Strings.HistoryTagsEdit, ex.Message);
+        }
+        finally
+        {
+            _SearchTextBox.Focus();
         }
     }
 
@@ -567,11 +646,6 @@ public partial class HistoryWindow : Window, IWindow
         if (sender is Control { DataContext: HistoryRecordVM record })
             _viewModel.HandleSelectionCheckBoxClick(record);
         e.Handled = true;
-    }
-
-    private void HistoryItem_ContextRequested(object? sender, ContextRequestedEventArgs e)
-    {
-        e.Handled = _viewModel.IsMultiSelecting;
     }
 
     private void UpdateSelectAllIcon() => _SelectAllIcon.Text = _viewModel.IsCurrentFilterFullySelected == true

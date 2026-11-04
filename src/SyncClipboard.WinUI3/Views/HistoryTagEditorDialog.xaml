@@ -3,6 +3,9 @@
                xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                xmlns:local="using:SyncClipboard.WinUI3.Views"
+               xmlns:controls="using:SyncClipboard.WinUI3.Controls"
+               xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
+               xmlns:vm="using:SyncClipboard.Core.ViewModels"
                xmlns:i18n="using:SyncClipboard.Core.I18n"
                Title="{Binding Title}"
                PrimaryButtonText="{x:Bind i18n:Strings.HistoryTagsApply}"
@@ -10,12 +13,19 @@
                DefaultButton="Primary"
                PrimaryButtonClick="OnPrimaryButtonClick">
     <ContentDialog.Resources>
+        <vc:StringToVisibilityConverter x:Key="StringToVisibility" />
         <Style TargetType="local:HistoryTagEditorDialog" BasedOn="{StaticResource DefaultContentDialogStyle}" />
     </ContentDialog.Resources>
     <StackPanel Width="420" Spacing="10">
-        <TextBox Text="{Binding Search, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{x:Bind i18n:Strings.HistoryTagsSearch}" />
-        <Button Content="{x:Bind i18n:Strings.HistoryTagsAdd}" Command="{Binding AddCommand}" />
-        <ScrollViewer MaxHeight="280">
+        <Grid ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox Text="{Binding Search, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{x:Bind i18n:Strings.HistoryTagsSearch}" />
+            <Button Grid.Column="1" Content="{x:Bind i18n:Strings.HistoryTagsAdd}" Command="{Binding AddCommand}" />
+        </Grid>
+        <ScrollViewer Height="200">
             <ItemsControl ItemsSource="{Binding FilteredChoices}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -23,15 +33,12 @@
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <CheckBox Content="{Binding Name}"
-                                  IsThreeState="True"
-                                  IsChecked="{Binding IsChecked, Mode=OneWay}"
-                                  Click="OnTagClick" />
+                    <DataTemplate x:DataType="vm:HistoryTagChoice">
+                        <controls:HistoryTagCheckBox Content="{x:Bind Name}" IsThreeState="True" IsChecked="{x:Bind IsChecked, Mode=TwoWay}" />
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
-        <TextBlock Text="{Binding Error}" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding Error}" TextWrapping="Wrap" Visibility="{Binding Error, Converter={StaticResource StringToVisibility}}" />
     </StackPanel>
 </ContentDialog>
