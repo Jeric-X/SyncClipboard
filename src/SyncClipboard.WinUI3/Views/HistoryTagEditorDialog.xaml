@@ -15,9 +15,15 @@
         <Style TargetType="local:HistoryTagEditorDialog" BasedOn="{StaticResource DefaultContentDialogStyle}" />
     </ContentDialog.Resources>
     <StackPanel Width="420" Spacing="10">
-        <TextBox Text="{Binding Search, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{x:Bind i18n:Strings.HistoryTagsSearch}" />
-        <Button Content="{x:Bind i18n:Strings.HistoryTagsAdd}" Command="{Binding AddCommand}" />
-        <ScrollViewer Height="280">
+        <Grid ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox Text="{Binding Search, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{x:Bind i18n:Strings.HistoryTagsSearch}" />
+            <Button Grid.Column="1" Content="{x:Bind i18n:Strings.HistoryTagsAdd}" Command="{Binding AddCommand}" />
+        </Grid>
+        <ScrollViewer Height="200">
             <ItemsControl ItemsSource="{Binding FilteredChoices}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
