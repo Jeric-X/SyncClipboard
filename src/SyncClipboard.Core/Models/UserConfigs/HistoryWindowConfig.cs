@@ -13,8 +13,8 @@ public record class HistoryWindowConfig
     public bool ScrollToTopOnReopen { get; set; } = false;
     public bool CloseWhenLostFocus { get; set; } = true;
     public bool ShowSyncState { get; set; } = true;
-    public string[] SelectedTags { get; init; } = [];
     public bool OnlyShowStarred { get; set; } = false;
+    public bool MultiTagFilter { get; init; } = false;
     public bool ShowTagCounts { get; init; } = false;
     public bool ShowTagBar { get; init; } = true;
     public bool ShowStarredFilter { get; set; } = false;

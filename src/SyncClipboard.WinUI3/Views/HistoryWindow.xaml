@@ -209,18 +209,29 @@
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </ScrollViewer>
-            <Button x:Name="_ExpandTagsButton"
-                    Grid.Column="1"
-                    Width="28"
-                    Height="28"
-                    Margin="8,0,0,0"
-                    VerticalAlignment="Top"
-                    Visibility="Collapsed"
-                    ToolTipService.ToolTip="{x:Bind i18n:Strings.HistoryTagsExpand}"
-                    AutomationProperties.Name="{x:Bind i18n:Strings.HistoryTagsExpand}"
-                    Click="ExpandTags_Click">
-                <FontIcon x:Name="_ExpandTagsIcon" Glyph="&#xE70D;" />
-            </Button>
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        Spacing="4"
+                        Margin="8,0,0,0"
+                        VerticalAlignment="Top">
+                <ToggleButton IsChecked="{x:Bind _viewModel.MultiTagFilter, Mode=TwoWay}"
+                              IsTabStop="False"
+                              AllowFocusOnInteraction="False"
+                              ToolTipService.ToolTip="{x:Bind i18n:Strings.HistoryTagsMultiSelectDescription}"
+                              AutomationProperties.Name="{x:Bind i18n:Strings.HistoryTagsMultiSelect}">
+                    <FontIcon Glyph="&#xE762;" />
+                </ToggleButton>
+                <Button x:Name="_ExpandTagsButton"
+                        Width="28"
+                        Height="28"
+                        VerticalAlignment="Top"
+                        Visibility="Collapsed"
+                        ToolTipService.ToolTip="{x:Bind i18n:Strings.HistoryTagsExpand}"
+                        AutomationProperties.Name="{x:Bind i18n:Strings.HistoryTagsExpand}"
+                        Click="ExpandTags_Click">
+                    <FontIcon x:Name="_ExpandTagsIcon" Glyph="&#xE70D;" />
+                </Button>
+            </StackPanel>
         </Grid>
         <Grid Grid.Row="3"
               x:Name="_MainContentGrid"

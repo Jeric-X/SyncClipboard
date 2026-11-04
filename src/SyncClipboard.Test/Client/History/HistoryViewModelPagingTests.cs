@@ -25,6 +25,7 @@ namespace SyncClipboard.Test.Client.History;
 public class HistoryViewModelPagingTests
 {
     private static readonly int[] ExpectedCombinedFilter = [12, 16];
+    private static readonly string[] InitialRedFilter = ["Red"];
 
     public TestContext TestContext { get; set; } = null!;
 
@@ -69,11 +70,11 @@ public class HistoryViewModelPagingTests
     }
 
     [TestMethod]
-    public async Task TagFilter_RestoresPagesAndKeepsSelectionCountsAcrossFilterChanges()
+    public async Task TagFilter_PagesAndKeepsSelectionCountsAcrossFilterChanges()
     {
         await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
         await fixture.AddTagsAsync();
-        fixture.RuntimeConfig.SetConfig(new HistoryWindowConfig { SelectedTags = ["Red"] });
+        Fixture.SetField(fixture.ViewModel, "_selectedTags", InitialRedFilter);
         await fixture.LoadAsync();
         Assert.HasCount(20, fixture.Records);
         Assert.IsTrue(fixture.Records.All(record => int.Parse(record.Hash) % 2 == 0));
@@ -119,7 +120,8 @@ public class HistoryViewModelPagingTests
     {
         await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
         await fixture.AddTagsAsync();
-        fixture.RuntimeConfig.SetConfig(new HistoryWindowConfig { SelectedTags = ["Red"], OnlyShowStarred = true });
+        fixture.RuntimeConfig.SetConfig(new HistoryWindowConfig { OnlyShowStarred = true });
+        Fixture.SetField(fixture.ViewModel, "_selectedTags", InitialRedFilter);
         Fixture.SetField(fixture.ViewModel, "searchText", "record 1");
         await fixture.LoadAsync();
         CollectionAssert.AreEqual(ExpectedCombinedFilter, fixture.Records.Select(record => int.Parse(record.Hash)).ToArray());
@@ -171,10 +173,79 @@ public class HistoryViewModelPagingTests
         var reloaded = new ConfigBase(fixture.RuntimeConfig.Path).GetConfig<HistoryWindowConfig>();
         Assert.IsFalse(reloaded.ShowTagBar);
         Assert.IsTrue(reloaded.ShowTagCounts);
-        Assert.IsEmpty(reloaded.SelectedTags);
         fixture.ViewModel.ShowTagBar = true;
         Assert.IsTrue(fixture.ViewModel.IsTagBarVisible);
         Assert.IsTrue(fixture.ViewModel.TagOptions.Single(option => option.Name is null).IsSelected);
+        fixture.Logger.VerifyNoOtherCalls();
+    }
+
+    [TestMethod]
+    public async Task TagBar_MultipleSelectionCombinesTagsAndRestoresSingleSelection()
+    {
+        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
+        await fixture.AddTagsAsync();
+        fixture.InitializeTags();
+        await fixture.ViewModel.RefreshTagOptionsAsync();
+        var red = fixture.ViewModel.TagOptions.Single(option => option.Name == "Red");
+        var blue = fixture.ViewModel.TagOptions.Single(option => option.Name == "Blue");
+        var all = fixture.ViewModel.TagOptions.Single(option => option.Name is null);
+
+        fixture.ViewModel.MultiTagFilter = true;
+        red.IsSelected = true;
+        red.SelectCommand.Execute(null);
+        blue.IsSelected = true;
+        blue.SelectCommand.Execute(null);
+        await fixture.ReloadAsync();
+        await fixture.ViewModel.SetCurrentFilterSelectionAsync(true);
+        Assert.AreEqual(67, fixture.ViewModel.SelectedHistoryCount);
+        Assert.IsTrue(fixture.Records.All(record => int.Parse(record.Hash) % 2 == 0 || int.Parse(record.Hash) % 3 == 0));
+        Assert.IsTrue(red.IsSelected && blue.IsSelected);
+        Assert.IsFalse(all.IsSelected);
+        var reloaded = new ConfigBase(fixture.RuntimeConfig.Path);
+        Fixture.SetField(fixture.ViewModel, "runtimeConfig", reloaded);
+        Assert.IsTrue(fixture.ViewModel.MultiTagFilter);
+        Assert.HasCount(2, fixture.ViewModel.SelectedTags);
+
+        blue.IsSelected = false;
+        blue.SelectCommand.Execute(null);
+        await fixture.ReloadAsync();
+        await fixture.RefreshCountsAsync();
+        Assert.AreEqual(50, fixture.ViewModel.SelectedInCurrentFilterCount);
+        Assert.IsTrue(fixture.Records.All(record => int.Parse(record.Hash) % 2 == 0));
+        Assert.IsTrue(red.IsSelected);
+        Assert.IsFalse(blue.IsSelected);
+
+        blue.IsSelected = true;
+        blue.SelectCommand.Execute(null);
+        var retainedTag = fixture.ViewModel.SelectedTags[0];
+        fixture.ViewModel.MultiTagFilter = false;
+        await fixture.ReloadAsync();
+        await fixture.RefreshCountsAsync();
+        Assert.HasCount(1, fixture.ViewModel.SelectedTags);
+        Assert.AreEqual(retainedTag, fixture.ViewModel.SelectedTags[0]);
+        Assert.AreEqual(retainedTag == "Red" ? 50 : 34, fixture.ViewModel.SelectedInCurrentFilterCount);
+        Assert.IsTrue(fixture.Records.All(record => int.Parse(record.Hash) % (retainedTag == "Red" ? 2 : 3) == 0));
+        Assert.IsFalse(new ConfigBase(fixture.RuntimeConfig.Path).GetConfig<HistoryWindowConfig>().MultiTagFilter);
+
+        all.IsSelected = true;
+        all.SelectCommand.Execute(null);
+        await fixture.ReloadAsync();
+        await fixture.ViewModel.SetCurrentFilterSelectionAsync(true);
+        Assert.AreEqual(100, fixture.ViewModel.SelectedHistoryCount);
+        Assert.IsEmpty(fixture.ViewModel.SelectedTags);
+        Assert.IsTrue(all.IsSelected);
+
+        fixture.ViewModel.MultiTagFilter = true;
+        red.SelectCommand.Execute(null);
+        await fixture.ReloadAsync();
+        var savedConfig = new ConfigBase(fixture.RuntimeConfig.Path).GetConfig<HistoryWindowConfig>();
+        await using var restarted = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
+        restarted.RuntimeConfig.SetConfig(savedConfig);
+        await restarted.LoadAsync();
+        await restarted.ViewModel.SetCurrentFilterSelectionAsync(true);
+        Assert.AreEqual(100, restarted.ViewModel.SelectedHistoryCount);
+        Assert.IsTrue(restarted.ViewModel.MultiTagFilter);
+        restarted.Logger.VerifyNoOtherCalls();
         fixture.Logger.VerifyNoOtherCalls();
     }
 
@@ -317,6 +388,7 @@ public class HistoryViewModelPagingTests
             SetField(ViewModel, "historyManager", manager);
             SetField(ViewModel, "runtimeConfig", RuntimeConfig);
             ViewModel.TagOptions = [];
+            SetField(ViewModel, "_selectedTags", Array.Empty<string>());
             SetField(ViewModel, "_transferQueue", queue);
             SetField(ViewModel, "allHistoryItems", Records);
             var view = Records.CreateView(record => record);
