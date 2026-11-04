@@ -5,6 +5,7 @@
                xmlns:local="using:SyncClipboard.WinUI3.Views"
                xmlns:controls="using:SyncClipboard.WinUI3.Controls"
                xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
+               xmlns:vm="using:SyncClipboard.Core.ViewModels"
                xmlns:i18n="using:SyncClipboard.Core.I18n"
                Title="{Binding Title}"
                PrimaryButtonText="{x:Bind i18n:Strings.HistoryTagsApply}"
@@ -32,8 +33,8 @@
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <controls:HistoryTagCheckBox Content="{Binding Name}" IsThreeState="True" IsChecked="{Binding IsChecked, Mode=TwoWay}" />
+                    <DataTemplate x:DataType="vm:HistoryTagChoice">
+                        <controls:HistoryTagCheckBox Content="{x:Bind Name}" IsThreeState="True" IsChecked="{x:Bind IsChecked, Mode=TwoWay}" />
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
