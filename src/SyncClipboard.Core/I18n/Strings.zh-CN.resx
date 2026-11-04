@@ -880,10 +880,10 @@ Shift + 左键：选中连续范围</value>
     <value>最大记录条数</value>
   </data>
   <data name="MaxItemCountDescription" xml:space="preserve">
-    <value>仅针对未同步记录，0表示不限制数量</value>
+    <value>0 表示不限制数量</value>
   </data>
   <data name="HistoryRetentionDescription" xml:space="preserve">
-    <value>仅针对未同步记录，0表示不限制时长</value>
+    <value>0 表示不限制保留时长</value>
   </data>
   <data name="HistoryRetentionMinutes" xml:space="preserve">
     <value>历史记录保存时长(分钟)</value>
@@ -898,7 +898,7 @@ Shift + 左键：选中连续范围</value>
     <value>本地文件丢失时自动删除记录</value>
   </data>
   <data name="AutoDeleteMissingLocalFilesDescription" xml:space="preserve">
-    <value>本地文件不存在或不完整时，自动删除纯本地记录</value>
+    <value>本地文件不存在或不完整时，自动删除对应记录</value>
   </data>
   <data name="HistoryPanel" xml:space="preserve">
     <value>历史记录面板</value>
@@ -1650,6 +1650,12 @@ Shift + 左键：选中连续范围</value>
     <value>带标签的记录视为收藏，不会被自动删除</value>
   </data>
   <data name="ProtectTaggedRecordsDescription" xml:space="preserve">
-    <value>带标签的记录视为收藏，不会被本地自动删除；已同步的记录遵循服务器设置</value>
+    <value>带标签的记录视为收藏</value>
+  </data>
+  <data name="HistoryAutoDelete" xml:space="preserve">
+    <value>自动删除</value>
+  </data>
+  <data name="HistoryAutoDeleteDescription" xml:space="preserve">
+    <value>自动删除仅适用于未同步记录，已同步记录遵循服务器设置；收藏记录不会被自动删除</value>
   </data>
 </root>
