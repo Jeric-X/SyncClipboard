@@ -1649,4 +1649,7 @@ Choose whether to use the default location or select another folder.</value>
   <data name="ServerProtectTaggedRecordsDescription" xml:space="preserve">
     <value>Tagged records are treated as starred and will not be automatically deleted</value>
   </data>
+  <data name="ProtectTaggedRecordsDescription" xml:space="preserve">
+    <value>Tagged records are treated as starred and will not be automatically deleted locally; synced records follow server settings</value>
+  </data>
 </root>

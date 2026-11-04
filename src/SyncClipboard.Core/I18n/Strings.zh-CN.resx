@@ -1649,4 +1649,7 @@ Shift + 左键：选中连续范围</value>
   <data name="ServerProtectTaggedRecordsDescription" xml:space="preserve">
     <value>带标签的记录视为收藏，不会被自动删除</value>
   </data>
+  <data name="ProtectTaggedRecordsDescription" xml:space="preserve">
+    <value>带标签的记录视为收藏，不会被本地自动删除；已同步的记录遵循服务器设置</value>
+  </data>
 </root>

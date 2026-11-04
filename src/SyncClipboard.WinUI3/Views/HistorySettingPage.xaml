@@ -45,6 +45,9 @@
                                SpinButtonPlacementMode="Inline"
                                SmallChange="1" />
                 </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.ProtectTaggedRecords}" Description="{x:Bind i18n:Strings.ProtectTaggedRecordsDescription}">
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.ProtectTaggedRecords, Mode=TwoWay}" />
+                </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryBackup}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button Content="{x:Bind i18n:Strings.Import}" Command="{x:Bind _viewModel.ImportHistoryCommand}" />
