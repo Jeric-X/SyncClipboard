@@ -231,6 +231,12 @@
                           IsVisible="{Binding IsTagBarVisible}"
                           HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">
+                <ScrollViewer.Resources>
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="{DynamicResource ControlStrokeColorDefault}" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrushPointerOver" Color="{DynamicResource ControlStrokeColorDefault}" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{DynamicResource ControlStrokeColorOnAccentDefault}" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="{DynamicResource ControlStrokeColorOnAccentDefault}" />
+                </ScrollViewer.Resources>
                 <ItemsControl x:Name="_TagFilterItems" ItemsSource="{Binding TagOptions}" LayoutUpdated="TagFilterItems_LayoutUpdated">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -240,7 +246,6 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:HistoryTagFilter">
                             <ToggleButton Content="{Binding Text}"
-                                          BorderThickness="0"
                                           IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                           Command="{Binding SelectCommand}"
                                           CornerRadius="14"

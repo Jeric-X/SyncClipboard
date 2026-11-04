@@ -177,6 +177,12 @@
                       HorizontalScrollMode="Disabled"
                       VerticalScrollBarVisibility="Auto"
                       VerticalScrollMode="Enabled">
+            <ScrollViewer.Resources>
+                <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="{ThemeResource ControlStrokeColorDefault}" />
+                <SolidColorBrush x:Key="ToggleButtonBorderBrushPointerOver" Color="{ThemeResource ControlStrokeColorDefault}" />
+                <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{ThemeResource ControlStrokeColorOnAccentDefault}" />
+                <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="{ThemeResource ControlStrokeColorOnAccentDefault}" />
+            </ScrollViewer.Resources>
             <ItemsControl x:Name="_TagFilterItems" ItemsSource="{x:Bind _viewModel.TagOptions, Mode=OneWay}" LayoutUpdated="TagFilterItems_LayoutUpdated">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
@@ -186,7 +192,6 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:HistoryTagFilter">
                         <ToggleButton Content="{x:Bind Text, Mode=OneWay}"
-                                      BorderThickness="0"
                                       Style="{StaticResource DefaultToggleButtonStyle}"
                                       IsTabStop="False"
                                       AllowFocusOnInteraction="False"
