@@ -1643,4 +1643,10 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryTagsDontNotifyServer" xml:space="preserve">
     <value>Don’t notify for this server</value>
   </data>
+  <data name="ProtectTaggedRecords" xml:space="preserve">
+    <value>Protect tagged records</value>
+  </data>
+  <data name="ServerProtectTaggedRecordsDescription" xml:space="preserve">
+    <value>Keep tagged server records during automatic cleanup, just like starred records. When disabled, count and age limits apply and deletions sync to clients. On by default.</value>
+  </data>
 </root>

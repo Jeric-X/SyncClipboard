@@ -13,5 +13,6 @@ public record class ServerPara(
     bool DiagnoseMode,
     uint MaxSavedHistoryCount,
     uint HistoryRetentionMinutes,
-    IServiceProvider Services
+    IServiceProvider Services,
+    bool ProtectTaggedRecords = true
 );
