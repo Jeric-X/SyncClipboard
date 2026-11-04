@@ -1667,4 +1667,13 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryTagsEdit" xml:space="preserve">
     <value>编辑标签</value>
   </data>
+  <data name="HistoryTagsSearch" xml:space="preserve">
+    <value>搜索或添加标签…</value>
+  </data>
+  <data name="HistoryTagsAdd" xml:space="preserve">
+    <value>添加</value>
+  </data>
+  <data name="HistoryTagsApply" xml:space="preserve">
+    <value>完成</value>
+  </data>
 </root>

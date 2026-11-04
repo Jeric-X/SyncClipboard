@@ -1,0 +1,31 @@
+﻿<ui:FAContentDialog x:Class="SyncClipboard.Desktop.Views.HistoryTagEditorDialog"
+                    xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="using:FluentAvalonia.UI.Controls"
+                    xmlns:controls="using:SyncClipboard.Desktop.Controls"
+                    xmlns:vm="using:SyncClipboard.Core.ViewModels"
+                    xmlns:i18n="using:SyncClipboard.Core.I18n"
+                    x:DataType="vm:HistoryTagEditorViewModel"
+                    Title="{Binding Title}"
+                    PrimaryButtonText="{x:Static i18n:Strings.HistoryTagsApply}"
+                    CloseButtonText="{x:Static i18n:Strings.Cancel}">
+    <StackPanel MinWidth="300" MaxWidth="480" Spacing="12">
+        <Grid ColumnDefinitions="*,Auto">
+            <TextBox Text="{Binding Search}" PlaceholderText="{x:Static i18n:Strings.HistoryTagsSearch}" />
+            <Button Grid.Column="1"
+                    Margin="8,0,0,0"
+                    Content="{x:Static i18n:Strings.HistoryTagsAdd}"
+                    Command="{Binding AddCommand}" />
+        </Grid>
+        <ScrollViewer MaxHeight="280">
+            <ItemsControl ItemsSource="{Binding FilteredChoices}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:HistoryTagChoice">
+                        <controls:HistoryTagCheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" IsThreeState="True" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+        <TextBlock Text="{Binding Error}" TextWrapping="Wrap" />
+    </StackPanel>
+</ui:FAContentDialog>
