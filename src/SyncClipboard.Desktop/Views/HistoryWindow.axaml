@@ -246,7 +246,6 @@
                                   ColumnDefinitions="Auto, Auto, *, Auto, Auto"
                                   Background="Transparent"
                                   Opacity="{Binding IsLocalFileReady, Converter={x:Static vc:FuncConverter.LocalFileReadyToOpacity}}"
-                                  ContextRequested="HistoryItem_ContextRequested"
                                   IsHitTestVisible="True">
                                 <Grid.ContextFlyout>
                                     <ui:FAMenuFlyout Opening="ItemContextFlyout_Opening" />

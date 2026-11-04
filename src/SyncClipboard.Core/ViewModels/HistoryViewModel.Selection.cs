@@ -51,6 +51,10 @@ public partial class HistoryViewModel
 
     public HistoryRecordVM? PreviewedHistoryItem => SelectedItem;
 
+    public HistoryRecordKey[] GetTagEditSelection() => IsMultiSelecting
+        ? selectedHistoryRecords.Keys.ToArray()
+        : SelectedItem is { } selected ? [selected.Key] : [];
+
     // Resolve positions only when navigating; collection changes do not need to maintain an index.
     private int SelectedIndex
     {

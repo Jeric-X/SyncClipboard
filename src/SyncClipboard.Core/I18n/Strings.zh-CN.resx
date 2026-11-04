@@ -1676,4 +1676,7 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryTagsApply" xml:space="preserve">
     <value>完成</value>
   </data>
+  <data name="HistoryTagsNoSelection" xml:space="preserve">
+    <value>请先选择一条记录。</value>
+  </data>
 </root>

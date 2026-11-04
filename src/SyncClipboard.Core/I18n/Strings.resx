@@ -1676,4 +1676,7 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryTagsApply" xml:space="preserve">
     <value>Apply</value>
   </data>
+  <data name="HistoryTagsNoSelection" xml:space="preserve">
+    <value>Select a record first.</value>
+  </data>
 </root>

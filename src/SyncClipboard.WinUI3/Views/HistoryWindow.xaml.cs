@@ -1,3 +1,5 @@
+using SyncClipboard.Core.Utilities.History;
+using SyncClipboard.WinUI3.Services;
 using Microsoft.Extensions.DependencyInjection;
 using CommunityToolkit.WinUI.Converters;
 using Microsoft.UI.Input;
@@ -762,17 +764,28 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
     private async void ListViewItem_ContextRequested(UIElement sender, ContextRequestedEventArgs e)
     {
         e.Handled = true;
-        if (_viewModel.IsMultiSelecting
-            || sender is not ListViewItem { Content: HistoryRecordVM record } container)
+        if (sender is not ListViewItem { Content: HistoryRecordVM record } container)
             return;
 
         var hasPosition = e.TryGetPosition(container, out var position);
+        if (_viewModel.IsMultiSelecting)
+        {
+            var menu = BuildTagMultiSelectMenu();
+            if (hasPosition)
+                menu.ShowAt(container, new FlyoutShowOptions { Position = position });
+            else
+                menu.ShowAt(container);
+            return;
+        }
         _viewModel.SelectSingleRecord(record);
         var flyout = new MenuFlyout();
         var actions = await _viewModel.BuildActionsAsync(record);
         if (_viewModel.IsMultiSelecting || !ReferenceEquals(container.Content, record))
             return;
 
+        var editTags = new MenuFlyoutItem { Text = Strings.HistoryTagsEdit };
+        editTags.Click += async (_, _) => await EditTagsAsync([record.Key]);
+        flyout.Items.Add(editTags);
         foreach (var action in actions)
         {
             var item = new MenuFlyoutItem { Text = action.Text };
@@ -787,6 +800,56 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
             flyout.ShowAt(container, new FlyoutShowOptions { Position = position });
         else
             flyout.ShowAt(container);
+    }
+
+    private async Task EditTagsAsync(HistoryRecordKey[] keys)
+    {
+        using var hold = _viewModel.HoldForModalOperation();
+        try
+        {
+            var manager = App.Current.Services.GetRequiredService<HistoryManager>();
+            var assignments = new List<string[]>();
+            foreach (var key in keys)
+            {
+                var record = await manager.GetSyncSnapshotAsync(key);
+                if (record is { IsDeleted: false })
+                    assignments.Add(record.Tags);
+            }
+            if (assignments.Count == 0)
+            {
+                await new WinUIDialog(this).ShowMessageAsync(Strings.HistoryTagsEdit, Strings.HistoryTagsNoSelection);
+                return;
+            }
+            var counts = await manager.GetTagCountsAsync();
+            var editor = new HistoryTagEditorViewModel(counts.Keys, assignments);
+            var dialog = new HistoryTagEditorDialog(editor, () => manager.EditTagsAsync(keys, editor.Added, editor.Removed))
+            {
+                XamlRoot = Content.XamlRoot
+            };
+            await dialog.ShowAsync();
+        }
+        catch (Exception ex)
+        {
+            await new WinUIDialog(this).ShowMessageAsync(Strings.HistoryTagsEdit, ex.Message);
+        }
+    }
+
+    private MenuFlyout BuildTagMultiSelectMenu()
+    {
+        var menu = new MenuFlyout();
+        var edit = new MenuFlyoutItem { Text = Strings.HistoryTagsEdit, IsEnabled = _viewModel.HasSelectedRecords };
+        edit.Click += async (_, _) => await EditTagsAsync(_viewModel.GetTagEditSelection());
+        menu.Items.Add(edit);
+        menu.Items.Add(new MenuFlyoutItem { Text = Strings.HistoryMultiSelectDelete, Command = _viewModel.ConfirmDeleteSelectedCommand });
+        menu.Items.Add(new MenuFlyoutItem
+        {
+            Text = _viewModel.AreSelectedRecordsStarred ? Strings.HistoryMultiSelectUnstar : Strings.HistoryMultiSelectStar,
+            Command = _viewModel.ConfirmToggleSelectedStarredCommand
+        });
+        menu.Items.Add(new MenuFlyoutItem { Text = Strings.HistoryExportSelected, Command = _viewModel.ExportSelectedCommand });
+        menu.Items.Add(new MenuFlyoutItem { Text = Strings.HistoryMultiSelectAll, Command = _viewModel.ToggleCurrentFilterSelectionCommand });
+        menu.Items.Add(new MenuFlyoutItem { Text = Strings.HistoryMultiSelectExit, Command = _viewModel.ExitMultiSelectCommand });
+        return menu;
     }
 
     private void SelectorBar_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs _)
