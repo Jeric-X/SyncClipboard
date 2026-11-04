@@ -334,6 +334,24 @@ public partial class HistoryViewModel : ObservableObject
     [ObservableProperty]
     private bool serverConnected = true;
 
+    public string[] SelectedTags
+    {
+        get => runtimeConfig.GetConfig<HistoryWindowConfig>().SelectedTags;
+        set
+        {
+            var tags = HistoryTags.NormalizeNames(value);
+            if (tags.SequenceEqual(SelectedTags, StringComparer.Ordinal))
+                return;
+            runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { SelectedTags = tags });
+            OnPropertyChanged(nameof(SelectedTags));
+            _ = Reload();
+            RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
+        }
+    }
+
+    private bool MatchesTagFilter(IEnumerable<string> tags) =>
+        SelectedTags.Length == 0 || tags.Intersect(SelectedTags, StringComparer.Ordinal).Any();
+
     public bool OnlyShowStarred
     {
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().OnlyShowStarred;
@@ -726,7 +744,7 @@ public partial class HistoryViewModel : ObservableObject
             HistoryFilterType.File => ProfileTypeFilter.FileAndGroup,
             _ => ProfileTypeFilter.All,
         };
-        return new HistoryQueryPara { TypeFilter = types, Starred = starred, SearchText = searchText };
+        return new HistoryQueryPara { TypeFilter = types, Starred = starred, SearchText = searchText, Tags = SelectedTags };
     }
 
     private int GetSelectedFilterOptionIndex()
@@ -1023,6 +1041,8 @@ public partial class HistoryViewModel : ObservableObject
             InitVMTransferStatus(newRecordVM);
             RecordUpdated(newRecordVM);
             RefreshSelectionSummaryForUpdatedRecord(newRecordVM);
+            if (SelectedFilter != HistoryFilterType.Transferring && SelectedTags.Length != 0)
+                RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
         });
     }
 
@@ -1160,6 +1180,7 @@ public partial class HistoryViewModel : ObservableObject
         return MatchesSelectedFilter(vm)
             && MatchesStarredFilter(vm, ignoreStarredFilter)
             && MatchesSearchFilter(vm)
+            && MatchesTagFilter(vm.Tags)
             && IsWithinLoadedTimeRange(vm);
     }
 
