@@ -1667,4 +1667,16 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryTagsEdit" xml:space="preserve">
     <value>Edit tags</value>
   </data>
+  <data name="HistoryTagsSearch" xml:space="preserve">
+    <value>Search or add a tag…</value>
+  </data>
+  <data name="HistoryTagsAdd" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="HistoryTagsApply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="HistoryTagsRetention" xml:space="preserve">
+    <value>Automatic deletion of tagged records follows cleanup settings; synced records follow server settings; starred records stay protected</value>
+  </data>
 </root>
