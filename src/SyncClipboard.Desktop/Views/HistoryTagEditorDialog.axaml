@@ -27,6 +27,5 @@
             </ItemsControl>
         </ScrollViewer>
         <TextBlock Text="{Binding Error}" TextWrapping="Wrap" />
-        <TextBlock Text="{x:Static i18n:Strings.HistoryTagsRetention}" TextWrapping="Wrap" Opacity="0.7" />
     </StackPanel>
 </ui:FAContentDialog>

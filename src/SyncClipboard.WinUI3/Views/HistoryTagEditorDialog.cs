@@ -51,8 +51,7 @@ public sealed class HistoryTagEditorDialog : ContentDialog
             Spacing = 10,
             Children =
             {
-                search, add, new ScrollViewer { MaxHeight = 280, Content = rows }, error,
-                new TextBlock { Text = Strings.HistoryTagsRetention, TextWrapping = TextWrapping.Wrap, Opacity = 0.7 }
+                search, add, new ScrollViewer { MaxHeight = 280, Content = rows }, error
             }
         };
         PrimaryButtonClick += async (_, args) =>

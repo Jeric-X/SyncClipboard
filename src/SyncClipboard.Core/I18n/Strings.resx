@@ -1676,7 +1676,4 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryTagsApply" xml:space="preserve">
     <value>Apply</value>
   </data>
-  <data name="HistoryTagsRetention" xml:space="preserve">
-    <value>Automatic deletion of tagged records follows cleanup settings; synced records follow server settings; starred records stay protected</value>
-  </data>
 </root>
