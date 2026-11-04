@@ -1679,4 +1679,10 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryTagsNoSelection" xml:space="preserve">
     <value>请先选择一条记录。</value>
   </data>
+  <data name="ShowTagBar" xml:space="preserve">
+    <value>显示标签栏</value>
+  </data>
+  <data name="ShowTagCounts" xml:space="preserve">
+    <value>显示标签记录数量</value>
+  </data>
 </root>

@@ -125,7 +125,7 @@
                                              MaterialOpacity="0.65" />
             </ExperimentalAcrylicBorder.Material>
         </ExperimentalAcrylicBorder>
-        <Grid RowDefinitions="Auto, Auto, *">
+        <Grid RowDefinitions="Auto, Auto, Auto, *">
             <Border Background="Transparent" WindowDecorationProperties.ElementRole="TitleBar" />
             <TabStrip x:Name="_FilterSelectorBar"
                       HorizontalAlignment="Center"
@@ -167,6 +167,8 @@
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.CloseHistoryWindowWhenLostFocus}" IsChecked="{Binding CloseWhenLostFocus, Mode=TwoWay}" />
                             <ui:FAMenuFlyoutSeparator />
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowSyncStatus}" IsChecked="{Binding ShowSyncState, Mode=TwoWay}" />
+                            <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowTagBar}" IsChecked="{Binding ShowTagBar, Mode=TwoWay}" />
+                            <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowTagCounts}" IsChecked="{Binding ShowTagCounts, Mode=TwoWay}" />
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowStarredFilter}" IsChecked="{Binding ShowStarredFilter, Mode=TwoWay}" />
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.SortByLastAccessed}" IsChecked="{Binding SortByLastAccessed, Mode=TwoWay}" />
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.CompactListWhenPreview}" IsChecked="{Binding CompactListWhenPreview, Mode=TwoWay}" />
@@ -221,8 +223,34 @@
                     </Button>
                 </StackPanel>
             </Grid>
+            <ScrollViewer Grid.Row="2"
+                          Margin="20,0,12,8"
+                          IsVisible="{Binding IsTagBarVisible}"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Disabled">
+                <ItemsControl ItemsSource="{Binding TagOptions}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Orientation="Horizontal" Spacing="6" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:HistoryTagFilter">
+                            <ToggleButton Content="{Binding Text}"
+                                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                          Command="{Binding SelectCommand}"
+                                          CornerRadius="14"
+                                          Padding="10,4"
+                                          MinHeight="28"
+                                          MaxWidth="220"
+                                          FontSize="12"
+                                          ToolTip.Tip="{Binding Text}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
             <Grid x:Name="_MainContentGrid"
-                  Grid.Row="2"
+                  Grid.Row="3"
                   ColumnDefinitions="*, Auto, 0"
                   RowDefinitions="*, Auto">
                 <ListBox x:Name="_ListBox"
@@ -391,7 +419,7 @@
                 </Border>
             </Grid>
             <ui:FAInfoBar x:Name="_InfoBar"
-                          Grid.Row="2"
+                          Grid.Row="3"
                           Width="400"
                           Margin="{Binding #_ListBox.Bounds.Height, Converter={x:Static vc:FuncConverter.CalculateInfoBarMargin}}"
                           HorizontalAlignment="Center"

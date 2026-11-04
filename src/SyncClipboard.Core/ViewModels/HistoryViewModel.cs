@@ -168,6 +168,7 @@ public partial class HistoryViewModel : ObservableObject
         viewController = allHistoryItems.CreateView(x => x);
         HistoryItems = viewController.ToNotifyCollectionChanged();
         InitializeSelection();
+        InitializeTagRefresh();
         ApplyFilter();
 
         _relativeTimeTimer = new Timer(60000); // 1分钟
@@ -219,6 +220,7 @@ public partial class HistoryViewModel : ObservableObject
     private HistoryFilterType selectedFilter = HistoryFilterType.All;
     partial void OnSelectedFilterChanged(HistoryFilterType value)
     {
+        OnPropertyChanged(nameof(IsTagBarVisible));
         _ = Reload();
         RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
         OnPropertyChanged(nameof(SelectedFilterOption));
@@ -344,6 +346,7 @@ public partial class HistoryViewModel : ObservableObject
                 return;
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { SelectedTags = tags });
             OnPropertyChanged(nameof(SelectedTags));
+            UpdateTagSelection();
             _ = Reload();
             RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
         }
@@ -655,6 +658,7 @@ public partial class HistoryViewModel : ObservableObject
     [RelayCommand]
     public async Task Refresh()
     {
+        await RefreshTagOptionsAsync();
         await Reload();
         _ = _historyService.SyncAllAsync();
     }
@@ -1028,6 +1032,7 @@ public partial class HistoryViewModel : ObservableObject
         historyManager.HistoryUpdated += RecordEntityUpdated;
         historyManager.HistoryRemoved += OnHistoryRemoved;
 
+        await RefreshTagOptionsAsync();
         await Reload();
 
         remoteServerFactory.CurrentServerChanged += OnCurrentServerChanged;
@@ -1035,6 +1040,7 @@ public partial class HistoryViewModel : ObservableObject
 
     private async void RecordEntityUpdated(HistoryRecord record)
     {
+        _ = RefreshTagOptionsAsync();
         var newRecordVM = new HistoryRecordVM(record) { SortByLastAccessed = SortByLastAccessed };
         await _threadDispatcher.RunOnMainThreadAsync(() =>
         {
@@ -1048,6 +1054,7 @@ public partial class HistoryViewModel : ObservableObject
 
     private void OnHistoryRemoved(HistoryRecord record)
     {
+        _ = RefreshTagOptionsAsync();
         _threadDispatcher.RunOnMainThreadAsync(() =>
         {
             ApplyHistoryRecordRemoval(record);
