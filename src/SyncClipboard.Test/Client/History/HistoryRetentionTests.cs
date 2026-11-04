@@ -144,6 +144,29 @@ public class HistoryRetentionTests
     }
 
     [TestMethod]
+    public async Task ClearUnprotected_KeepsTaggedAttachmentsAndOtherProtectedRecords()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var now = DateTime.UtcNow;
+        var tagged = Record(new string('A', 64), now, now);
+        tagged.Type = ProfileType.File;
+        tagged.Tags = ["工作"];
+        var directory = Profile.CreateWorkingDir(f.GetHistoryPersistentDir(), tagged.Type, tagged.Hash);
+        var file = Path.Combine(directory, "data.txt");
+        await File.WriteAllTextAsync(file, "keep", Token);
+        var starred = Record("starred", now, now);
+        starred.Stared = true;
+        var pinned = Record("pinned", now, now);
+        pinned.Pinned = true;
+        f.Db.HistoryRecords.AddRange(tagged, starred, pinned, Record("unprotected", now, now));
+        await f.Db.SaveChangesAsync(Token);
+        await f.Manager.ClearUnprotectedLocalAsync(Token);
+        CollectionAssert.AreEquivalent(new[] { tagged.Hash, starred.Hash, pinned.Hash },
+            await f.Db.HistoryRecords.Select(r => r.Hash).ToArrayAsync(Token));
+        Assert.IsTrue(File.Exists(file));
+    }
+
+    [TestMethod]
     public async Task Expiration_RequiresBothActivityTimesToBeOldAndPreservesProtectedRecords()
     {
         await using var f = await Fixture.CreateAsync(Token);

@@ -877,12 +877,19 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         return records;
     }
 
-    public async Task ClearAllLocalAsync(CancellationToken token = default)
+    public Task ClearAllLocalAsync(CancellationToken token = default) => ClearLocalAsync(true, token);
+
+    public Task ClearUnprotectedLocalAsync(CancellationToken token = default) => ClearLocalAsync(false, token);
+
+    private async Task ClearLocalAsync(bool includeProtected, CancellationToken token)
     {
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        var all = await _dbContext.HistoryRecords.ToListAsync(token);
+        var query = _dbContext.HistoryRecords.AsQueryable();
+        if (!includeProtected)
+            query = query.Where(record => !record.Stared && !record.Pinned && record.Tags.Length == 0);
+        var all = await query.ToListAsync(token);
         foreach (var record in all)
         {
             try
@@ -895,6 +902,10 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
                 _logger.Write("HistoryManager", $"Failed to delete history record {record.Type}-{record.Hash}: {ex.Message}");
             }
         }
+
+        // Only a complete reset may remove directories belonging to retained records.
+        if (!includeProtected)
+            return;
 
         await Task.Run(() =>
         {
