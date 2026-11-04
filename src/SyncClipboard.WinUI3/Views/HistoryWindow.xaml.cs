@@ -46,11 +46,14 @@ namespace SyncClipboard.WinUI3.Views;
 
 public sealed partial class HistoryWindow : Window, IWindow, IDisposable
 {
+    private bool _tagsExpanded;
+
     private void TagFilterItems_LayoutUpdated(object? _, object __)
     {
         if (_TagFilterItems.ItemsPanelRoot is not { } panel)
             return;
 
+        var rowLimit = _tagsExpanded ? 3 : 1;
         var rows = 0;
         var rowTop = double.NegativeInfinity;
         var height = 0d;
@@ -61,16 +64,36 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
                 continue;
             if (bounds.Y > rowTop + 0.5)
             {
-                if (++rows > 3)
+                if (++rows > rowLimit)
                     break;
                 rowTop = bounds.Y;
             }
             height = Math.Max(height, bounds.Bottom);
         }
 
-        var maxHeight = rows > 3 ? height : double.PositiveInfinity;
+        if (rows <= 1 && _tagsExpanded)
+            SetTagsExpanded(false);
+        _ExpandTagsButton.Visibility = rows > 1 ? Visibility.Visible : Visibility.Collapsed;
+
+        var maxHeight = rows > rowLimit ? height : double.PositiveInfinity;
         if (Math.Abs(_TagFilterScroll.MaxHeight - maxHeight) > 0.5)
             _TagFilterScroll.MaxHeight = maxHeight;
+    }
+
+    private void ExpandTags_Click(object _, RoutedEventArgs __)
+    {
+        SetTagsExpanded(!_tagsExpanded);
+        TagFilterItems_LayoutUpdated(this, EventArgs.Empty);
+    }
+
+    private void SetTagsExpanded(bool expanded)
+    {
+        _tagsExpanded = expanded;
+        _TagFilterScroll.ChangeView(null, 0, null);
+        _ExpandTagsIcon.Glyph = expanded ? "\uE70E" : "\uE70D";
+        var label = expanded ? Strings.HistoryTagsCollapse : Strings.HistoryTagsExpand;
+        ToolTipService.SetToolTip(_ExpandTagsButton, label);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(_ExpandTagsButton, label);
     }
 
     private readonly HistoryViewModel _viewModel;

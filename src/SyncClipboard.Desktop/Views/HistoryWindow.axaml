@@ -225,40 +225,51 @@
                     </Button>
                 </StackPanel>
             </Grid>
-            <ScrollViewer x:Name="_TagFilterScroll"
-                          Grid.Row="2"
-                          Margin="20,0,12,0"
-                          IsVisible="{Binding IsTagBarVisible}"
-                          HorizontalScrollBarVisibility="Disabled"
-                          VerticalScrollBarVisibility="Auto">
-                <ScrollViewer.Resources>
-                    <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="{DynamicResource ControlStrokeColorDefault}" />
-                    <SolidColorBrush x:Key="ToggleButtonBorderBrushPointerOver" Color="{DynamicResource ControlStrokeColorDefault}" />
-                    <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{DynamicResource ControlStrokeColorOnAccentDefault}" />
-                    <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="{DynamicResource ControlStrokeColorOnAccentDefault}" />
-                </ScrollViewer.Resources>
-                <ItemsControl x:Name="_TagFilterItems" ItemsSource="{Binding TagOptions}" LayoutUpdated="TagFilterItems_LayoutUpdated">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:HistoryTagFilter">
-                            <ToggleButton Content="{Binding Text}"
-                                          IsChecked="{Binding IsSelected, Mode=TwoWay}"
-                                          Command="{Binding SelectCommand}"
-                                          CornerRadius="14"
-                                          Padding="10,4"
-                                          Margin="0,0,6,6"
-                                          MinHeight="28"
-                                          MaxWidth="220"
-                                          FontSize="12"
-                                          ToolTip.Tip="{Binding Text}" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+            <Grid Grid.Row="2"
+                  Margin="20,0,12,0"
+                  ColumnDefinitions="*,Auto"
+                  IsVisible="{Binding IsTagBarVisible}">
+                <ScrollViewer x:Name="_TagFilterScroll" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer.Resources>
+                        <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="{DynamicResource ControlStrokeColorDefault}" />
+                        <SolidColorBrush x:Key="ToggleButtonBorderBrushPointerOver" Color="{DynamicResource ControlStrokeColorDefault}" />
+                        <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{DynamicResource ControlStrokeColorOnAccentDefault}" />
+                        <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="{DynamicResource ControlStrokeColorOnAccentDefault}" />
+                    </ScrollViewer.Resources>
+                    <ItemsControl x:Name="_TagFilterItems" ItemsSource="{Binding TagOptions}" LayoutUpdated="TagFilterItems_LayoutUpdated">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:HistoryTagFilter">
+                                <ToggleButton Content="{Binding Text}"
+                                              IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              Command="{Binding SelectCommand}"
+                                              CornerRadius="14"
+                                              Padding="10,4"
+                                              Margin="0,0,6,6"
+                                              MinHeight="28"
+                                              MaxWidth="220"
+                                              FontSize="12"
+                                              ToolTip.Tip="{Binding Text}" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+                <Button x:Name="_ExpandTagsButton"
+                        Grid.Column="1"
+                        Classes="HistoryAction"
+                        Margin="8,0,0,0"
+                        VerticalAlignment="Top"
+                        IsVisible="False"
+                        ToolTip.Tip="{x:Static i18n:Strings.HistoryTagsExpand}"
+                        AutomationProperties.Name="{x:Static i18n:Strings.HistoryTagsExpand}"
+                        Click="ExpandTags_Click">
+                    <ui:FAFontIcon x:Name="_ExpandTagsIcon" Glyph="&#xE70D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                </Button>
+            </Grid>
             <Grid x:Name="_MainContentGrid"
                   Grid.Row="3"
                   ColumnDefinitions="*, Auto, 0"

@@ -31,11 +31,14 @@ namespace SyncClipboard.Desktop.Views;
 
 public partial class HistoryWindow : Window, IWindow
 {
+    private bool _tagsExpanded;
+
     private void TagFilterItems_LayoutUpdated(object? _, EventArgs __)
     {
         if (_TagFilterItems.ItemsPanelRoot is not { } panel)
             return;
 
+        var rowLimit = _tagsExpanded ? 3 : 1;
         var rows = 0;
         var rowTop = double.NegativeInfinity;
         var height = 0d;
@@ -46,16 +49,36 @@ public partial class HistoryWindow : Window, IWindow
                 continue;
             if (bounds.Y > rowTop + 0.5)
             {
-                if (++rows > 3)
+                if (++rows > rowLimit)
                     break;
                 rowTop = bounds.Y;
             }
             height = Math.Max(height, bounds.Bottom);
         }
 
-        var maxHeight = rows > 3 ? height : double.PositiveInfinity;
+        if (rows <= 1 && _tagsExpanded)
+            SetTagsExpanded(false);
+        _ExpandTagsButton.IsVisible = rows > 1;
+
+        var maxHeight = rows > rowLimit ? height : double.PositiveInfinity;
         if (Math.Abs(_TagFilterScroll.MaxHeight - maxHeight) > 0.5)
             _TagFilterScroll.MaxHeight = maxHeight;
+    }
+
+    private void ExpandTags_Click(object? _, RoutedEventArgs __)
+    {
+        SetTagsExpanded(!_tagsExpanded);
+        TagFilterItems_LayoutUpdated(this, EventArgs.Empty);
+    }
+
+    private void SetTagsExpanded(bool expanded)
+    {
+        _tagsExpanded = expanded;
+        _TagFilterScroll.Offset = default;
+        _ExpandTagsIcon.Glyph = expanded ? "\uE70E" : "\uE70D";
+        var label = expanded ? Strings.HistoryTagsCollapse : Strings.HistoryTagsExpand;
+        ToolTip.SetTip(_ExpandTagsButton, label);
+        Avalonia.Automation.AutomationProperties.SetName(_ExpandTagsButton, label);
     }
 
     private readonly HistoryViewModel _viewModel;
