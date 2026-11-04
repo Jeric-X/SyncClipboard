@@ -21,7 +21,7 @@ public partial class HistoryTagEditorViewModel : ObservableObject
 
     public HistoryTagEditorViewModel(IEnumerable<string> knownTags, IReadOnlyList<string[]> assignments)
     {
-        Title = string.Format(Strings.HistoryTagsSelected, assignments.Count);
+        Title = assignments.Count == 1 ? Strings.HistoryTagsEdit : string.Format(Strings.HistoryTagsSelected, assignments.Count);
         foreach (var name in knownTags.Concat(assignments.SelectMany(t => t)).Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal))
         {

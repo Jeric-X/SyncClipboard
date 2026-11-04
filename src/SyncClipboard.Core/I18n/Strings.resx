@@ -1664,4 +1664,7 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryTagsInvalid" xml:space="preserve">
     <value>Use 1–64 characters without line breaks or control characters; at most 32 tags per record.</value>
   </data>
+  <data name="HistoryTagsEdit" xml:space="preserve">
+    <value>Edit tags</value>
+  </data>
 </root>

@@ -1664,4 +1664,7 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryTagsInvalid" xml:space="preserve">
     <value>标签名称需为 1–64 个字符，不能含换行或控制字符；每条记录最多 32 个标签。</value>
   </data>
+  <data name="HistoryTagsEdit" xml:space="preserve">
+    <value>编辑标签</value>
+  </data>
 </root>
