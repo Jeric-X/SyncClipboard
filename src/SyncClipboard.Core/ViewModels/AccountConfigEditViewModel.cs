@@ -41,6 +41,12 @@ public partial class AccountConfigEditViewModel(
     [ObservableProperty]
     private bool hasError = false;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasWarning))]
+    private string? warningMessage;
+
+    public bool HasWarning => !string.IsNullOrEmpty(WarningMessage);
+
     public bool ShowTestResult => TestResult.HasValue;
     public bool IsTestSuccess => TestResult == true;
     public bool IsTestFailure => TestResult == false;
@@ -81,6 +87,7 @@ public partial class AccountConfigEditViewModel(
         TestResult = null;
         ErrorMessage = null;
         HasError = false;
+        WarningMessage = null;
         NotifyTestResultPropertiesChanged();
     }
 
@@ -321,6 +328,7 @@ public partial class AccountConfigEditViewModel(
         TestResult = null;
         ErrorMessage = null;
         HasError = false;
+        WarningMessage = null;
 
         NotifyTestResultPropertiesChanged();
 
@@ -342,9 +350,7 @@ public partial class AccountConfigEditViewModel(
             var syncConfig = _configManager.GetConfig<SyncConfig>();
             adapter.SetConfig(configInstance, syncConfig);
             adapter.SetProxy(ProxyManager.CurrentProxy);
-            adapter.ApplyConfig();
-
-            await adapter.TestConnectionAsync(cancellationToken);
+            WarningMessage = await adapter.TestConfigurationAsync(cancellationToken);
             TestResult = true;
         }
         catch (OperationCanceledException)
@@ -382,6 +388,7 @@ public partial class AccountConfigEditViewModel(
         // 清除之前的错误信息
         ErrorMessage = null;
         HasError = false;
+        WarningMessage = null;
 
         // 验证所有属性的格式正确性
         if (!ValidateProperties())

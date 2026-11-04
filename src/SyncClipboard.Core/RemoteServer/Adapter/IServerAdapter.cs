@@ -21,6 +21,15 @@ public interface IServerAdapter
     Task CleanupTempFilesAsync(CancellationToken cancellationToken = default);
 
     Task TestConnectionAsync(CancellationToken cancellationToken = default);
+
+    // Tests an edited configuration without activating it; a successful test may return a warning.
+    async Task<string?> TestConfigurationAsync(CancellationToken cancellationToken = default)
+    {
+        ApplyConfig();
+        await TestConnectionAsync(cancellationToken);
+        return null;
+    }
+
     void SetConfig(object config, SyncConfig syncConfig);
     void ApplyConfig();
     void SetProxy(IWebProxy proxy);
