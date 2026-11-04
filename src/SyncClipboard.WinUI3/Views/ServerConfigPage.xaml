@@ -87,6 +87,9 @@
                                SmallChange="1440"
                                LargeChange="10080" />
                 </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.ProtectTaggedRecords}" Description="{x:Bind i18n:Strings.ServerProtectTaggedRecordsDescription}">
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.ProtectTaggedRecords, Mode=TwoWay}" />
+                </ui:SettingsCard>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
         <local:ServerSettingDialog x:Name="_ServerSettingDialog" PrimaryButtonClick="ServerSettingDialog_OkClick" TextBoxName="{x:Bind i18n:Strings.Port}" />

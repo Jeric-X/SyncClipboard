@@ -16,6 +16,7 @@ public record class ServerConfig
     public string CertificatePemKeyPath { get; set; } = string.Empty;
     public bool EnableCustomConfigurationFile { get; set; } = false;
     public string CustomConfigurationFilePath { get; set; } = string.Empty;
+    public bool ProtectTaggedRecords { get; set; } = true;
     public uint MaxHistoryCount { get; set; } = 1000;
     public uint HistoryRetentionMinutes { get; set; } = 0;
 }

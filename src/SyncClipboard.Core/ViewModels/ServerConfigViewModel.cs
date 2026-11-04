@@ -44,6 +44,10 @@ public partial class ServerConfigViewModel : ObservableObject
     private uint historyRetentionMinutes;
     partial void OnHistoryRetentionMinutesChanged(uint value) => ServerConfig = ServerConfig with { HistoryRetentionMinutes = value };
 
+    [ObservableProperty]
+    private bool protectTaggedRecords;
+    partial void OnProtectTaggedRecordsChanged(bool value) => ServerConfig = ServerConfig with { ProtectTaggedRecords = value };
+
     [RelayCommand]
     private static void OpenCustomConfigDescLink()
     {
@@ -63,6 +67,7 @@ public partial class ServerConfigViewModel : ObservableObject
         CustomConfigurationFilePath = value.CustomConfigurationFilePath;
         MaxHistoryCount = value.MaxHistoryCount;
         HistoryRetentionMinutes = value.HistoryRetentionMinutes;
+        ProtectTaggedRecords = value.ProtectTaggedRecords;
         _configManager.SetConfig(value);
 
         OnPropertyChanged(nameof(ShowHttpsConfig));
@@ -106,6 +111,7 @@ public partial class ServerConfigViewModel : ObservableObject
         customConfigurationFilePath = serverConfig.CustomConfigurationFilePath;
         maxHistoryCount = serverConfig.MaxHistoryCount;
         historyRetentionMinutes = serverConfig.HistoryRetentionMinutes;
+        protectTaggedRecords = serverConfig.ProtectTaggedRecords;
     }
 
     public string? SetServerConfig(string portString, string username, string password)

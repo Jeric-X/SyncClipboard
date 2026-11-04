@@ -1643,4 +1643,10 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryTagsDontNotifyServer" xml:space="preserve">
     <value>当前服务器不再提示</value>
   </data>
+  <data name="ProtectTaggedRecords" xml:space="preserve">
+    <value>保护带标签的记录</value>
+  </data>
+  <data name="ServerProtectTaggedRecordsDescription" xml:space="preserve">
+    <value>带标签的记录视为收藏，不会被自动删除</value>
+  </data>
 </root>

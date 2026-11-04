@@ -1,4 +1,4 @@
-<UserControl x:Class="SyncClipboard.Desktop.Views.ServerConfigPage"
+﻿<UserControl x:Class="SyncClipboard.Desktop.Views.ServerConfigPage"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -99,6 +99,11 @@
                                    Increment="1440"
                                    ButtonSpinnerLocation="Right"
                                    FormatString="F0" />
+                </ui:FASettingsExpanderItem.Footer>
+            </ui:FASettingsExpanderItem>
+            <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ProtectTaggedRecords}" Description="{x:Static i18n:Strings.ServerProtectTaggedRecordsDescription}">
+                <ui:FASettingsExpanderItem.Footer>
+                    <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding ProtectTaggedRecords, Mode=TwoWay}" />
                 </ui:FASettingsExpanderItem.Footer>
             </ui:FASettingsExpanderItem>
         </ui:FASettingsExpander.Items>
