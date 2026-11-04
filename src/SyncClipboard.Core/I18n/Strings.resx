@@ -1685,4 +1685,10 @@ Choose whether to use the default location or select another folder.</value>
   <data name="ShowTagCounts" xml:space="preserve">
     <value>Show tag record counts</value>
   </data>
+  <data name="HistoryTagsExpand" xml:space="preserve">
+    <value>Expand tags</value>
+  </data>
+  <data name="HistoryTagsCollapse" xml:space="preserve">
+    <value>Collapse tags</value>
+  </data>
 </root>

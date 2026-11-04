@@ -1685,4 +1685,10 @@ Shift + 左键：选中连续范围</value>
   <data name="ShowTagCounts" xml:space="preserve">
     <value>显示标签记录数量</value>
   </data>
+  <data name="HistoryTagsExpand" xml:space="preserve">
+    <value>展开标签</value>
+  </data>
+  <data name="HistoryTagsCollapse" xml:space="preserve">
+    <value>收起标签</value>
+  </data>
 </root>

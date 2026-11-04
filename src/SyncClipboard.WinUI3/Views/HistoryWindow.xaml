@@ -140,7 +140,7 @@
                 </Button>
             </StackPanel>
         </Grid>
-        <Grid Grid.Row="1" Margin="20,8,8,8" ColumnDefinitions="*, Auto">
+        <Grid Grid.Row="1" Margin="20,8,8,0" ColumnDefinitions="*, Auto">
             <TextBox x:Name="_SearchTextBox"
                      Grid.Column="0"
                      VerticalContentAlignment="Center"
@@ -169,45 +169,59 @@
                 </Button>
             </StackPanel>
         </Grid>
-        <ScrollViewer x:Name="_TagFilterScroll"
-                      Grid.Row="2"
-                      Margin="20,0,12,0"
-                      Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsTagBarVisible), Mode=OneWay}"
-                      HorizontalScrollBarVisibility="Disabled"
-                      HorizontalScrollMode="Disabled"
-                      VerticalScrollBarVisibility="Auto"
-                      VerticalScrollMode="Enabled">
-            <ScrollViewer.Resources>
-                <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="{ThemeResource ControlStrokeColorDefault}" />
-                <SolidColorBrush x:Key="ToggleButtonBorderBrushPointerOver" Color="{ThemeResource ControlStrokeColorDefault}" />
-                <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{ThemeResource ControlStrokeColorOnAccentDefault}" />
-                <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="{ThemeResource ControlStrokeColorOnAccentDefault}" />
-            </ScrollViewer.Resources>
-            <ItemsControl x:Name="_TagFilterItems" ItemsSource="{x:Bind _viewModel.TagOptions, Mode=OneWay}" LayoutUpdated="TagFilterItems_LayoutUpdated">
-                <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <toolkit:WrapPanel />
-                    </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:HistoryTagFilter">
-                        <ToggleButton Content="{x:Bind Text, Mode=OneWay}"
-                                      Style="{StaticResource DefaultToggleButtonStyle}"
-                                      IsTabStop="False"
-                                      AllowFocusOnInteraction="False"
-                                      IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
-                                      Command="{x:Bind SelectCommand}"
-                                      CornerRadius="14"
-                                      Padding="10,4"
-                                      Margin="0,0,6,6"
-                                      MinHeight="28"
-                                      MaxWidth="220"
-                                      FontSize="12"
-                                      ToolTipService.ToolTip="{x:Bind Text, Mode=OneWay}" />
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+        <Grid Grid.Row="2"
+              Margin="20,12,12,0"
+              ColumnDefinitions="*,Auto"
+              Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsTagBarVisible), Mode=OneWay}">
+            <ScrollViewer x:Name="_TagFilterScroll"
+                          HorizontalScrollBarVisibility="Disabled"
+                          HorizontalScrollMode="Disabled"
+                          VerticalScrollBarVisibility="Auto"
+                          VerticalScrollMode="Enabled">
+                <ScrollViewer.Resources>
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="{ThemeResource ControlStrokeColorDefault}" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrushPointerOver" Color="{ThemeResource ControlStrokeColorDefault}" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{ThemeResource ControlStrokeColorOnAccentDefault}" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="{ThemeResource ControlStrokeColorOnAccentDefault}" />
+                </ScrollViewer.Resources>
+                <ItemsControl x:Name="_TagFilterItems" ItemsSource="{x:Bind _viewModel.TagOptions, Mode=OneWay}" LayoutUpdated="TagFilterItems_LayoutUpdated">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <toolkit:WrapPanel VerticalSpacing="6" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:HistoryTagFilter">
+                            <ToggleButton Content="{x:Bind Text, Mode=OneWay}"
+                                          Style="{StaticResource DefaultToggleButtonStyle}"
+                                          IsTabStop="False"
+                                          AllowFocusOnInteraction="False"
+                                          IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
+                                          Command="{x:Bind SelectCommand}"
+                                          CornerRadius="14"
+                                          Padding="10,4"
+                                          Margin="0,0,6,0"
+                                          MinHeight="28"
+                                          MaxWidth="220"
+                                          FontSize="12"
+                                          ToolTipService.ToolTip="{x:Bind Text, Mode=OneWay}" />
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+            <Button x:Name="_ExpandTagsButton"
+                    Grid.Column="1"
+                    Width="28"
+                    Height="28"
+                    Margin="8,0,0,0"
+                    VerticalAlignment="Top"
+                    Visibility="Collapsed"
+                    ToolTipService.ToolTip="{x:Bind i18n:Strings.HistoryTagsExpand}"
+                    AutomationProperties.Name="{x:Bind i18n:Strings.HistoryTagsExpand}"
+                    Click="ExpandTags_Click">
+                <FontIcon x:Name="_ExpandTagsIcon" Glyph="&#xE70D;" />
+            </Button>
+        </Grid>
         <Grid Grid.Row="3"
               x:Name="_MainContentGrid"
               ColumnDefinitions="Auto, Auto, *"
@@ -289,6 +303,7 @@
                     Grid.Row="0"
                     Grid.Column="1"
                     Width="2"
+                    Margin="0,12,0,0"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Stretch"
                     Background="{ThemeResource SystemControlForegroundBaseLowBrush}"
