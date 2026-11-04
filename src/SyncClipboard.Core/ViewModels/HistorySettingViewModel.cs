@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
@@ -32,6 +32,7 @@ public partial class HistorySettingViewModel : ObservableObject
         enableHistory = config.EnableHistory;
         enableSyncHistory = config.EnableSyncHistory;
         autoDeleteMissingLocalFiles = config.AutoDeleteMissingLocalFiles;
+        protectTaggedRecords = config.ProtectTaggedRecords;
         maxItemCount = config.MaxItemCount;
         historyRetentionMinutes = config.HistoryRetentionMinutes;
 
@@ -47,6 +48,7 @@ public partial class HistorySettingViewModel : ObservableObject
         EnableHistory = config.EnableHistory;
         EnableSyncHistory = config.EnableSyncHistory;
         AutoDeleteMissingLocalFiles = config.AutoDeleteMissingLocalFiles;
+        ProtectTaggedRecords = config.ProtectTaggedRecords;
         MaxItemCount = config.MaxItemCount;
         HistoryRetentionMinutes = config.HistoryRetentionMinutes;
     }
@@ -68,6 +70,7 @@ public partial class HistorySettingViewModel : ObservableObject
             EnableHistory = EnableHistory,
             EnableSyncHistory = EnableSyncHistory,
             AutoDeleteMissingLocalFiles = AutoDeleteMissingLocalFiles,
+            ProtectTaggedRecords = ProtectTaggedRecords,
             MaxItemCount = MaxItemCount,
             HistoryRetentionMinutes = HistoryRetentionMinutes
         };
@@ -84,6 +87,10 @@ public partial class HistorySettingViewModel : ObservableObject
     [ObservableProperty]
     private bool autoDeleteMissingLocalFiles;
     partial void OnAutoDeleteMissingLocalFilesChanged(bool value) => _configManager.SetConfig(GetCurrentRecord() with { AutoDeleteMissingLocalFiles = value });
+
+    [ObservableProperty]
+    private bool protectTaggedRecords;
+    partial void OnProtectTaggedRecordsChanged(bool value) => _configManager.SetConfig(GetCurrentRecord() with { ProtectTaggedRecords = value });
 
     [ObservableProperty]
     private uint maxItemCount;
