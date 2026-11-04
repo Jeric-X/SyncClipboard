@@ -194,7 +194,7 @@
                     <ui:FAFontIcon Glyph="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                 </Button>
             </StackPanel>
-            <Grid Grid.Row="1" Margin="20,8,8,8" ColumnDefinitions="*, Auto">
+            <Grid Grid.Row="1" Margin="20,8,8,0" ColumnDefinitions="*, Auto">
                 <TextBox x:Name="_SearchTextBox"
                          Grid.Column="0"
                          VerticalContentAlignment="Center"
@@ -226,7 +226,7 @@
                 </StackPanel>
             </Grid>
             <Grid Grid.Row="2"
-                  Margin="20,0,12,0"
+                  Margin="20,12,12,0"
                   ColumnDefinitions="*,Auto"
                   IsVisible="{Binding IsTagBarVisible}">
                 <ScrollViewer x:Name="_TagFilterScroll" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
@@ -239,7 +239,7 @@
                     <ItemsControl x:Name="_TagFilterItems" ItemsSource="{Binding TagOptions}" LayoutUpdated="TagFilterItems_LayoutUpdated">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
-                                <WrapPanel />
+                                <WrapPanel LineSpacing="6" />
                             </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
@@ -249,7 +249,7 @@
                                               Command="{Binding SelectCommand}"
                                               CornerRadius="14"
                                               Padding="10,4"
-                                              Margin="0,0,6,6"
+                                              Margin="0,0,6,0"
                                               MinHeight="28"
                                               MaxWidth="220"
                                               FontSize="12"
