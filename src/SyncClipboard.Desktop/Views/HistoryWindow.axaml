@@ -227,7 +227,7 @@
             </Grid>
             <ScrollViewer x:Name="_TagFilterScroll"
                           Grid.Row="2"
-                          Margin="20,0,12,8"
+                          Margin="20,0,12,0"
                           IsVisible="{Binding IsTagBarVisible}"
                           HorizontalScrollBarVisibility="Disabled"
                           VerticalScrollBarVisibility="Auto">

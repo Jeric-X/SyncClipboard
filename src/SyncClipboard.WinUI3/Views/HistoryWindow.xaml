@@ -171,7 +171,7 @@
         </Grid>
         <ScrollViewer x:Name="_TagFilterScroll"
                       Grid.Row="2"
-                      Margin="20,0,12,8"
+                      Margin="20,0,12,0"
                       Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsTagBarVisible), Mode=OneWay}"
                       HorizontalScrollBarVisibility="Disabled"
                       HorizontalScrollMode="Disabled"
