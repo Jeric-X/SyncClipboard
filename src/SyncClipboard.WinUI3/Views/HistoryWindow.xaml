@@ -303,6 +303,7 @@
                     Grid.Row="0"
                     Grid.Column="1"
                     Width="2"
+                    Margin="0,12,0,0"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Stretch"
                     Background="{ThemeResource SystemControlForegroundBaseLowBrush}"
