@@ -17,7 +17,7 @@
                     Content="{x:Static i18n:Strings.HistoryTagsAdd}"
                     Command="{Binding AddCommand}" />
         </Grid>
-        <ScrollViewer MaxHeight="280">
+        <ScrollViewer Height="280">
             <ItemsControl ItemsSource="{Binding FilteredChoices}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:HistoryTagChoice">

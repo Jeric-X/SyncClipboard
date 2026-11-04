@@ -17,7 +17,7 @@
     <StackPanel Width="420" Spacing="10">
         <TextBox Text="{Binding Search, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{x:Bind i18n:Strings.HistoryTagsSearch}" />
         <Button Content="{x:Bind i18n:Strings.HistoryTagsAdd}" Command="{Binding AddCommand}" />
-        <ScrollViewer MaxHeight="280">
+        <ScrollViewer Height="280">
             <ItemsControl ItemsSource="{Binding FilteredChoices}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
