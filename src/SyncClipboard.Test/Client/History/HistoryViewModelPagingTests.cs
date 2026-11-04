@@ -139,6 +139,95 @@ public class HistoryViewModelPagingTests
         fixture.Logger.VerifyNoOtherCalls();
     }
 
+    [TestMethod]
+    public async Task TagBar_SelectsCancelsAndClearsFilterWhenHidden()
+    {
+        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
+        await fixture.AddTagsAsync();
+        fixture.InitializeTags();
+        await fixture.ViewModel.RefreshTagOptionsAsync();
+        var red = fixture.ViewModel.TagOptions.Single(option => option.Name == "Red");
+        Assert.AreEqual("Red", red.Text);
+        fixture.ViewModel.ShowTagCounts = true;
+        Assert.AreEqual("Red (50)", red.Text);
+        Assert.AreEqual("Blue (34)", fixture.ViewModel.TagOptions.Single(option => option.Name == "Blue").Text);
+
+        red.SelectCommand.Execute(null);
+        await fixture.ReloadAsync();
+        Assert.IsTrue(fixture.Records.All(record => record.Tags.Contains("Red")));
+        Assert.IsTrue(red.IsSelected);
+        red.SelectCommand.Execute(null);
+        await fixture.ReloadAsync();
+        Assert.IsTrue(fixture.Records.Any(record => !record.Tags.Contains("Red")));
+        Assert.IsTrue(fixture.ViewModel.TagOptions.Single(option => option.Name is null).IsSelected);
+
+        red.SelectCommand.Execute(null);
+        await fixture.ReloadAsync();
+        fixture.ViewModel.ShowTagBar = false;
+        await fixture.ReloadAsync();
+        await fixture.ViewModel.SetCurrentFilterSelectionAsync(true);
+        Assert.AreEqual(100, fixture.ViewModel.SelectedHistoryCount);
+        Assert.IsFalse(fixture.ViewModel.IsTagBarVisible);
+        var reloaded = new ConfigBase(fixture.RuntimeConfig.Path).GetConfig<HistoryWindowConfig>();
+        Assert.IsFalse(reloaded.ShowTagBar);
+        Assert.IsTrue(reloaded.ShowTagCounts);
+        Assert.IsEmpty(reloaded.SelectedTags);
+        fixture.ViewModel.ShowTagBar = true;
+        Assert.IsTrue(fixture.ViewModel.IsTagBarVisible);
+        Assert.IsTrue(fixture.ViewModel.TagOptions.Single(option => option.Name is null).IsSelected);
+        fixture.Logger.VerifyNoOtherCalls();
+    }
+
+    [TestMethod]
+    public async Task TagBar_RefreshCoalescesChangesAndRetainsAnEmptySelectedTag()
+    {
+        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
+        await fixture.AddTagsAsync();
+        fixture.InitializeTags();
+        await fixture.ViewModel.RefreshTagOptionsAsync();
+        fixture.ViewModel.ShowTagCounts = true;
+        fixture.ViewModel.TagOptions.Single(option => option.Name == "red").SelectCommand.Execute(null);
+        await fixture.ReloadAsync();
+        var firstResultReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseFirstResult = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var publications = 0;
+        fixture.Dispatcher.Setup(value => value.RunOnMainThreadAsync(It.IsAny<Action>())).Returns(async (Action action) =>
+        {
+            if (Interlocked.Increment(ref publications) == 1)
+            {
+                firstResultReady.SetResult();
+                await releaseFirstResult.Task;
+            }
+            action();
+        });
+        var refreshes = new List<Task>();
+        try
+        {
+            for (var i = 0; i < 100; i++)
+                refreshes.Add(fixture.ViewModel.RefreshTagOptionsAsync());
+            await firstResultReady.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
+            await fixture.ReplaceTagsAsync("red", "new");
+            for (var i = 0; i < 100; i++)
+                refreshes.Add(fixture.ViewModel.RefreshTagOptionsAsync());
+            releaseFirstResult.SetResult();
+            await Task.WhenAll(refreshes).WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
+            Assert.AreEqual(2, publications);
+            Assert.AreEqual("new (33)", fixture.ViewModel.TagOptions.Single(option => option.Name == "new").Text);
+            var selected = fixture.ViewModel.TagOptions.Single(option => option.Name == "red");
+            Assert.AreEqual("red (0)", selected.Text);
+            Assert.IsTrue(selected.IsSelected);
+            selected.SelectCommand.Execute(null);
+            await fixture.ReloadAsync();
+            Assert.HasCount(20, fixture.Records);
+            fixture.Logger.VerifyNoOtherCalls();
+        }
+        finally
+        {
+            releaseFirstResult.TrySetResult();
+            await Task.WhenAll(refreshes);
+        }
+    }
+
     private sealed class Fixture : IAsyncDisposable
     {
         private readonly HistoryDbContext db = new();
@@ -150,6 +239,7 @@ public class HistoryViewModelPagingTests
         public HistoryViewModel ViewModel { get; } = (HistoryViewModel)RuntimeHelpers.GetUninitializedObject(typeof(HistoryViewModel));
         public ObservableList<HistoryRecordVM> Records { get; } = [];
         public ConfigBase RuntimeConfig { get; } = CreateRuntimeConfig();
+        public Mock<IThreadDispatcher> Dispatcher { get; } = new();
         public Mock<ILogger> Logger { get; } = new();
         public bool MetricsAvailable { get; set; }
         public double ViewportHeight { get; set; }
@@ -181,14 +271,13 @@ public class HistoryViewModelPagingTests
             SetField(ViewModel, "<HistoryItems>k__BackingField", view.ToNotifyCollectionChanged());
             SetField(ViewModel, "_loader", new SingletonTask());
             SetField(ViewModel, "logger", Logger.Object);
-            var dispatcher = new Mock<IThreadDispatcher>();
-            dispatcher.Setup(value => value.RunOnMainThreadAsync(It.IsAny<Action>()))
+            Dispatcher.Setup(value => value.RunOnMainThreadAsync(It.IsAny<Action>()))
                 .Returns((Action action) =>
                 {
                     action();
                     return Task.CompletedTask;
                 });
-            SetField(ViewModel, "_threadDispatcher", dispatcher.Object);
+            SetField(ViewModel, "_threadDispatcher", Dispatcher.Object);
             var selection = typeof(HistoryViewModel).GetField("selectedHistoryRecords", BindingFlags.Instance | BindingFlags.NonPublic)!;
             selection.SetValue(ViewModel, Activator.CreateInstance(selection.FieldType));
             SetField(ViewModel, "visibleSelectedItems", new ObservableCollection<HistoryRecordVM>());
@@ -227,6 +316,16 @@ public class HistoryViewModelPagingTests
         public Task LoadAsync() => (Task)typeof(HistoryViewModel)
             .GetMethod("LoadPagesAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
             .Invoke(ViewModel, [20, CancellationToken.None])!;
+
+        public void InitializeTags() => typeof(HistoryViewModel)
+            .GetMethod("InitializeTagRefresh", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(ViewModel, null);
+
+        public async Task ReplaceTagsAsync(string oldTag, string newTag)
+        {
+            foreach (var record in db.HistoryRecords.Local)
+                record.Tags = record.Tags.Select(tag => tag == oldTag ? newTag : tag).ToArray();
+            await db.SaveChangesAsync();
+        }
 
         public async Task AddTagsAsync()
         {
@@ -276,6 +375,7 @@ public class HistoryViewModelPagingTests
             if (consumer is not null)
                 await consumer;
             cancellation?.Dispose();
+            await ViewModel.RefreshTagOptionsAsync();
             await db.DisposeAsync();
             await services.DisposeAsync();
             semaphore.Dispose();

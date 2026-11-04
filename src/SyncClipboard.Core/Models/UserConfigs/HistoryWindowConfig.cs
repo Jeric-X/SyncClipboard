@@ -15,6 +15,8 @@ public record class HistoryWindowConfig
     public bool ShowSyncState { get; set; } = true;
     public string[] SelectedTags { get; init; } = [];
     public bool OnlyShowStarred { get; set; } = false;
+    public bool ShowTagCounts { get; init; } = false;
+    public bool ShowTagBar { get; init; } = true;
     public bool ShowStarredFilter { get; set; } = false;
     public bool SortByLastAccessed { get; set; } = false;
     public int FontScalePercent { get; set; } = 100;
