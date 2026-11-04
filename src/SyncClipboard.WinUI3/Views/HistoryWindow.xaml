@@ -186,6 +186,7 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:HistoryTagFilter">
                         <ToggleButton Content="{x:Bind Text, Mode=OneWay}"
+                                      BorderThickness="0"
                                       Style="{StaticResource DefaultToggleButtonStyle}"
                                       IsTabStop="False"
                                       AllowFocusOnInteraction="False"

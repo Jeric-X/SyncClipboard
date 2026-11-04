@@ -240,6 +240,7 @@
                     <ItemsControl.ItemTemplate>
                         <DataTemplate x:DataType="vm:HistoryTagFilter">
                             <ToggleButton Content="{Binding Text}"
+                                          BorderThickness="0"
                                           IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                           Command="{Binding SelectCommand}"
                                           CornerRadius="14"
