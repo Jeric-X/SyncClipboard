@@ -6,19 +6,23 @@ public readonly record struct HistoryTagPlacement(double X, double Y, double Wid
 public sealed record HistoryTagOverflowLayout(HistoryTagPlacement[] Tags, HistoryTagPlacement? More, double Height)
 {
     public static HistoryTagOverflowLayout Calculate(
-        IReadOnlyList<HistoryTagSize> tags, HistoryTagSize more, double width, double height, double lineSpacing = 0)
+        IEnumerable<HistoryTagSize> tags, HistoryTagSize more, double width, double height, double lineSpacing = 0)
     {
         width = Math.Max(0, width);
         height = Math.Max(0, height);
         var placements = new List<HistoryTagPlacement>();
         double x = 0, y = 0, rowHeight = 0;
+        var overflowed = false;
         foreach (var tag in tags)
         {
             if (!TryPlace(tag, width, height, lineSpacing, ref x, ref y, ref rowHeight, out var placement))
+            {
+                overflowed = true;
                 break;
+            }
             placements.Add(placement);
         }
-        if (placements.Count == tags.Count)
+        if (!overflowed)
             return AlignRows(placements, null, width, y + rowHeight);
 
         // Reserve room for the overflow chip, removing the last visible tags as needed.

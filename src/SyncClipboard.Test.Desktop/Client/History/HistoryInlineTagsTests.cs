@@ -86,14 +86,31 @@ public class HistoryInlineTagsTests
                 window.UpdateLayout();
             }
 
-            async Task RemoveAndRefresh(Button button)
+            async Task RemoveAndRefresh(Button button, bool keyboard = false)
             {
                 var saved = new TaskCompletionSource<HistoryRecord>(TaskCreationOptions.RunContinuationsAsynchronously);
                 void OnSaved(HistoryRecord updated) => saved.TrySetResult(updated);
                 fixture.Manager.HistoryUpdated += OnSaved;
                 try
                 {
-                    Click(button);
+                    if (keyboard)
+                    {
+                        for (var i = 0; i < names.Length && !button.IsFocused; i++)
+                        {
+                            var top = window.FocusManager?.GetFocusedElement() is Control focused
+                                ? TopLevel.GetTopLevel(focused)! : window;
+                            top.KeyPress(Key.Tab, RawInputModifiers.None, PhysicalKey.Tab, null);
+                            top.KeyRelease(Key.Tab, RawInputModifiers.None, PhysicalKey.Tab, null);
+                        }
+                        Assert.IsTrue(button.IsFocused);
+                        var focusedTop = TopLevel.GetTopLevel(button)!;
+                        focusedTop.KeyPress(Key.Space, RawInputModifiers.None, PhysicalKey.Space, null);
+                        focusedTop.KeyRelease(Key.Space, RawInputModifiers.None, PhysicalKey.Space, null);
+                    }
+                    else
+                    {
+                        Click(button);
+                    }
                     var update = await saved.Task.WaitAsync(TimeSpan.FromSeconds(5), token);
                     fixture.Publish(new HistoryRecordVM(update));
                     Layout();
@@ -110,6 +127,7 @@ public class HistoryInlineTagsTests
                 Layout();
                 Assert.AreEqual(40, row.Bounds.Height);
                 VerifyAccessibleButtons();
+                Assert.IsLessThan(names.Length, tags.Children.OfType<HistoryRecordTagChip>().Count());
                 var hiddenChip = tags.Children.OfType<HistoryRecordTagChip>().First(chip => !InBounds(chip));
                 var hiddenButton = hiddenChip.GetVisualDescendants().OfType<Button>().Single();
                 var invoke = (IInvokeProvider)ControlAutomationPeer.CreatePeerForElement(hiddenButton)!;
@@ -153,13 +171,22 @@ public class HistoryInlineTagsTests
 
                 var removed = Labels().First()!;
                 await RemoveAndRefresh(popup.GetVisualDescendants().OfType<Button>()
-                    .Single(b => b.DataContext is HistoryPreviewTag tag && tag.Name == removed));
+                    .Single(b => b.DataContext is HistoryPreviewTag tag && tag.Name == removed), keyboard: true);
                 var remaining = names.Where(n => n != removed).ToArray();
                 CollectionAssert.AreEqual(remaining, (await fixture.ReadStoredRecordAsync(record)).Tags);
                 CollectionAssert.AreEqual(names, (await fixture.ReadStoredRecordAsync(other)).Tags);
                 CollectionAssert.AreEqual(remaining[VisibleTags().Length..], Labels());
                 Assert.AreEqual($"+{remaining.Length - VisibleTags().Length}", more.Content);
                 Assert.IsTrue(flyout.IsOpen);
+
+                var nextButton = popup.GetVisualDescendants().OfType<Button>().First();
+                Assert.IsTrue(nextButton.IsFocused);
+                var pointerRemoved = ((HistoryPreviewTag)nextButton.DataContext!).Name;
+                await RemoveAndRefresh(nextButton);
+                remaining = remaining.Where(n => n != pointerRemoved).ToArray();
+                CollectionAssert.AreEqual(remaining, (await fixture.ReadStoredRecordAsync(record)).Tags);
+                CollectionAssert.AreEqual(names, (await fixture.ReadStoredRecordAsync(other)).Tags);
+                CollectionAssert.AreEqual(remaining[VisibleTags().Length..], Labels());
 
                 fixture.ViewModel.SelectedItem = other;
                 Layout();

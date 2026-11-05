@@ -49,7 +49,8 @@ public sealed class HistoryInlineTagsView : Panel
         CornerRadius = new CornerRadius(5)
     };
     private HistoryPreviewTag[] _tags = [];
-    private HistoryTagSize[] _sizes = [];
+    private int _measuredForWidth;
+    private int _measuredCount;
     private int _visibleCount = -1;
     private WrapPanel? _expanded;
     private Flyout? _flyout;
@@ -85,12 +86,6 @@ public sealed class HistoryInlineTagsView : Panel
         _tags = tags;
         _visibleCount = -1;
         Children.RemoveRange(0, Children.Count - 1);
-        foreach (var tag in tags)
-        {
-            var chip = CreateChip(tag);
-            chip.Margin = new Thickness(4, 0, 0, 0);
-            Children.Insert(Children.Count - 1, chip);
-        }
         if (tags.Length == 0)
             _flyout?.Hide();
         InvalidateMeasure();
@@ -113,24 +108,55 @@ public sealed class HistoryInlineTagsView : Panel
     {
         // DockPanel measures this column before the record. Leave at least half the content width for the text or image.
         var width = Math.Min(200, availableSize.Width / 2);
-        foreach (var child in Children)
-            child.Measure(new Size(width, double.PositiveInfinity));
-        _sizes = Children.Take(_tags.Length).Select(c => new HistoryTagSize(c.DesiredSize.Width, c.DesiredSize.Height)).ToArray();
+        _more.Measure(new Size(width, double.PositiveInfinity));
+        _measuredForWidth = 0;
+        var desiredWidth = 0d;
+        foreach (var size in MeasureTags(width))
+        {
+            _measuredForWidth++;
+            desiredWidth += size.Width;
+            if (desiredWidth >= width)
+                break;
+        }
         // Only the record content and its controls determine row height.
-        return new Size(Math.Min(width, _sizes.Sum(size => size.Width)), 0);
+        return new Size(Math.Min(width, desiredWidth), 0);
+    }
+
+    private IEnumerable<HistoryTagSize> MeasureTags(double width)
+    {
+        _measuredCount = 0;
+        for (var i = 0; i < _tags.Length; i++)
+        {
+            if (i == Children.Count - 1)
+            {
+                var chip = CreateChip(_tags[i]);
+                chip.Margin = new Thickness(4, 0, 0, 0);
+                Children.Insert(i, chip);
+            }
+            var child = Children[i];
+            child.Measure(new Size(width, double.PositiveInfinity));
+            _measuredCount++;
+            yield return new(child.DesiredSize.Width, child.DesiredSize.Height);
+        }
     }
 
     protected override Size ArrangeOverride(Size finalSize)
     {
         var more = new HistoryTagSize(_more.DesiredSize.Width, _more.DesiredSize.Height);
-        var layout = HistoryTagOverflowLayout.Calculate(_sizes, more, finalSize.Width, finalSize.Height, lineSpacing: 4);
+        var layout = HistoryTagOverflowLayout.Calculate(MeasureTags(finalSize.Width), more,
+            finalSize.Width, finalSize.Height, lineSpacing: 4);
+        // Keep the measured prefix and the first item that did not fit; the rest stay as data.
+        var keep = Math.Max(_measuredForWidth, _measuredCount);
+        if (Children.Count - 1 > keep)
+            Children.RemoveRange(keep, Children.Count - 1 - keep);
         var hiddenCount = _tags.Length - layout.Tags.Length;
         _more.Content = layout.More.HasValue ? $"+{hiddenCount}" : null;
         var top = Math.Max(0, (finalSize.Height - layout.Height) / 2);
         // Keep overflow items measured for resizing; their slots lie entirely outside the clipped panel.
         for (var i = 0; i < Children.Count; i++)
         {
-            HistoryTagPlacement? slot = i == _tags.Length ? layout.More : i < layout.Tags.Length ? layout.Tags[i] : null;
+            var childIsMore = Children[i] == _more;
+            HistoryTagPlacement? slot = childIsMore ? layout.More : i < layout.Tags.Length ? layout.Tags[i] : null;
             var child = Children[i];
             var rect = slot is { } p ? new Rect(p.X, top + p.Y, p.Width, p.Height)
                 : new Rect(finalSize.Width + 1, 0, child.DesiredSize.Width, child.DesiredSize.Height);
@@ -165,9 +191,27 @@ public sealed class HistoryInlineTagsView : Panel
 
     private void FillPopup(WrapPanel expanded)
     {
+        var focused = expanded.Children.FirstOrDefault(chip => chip.IsKeyboardFocusWithin);
+        var previousIndex = focused is null ? -1 : expanded.Children.IndexOf(focused);
         expanded.Children.Clear();
         for (var i = _visibleCount; i < _tags.Length; i++)
-            expanded.Children.Add(CreateChip(_tags[i]));
+        {
+            var chip = CreateChip(_tags[i]);
+            chip.EnableKeyboardRemoval();
+            expanded.Children.Add(chip);
+        }
+        if (previousIndex >= 0)
+        {
+            var previousTag = focused!.DataContext;
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (_expanded != expanded || expanded.Children.Count == 0 || expanded.IsKeyboardFocusWithin)
+                    return;
+                var next = expanded.Children.FirstOrDefault(chip => Equals(chip.DataContext, previousTag))
+                    ?? expanded.Children[Math.Min(previousIndex, expanded.Children.Count - 1)];
+                ((HistoryRecordTagChip)next).FocusRemoval();
+            }, DispatcherPriority.Input);
+        }
     }
 
     private void ShowMore(object? _, RoutedEventArgs e)
