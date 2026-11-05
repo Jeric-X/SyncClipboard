@@ -1251,6 +1251,9 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryMultiSelectUnstar" xml:space="preserve">
     <value>取消收藏</value>
   </data>
+  <data name="HistoryMultiSelectEnter" xml:space="preserve">
+    <value>多选</value>
+  </data>
   <data name="HistoryMultiSelectExit" xml:space="preserve">
     <value>退出多选</value>
   </data>

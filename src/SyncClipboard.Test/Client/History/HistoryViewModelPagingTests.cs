@@ -351,13 +351,58 @@ public class HistoryViewModelPagingTests
         }
     }
 
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ContextMenu_StarExportAndDeleteUseTheCurrentSelectionScope(bool multiple)
+    {
+        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
+        await fixture.LoadAsync();
+        var clicked = fixture.Records[0];
+        var targets = multiple ? new[] { fixture.Records[1], fixture.Records[2] } : [clicked];
+        if (multiple)
+        {
+            var (_, enterCommand, enterParameter) = fixture.ViewModel.BuildHistoryMenuCommands(targets[0])
+                .Single(item => item.Text == SyncClipboard.Core.I18n.Strings.HistoryMultiSelectEnter);
+            enterCommand.Execute(enterParameter);
+            Assert.IsTrue(fixture.ViewModel.IsMultiSelecting);
+            CollectionAssert.AreEqual(new[] { targets[0].Key }, fixture.ViewModel.GetTagEditSelection());
+            fixture.ViewModel.EnterMultiSelect(targets[1]);
+        }
+        var commands = fixture.ViewModel.BuildHistoryMenuCommands(clicked);
+        var (_, starCommand, starParameter) = commands.Single(item => item.Text == SyncClipboard.Core.I18n.Strings.HistoryMultiSelectStar);
+        await ((CommunityToolkit.Mvvm.Input.IAsyncRelayCommand)starCommand).ExecuteAsync(starParameter);
+        foreach (var record in targets)
+            Assert.IsTrue((await fixture.ReadStoredRecordAsync(record)).Stared);
+        var untouched = multiple ? clicked : fixture.Records[1];
+        Assert.IsFalse((await fixture.ReadStoredRecordAsync(untouched)).Stared);
+
+        IReadOnlyList<HistoryRecordKey>? exported = null;
+        fixture.ExportDialog.Setup(dialog => dialog.ShowAsync(It.IsAny<IReadOnlyList<HistoryRecordKey>?>(), true))
+            .Callback<IReadOnlyList<HistoryRecordKey>?, bool>((keys, _) => exported = keys)
+            .Returns(Task.CompletedTask);
+        var (_, exportCommand, exportParameter) = commands.Single(item => item.Text == SyncClipboard.Core.I18n.Strings.HistoryExportSelected);
+        await ((CommunityToolkit.Mvvm.Input.IAsyncRelayCommand)exportCommand).ExecuteAsync(exportParameter);
+        Assert.IsNotNull(exported);
+        CollectionAssert.AreEquivalent(targets.Select(record => record.Key).ToArray(), exported.ToArray());
+
+        var (_, deleteCommand, deleteParameter) = commands.Single(item => item.Text == SyncClipboard.Core.I18n.Strings.HistoryMultiSelectDelete);
+        await ((CommunityToolkit.Mvvm.Input.IAsyncRelayCommand)deleteCommand).ExecuteAsync(deleteParameter);
+        foreach (var record in targets)
+            Assert.IsTrue((await fixture.ReadStoredRecordAsync(record)).IsDeleted);
+        Assert.IsFalse((await fixture.ReadStoredRecordAsync(untouched)).IsDeleted);
+        fixture.ConfirmationDialog.Verify(dialog => dialog.ShowConfirmationAsync(It.IsAny<string>(), It.IsAny<string>()),
+            multiple ? Times.Exactly(2) : Times.Never());
+        fixture.Logger.VerifyNoOtherCalls();
+    }
+
     private sealed class Fixture : IAsyncDisposable
     {
         private readonly HistoryDbContext db = new();
         private readonly SemaphoreSlim semaphore = new(1, 1);
-        private readonly ServiceProvider services = new ServiceCollection()
-            .AddSingleton(Mock.Of<IThreadDispatcher>())
-            .AddSingleton(Mock.Of<IProfileEnv>()).BuildServiceProvider();
+        private readonly ServiceProvider services;
+        public Mock<IHistoryExportDialog> ExportDialog { get; } = new();
+        public Mock<IMainWindowDialog> ConfirmationDialog { get; } = new();
         private readonly AppCore? previousApp = AppCore.TryGetCurrent();
         public HistoryViewModel ViewModel { get; } = (HistoryViewModel)RuntimeHelpers.GetUninitializedObject(typeof(HistoryViewModel));
         public ObservableList<HistoryRecordVM> Records { get; } = [];
@@ -377,15 +422,26 @@ public class HistoryViewModelPagingTests
         private Fixture()
         {
             // Keep application startup, user configuration, and the real history database out of this test.
+            var profileEnv = Mock.Of<IProfileEnv>(env => env.GetHistoryPersistentDir() == Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString()));
+            ConfirmationDialog.Setup(dialog => dialog.ShowConfirmationAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+            services = new ServiceCollection()
+                .AddSingleton(Mock.Of<IThreadDispatcher>())
+                .AddSingleton(profileEnv)
+                .AddSingleton(ExportDialog.Object)
+                .AddKeyedSingleton<IMainWindowDialog>("HistoryWindow", ConfirmationDialog.Object)
+                .BuildServiceProvider();
             var app = (AppCore)RuntimeHelpers.GetUninitializedObject(typeof(AppCore));
             SetField(app, "<Services>k__BackingField", services);
             typeof(AppCore).GetField("_current", BindingFlags.Static | BindingFlags.NonPublic)!.SetValue(null, app);
             var manager = (HistoryManager)RuntimeHelpers.GetUninitializedObject(typeof(HistoryManager));
             SetField(manager, "_dbContext", db);
             SetField(manager, "_dbSemaphore", semaphore);
+            SetField(manager, "_profileEnv", profileEnv);
+            SetField(manager, "_runtimeHistoryConfig", new RuntimeHistoryConfig());
             var queue = (HistoryTransferQueue)RuntimeHelpers.GetUninitializedObject(typeof(HistoryTransferQueue));
             SetField(queue, "_activeTasks", new ConcurrentDictionary<string, TransferTask>());
             SetField(ViewModel, "historyManager", manager);
+            SetField(ViewModel, "_serviceProvider", services);
             SetField(ViewModel, "runtimeConfig", RuntimeConfig);
             ViewModel.TagOptions = [];
             SetField(ViewModel, "_selectedTags", Array.Empty<string>());
@@ -437,6 +493,9 @@ public class HistoryViewModelPagingTests
             await fixture.db.SaveChangesAsync(token);
             return fixture;
         }
+
+        public Task<HistoryRecord> ReadStoredRecordAsync(HistoryRecordVM record) =>
+            db.HistoryRecords.AsNoTracking().SingleAsync(item => item.Hash == record.Hash && item.Type == record.Type);
 
         public Task LoadAsync() => (Task)typeof(HistoryViewModel)
             .GetMethod("LoadPagesAsync", BindingFlags.Instance | BindingFlags.NonPublic)!

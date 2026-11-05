@@ -1396,22 +1396,6 @@ public partial class HistoryViewModel : ObservableObject
     private async Task<List<MenuItem>> BuildActionsCoreAsync(HistoryRecordVM record, CancellationToken token)
     {
         var actions = new List<MenuItem>();
-        var isDiagnoseMode = _configManager.GetConfig<ProgramConfig>().DiagnoseMode;
-        if (isDiagnoseMode)
-        {
-            actions.Add(new MenuItem($"Hash: {record.Hash}", async () =>
-            {
-                try
-                {
-                    var profile = new TextProfile(record.Hash);
-                    await RunWithOperationTimeoutAsync(
-                        "copy history hash",
-                        token => localClipboardSetter.Set(profile, token));
-                }
-                catch { }
-            }));
-        }
-
         var historyRecord = record.ToHistoryRecord();
         if (!historyRecord.IsLocalFileReady)
         {
@@ -1453,11 +1437,6 @@ public partial class HistoryViewModel : ObservableObject
             () => _ = RunWithOperationTimeoutAsync(
                 "reload local history file",
                 token => ReloadLocalHistoryFileAsync(record, token))));
-        actions.Add(new MenuItem(
-            I18n.Strings.DeleteHistory,
-            () => _ = RunWithOperationTimeoutAsync(
-                "delete history record",
-                token => historyManager.DeleteHistory(record, token))));
     }
 
     private async Task ReloadLocalHistoryFileAsync(HistoryRecord record, CancellationToken token)

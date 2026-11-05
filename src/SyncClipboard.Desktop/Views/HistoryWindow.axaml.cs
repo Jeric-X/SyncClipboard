@@ -413,37 +413,40 @@ public partial class HistoryWindow : Window, IWindow
             flyout.Items.Clear();
             return;
         }
-        if (_viewModel.IsMultiSelecting)
-        {
-            flyout.Items.Clear();
-            var tags = new FAMenuFlyoutItem { Text = Strings.HistoryTagsEdit, IsEnabled = _viewModel.SelectedHistoryCount > 0 };
-            tags.Click += async (_, _) => await EditTagsAsync(_viewModel.GetTagEditSelection());
-            flyout.Items.Add(tags);
-            flyout.Items.Add(new FAMenuFlyoutItem { Text = Strings.HistoryMultiSelectDelete, Command = _viewModel.ConfirmDeleteSelectedCommand });
-            flyout.Items.Add(new FAMenuFlyoutItem
-            {
-                Text = _viewModel.AreSelectedRecordsStarred ? Strings.HistoryMultiSelectUnstar : Strings.HistoryMultiSelectStar,
-                Command = _viewModel.ConfirmToggleSelectedStarredCommand
-            });
-            flyout.Items.Add(new FAMenuFlyoutItem { Text = Strings.HistoryExportSelected, Command = _viewModel.ExportSelectedCommand });
-            flyout.Items.Add(new FAMenuFlyoutItem { Text = Strings.HistoryMultiSelectAll, Command = _viewModel.ToggleCurrentFilterSelectionCommand });
-            flyout.Items.Add(new FAMenuFlyoutItem { Text = Strings.HistoryMultiSelectExit, Command = _viewModel.ExitMultiSelectCommand });
+        var isMultiSelecting = _viewModel.IsMultiSelecting;
+        if (!isMultiSelecting)
+            _viewModel.SelectSingleRecord(record);
+        var actions = isMultiSelecting ? [] : await _viewModel.BuildActionsAsync(record);
+        if (isMultiSelecting != _viewModel.IsMultiSelecting || !ReferenceEquals(flyout.Target?.DataContext, record))
             return;
-        }
-        _viewModel.SelectSingleRecord(record);
 
-        var actions = await _viewModel.BuildActionsAsync(record);
         flyout.Items.Clear();
-        var editTags = new FAMenuFlyoutItem { Text = Strings.HistoryTagsEdit };
-        editTags.Click += async (_, _) => await EditTagsAsync([record.Key]);
+        AddContextActions(flyout, actions);
+        if (flyout.Items.Count > 0)
+            flyout.Items.Add(new FAMenuFlyoutSeparator());
+        var editTags = new FAMenuFlyoutItem
+        {
+            Text = Strings.HistoryTagsEdit,
+            IsEnabled = !isMultiSelecting || _viewModel.HasSelectedRecords
+        };
+        editTags.Click += async (_, _) => await EditTagsAsync(isMultiSelecting ? _viewModel.GetTagEditSelection() : [record.Key]);
         flyout.Items.Add(editTags);
+        foreach (var (text, command, parameter) in _viewModel.BuildHistoryMenuCommands(record))
+            flyout.Items.Add(new FAMenuFlyoutItem { Text = text, Command = command, CommandParameter = parameter });
+        AddContextActions(flyout, _viewModel.BuildDiagnosticActions(record));
+    }
+
+    private static void AddContextActions(FAMenuFlyout flyout, List<SyncClipboard.Core.Interfaces.MenuItem> actions)
+    {
+        if (actions.Count == 0)
+            return;
+        if (flyout.Items.Count > 0)
+            flyout.Items.Add(new FAMenuFlyoutSeparator());
         foreach (var action in actions)
         {
             var item = new FAMenuFlyoutItem { Text = action.Text };
             if (action.Action is not null)
-            {
-                item.Click += (_, __) => action.Action();
-            }
+                item.Click += (_, _) => action.Action();
             flyout.Items.Add(item);
         }
     }
