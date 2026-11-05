@@ -1691,4 +1691,7 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryTagsCollapse" xml:space="preserve">
     <value>Collapse tags</value>
   </data>
+  <data name="HistoryTagsMultiSelect" xml:space="preserve">
+    <value>Tag multi-select mode</value>
+  </data>
 </root>

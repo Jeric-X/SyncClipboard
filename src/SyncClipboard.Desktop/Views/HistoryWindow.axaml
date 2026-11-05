@@ -258,17 +258,27 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
-                <Button x:Name="_ExpandTagsButton"
-                        Grid.Column="1"
-                        Classes="HistoryAction"
-                        Margin="8,0,0,0"
-                        VerticalAlignment="Top"
-                        IsVisible="False"
-                        ToolTip.Tip="{x:Static i18n:Strings.HistoryTagsExpand}"
-                        AutomationProperties.Name="{x:Static i18n:Strings.HistoryTagsExpand}"
-                        Click="ExpandTags_Click">
-                    <ui:FAFontIcon x:Name="_ExpandTagsIcon" Glyph="&#xE70D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                </Button>
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            Spacing="4"
+                            Margin="8,0,0,0"
+                            VerticalAlignment="Top">
+                    <ToggleButton Classes="FontIcon"
+                                  IsChecked="{Binding MultiTagFilter, Mode=TwoWay}"
+                                  ToolTip.Tip="{x:Static i18n:Strings.HistoryTagsMultiSelect}"
+                                  AutomationProperties.Name="{x:Static i18n:Strings.HistoryTagsMultiSelect}">
+                        <ui:FAFontIcon Glyph="&#xE762;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    </ToggleButton>
+                    <Button x:Name="_ExpandTagsButton"
+                            Classes="HistoryAction"
+                            VerticalAlignment="Top"
+                            IsVisible="False"
+                            ToolTip.Tip="{x:Static i18n:Strings.HistoryTagsExpand}"
+                            AutomationProperties.Name="{x:Static i18n:Strings.HistoryTagsExpand}"
+                            Click="ExpandTags_Click">
+                        <ui:FAFontIcon x:Name="_ExpandTagsIcon" Glyph="&#xE70D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    </Button>
+                </StackPanel>
             </Grid>
             <Grid x:Name="_MainContentGrid"
                   Grid.Row="3"

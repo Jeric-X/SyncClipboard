@@ -336,15 +336,17 @@ public partial class HistoryViewModel : ObservableObject
     [ObservableProperty]
     private bool serverConnected = true;
 
+    private string[] _selectedTags = [];
+
     public string[] SelectedTags
     {
-        get => runtimeConfig.GetConfig<HistoryWindowConfig>().SelectedTags;
+        get => _selectedTags;
         set
         {
             var tags = HistoryTags.NormalizeNames(value);
             if (tags.SequenceEqual(SelectedTags, StringComparer.Ordinal))
                 return;
-            runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { SelectedTags = tags });
+            _selectedTags = tags;
             OnPropertyChanged(nameof(SelectedTags));
             UpdateTagSelection();
             _ = Reload();

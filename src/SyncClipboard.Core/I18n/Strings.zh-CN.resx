@@ -1691,4 +1691,7 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryTagsCollapse" xml:space="preserve">
     <value>收起标签</value>
   </data>
+  <data name="HistoryTagsMultiSelect" xml:space="preserve">
+    <value>标签多选模式</value>
+  </data>
 </root>

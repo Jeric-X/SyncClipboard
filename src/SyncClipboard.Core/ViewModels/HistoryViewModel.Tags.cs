@@ -69,12 +69,32 @@ public partial class HistoryViewModel
         }
     }
 
+    public bool MultiTagFilter
+    {
+        get => runtimeConfig.GetConfig<HistoryWindowConfig>().MultiTagFilter;
+        set
+        {
+            if (value == MultiTagFilter)
+                return;
+            runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { MultiTagFilter = value });
+            if (!value && SelectedTags.Length > 1)
+                SelectedTags = [SelectedTags[0]];
+            OnPropertyChanged(nameof(MultiTagFilter));
+        }
+    }
+
     public bool IsTagBarVisible => ShowTagBar && SelectedFilter != HistoryFilterType.Transferring;
 
     public void ToggleTagFilter(HistoryTagFilter option)
     {
-        SelectedTags = option.Name is null || SelectedTags.Contains(option.Name, StringComparer.Ordinal)
-            ? [] : [option.Name];
+        var selected = SelectedTags;
+        if (option.Name is null)
+            SelectedTags = [];
+        else if (!MultiTagFilter)
+            SelectedTags = selected.Contains(option.Name, StringComparer.Ordinal) ? [] : [option.Name];
+        else
+            SelectedTags = selected.Contains(option.Name, StringComparer.Ordinal)
+                ? selected.Where(tag => tag != option.Name).ToArray() : [.. selected, option.Name];
         // Clicking All can leave the query unchanged; restore its checked state as well.
         UpdateTagSelection();
     }
