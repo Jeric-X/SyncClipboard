@@ -1251,6 +1251,9 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryMultiSelectUnstar" xml:space="preserve">
     <value>Unstar</value>
   </data>
+  <data name="HistoryMultiSelectEnter" xml:space="preserve">
+    <value>Multi-select</value>
+  </data>
   <data name="HistoryMultiSelectExit" xml:space="preserve">
     <value>Exit selection</value>
   </data>

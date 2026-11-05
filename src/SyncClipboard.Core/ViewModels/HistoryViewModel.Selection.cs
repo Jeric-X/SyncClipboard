@@ -240,6 +240,7 @@ public partial class HistoryViewModel
         await historyManager.DeleteHistory(record.ToHistoryRecord());
     }
 
+    [RelayCommand]
     public void EnterMultiSelect(HistoryRecordVM record)
     {
         if (!IsMultiSelecting)
