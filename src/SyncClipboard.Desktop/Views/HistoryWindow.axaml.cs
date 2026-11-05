@@ -422,6 +422,12 @@ public partial class HistoryWindow : Window, IWindow
 
         flyout.Items.Clear();
         AddContextActions(flyout, actions);
+        AddHistoryMenuItems(flyout, record, isMultiSelecting);
+        AddContextActions(flyout, _viewModel.BuildDiagnosticActions(record));
+    }
+
+    private void AddHistoryMenuItems(FAMenuFlyout flyout, HistoryRecordVM record, bool isMultiSelecting)
+    {
         if (flyout.Items.Count > 0)
             flyout.Items.Add(new FAMenuFlyoutSeparator());
         var editTags = new FAMenuFlyoutItem
@@ -433,7 +439,6 @@ public partial class HistoryWindow : Window, IWindow
         flyout.Items.Add(editTags);
         foreach (var (text, command, parameter) in _viewModel.BuildHistoryMenuCommands(record))
             flyout.Items.Add(new FAMenuFlyoutItem { Text = text, Command = command, CommandParameter = parameter });
-        AddContextActions(flyout, _viewModel.BuildDiagnosticActions(record));
     }
 
     private static void AddContextActions(FAMenuFlyout flyout, List<SyncClipboard.Core.Interfaces.MenuItem> actions)
