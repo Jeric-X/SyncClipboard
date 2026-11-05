@@ -1697,4 +1697,7 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryTagsMultiSelect" xml:space="preserve">
     <value>Tag multi-select mode</value>
   </data>
+  <data name="HistoryTagRemove" xml:space="preserve">
+    <value>Remove this tag</value>
+  </data>
 </root>

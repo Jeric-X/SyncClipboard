@@ -40,6 +40,18 @@ public partial class HistoryViewModel
     [ObservableProperty]
     private ObservableCollection<HistoryTagFilter> tagOptions = [];
 
+    public async Task RemoveRecordTagAsync(HistoryPreviewTag tag)
+    {
+        try
+        {
+            await historyManager.EditTagsAsync([tag.Record], [], [tag.Name]);
+        }
+        catch (Exception ex)
+        {
+            ShowWindowToastInfo(string.Format(Strings.OperationFailedRetryMessage, ex.Message));
+        }
+    }
+
     public bool ShowTagBar
     {
         get => runtimeConfig.GetConfig<HistoryWindowConfig>().ShowTagBar;
