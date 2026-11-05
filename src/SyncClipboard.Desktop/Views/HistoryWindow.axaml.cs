@@ -559,6 +559,8 @@ public partial class HistoryWindow : Window, IWindow
 
     private void ListBox_DoubleTapped(object? sender, TappedEventArgs e)
     {
+        if (e.Source is Visual source && source.FindAncestorOfType<Controls.HistoryInlineTagsView>(includeSelf: true) is not null)
+            return;
         if (_viewModel.PreviewedHistoryItem is not HistoryRecordVM record)
         {
             return;

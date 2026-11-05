@@ -93,6 +93,17 @@
     </Window.DataTemplates>
     <Panel x:Name="_HistoryContent">
         <Panel.Styles>
+            <Style Selector="ToggleButton.HistoryTagPill:not(:checked):not(:pointerover):not(:pressed):not(:disabled)">
+                <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+            </Style>
+            <Style Selector="Button.HistoryTagOverflow">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            </Style>
+            <Style Selector="Button.HistoryTagOverflow:pointerover /template/ ContentPresenter">
+                <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+            </Style>
             <Style Selector="Button.HistoryAction">
                 <Setter Property="Theme" Value="{StaticResource DateTimeFlyoutButtonStyle}" />
                 <Setter Property="Height" Value="28" />
@@ -244,7 +255,8 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="vm:HistoryTagFilter">
-                                <ToggleButton Content="{Binding Text}"
+                                <ToggleButton Classes="HistoryTagPill"
+                                              Content="{Binding Text}"
                                               IsChecked="{Binding IsSelected, Mode=TwoWay}"
                                               Command="{Binding SelectCommand}"
                                               CornerRadius="14"
@@ -336,12 +348,16 @@
                                         </Path.Data>
                                     </Path>
                                 </Border>
-                                <StackPanel Grid.Column="2" Orientation="Vertical" VerticalAlignment="Center">
+                                <DockPanel Grid.Column="2">
+                                    <controls:HistoryInlineTagsView DockPanel.Dock="Right"
+                                                                    Tags="{Binding PreviewTags}"
+                                                                    ViewModel="{Binding #_HistoryWindow.ViewModel}"
+                                                                    IsVisible="{Binding !#_HistoryWindow.ViewModel.ShowPreviewPanel}" />
                                     <ContentControl Padding="8,8,0,8"
                                                     VerticalAlignment="Center"
                                                     FontSize="{Binding #_HistoryWindow.ViewModel.ListItemFontSize}"
                                                     Content="{Binding .}" />
-                                </StackPanel>
+                                </DockPanel>
                                 <Border Grid.Column="3"
                                         Height="40"
                                         VerticalAlignment="Top"

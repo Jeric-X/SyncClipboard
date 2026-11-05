@@ -1700,4 +1700,7 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryTagRemove" xml:space="preserve">
     <value>移除此标签</value>
   </data>
+  <data name="HistoryTagsShowMore" xml:space="preserve">
+    <value>显示收起的标签</value>
+  </data>
 </root>

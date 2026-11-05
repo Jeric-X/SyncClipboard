@@ -1,7 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Interactivity;
 using SyncClipboard.Core;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
@@ -113,10 +112,9 @@ public sealed partial class PreviewPanel : UserControl
         }
     }
 
-    private async void RemoveTag_Click(object? sender, RoutedEventArgs e)
+    private async void RemoveTagRequested(object? _, HistoryPreviewTag tag)
     {
-        e.Handled = true;
-        if (sender is Button { DataContext: HistoryPreviewTag tag } && SelectedItem?.Key == tag.Record)
+        if (SelectedItem?.Key == tag.Record)
             await ViewModel.RemoveRecordTagAsync(tag);
     }
 
