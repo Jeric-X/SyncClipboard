@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using Avalonia.Input;
 using Avalonia.Interactivity;
 using SyncClipboard.Core.ViewModels.Sub;
 using System;
@@ -11,10 +10,6 @@ public partial class HistoryRecordTagChip : UserControl
     public event EventHandler<HistoryPreviewTag>? RemoveRequested;
 
     public HistoryRecordTagChip() => InitializeComponent();
-
-    internal void EnableKeyboardRemoval() => RemoveButton.Focusable = true;
-
-    internal void FocusRemoval() => RemoveButton.Focus(NavigationMethod.Tab);
 
     private void Remove_Click(object? sender, RoutedEventArgs e)
     {

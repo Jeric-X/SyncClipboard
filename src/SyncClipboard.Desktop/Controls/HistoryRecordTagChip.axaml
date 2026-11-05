@@ -16,8 +16,7 @@
                        VerticalAlignment="Center"
                        TextTrimming="CharacterEllipsis"
                        ToolTip.Tip="{Binding Name}" />
-            <Button x:Name="RemoveButton"
-                    Focusable="False"
+            <Button Focusable="False"
                     Grid.Column="1"
                     Content="×"
                     Width="16"

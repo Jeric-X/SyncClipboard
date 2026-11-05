@@ -3,7 +3,6 @@ using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
-using Avalonia.Threading;
 using Avalonia.VisualTree;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.ViewModels;
@@ -54,7 +53,6 @@ public sealed class HistoryInlineTagsView : Panel
     private int _visibleCount = -1;
     private WrapPanel? _expanded;
     private Flyout? _flyout;
-    private IDisposable? _hold;
     private HistoryViewModel? _popupViewModel;
 
     public HistoryInlineTagsView()
@@ -191,43 +189,27 @@ public sealed class HistoryInlineTagsView : Panel
 
     private void FillPopup(WrapPanel expanded)
     {
-        var focused = expanded.Children.FirstOrDefault(chip => chip.IsKeyboardFocusWithin);
-        var previousIndex = focused is null ? -1 : expanded.Children.IndexOf(focused);
         expanded.Children.Clear();
         for (var i = _visibleCount; i < _tags.Length; i++)
         {
-            var chip = CreateChip(_tags[i]);
-            chip.EnableKeyboardRemoval();
-            expanded.Children.Add(chip);
-        }
-        if (previousIndex >= 0)
-        {
-            var previousTag = focused!.DataContext;
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (_expanded != expanded || expanded.Children.Count == 0 || expanded.IsKeyboardFocusWithin)
-                    return;
-                var next = expanded.Children.FirstOrDefault(chip => Equals(chip.DataContext, previousTag))
-                    ?? expanded.Children[Math.Min(previousIndex, expanded.Children.Count - 1)];
-                ((HistoryRecordTagChip)next).FocusRemoval();
-            }, DispatcherPriority.Input);
+            expanded.Children.Add(CreateChip(_tags[i]));
         }
     }
 
     private void ShowMore(object? _, RoutedEventArgs e)
     {
         e.Handled = true;
-        TryShowHiddenTags();
-    }
-
-    internal bool TryShowHiddenTags()
-    {
         if (_flyout is not null || !IsEffectivelyVisible || _more.Content is null || _visibleCount < 0 || ViewModel is not { } vm)
-            return false;
+            return;
         var bounds = _more.GetTransformedBounds();
         if (bounds is not { } b || !b.Bounds.TransformToAABB(b.Transform).Intersects(b.Clip))
-            return false;
+            return;
 
+        OpenTagFlyout(vm);
+    }
+
+    private void OpenTagFlyout(HistoryViewModel vm)
+    {
         _expanded = new WrapPanel { MaxWidth = 224, ItemSpacing = 5, LineSpacing = 5 };
         FillPopup(_expanded);
         var flyout = new HistoryTagFlyout
@@ -237,23 +219,20 @@ public sealed class HistoryInlineTagsView : Panel
         };
         _flyout = flyout;
         FlyoutBase.SetAttachedFlyout(_more, flyout);
-        var owner = TopLevel.GetTopLevel(this) as Window;
-        flyout.Closed += (_, _) => ReleasePopup(owner);
+        flyout.Closed += (_, _) => ReleasePopup();
         _popupViewModel = vm;
         vm.PropertyChanged += OnPopupViewModelChanged;
-        _hold = vm.HoldForModalOperation();
         try
         {
             FlyoutBase.ShowAttachedFlyout(_more);
             if (!flyout.IsOpen)
-                ReleasePopup(owner);
+                ReleasePopup();
         }
         catch
         {
-            ReleasePopup(owner);
+            ReleasePopup();
             throw;
         }
-        return flyout.IsOpen;
     }
 
     private void OnPopupViewModelChanged(object? _, PropertyChangedEventArgs e)
@@ -262,24 +241,15 @@ public sealed class HistoryInlineTagsView : Panel
             _flyout?.Hide();
     }
 
-    private void ReleasePopup(Window? owner)
+    private void ReleasePopup()
     {
         if (_popupViewModel is not { } vm)
             return;
         vm.PropertyChanged -= OnPopupViewModelChanged;
         _popupViewModel = null;
-        _hold?.Dispose();
-        _hold = null;
         _expanded = null;
         _flyout = null;
         FlyoutBase.SetAttachedFlyout(_more, null);
-
-        // Let focus return from a native popup before checking whether the user left history.
-        Dispatcher.UIThread.Post(() =>
-        {
-            if (owner is { IsVisible: true, IsActive: false })
-                vm.OnLostFocus();
-        }, DispatcherPriority.Background);
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)

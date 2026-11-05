@@ -45,11 +45,12 @@ public sealed record HistoryTagOverflowLayout(HistoryTagPlacement[] Tags, Histor
         var rows = tags.Concat(more is { } overflow ? [overflow] : [])
             .GroupBy(p => p.Y).ToDictionary(row => row.Key,
                 row => (Height: row.Max(p => p.Height), Right: row.Max(p => p.X + p.Width)));
-        HistoryTagPlacement Align(HistoryTagPlacement p) => p with
+        HistoryTagPlacement Align(HistoryTagPlacement p)
         {
-            X = p.X + Math.Max(0, width - rows[p.Y].Right),
-            Y = p.Y + (rows[p.Y].Height - p.Height) / 2
-        };
+            var row = rows[p.Y];
+            var verticalOffset = (row.Height - p.Height) / 2;
+            return p with { X = p.X + Math.Max(0, width - row.Right), Y = p.Y + verticalOffset };
+        }
         return new(tags.Select(Align).ToArray(), more is { } marker ? Align(marker) : null, height);
     }
 

@@ -7,12 +7,9 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.Headless;
 using Avalonia.Input;
-using Avalonia.Input.Raw;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAvalonia.Styling;
-using Moq;
-using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.ViewModels.Sub;
 using SyncClipboard.Desktop.Controls;
@@ -40,6 +37,74 @@ public class HistoryInlineTagsTests
         Dispatcher.UIThread.RunJobs();
     }
 
+    private static bool InBounds(HistoryInlineTagsView tags, Control child) => child.Bounds.Width > 0 && child.Bounds.Right <= tags.Bounds.Width + 0.1;
+
+    private static HistoryRecordTagChip[] VisibleTags(HistoryInlineTagsView tags) => tags.Children.OfType<HistoryRecordTagChip>().Where(chip => InBounds(tags, chip)).ToArray();
+
+    private static void VerifyAccessibleButtons(HistoryInlineTagsView tags, Button more)
+    {
+        foreach (var chip in tags.Children.OfType<HistoryRecordTagChip>())
+        {
+            var remove = chip.GetVisualDescendants().OfType<Button>().Single();
+            var peer = ControlAutomationPeer.CreatePeerForElement(remove)!;
+            Assert.AreEqual(InBounds(tags, chip), peer.IsControlElement());
+            Assert.AreEqual(!InBounds(tags, chip), peer.IsOffscreen());
+            Assert.AreEqual(InBounds(tags, chip), peer.IsEnabled());
+        }
+        Assert.AreEqual(InBounds(tags, more), ControlAutomationPeer.CreatePeerForElement(more)!.IsControlElement());
+    }
+
+    private static void Layout(Window window)
+    {
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+    }
+
+    private static async Task RemoveAndRefresh(HistoryViewModelPagingTests.Fixture fixture, Button button, Window window, CancellationToken token)
+    {
+        var saved = new TaskCompletionSource<HistoryRecord>(TaskCreationOptions.RunContinuationsAsynchronously);
+        void OnSaved(HistoryRecord updated) => saved.TrySetResult(updated);
+        fixture.Manager.HistoryUpdated += OnSaved;
+        try
+        {
+            Click(button);
+            var update = await saved.Task.WaitAsync(TimeSpan.FromSeconds(5), token);
+            fixture.Publish(new HistoryRecordVM(update));
+            Layout(window);
+        }
+        finally
+        {
+            fixture.Manager.HistoryUpdated -= OnSaved;
+        }
+    }
+
+    private static void VerifyRowLayout(Window window, DockPanel row, Border content, HistoryInlineTagsView tags, Button more, int tagCount)
+    {
+        Assert.AreEqual(40, row.Bounds.Height);
+        VerifyAccessibleButtons(tags, more);
+        Assert.IsLessThan(tagCount, tags.Children.OfType<HistoryRecordTagChip>().Count());
+        var hiddenChip = tags.Children.OfType<HistoryRecordTagChip>().First(chip => !InBounds(tags, chip));
+        var hiddenButton = hiddenChip.GetVisualDescendants().OfType<Button>().Single();
+        var invoke = (IInvokeProvider)ControlAutomationPeer.CreatePeerForElement(hiddenButton)!;
+        Assert.ThrowsExactly<ElementNotEnabledException>(invoke.Invoke);
+        var shortCount = VisibleTags(tags).Length;
+        Assert.IsGreaterThan(0, shortCount);
+        Assert.IsTrue(InBounds(tags, more));
+        Assert.AreEqual($"+{tagCount - shortCount}", more.Content);
+        content.Height = 100;
+        Layout(window);
+        Assert.AreEqual(100, row.Bounds.Height);
+        VerifyAccessibleButtons(tags, more);
+        Assert.IsGreaterThan(shortCount, VisibleTags(tags).Length);
+        Assert.AreEqual($"+{tagCount - VisibleTags(tags).Length}", more.Content);
+        Assert.IsTrue(VisibleTags(tags).All(chip => chip.Bounds.Bottom <= row.Bounds.Height));
+        window.Width = 240;
+        Layout(window);
+        var halfRowWidth = row.Bounds.Width / 2;
+        Assert.IsLessThanOrEqualTo(halfRowWidth + 1, tags.Bounds.Width);
+        Assert.AreEqual(100, row.Bounds.Height);
+    }
+
     [TestMethod]
     public async Task TagsFitTheContentHeightAndOverflowUpdatesTheCorrectRecord()
     {
@@ -65,138 +130,51 @@ public class HistoryInlineTagsTests
             var row = new DockPanel { Children = { tags, content } };
             var window = new Window { Width = 440, Height = 350, Content = new StackPanel { Children = { row } } };
             var more = tags.Children.OfType<Button>().Single();
-            bool InBounds(Control child) => child.Bounds.Width > 0 && child.Bounds.Right <= tags.Bounds.Width + 0.1;
-            HistoryRecordTagChip[] VisibleTags() => tags.Children.OfType<HistoryRecordTagChip>().Where(InBounds).ToArray();
-            void VerifyAccessibleButtons()
-            {
-                foreach (var chip in tags.Children.OfType<HistoryRecordTagChip>())
-                {
-                    var remove = chip.GetVisualDescendants().OfType<Button>().Single();
-                    var peer = ControlAutomationPeer.CreatePeerForElement(remove)!;
-                    Assert.AreEqual(InBounds(chip), peer.IsControlElement());
-                    Assert.AreEqual(!InBounds(chip), peer.IsOffscreen());
-                    Assert.AreEqual(InBounds(chip), peer.IsEnabled());
-                }
-                Assert.AreEqual(InBounds(more), ControlAutomationPeer.CreatePeerForElement(more)!.IsControlElement());
-            }
-
-            void Layout()
-            {
-                Dispatcher.UIThread.RunJobs();
-                window.UpdateLayout();
-            }
-
-            async Task RemoveAndRefresh(Button button, bool keyboard = false)
-            {
-                var saved = new TaskCompletionSource<HistoryRecord>(TaskCreationOptions.RunContinuationsAsynchronously);
-                void OnSaved(HistoryRecord updated) => saved.TrySetResult(updated);
-                fixture.Manager.HistoryUpdated += OnSaved;
-                try
-                {
-                    if (keyboard)
-                    {
-                        for (var i = 0; i < names.Length && !button.IsFocused; i++)
-                        {
-                            var top = window.FocusManager?.GetFocusedElement() is Control focused
-                                ? TopLevel.GetTopLevel(focused)! : window;
-                            top.KeyPress(Key.Tab, RawInputModifiers.None, PhysicalKey.Tab, null);
-                            top.KeyRelease(Key.Tab, RawInputModifiers.None, PhysicalKey.Tab, null);
-                        }
-                        Assert.IsTrue(button.IsFocused);
-                        var focusedTop = TopLevel.GetTopLevel(button)!;
-                        focusedTop.KeyPress(Key.Space, RawInputModifiers.None, PhysicalKey.Space, null);
-                        focusedTop.KeyRelease(Key.Space, RawInputModifiers.None, PhysicalKey.Space, null);
-                    }
-                    else
-                    {
-                        Click(button);
-                    }
-                    var update = await saved.Task.WaitAsync(TimeSpan.FromSeconds(5), token);
-                    fixture.Publish(new HistoryRecordVM(update));
-                    Layout();
-                }
-                finally
-                {
-                    fixture.Manager.HistoryUpdated -= OnSaved;
-                }
-            }
 
             try
             {
                 window.Show();
-                Layout();
-                Assert.AreEqual(40, row.Bounds.Height);
-                VerifyAccessibleButtons();
-                Assert.IsLessThan(names.Length, tags.Children.OfType<HistoryRecordTagChip>().Count());
-                var hiddenChip = tags.Children.OfType<HistoryRecordTagChip>().First(chip => !InBounds(chip));
-                var hiddenButton = hiddenChip.GetVisualDescendants().OfType<Button>().Single();
-                var invoke = (IInvokeProvider)ControlAutomationPeer.CreatePeerForElement(hiddenButton)!;
-                Assert.ThrowsExactly<ElementNotEnabledException>(invoke.Invoke);
+                Layout(window);
+                VerifyRowLayout(window, row, content, tags, more, names.Length);
                 CollectionAssert.AreEqual(names, (await fixture.ReadStoredRecordAsync(record)).Tags);
-                var shortCount = VisibleTags().Length;
-                Assert.IsGreaterThan(0, shortCount);
-                Assert.IsTrue(InBounds(more));
-                Assert.AreEqual($"+{names.Length - shortCount}", more.Content);
-                content.Height = 100;
-                Layout();
-                Assert.AreEqual(100, row.Bounds.Height);
-                VerifyAccessibleButtons();
-                Assert.IsGreaterThan(shortCount, VisibleTags().Length);
-                Assert.AreEqual($"+{names.Length - VisibleTags().Length}", more.Content);
-                Assert.IsTrue(VisibleTags().All(chip => chip.Bounds.Bottom <= row.Bounds.Height));
-                window.Width = 240;
-                Layout();
-                Assert.IsLessThanOrEqualTo(row.Bounds.Width / 2 + 1, tags.Bounds.Width);
-                Assert.AreEqual(100, row.Bounds.Height);
 
                 Click(more);
                 var flyout = (Flyout)FlyoutBase.GetAttachedFlyout(more)!;
                 Assert.IsTrue(flyout.IsOpen);
                 Assert.AreSame(more, flyout.Target);
-                Assert.IsTrue(fixture.ViewModel.HasModalOperation);
                 var popup = (WrapPanel)flyout.Content!;
                 var scroller = popup.FindAncestorOfType<ScrollViewer>()!;
                 Assert.IsGreaterThan(scroller.Viewport.Height, scroller.Extent.Height);
                 var fullWidth = scroller.Bounds.Width;
                 var oldY = popup.TranslatePoint(default, window)!.Value.Y;
                 row.Margin = new Thickness(0, 18, 0, 0);
-                Layout();
+                Layout(window);
                 Assert.AreEqual(oldY + 18, popup.TranslatePoint(default, window)!.Value.Y, 1);
                 string?[] Labels() => popup.GetVisualDescendants().OfType<TextBlock>()
                     .Where(label => label.FindAncestorOfType<Button>() is null).Select(label => label.Text).ToArray();
-                CollectionAssert.AreEqual(names[VisibleTags().Length..], Labels());
+                CollectionAssert.AreEqual(names[VisibleTags(tags).Length..], Labels());
                 content.Height = 40;
-                Layout();
-                CollectionAssert.AreEqual(names[VisibleTags().Length..], Labels());
+                Layout(window);
+                CollectionAssert.AreEqual(names[VisibleTags(tags).Length..], Labels());
 
                 var removed = Labels().First()!;
-                await RemoveAndRefresh(popup.GetVisualDescendants().OfType<Button>()
-                    .Single(b => b.DataContext is HistoryPreviewTag tag && tag.Name == removed), keyboard: true);
+                await RemoveAndRefresh(fixture, popup.GetVisualDescendants().OfType<Button>()
+                    .Single(b => b.DataContext is HistoryPreviewTag tag && tag.Name == removed), window, token);
                 var remaining = names.Where(n => n != removed).ToArray();
                 CollectionAssert.AreEqual(remaining, (await fixture.ReadStoredRecordAsync(record)).Tags);
                 CollectionAssert.AreEqual(names, (await fixture.ReadStoredRecordAsync(other)).Tags);
-                CollectionAssert.AreEqual(remaining[VisibleTags().Length..], Labels());
-                Assert.AreEqual($"+{remaining.Length - VisibleTags().Length}", more.Content);
+                CollectionAssert.AreEqual(remaining[VisibleTags(tags).Length..], Labels());
+                Assert.AreEqual($"+{remaining.Length - VisibleTags(tags).Length}", more.Content);
                 Assert.IsTrue(flyout.IsOpen);
 
-                var nextButton = popup.GetVisualDescendants().OfType<Button>().First();
-                Assert.IsTrue(nextButton.IsFocused);
-                var pointerRemoved = ((HistoryPreviewTag)nextButton.DataContext!).Name;
-                await RemoveAndRefresh(nextButton);
-                remaining = remaining.Where(n => n != pointerRemoved).ToArray();
-                CollectionAssert.AreEqual(remaining, (await fixture.ReadStoredRecordAsync(record)).Tags);
-                CollectionAssert.AreEqual(names, (await fixture.ReadStoredRecordAsync(other)).Tags);
-                CollectionAssert.AreEqual(remaining[VisibleTags().Length..], Labels());
-
                 fixture.ViewModel.SelectedItem = other;
-                Layout();
+                Layout(window);
                 Assert.IsFalse(flyout.IsOpen);
-                Assert.IsFalse(fixture.ViewModel.HasModalOperation);
                 window.Width = 440;
-                Layout();
-                var firstChip = VisibleTags().First();
+                Layout(window);
+                var firstChip = VisibleTags(tags).First();
                 var visibleTag = ((HistoryPreviewTag)firstChip.DataContext!).Name;
-                await RemoveAndRefresh(firstChip.GetVisualDescendants().OfType<Button>().Single());
+                await RemoveAndRefresh(fixture, firstChip.GetVisualDescendants().OfType<Button>().Single(), window, token);
                 Assert.DoesNotContain(visibleTag, (await fixture.ReadStoredRecordAsync(record)).Tags);
                 CollectionAssert.AreEqual(names, (await fixture.ReadStoredRecordAsync(other)).Tags);
                 Click(more);
@@ -205,24 +183,22 @@ public class HistoryInlineTagsTests
                 var current = record.Tags;
                 window.Width = 200;
                 record.Tags = ["tag00000", "tag11111", "md"];
-                Layout();
+                Layout(window);
                 var smallPopup = (WrapPanel)flyout.Content!;
                 Assert.IsLessThan(fullWidth, smallPopup.FindAncestorOfType<ScrollViewer>()!.Bounds.Width);
                 record.Tags = ["md"];
-                Layout();
+                Layout(window);
                 Assert.IsFalse(flyout.IsOpen);
-                Assert.IsFalse(fixture.ViewModel.HasModalOperation);
-                Assert.IsFalse(InBounds(more));
-                VerifyAccessibleButtons();
+                Assert.IsFalse(InBounds(tags, more));
+                VerifyAccessibleButtons(tags, more);
                 window.Width = 440;
                 record.Tags = current;
-                Layout();
+                Layout(window);
                 Click(more);
                 flyout = (Flyout)FlyoutBase.GetAttachedFlyout(more)!;
                 row.Children.Remove(tags);
-                Layout();
+                Layout(window);
                 Assert.IsFalse(flyout.IsOpen);
-                Assert.IsFalse(fixture.ViewModel.HasModalOperation);
             }
             finally
             {
@@ -233,7 +209,7 @@ public class HistoryInlineTagsTests
     }
 
     [TestMethod]
-    public async Task OverflowClosesOnEscapeOrWhenTheTriggerScrollsOutOfView()
+    public async Task OverflowClosesWhenTheTriggerScrollsOutOfView()
     {
         var token = TestContext.CancellationTokenSource.Token;
         await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryInlineTagsTests));
@@ -245,81 +221,21 @@ public class HistoryInlineTagsTests
             var record = fixture.Records[0];
             record.Tags = Enumerable.Range(0, 28).Select(i => $"tag{i}").ToArray();
             var tags = new HistoryInlineTagsView { Height = 40, Margin = new Thickness(0, 0, 32, 0), DataContext = record, Tags = record.PreviewTags, ViewModel = fixture.ViewModel };
-            var search = new TextBox();
             var list = new ScrollViewer { Height = 100, Content = new StackPanel { Children = { tags, new Border { Height = 400 } } } };
-            var owner = new Window { Width = 220, Height = 300, Content = new StackPanel { Children = { search, list } } };
+            var owner = new Window { Width = 220, Height = 300, Content = list };
             try
             {
                 owner.Show();
-                search.Focus();
                 Dispatcher.UIThread.RunJobs();
                 owner.UpdateLayout();
                 var more = tags.Children.OfType<Button>().Single();
                 Click(more);
                 var flyout = (Flyout)FlyoutBase.GetAttachedFlyout(more)!;
                 Assert.IsTrue(flyout.IsOpen);
-                var scroll = ((Control)flyout.Content!).FindAncestorOfType<ScrollViewer>()!;
-                owner.KeyPress(Key.PageDown, RawInputModifiers.None, PhysicalKey.PageDown, null);
-                owner.KeyRelease(Key.PageDown, RawInputModifiers.None, PhysicalKey.PageDown, null);
-                Dispatcher.UIThread.RunJobs();
-                Assert.IsGreaterThan(0d, scroll.Offset.Y);
-                owner.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
-                owner.KeyRelease(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
-                Dispatcher.UIThread.RunJobs();
-                Assert.IsFalse(flyout.IsOpen);
-                Assert.AreSame(search, owner.FocusManager!.GetFocusedElement());
-
-                Assert.IsTrue(tags.TryShowHiddenTags());
-                flyout = (Flyout)FlyoutBase.GetAttachedFlyout(more)!;
                 list.Offset = new Vector(0, 150);
                 Dispatcher.UIThread.RunJobs();
                 owner.UpdateLayout();
                 Assert.IsFalse(flyout.IsOpen);
-                Assert.IsFalse(fixture.ViewModel.HasModalOperation);
-                Assert.IsFalse(tags.TryShowHiddenTags());
-            }
-            finally
-            {
-                owner.Close();
-            }
-            return true;
-        }, token);
-    }
-
-    [TestMethod]
-    public async Task DismissingOverflowAfterDeactivationAppliesCloseWhenLostFocus()
-    {
-        var token = TestContext.CancellationTokenSource.Token;
-        await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryInlineTagsTests));
-        await session.Dispatch(async () =>
-        {
-            Application.Current!.Styles.Add(new FluentAvaloniaTheme());
-            await using var fixture = await HistoryViewModelPagingTests.Fixture.CreateAsync(token);
-            await fixture.LoadAsync();
-            var record = fixture.Records[0];
-            record.Tags = Enumerable.Range(0, 12).Select(i => $"tag{i}").ToArray();
-            var tags = new HistoryInlineTagsView { DataContext = record, Tags = record.PreviewTags, ViewModel = fixture.ViewModel };
-            var owner = new Window { Width = 200, Height = 40, Content = tags, ShowActivated = false };
-            var historyWindow = new Mock<IWindow>();
-            historyWindow.Setup(w => w.Hide()).Callback(owner.Hide);
-            HistoryViewModelPagingTests.Fixture.SetField(fixture.ViewModel, "window", historyWindow.Object);
-            fixture.ViewModel.CloseWhenLostFocus = true;
-            try
-            {
-                owner.Show();
-                Dispatcher.UIThread.RunJobs();
-                owner.UpdateLayout();
-                var more = tags.Children.OfType<Button>().Single();
-                Click(more);
-                var flyout = (Flyout)FlyoutBase.GetAttachedFlyout(more)!;
-                Assert.IsTrue(flyout.IsOpen);
-                fixture.ViewModel.OnLostFocus();
-                Assert.IsFalse(owner.IsActive);
-                Assert.IsTrue(owner.IsVisible);
-                flyout.Hide();
-                Dispatcher.UIThread.RunJobs();
-                Assert.IsFalse(owner.IsVisible);
-                Assert.IsFalse(fixture.ViewModel.HasModalOperation);
             }
             finally
             {
