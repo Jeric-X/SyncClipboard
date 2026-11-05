@@ -34,19 +34,7 @@ public sealed class HistoryInlineTagsView : Panel
         set => SetValue(ViewModelProperty, value);
     }
 
-    private readonly Button _more = new()
-    {
-        // Reserve the same width for +1 through +32 so the count cannot affect which tags fit.
-        Focusable = false,
-        Width = 28,
-        Height = 22,
-        MinWidth = 0,
-        MinHeight = 0,
-        FontSize = 11,
-        Margin = new Thickness(4, 0, 0, 0),
-        Padding = new Thickness(0),
-        CornerRadius = new CornerRadius(5)
-    };
+    private Button? _more;
     private HistoryPreviewTag[] _tags = [];
     private int _measuredForWidth;
     private int _measuredCount;
@@ -55,14 +43,28 @@ public sealed class HistoryInlineTagsView : Panel
     private Flyout? _flyout;
     private HistoryViewModel? _popupViewModel;
 
-    public HistoryInlineTagsView()
+    public HistoryInlineTagsView() => ClipToBounds = true;
+
+    private Button CreateMoreButton()
     {
-        ClipToBounds = true;
-        _more.Classes.Add("HistoryTagOverflow");
-        Children.Add(_more);
-        ToolTip.SetTip(_more, Strings.HistoryTagsShowMore);
-        AutomationProperties.SetName(_more, Strings.HistoryTagsShowMore);
-        _more.Click += ShowMore;
+        var button = new Button
+        {
+            // Reserve the same width for +1 through +32 so the count cannot affect which tags fit.
+            Focusable = false,
+            Width = 28,
+            Height = 22,
+            MinWidth = 0,
+            MinHeight = 0,
+            FontSize = 11,
+            Margin = new Thickness(4, 0, 0, 0),
+            Padding = new Thickness(0),
+            CornerRadius = new CornerRadius(5)
+        };
+        button.Classes.Add("HistoryTagOverflow");
+        ToolTip.SetTip(button, Strings.HistoryTagsShowMore);
+        AutomationProperties.SetName(button, Strings.HistoryTagsShowMore);
+        button.Click += ShowMore;
+        return button;
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -83,9 +85,21 @@ public sealed class HistoryInlineTagsView : Panel
 
         _tags = tags;
         _visibleCount = -1;
-        Children.RemoveRange(0, Children.Count - 1);
         if (tags.Length == 0)
+        {
             _flyout?.Hide();
+            Children.Clear();
+            _more = null;
+        }
+        else if (_more is null)
+        {
+            _more = CreateMoreButton();
+            Children.Add(_more);
+        }
+        else
+        {
+            Children.RemoveRange(0, Children.Count - 1);
+        }
         InvalidateMeasure();
     }
 
@@ -104,6 +118,9 @@ public sealed class HistoryInlineTagsView : Panel
 
     protected override Size MeasureOverride(Size availableSize)
     {
+        if (_more is null)
+            return default;
+
         // DockPanel measures this column before the record. Leave at least half the content width for the text or image.
         var width = Math.Min(200, availableSize.Width / 2);
         _more.Measure(new Size(width, double.PositiveInfinity));
@@ -140,6 +157,9 @@ public sealed class HistoryInlineTagsView : Panel
 
     protected override Size ArrangeOverride(Size finalSize)
     {
+        if (_more is null)
+            return finalSize;
+
         var more = new HistoryTagSize(_more.DesiredSize.Width, _more.DesiredSize.Height);
         var layout = HistoryTagOverflowLayout.Calculate(MeasureTags(finalSize.Width), more,
             finalSize.Width, finalSize.Height, lineSpacing: 4);
@@ -199,16 +219,16 @@ public sealed class HistoryInlineTagsView : Panel
     private void ShowMore(object? _, RoutedEventArgs e)
     {
         e.Handled = true;
-        if (_flyout is not null || !IsEffectivelyVisible || _more.Content is null || _visibleCount < 0 || ViewModel is not { } vm)
+        if (_flyout is not null || !IsEffectivelyVisible || _more?.Content is null || _visibleCount < 0 || ViewModel is not { } vm)
             return;
         var bounds = _more.GetTransformedBounds();
         if (bounds is not { } b || !b.Bounds.TransformToAABB(b.Transform).Intersects(b.Clip))
             return;
 
-        OpenTagFlyout(vm);
+        OpenTagFlyout(_more, vm);
     }
 
-    private void OpenTagFlyout(HistoryViewModel vm)
+    private void OpenTagFlyout(Button trigger, HistoryViewModel vm)
     {
         _expanded = new WrapPanel { MaxWidth = 224, ItemSpacing = 5, LineSpacing = 5 };
         FillPopup(_expanded);
@@ -218,19 +238,19 @@ public sealed class HistoryInlineTagsView : Panel
             Content = _expanded
         };
         _flyout = flyout;
-        FlyoutBase.SetAttachedFlyout(_more, flyout);
-        flyout.Closed += (_, _) => ReleasePopup();
+        FlyoutBase.SetAttachedFlyout(trigger, flyout);
+        flyout.Closed += (_, _) => ReleasePopup(trigger);
         _popupViewModel = vm;
         vm.PropertyChanged += OnPopupViewModelChanged;
         try
         {
-            FlyoutBase.ShowAttachedFlyout(_more);
+            FlyoutBase.ShowAttachedFlyout(trigger);
             if (!flyout.IsOpen)
-                ReleasePopup();
+                ReleasePopup(trigger);
         }
         catch
         {
-            ReleasePopup();
+            ReleasePopup(trigger);
             throw;
         }
     }
@@ -241,7 +261,7 @@ public sealed class HistoryInlineTagsView : Panel
             _flyout?.Hide();
     }
 
-    private void ReleasePopup()
+    private void ReleasePopup(Button trigger)
     {
         if (_popupViewModel is not { } vm)
             return;
@@ -249,7 +269,7 @@ public sealed class HistoryInlineTagsView : Panel
         _popupViewModel = null;
         _expanded = null;
         _flyout = null;
-        FlyoutBase.SetAttachedFlyout(_more, null);
+        FlyoutBase.SetAttachedFlyout(trigger, null);
     }
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)

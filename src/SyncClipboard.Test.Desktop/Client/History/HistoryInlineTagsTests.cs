@@ -47,9 +47,14 @@ public class HistoryInlineTagsTests
         {
             var remove = chip.GetVisualDescendants().OfType<Button>().Single();
             var peer = ControlAutomationPeer.CreatePeerForElement(remove)!;
-            Assert.AreEqual(InBounds(tags, chip), peer.IsControlElement());
-            Assert.AreEqual(!InBounds(tags, chip), peer.IsOffscreen());
-            Assert.AreEqual(InBounds(tags, chip), peer.IsEnabled());
+            var visible = InBounds(tags, chip);
+            Assert.AreEqual(visible, peer.IsControlElement());
+            Assert.AreEqual(!visible, peer.IsOffscreen());
+            Assert.AreEqual(visible, peer.IsEnabled());
+            if (!visible)
+            {
+                Assert.ThrowsExactly<ElementNotEnabledException>(((IInvokeProvider)peer).Invoke);
+            }
         }
         Assert.AreEqual(InBounds(tags, more), ControlAutomationPeer.CreatePeerForElement(more)!.IsControlElement());
     }
@@ -83,10 +88,6 @@ public class HistoryInlineTagsTests
         Assert.AreEqual(40, row.Bounds.Height);
         VerifyAccessibleButtons(tags, more);
         Assert.IsLessThan(tagCount, tags.Children.OfType<HistoryRecordTagChip>().Count());
-        var hiddenChip = tags.Children.OfType<HistoryRecordTagChip>().First(chip => !InBounds(tags, chip));
-        var hiddenButton = hiddenChip.GetVisualDescendants().OfType<Button>().Single();
-        var invoke = (IInvokeProvider)ControlAutomationPeer.CreatePeerForElement(hiddenButton)!;
-        Assert.ThrowsExactly<ElementNotEnabledException>(invoke.Invoke);
         var shortCount = VisibleTags(tags).Length;
         Assert.IsGreaterThan(0, shortCount);
         Assert.IsTrue(InBounds(tags, more));
@@ -129,12 +130,11 @@ public class HistoryInlineTagsTests
             var content = new Border { Height = 40 };
             var row = new DockPanel { Children = { tags, content } };
             var window = new Window { Width = 440, Height = 350, Content = new StackPanel { Children = { row } } };
-            var more = tags.Children.OfType<Button>().Single();
-
             try
             {
                 window.Show();
                 Layout(window);
+                var more = tags.Children.OfType<Button>().Single();
                 VerifyRowLayout(window, row, content, tags, more, names.Length);
                 CollectionAssert.AreEqual(names, (await fixture.ReadStoredRecordAsync(record)).Tags);
 
@@ -145,7 +145,6 @@ public class HistoryInlineTagsTests
                 var popup = (WrapPanel)flyout.Content!;
                 var scroller = popup.FindAncestorOfType<ScrollViewer>()!;
                 Assert.IsGreaterThan(scroller.Viewport.Height, scroller.Extent.Height);
-                var fullWidth = scroller.Bounds.Width;
                 var oldY = popup.TranslatePoint(default, window)!.Value.Y;
                 row.Margin = new Thickness(0, 18, 0, 0);
                 Layout(window);
@@ -177,15 +176,18 @@ public class HistoryInlineTagsTests
                 await RemoveAndRefresh(fixture, firstChip.GetVisualDescendants().OfType<Button>().Single(), window, token);
                 Assert.DoesNotContain(visibleTag, (await fixture.ReadStoredRecordAsync(record)).Tags);
                 CollectionAssert.AreEqual(names, (await fixture.ReadStoredRecordAsync(other)).Tags);
+                window.Width = 200;
+                Layout(window);
                 Click(more);
                 flyout = (Flyout)FlyoutBase.GetAttachedFlyout(more)!;
                 Assert.IsTrue(flyout.IsOpen);
+                var resizeScroller = ((WrapPanel)flyout.Content!).FindAncestorOfType<ScrollViewer>()!;
+                var fullWidth = resizeScroller.Bounds.Width;
                 var current = record.Tags;
-                window.Width = 200;
-                record.Tags = ["tag00000", "tag11111", "md"];
+                record.Tags = ["a", "b", "c"];
                 Layout(window);
-                var smallPopup = (WrapPanel)flyout.Content!;
-                Assert.IsLessThan(fullWidth, smallPopup.FindAncestorOfType<ScrollViewer>()!.Bounds.Width);
+                Assert.IsTrue(flyout.IsOpen);
+                Assert.IsLessThan(fullWidth, resizeScroller.Bounds.Width);
                 record.Tags = ["md"];
                 Layout(window);
                 Assert.IsFalse(flyout.IsOpen);
@@ -196,6 +198,17 @@ public class HistoryInlineTagsTests
                 Layout(window);
                 Click(more);
                 flyout = (Flyout)FlyoutBase.GetAttachedFlyout(more)!;
+                record.Tags = [];
+                Layout(window);
+                Assert.IsFalse(flyout.IsOpen);
+                Assert.IsEmpty(tags.Children);
+                Assert.AreEqual(0d, tags.DesiredSize.Width);
+                record.Tags = current;
+                Layout(window);
+                more = tags.Children.OfType<Button>().Single();
+                Click(more);
+                flyout = (Flyout)FlyoutBase.GetAttachedFlyout(more)!;
+                Assert.IsTrue(flyout.IsOpen);
                 row.Children.Remove(tags);
                 Layout(window);
                 Assert.IsFalse(flyout.IsOpen);
