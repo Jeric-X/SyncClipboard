@@ -217,7 +217,7 @@
                 <ToggleButton IsChecked="{x:Bind _viewModel.MultiTagFilter, Mode=TwoWay}"
                               IsTabStop="False"
                               AllowFocusOnInteraction="False"
-                              ToolTipService.ToolTip="{x:Bind i18n:Strings.HistoryTagsMultiSelectDescription}"
+                              ToolTipService.ToolTip="{x:Bind i18n:Strings.HistoryTagsMultiSelect}"
                               AutomationProperties.Name="{x:Bind i18n:Strings.HistoryTagsMultiSelect}">
                     <FontIcon Glyph="&#xE762;" />
                 </ToggleButton>

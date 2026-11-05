@@ -265,7 +265,7 @@
                             VerticalAlignment="Top">
                     <ToggleButton Classes="FontIcon"
                                   IsChecked="{Binding MultiTagFilter, Mode=TwoWay}"
-                                  ToolTip.Tip="{x:Static i18n:Strings.HistoryTagsMultiSelectDescription}"
+                                  ToolTip.Tip="{x:Static i18n:Strings.HistoryTagsMultiSelect}"
                                   AutomationProperties.Name="{x:Static i18n:Strings.HistoryTagsMultiSelect}">
                         <ui:FAFontIcon Glyph="&#xE762;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                     </ToggleButton>
