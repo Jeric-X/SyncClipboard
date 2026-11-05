@@ -1700,4 +1700,7 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryTagRemove" xml:space="preserve">
     <value>Remove this tag</value>
   </data>
+  <data name="HistoryTagsShowMore" xml:space="preserve">
+    <value>Show hidden tags</value>
+  </data>
 </root>

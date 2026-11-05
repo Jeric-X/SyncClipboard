@@ -1,0 +1,15 @@
+<Flyout x:Class="SyncClipboard.Desktop.Controls.HistoryTagFlyout"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Placement="BottomEdgeAlignedRight">
+    <Flyout.FlyoutPresenterTheme>
+        <ControlTheme TargetType="FlyoutPresenter" BasedOn="{StaticResource {x:Type FlyoutPresenter}}">
+            <Setter Property="Padding" Value="8" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="MaxWidth" Value="244" />
+            <Setter Property="MaxHeight" Value="184" />
+        </ControlTheme>
+    </Flyout.FlyoutPresenterTheme>
+</Flyout>
