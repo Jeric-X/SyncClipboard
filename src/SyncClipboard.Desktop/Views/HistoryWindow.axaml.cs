@@ -192,6 +192,11 @@ public partial class HistoryWindow : Window, IWindow
         }
 
         e.Handled = _viewModel.HandleKeyPress(key.Value, isShiftPressed, isAltPressed, isCtrlPressed, isMetaPressed);
+        if (!e.Handled && e.Key == Key.Down && e.KeyModifiers == KeyModifiers.Alt &&
+            _viewModel.PreviewedHistoryItem is { } record && _ListBox.ContainerFromItem(record) is { } row)
+        {
+            e.Handled = row.FindDescendantOfType<Controls.HistoryInlineTagsView>()?.TryShowHiddenTags() == true;
+        }
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)

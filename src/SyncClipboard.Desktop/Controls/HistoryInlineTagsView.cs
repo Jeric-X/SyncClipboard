@@ -38,8 +38,15 @@ public sealed class HistoryInlineTagsView : Panel
     private readonly Button _more = new()
     {
         // Reserve the same width for +1 through +32 so the count cannot affect which tags fit.
-        Focusable = false, Width = 28, Height = 22, MinWidth = 0, MinHeight = 0, FontSize = 11,
-        Margin = new Thickness(4, 0, 0, 0), Padding = new Thickness(0), CornerRadius = new CornerRadius(5)
+        Focusable = false,
+        Width = 28,
+        Height = 22,
+        MinWidth = 0,
+        MinHeight = 0,
+        FontSize = 11,
+        Margin = new Thickness(4, 0, 0, 0),
+        Padding = new Thickness(0),
+        CornerRadius = new CornerRadius(5)
     };
     private HistoryPreviewTag[] _tags = [];
     private HistoryTagSize[] _sizes = [];
@@ -166,8 +173,17 @@ public sealed class HistoryInlineTagsView : Panel
     private void ShowMore(object? _, RoutedEventArgs e)
     {
         e.Handled = true;
-        if (_flyout is not null || _visibleCount < 0 || _visibleCount >= _tags.Length || ViewModel is not { } vm)
-            return;
+        TryShowHiddenTags();
+    }
+
+    internal bool TryShowHiddenTags()
+    {
+        if (_flyout is not null || !IsEffectivelyVisible || _more.Content is null || _visibleCount < 0 || ViewModel is not { } vm)
+            return false;
+        var bounds = _more.GetTransformedBounds();
+        if (bounds is not { } b || !b.Bounds.TransformToAABB(b.Transform).Intersects(b.Clip))
+            return false;
+
         _expanded = new WrapPanel { MaxWidth = 224, ItemSpacing = 5, LineSpacing = 5 };
         FillPopup(_expanded);
         var flyout = new HistoryTagFlyout
@@ -193,6 +209,7 @@ public sealed class HistoryInlineTagsView : Panel
             ReleasePopup(owner);
             throw;
         }
+        return flyout.IsOpen;
     }
 
     private void OnPopupViewModelChanged(object? _, PropertyChangedEventArgs e)

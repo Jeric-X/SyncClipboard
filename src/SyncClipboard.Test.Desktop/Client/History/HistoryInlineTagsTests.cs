@@ -7,6 +7,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Data;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Input.Raw;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAvalonia.Styling;
@@ -199,6 +200,60 @@ public class HistoryInlineTagsTests
             finally
             {
                 window.Close();
+            }
+            return true;
+        }, token);
+    }
+
+    [TestMethod]
+    public async Task OverflowClosesOnEscapeOrWhenTheTriggerScrollsOutOfView()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryInlineTagsTests));
+        await session.Dispatch(async () =>
+        {
+            Application.Current!.Styles.Add(new FluentAvaloniaTheme());
+            await using var fixture = await HistoryViewModelPagingTests.Fixture.CreateAsync(token);
+            await fixture.LoadAsync();
+            var record = fixture.Records[0];
+            record.Tags = Enumerable.Range(0, 28).Select(i => $"tag{i}").ToArray();
+            var tags = new HistoryInlineTagsView { Height = 40, Margin = new Thickness(0, 0, 32, 0), DataContext = record, Tags = record.PreviewTags, ViewModel = fixture.ViewModel };
+            var search = new TextBox();
+            var list = new ScrollViewer { Height = 100, Content = new StackPanel { Children = { tags, new Border { Height = 400 } } } };
+            var owner = new Window { Width = 220, Height = 300, Content = new StackPanel { Children = { search, list } } };
+            try
+            {
+                owner.Show();
+                search.Focus();
+                Dispatcher.UIThread.RunJobs();
+                owner.UpdateLayout();
+                var more = tags.Children.OfType<Button>().Single();
+                Click(more);
+                var flyout = (Flyout)FlyoutBase.GetAttachedFlyout(more)!;
+                Assert.IsTrue(flyout.IsOpen);
+                var scroll = ((Control)flyout.Content!).FindAncestorOfType<ScrollViewer>()!;
+                owner.KeyPress(Key.PageDown, RawInputModifiers.None, PhysicalKey.PageDown, null);
+                owner.KeyRelease(Key.PageDown, RawInputModifiers.None, PhysicalKey.PageDown, null);
+                Dispatcher.UIThread.RunJobs();
+                Assert.IsGreaterThan(0d, scroll.Offset.Y);
+                owner.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
+                owner.KeyRelease(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
+                Dispatcher.UIThread.RunJobs();
+                Assert.IsFalse(flyout.IsOpen);
+                Assert.AreSame(search, owner.FocusManager!.GetFocusedElement());
+
+                Assert.IsTrue(tags.TryShowHiddenTags());
+                flyout = (Flyout)FlyoutBase.GetAttachedFlyout(more)!;
+                list.Offset = new Vector(0, 150);
+                Dispatcher.UIThread.RunJobs();
+                owner.UpdateLayout();
+                Assert.IsFalse(flyout.IsOpen);
+                Assert.IsFalse(fixture.ViewModel.HasModalOperation);
+                Assert.IsFalse(tags.TryShowHiddenTags());
+            }
+            finally
+            {
+                owner.Close();
             }
             return true;
         }, token);
