@@ -18,7 +18,7 @@ public class PreviewPanelTagTests
     public TestContext TestContext { get; set; } = null!;
 
     public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<Application>()
-        .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).UseSkia();
+        .UseHeadless(new AvaloniaHeadlessPlatformOptions());
 
     [TestMethod]
     public async Task PreviewShowsCurrentTagsAndRemovesOnlyTheClickedRecordsTag()
