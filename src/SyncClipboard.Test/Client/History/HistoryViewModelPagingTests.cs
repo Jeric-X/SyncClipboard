@@ -396,7 +396,7 @@ public class HistoryViewModelPagingTests
         fixture.Logger.VerifyNoOtherCalls();
     }
 
-    private sealed class Fixture : IAsyncDisposable
+    public sealed class Fixture : IAsyncDisposable
     {
         private readonly HistoryDbContext db = new();
         private readonly SemaphoreSlim semaphore = new(1, 1);
@@ -404,6 +404,7 @@ public class HistoryViewModelPagingTests
         public Mock<IHistoryExportDialog> ExportDialog { get; } = new();
         public Mock<IMainWindowDialog> ConfirmationDialog { get; } = new();
         private readonly AppCore? previousApp = AppCore.TryGetCurrent();
+        public HistoryManager Manager { get; } = (HistoryManager)RuntimeHelpers.GetUninitializedObject(typeof(HistoryManager));
         public HistoryViewModel ViewModel { get; } = (HistoryViewModel)RuntimeHelpers.GetUninitializedObject(typeof(HistoryViewModel));
         public ObservableList<HistoryRecordVM> Records { get; } = [];
         public ConfigBase RuntimeConfig { get; } = CreateRuntimeConfig();
@@ -433,14 +434,13 @@ public class HistoryViewModelPagingTests
             var app = (AppCore)RuntimeHelpers.GetUninitializedObject(typeof(AppCore));
             SetField(app, "<Services>k__BackingField", services);
             typeof(AppCore).GetField("_current", BindingFlags.Static | BindingFlags.NonPublic)!.SetValue(null, app);
-            var manager = (HistoryManager)RuntimeHelpers.GetUninitializedObject(typeof(HistoryManager));
-            SetField(manager, "_dbContext", db);
-            SetField(manager, "_dbSemaphore", semaphore);
-            SetField(manager, "_profileEnv", profileEnv);
-            SetField(manager, "_runtimeHistoryConfig", new RuntimeHistoryConfig());
+            SetField(Manager, "_dbContext", db);
+            SetField(Manager, "_dbSemaphore", semaphore);
+            SetField(Manager, "_profileEnv", profileEnv);
+            SetField(Manager, "_runtimeHistoryConfig", new RuntimeHistoryConfig());
             var queue = (HistoryTransferQueue)RuntimeHelpers.GetUninitializedObject(typeof(HistoryTransferQueue));
             SetField(queue, "_activeTasks", new ConcurrentDictionary<string, TransferTask>());
-            SetField(ViewModel, "historyManager", manager);
+            SetField(ViewModel, "historyManager", Manager);
             SetField(ViewModel, "_serviceProvider", services);
             SetField(ViewModel, "runtimeConfig", RuntimeConfig);
             ViewModel.TagOptions = [];

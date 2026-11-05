@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using SyncClipboard.Core;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
@@ -110,6 +111,13 @@ public sealed partial class PreviewPanel : UserControl
         {
             UpdateStatusText();
         }
+    }
+
+    private async void RemoveTag_Click(object? sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if (sender is Button { DataContext: HistoryPreviewTag tag } && SelectedItem?.Key == tag.Record)
+            await ViewModel.RemoveRecordTagAsync(tag);
     }
 
     private void UpdatePreviewImageContent()

@@ -1697,4 +1697,7 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryTagsMultiSelect" xml:space="preserve">
     <value>标签多选模式</value>
   </data>
+  <data name="HistoryTagRemove" xml:space="preserve">
+    <value>移除此标签</value>
+  </data>
 </root>

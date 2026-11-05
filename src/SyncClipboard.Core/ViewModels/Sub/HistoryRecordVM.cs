@@ -7,6 +7,8 @@ using SyncClipboard.Core.Utilities.History;
 
 namespace SyncClipboard.Core.ViewModels.Sub;
 
+public sealed record HistoryPreviewTag(HistoryRecordKey Record, string Name);
+
 public partial class HistoryRecordVM : ObservableObject
 {
     public HistoryRecordVM(HistoryRecord record)
@@ -46,7 +48,10 @@ public partial class HistoryRecordVM : ObservableObject
     partial void OnFilePathChanged(string[]? oldValue, string[] newValue) => UpdatePreviewImage();
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PreviewTags))]
     private string[] tags = [];
+
+    public IEnumerable<HistoryPreviewTag> PreviewTags => (Tags ?? []).Select(tag => new HistoryPreviewTag(Key, tag));
 
     public string Hash { get; set; }
     public string? TransferDataFile { get; set; }
