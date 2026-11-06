@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.Markup.Xaml.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAvalonia.Styling;
@@ -24,6 +25,10 @@ public class HistoryTagPickerTests
         await session.Dispatch(() =>
         {
             Application.Current!.Styles.Add(new FluentAvaloniaTheme());
+            Application.Current.Styles.Add(new StyleInclude(new Uri("avares://SyncClipboard.Desktop/"))
+            {
+                Source = new Uri("avares://SyncClipboard.Desktop/Styling/PopupStyles.axaml")
+            });
             var saved = new List<(string, bool)>();
             var pendingSave = new TaskCompletionSource();
             var picker = new HistoryTagPickerViewModel(["work", "code", .. Enumerable.Range(1, 20).Select(i => $"tag{i}")], ["work"], (name, add) =>
@@ -60,6 +65,7 @@ public class HistoryTagPickerTests
         TaskCompletionSource pendingSave, List<(string, bool)> saved)
     {
         var search = view.FindControl<TextBox>("_TagSearch")!;
+        Assert.AreEqual(new CornerRadius(8), view.GetVisualAncestors().OfType<FlyoutPresenter>().Single().CornerRadius);
         var add = view.FindControl<Button>("_AddInput")!;
         var list = view.GetVisualDescendants().OfType<ItemsControl>().Single();
         var scroll = list.GetVisualAncestors().OfType<ScrollViewer>().First();

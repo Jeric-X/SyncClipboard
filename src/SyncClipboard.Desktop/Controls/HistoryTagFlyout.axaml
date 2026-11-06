@@ -5,7 +5,6 @@
     <Flyout.FlyoutPresenterTheme>
         <ControlTheme TargetType="FlyoutPresenter" BasedOn="{StaticResource {x:Type FlyoutPresenter}}">
             <Setter Property="Padding" Value="8" />
-            <Setter Property="CornerRadius" Value="8" />
             <Setter Property="MinWidth" Value="0" />
             <Setter Property="MinHeight" Value="0" />
             <Setter Property="MaxWidth" Value="244" />

@@ -1,4 +1,4 @@
-<Application x:Class="SyncClipboard.Desktop.App"
+﻿<Application x:Class="SyncClipboard.Desktop.App"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:sty="using:FluentAvalonia.Styling"
@@ -22,10 +22,14 @@
                     <Color x:Key="WindowBackgroudColor">Black</Color>
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
-            <!-- Linux already configures bundled MiSans as $Default. Resolving foreign font names
-                 through fontconfig can repeatedly synthesize bold faces in Avalonia 12. -->
-            <OnPlatform x:Key="DefaultFont" x:TypeArguments="FontFamily"
-                        Linux="$Default" Default="Simsun,微软雅黑,Microsoft YaHei,苹方-简,PingFang SC,宋体-简,$Default" />
+            <!--
+                Linux already configures bundled MiSans as $Default. Resolving foreign font names
+                through fontconfig can repeatedly synthesize bold faces in Avalonia 12.
+            -->
+            <OnPlatform x:Key="DefaultFont"
+                        x:TypeArguments="FontFamily"
+                        Linux="$Default"
+                        Default="Simsun,微软雅黑,Microsoft YaHei,苹方-简,PingFang SC,宋体-简,$Default" />
             <StaticResource x:Key="ProgramFont" ResourceKey="DefaultFont" />
             <GridLength x:Key="ToggleSwitchPreContentMargin">0</GridLength>
             <GridLength x:Key="ToggleSwitchPostContentMargin">0</GridLength>
@@ -40,13 +44,14 @@
     </Application.Resources>
     <Application.Styles>
         <sty:FluentAvaloniaTheme PreferSystemTheme="False" PreferUserAccentColor="True" />
+        <StyleInclude Source="avares://SyncClipboard.Desktop/Styling/PopupStyles.axaml" />
         <Style Selector="Window">
             <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
         </Style>
         <Style Selector="TextBlock">
             <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
         </Style>
-        <!-- Caption buttons use the symbol font supplied by the decoration theme. -->
+        <!--  Caption buttons use the symbol font supplied by the decoration theme.  -->
         <Style Selector="Button:not(.CaptionButton)">
             <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
         </Style>

@@ -7,7 +7,6 @@
     <UserControl.Resources>
         <ControlTheme x:Key="TagPickerFlyoutTheme" TargetType="FlyoutPresenter" BasedOn="{StaticResource {x:Type FlyoutPresenter}}">
             <Setter Property="Padding" Value="8" />
-            <Setter Property="CornerRadius" Value="8" />
         </ControlTheme>
     </UserControl.Resources>
     <UserControl.Styles>
