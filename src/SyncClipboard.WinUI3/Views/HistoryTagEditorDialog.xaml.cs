@@ -1,3 +1,4 @@
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.ViewModels;
@@ -17,6 +18,13 @@ public sealed partial class HistoryTagEditorDialog : ContentDialog
         _save = save;
         InitializeComponent();
         DataContext = editor;
+    }
+
+    protected override void OnApplyTemplate()
+    {
+        base.OnApplyTemplate();
+        if (GetTemplateChild("BackgroundElement") is FrameworkElement background)
+            background.HorizontalAlignment = HorizontalAlignment.Stretch;
     }
 
     private async void OnPrimaryButtonClick(ContentDialog _, ContentDialogButtonClickEventArgs args)
