@@ -861,6 +861,9 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         }
     }
 
+    private async void EditTags_Click(object _, RoutedEventArgs __) =>
+        await EditTagsAsync(_viewModel.GetTagEditSelection());
+
     private async Task EditTagsAsync(HistoryRecordKey[] keys)
     {
         using var hold = _viewModel.HoldForModalOperation();

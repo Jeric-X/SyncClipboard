@@ -357,39 +357,46 @@
                     Padding="8,4"
                     Background="{ThemeResource SystemControlBackgroundBaseLowBrush}"
                     Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsMultiSelecting), Mode=OneWay}">
-                <Grid ColumnDefinitions="*, Auto">
-                    <TextBlock Text="{x:Bind sys:String.Format(i18n:Strings.HistoryMultiSelectStatus, _viewModel.SelectedHistoryCount, _viewModel.SelectedInCurrentFilterCount), Mode=OneWay}" VerticalAlignment="Center" Margin="8,0" />
-                    <CommandBar Grid.Column="1"
-                                MinHeight="40"
-                                DefaultLabelPosition="Right"
-                                IsOpen="True"
-                                IsDynamicOverflowEnabled="False"
-                                OverflowButtonVisibility="Collapsed"
-                                Background="Transparent">
-                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectAll}" LabelPosition="Default" Command="{x:Bind _viewModel.ToggleCurrentFilterSelectionCommand}">
-                            <AppBarButton.Icon>
-                                <FontIcon x:Name="_SelectAllIcon" Glyph="&#xE739;" />
-                            </AppBarButton.Icon>
-                        </AppBarButton>
-                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectDelete}"
-                                      LabelPosition="Default"
-                                      Icon="Delete"
-                                      Command="{x:Bind _viewModel.ConfirmDeleteSelectedCommand}" />
-                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectStar}" LabelPosition="Default" Command="{x:Bind _viewModel.ConfirmToggleSelectedStarredCommand}">
-                            <AppBarButton.Icon>
-                                <SymbolIcon x:Name="_ToggleStarIcon" Symbol="OutlineStar" />
-                            </AppBarButton.Icon>
-                        </AppBarButton>
-                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryExportSelected}"
-                                      Icon="Save"
-                                      LabelPosition="Default"
-                                      Command="{x:Bind _viewModel.ExportSelectedCommand}" />
-                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectExit}"
-                                      LabelPosition="Default"
-                                      Icon="Cancel"
-                                      Command="{x:Bind _viewModel.ExitMultiSelectCommand}" />
-                    </CommandBar>
-                </Grid>
+                <CommandBar MinHeight="40"
+                            DefaultLabelPosition="Right"
+                            IsOpen="True"
+                            IsDynamicOverflowEnabled="True"
+                            OverflowButtonVisibility="Auto"
+                            Background="Transparent">
+                    <CommandBar.Content>
+                        <TextBlock Text="{x:Bind sys:String.Format(i18n:Strings.HistoryMultiSelectStatus, _viewModel.SelectedHistoryCount, _viewModel.SelectedInCurrentFilterCount), Mode=OneWay}"
+                                   VerticalAlignment="Center"
+                                   Margin="8,0"
+                                   TextTrimming="CharacterEllipsis" />
+                    </CommandBar.Content>
+                    <AppBarButton Label="{x:Bind i18n:Strings.HistoryTagsEdit}"
+                                  LabelPosition="Default"
+                                  Icon="Edit"
+                                  IsEnabled="{x:Bind _viewModel.HasSelectedRecords, Mode=OneWay}"
+                                  Click="EditTags_Click" />
+                    <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectAll}" LabelPosition="Default" Command="{x:Bind _viewModel.ToggleCurrentFilterSelectionCommand}">
+                        <AppBarButton.Icon>
+                            <FontIcon x:Name="_SelectAllIcon" Glyph="&#xE739;" />
+                        </AppBarButton.Icon>
+                    </AppBarButton>
+                    <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectDelete}"
+                                  LabelPosition="Default"
+                                  Icon="Delete"
+                                  Command="{x:Bind _viewModel.ConfirmDeleteSelectedCommand}" />
+                    <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectStar}" LabelPosition="Default" Command="{x:Bind _viewModel.ConfirmToggleSelectedStarredCommand}">
+                        <AppBarButton.Icon>
+                            <SymbolIcon x:Name="_ToggleStarIcon" Symbol="OutlineStar" />
+                        </AppBarButton.Icon>
+                    </AppBarButton>
+                    <AppBarButton Label="{x:Bind i18n:Strings.HistoryExportSelected}"
+                                  Icon="Save"
+                                  LabelPosition="Default"
+                                  Command="{x:Bind _viewModel.ExportSelectedCommand}" />
+                    <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectExit}"
+                                  LabelPosition="Default"
+                                  Icon="Cancel"
+                                  Command="{x:Bind _viewModel.ExitMultiSelectCommand}" />
+                </CommandBar>
             </Border>
         </Grid>
         <InfoBar x:Name="_InfoBar"
