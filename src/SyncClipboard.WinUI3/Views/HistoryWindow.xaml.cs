@@ -1229,15 +1229,24 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         border.SetBinding(UIElement.VisibilityProperty, binding);
     }
 
+    private void InlineTagsLoaded(object sender, RoutedEventArgs _)
+    {
+        var tags = (Controls.HistoryInlineTagsView)sender;
+        tags.ViewModel = _viewModel;
+        BindVisibilityOutsidePreview(tags);
+    }
+
     private void RecordControlBarLoaded(object sender, RoutedEventArgs _)
     {
         if (sender is not RecordControlBar controlBar)
             return;
 
-        // 设置 ViewModel 绑定
         controlBar.ViewModel = _viewModel;
+        BindVisibilityOutsidePreview(controlBar);
+    }
 
-        // 设置 Visibility 绑定（当 ShowPreviewPanel 为 true 时隐藏）
+    private void BindVisibilityOutsidePreview(FrameworkElement control)
+    {
         var visibilityBinding = new Binding
         {
             Source = _viewModel,
@@ -1245,7 +1254,7 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
             Converter = boolToVisibilityNegateConverter,
             Mode = BindingMode.OneWay,
         };
-        controlBar.SetBinding(UIElement.VisibilityProperty, visibilityBinding);
+        control.SetBinding(UIElement.VisibilityProperty, visibilityBinding);
     }
 
     private bool _isDraggingSplitter = false;

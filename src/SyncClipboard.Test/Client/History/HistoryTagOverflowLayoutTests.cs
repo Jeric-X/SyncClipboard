@@ -6,6 +6,25 @@ namespace SyncClipboard.Test.Client.History;
 public class HistoryTagOverflowLayoutTests
 {
     [TestMethod]
+    public void LongFirstTag_SharesTheRowWithTheOverflowCount()
+    {
+        var first = new HistoryTagSize(350, 24);
+        var more = new HistoryTagSize(32, 22);
+        var single = HistoryTagOverflowLayout.Calculate([first], more, 180, 40);
+        Assert.AreEqual(new HistoryTagPlacement(0, 0, 180, 24), single.Tags.Single());
+        Assert.IsNull(single.More);
+
+        var pair = HistoryTagOverflowLayout.Calculate([first, new(56, 24)], more, 180, 40);
+        Assert.AreEqual(new HistoryTagPlacement(0, 0, 148, 24), pair.Tags.Single());
+        Assert.AreEqual(new HistoryTagPlacement(148, 1, 32, 22), pair.More);
+        Assert.AreEqual(single.Height, pair.Height);
+
+        var narrow = HistoryTagOverflowLayout.Calculate([first, new(56, 24)], more, 50, 40);
+        Assert.IsEmpty(narrow.Tags);
+        Assert.AreEqual(new HistoryTagPlacement(18, 0, 32, 22), narrow.More);
+    }
+
+    [TestMethod]
     public void LineSpacing_SeparatesRowsWithoutAddingOuterPadding()
     {
         var tags = Enumerable.Repeat(new HistoryTagSize(70, 30), 4).ToArray();

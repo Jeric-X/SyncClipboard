@@ -15,7 +15,7 @@ using SyncClipboard.Core.ViewModels.Sub;
 using SyncClipboard.Desktop.Controls;
 using SyncClipboard.Test.Client.History;
 
-namespace SyncClipboard.Test.Desktop.Client.History;
+namespace SyncClipboard.Test.Desktop.History;
 
 [TestClass]
 [DoNotParallelize]
@@ -106,6 +106,32 @@ public class HistoryInlineTagsTests
         Assert.AreEqual(100, row.Bounds.Height);
     }
 
+    private static void VerifyLongTag(HistoryRecordVM record, Window window, HistoryInlineTagsView tags, Button more)
+    {
+        const string first = "12312312141515155555555555555555555";
+        record.Tags = [first];
+        Layout(window);
+        Assert.AreEqual(first, ((HistoryPreviewTag)VisibleTags(tags).Single().DataContext!).Name);
+        Assert.IsFalse(InBounds(tags, more));
+
+        record.Tags = [first, "33"];
+        Layout(window);
+        var chip = VisibleTags(tags).Single();
+        Assert.AreEqual(first, ((HistoryPreviewTag)chip.DataContext!).Name);
+        Assert.AreEqual("+1", more.Content);
+        Assert.IsTrue(tags.IsMeasureValid && tags.IsArrangeValid, "Truncated tags must settle after layout.");
+        var label = chip.GetVisualDescendants().OfType<TextBlock>().First();
+        Assert.IsTrue(label.Bounds.Width > 0 && label.TextLayout.TextLines.Any(line => line.HasCollapsed));
+        var remove = chip.GetVisualDescendants().OfType<Button>().Single();
+        var removeEnd = remove.TranslatePoint(new Point(remove.Bounds.Width, 0), more);
+        Assert.IsTrue(removeEnd.HasValue && removeEnd.Value.X <= 1);
+        Click(more);
+        var flyout = (Flyout)FlyoutBase.GetAttachedFlyout(more)!;
+        var hidden = ((WrapPanel)flyout.Content!).Children.OfType<HistoryRecordTagChip>().Single();
+        Assert.AreEqual("33", ((HistoryPreviewTag)hidden.DataContext!).Name);
+        flyout.Hide();
+    }
+
     [TestMethod]
     public async Task TagsFitTheContentHeightAndOverflowUpdatesTheCorrectRecord()
     {
@@ -135,6 +161,9 @@ public class HistoryInlineTagsTests
                 window.Show();
                 Layout(window);
                 var more = tags.Children.OfType<Button>().Single();
+                VerifyLongTag(record, window, tags, more);
+                record.Tags = names;
+                Layout(window);
                 VerifyRowLayout(window, row, content, tags, more, names.Length);
                 CollectionAssert.AreEqual(names, (await fixture.ReadStoredRecordAsync(record)).Tags);
 

@@ -131,9 +131,9 @@ public sealed partial class PreviewPanel : UserControl
         _StatusText.Visibility = isLocalFileMissing || isSynced ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    internal async void RemoveTag_Click(object sender, RoutedEventArgs _)
+    internal async void RemoveTag(object? _, HistoryPreviewTag tag)
     {
-        if (sender is Button { Tag: HistoryPreviewTag tag } && SelectedItem?.Key == tag.Record)
+        if (SelectedItem?.Key == tag.Record)
             await ViewModel.RemoveRecordTagAsync(tag);
     }
 
