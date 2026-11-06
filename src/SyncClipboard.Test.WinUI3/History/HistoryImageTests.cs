@@ -11,11 +11,11 @@ using SyncClipboard.Core.ViewModels.Sub;
 using SyncClipboard.Shared.Profiles;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Diagnostics;
+using SyncClipboard.Test.WinUI3.App;
 using Windows.Graphics;
 using Windows.Graphics.Imaging;
 
-namespace SyncClipboard.Test.WinUI3;
+namespace SyncClipboard.Test.WinUI3.History;
 
 [TestClass]
 [DoNotParallelize]
@@ -62,28 +62,7 @@ public class HistoryImageTests
             return;
         }
 
-        var executable = Path.ChangeExtension(typeof(HistoryImageTests).Assembly.Location, ".exe");
-        using var process = Process.Start(new ProcessStartInfo(executable, "--history-image-test")
-        {
-            UseShellExecute = false,
-            CreateNoWindow = true,
-            WindowStyle = ProcessWindowStyle.Hidden,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-        })!;
-        var token = TestContext.CancellationTokenSource.Token;
-        var output = process.StandardOutput.ReadToEndAsync(token);
-        var errors = process.StandardError.ReadToEndAsync(token);
-        try
-        {
-            await process.WaitForExitAsync(token).WaitAsync(TimeSpan.FromSeconds(60), token);
-        }
-        finally
-        {
-            if (!process.HasExited)
-                process.Kill(entireProcessTree: true);
-        }
-        Assert.AreEqual(0, process.ExitCode, await output + await errors);
+        await UITestProcess.RunAsync(RunImageChecksAsync, TestContext.CancellationTokenSource.Token);
     }
 
     internal static async Task RunImageChecksAsync()

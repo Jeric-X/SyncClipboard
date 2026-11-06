@@ -5,7 +5,7 @@
     <UseWinUI>true</UseWinUI>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
-    <StartupObject>SyncClipboard.Test.WinUI3.HistoryImageTestHost</StartupObject>
+    <StartupObject>SyncClipboard.Test.WinUI3.App.UITestHost</StartupObject>
     <ApplicationManifest>../SyncClipboard.WinUI3/app.manifest</ApplicationManifest>
     <WindowsPackageType>None</WindowsPackageType>
     <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
@@ -21,8 +21,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Page Remove="ImageTestApplication.xaml" />
-    <ApplicationDefinition Include="ImageTestApplication.xaml" />
+    <Page Remove="App/TestApplication.xaml" />
+    <ApplicationDefinition Include="App/TestApplication.xaml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,7 +39,15 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SyncClipboard.WinUI3\SyncClipboard.WinUI3.csproj" />
-    <ProjectReference Include="..\SyncClipboard.Test\SyncClipboard.Test.csproj" />
   </ItemGroup>
+
+  <!-- The referenced WinUI executable exposes this SDK helper to its test host via InternalsVisibleTo.
+       Keep the host's module initializer, which can call the helper from the application assembly. -->
+  <Target Name="UseAppUndockedWinRTInitializer" AfterTargets="GenerateUndockedRegFreeWinRTCS"
+          Condition="'$(WindowsAppSDKSelfContained)' == 'true'">
+    <ItemGroup>
+      <Compile Remove="@(Compile->WithMetadataValue('Filename', 'UndockedRegFreeWinRT-AutoInitializer')->WithMetadataValue('DefiningProjectName', 'Microsoft.WindowsAppSDK.UndockedRegFreeWinRT.CS'))" />
+    </ItemGroup>
+  </Target>
 
 </Project>

@@ -1,4 +1,4 @@
-﻿<Application x:Class="SyncClipboard.Test.WinUI3.ImageTestApplication" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<Application x:Class="SyncClipboard.Test.WinUI3.App.TestApplication" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
