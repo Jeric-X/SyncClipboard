@@ -152,5 +152,4 @@ public class HistoryTagPickerTests
         Assert.IsTrue(await picker.ToggleAsync("work"));
         Assert.IsFalse(picker.Suggestions.Single().IsAssigned);
     }
-
 }
