@@ -1,3 +1,4 @@
+using System.Globalization;
 using Avalonia;
 using Avalonia.Automation.Peers;
 using Avalonia.Automation.Provider;
@@ -24,12 +25,16 @@ public class HistoryTagBarSettingsTests
         .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).UseSkia();
 
     [TestMethod]
-    public async Task PinsPreviewInWrappingPillsAndCancelLeavesSavedOrderAlone()
+    [DataRow("en-US")]
+    [DataRow("zh-CN")]
+    public async Task PinsPreviewInWrappingPillsAndCancelLeavesSavedOrderAlone(string cultureName)
     {
         var token = TestContext.CancellationTokenSource.Token;
         await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryTagBarSettingsTests));
         await session.Dispatch(async () =>
         {
+            var previousCulture = CultureInfo.CurrentUICulture;
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(cultureName);
             Application.Current!.Styles.Add(new FluentAvaloniaTheme());
             var model = CreateModel();
             var saveCount = 0;
@@ -55,7 +60,8 @@ public class HistoryTagBarSettingsTests
                 await Task.Delay(800, token);
                 Dispatcher.UIThread.RunJobs();
                 var ordered = dialog.GetVisualDescendants().OfType<TextBlock>()
-                    .Where(t => t.Text is "Work" or "Pinned").OrderBy(t => t.TranslatePoint(default, owner)!.Value.X).ToArray();
+                    .Where(t => t.DataContext is HistoryTagBarItem && t.Text is "Work" or "Pinned")
+                    .OrderBy(t => t.TranslatePoint(default, owner)!.Value.X).ToArray();
                 Assert.AreEqual("Work", ordered[0].Text);
                 Toggle(dialog, "Pinned");
                 Assert.IsFalse(model.Tags.Single(item => item.Name == "Pinned").IsPinned);
@@ -90,6 +96,7 @@ public class HistoryTagBarSettingsTests
                 model.AcceptChanges();
                 dialog.Hide();
                 owner.Close();
+                CultureInfo.CurrentUICulture = previousCulture;
             }
             return true;
         }, token);

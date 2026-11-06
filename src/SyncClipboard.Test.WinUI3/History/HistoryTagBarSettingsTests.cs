@@ -61,7 +61,8 @@ public class HistoryTagBarSettingsTests
             model.Move(model.Tags.Single(item => item.Name == "Work"), true, 0);
             dialog.UpdateLayout();
             await Task.Delay(800, token);
-            var ordered = Descendants<TextBlock>(dialog).Where(t => t.Text is "Work" or "Pinned")
+            var ordered = Descendants<TextBlock>(dialog)
+                .Where(t => t.DataContext is HistoryTagBarItem && t.Text is "Work" or "Pinned")
                 .OrderBy(t => t.TransformToVisual(root).TransformPoint(default).X).ToArray();
             Assert.AreEqual("Work", ordered[0].Text);
             Toggle(dialog, "Pinned");
