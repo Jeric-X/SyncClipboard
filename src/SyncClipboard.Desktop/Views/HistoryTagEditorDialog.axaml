@@ -9,9 +9,9 @@
                     Title="{Binding Title}"
                     PrimaryButtonText="{x:Static i18n:Strings.HistoryTagsApply}"
                     CloseButtonText="{x:Static i18n:Strings.Cancel}">
-    <StackPanel MinWidth="300" MaxWidth="480" Spacing="12">
+    <StackPanel Width="420" Spacing="12">
         <Grid ColumnDefinitions="*,Auto">
-            <TextBox Text="{Binding Search}" PlaceholderText="{x:Static i18n:Strings.HistoryTagsSearch}" />
+            <TextBox x:Name="_TagSearch" Text="{Binding Search}" PlaceholderText="{x:Static i18n:Strings.HistoryTagsSearch}" />
             <Button Grid.Column="1"
                     Margin="8,0,0,0"
                     Content="{x:Static i18n:Strings.HistoryTagsAdd}"
