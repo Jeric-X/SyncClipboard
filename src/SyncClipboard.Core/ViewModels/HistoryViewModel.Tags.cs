@@ -118,6 +118,21 @@ public partial class HistoryViewModel
             option.IsSelected = option.Name is null ? selected.Length == 0 : selected.Contains(option.Name, StringComparer.Ordinal);
     }
 
+    public string[] PinnedTags => runtimeConfig.GetConfig<HistoryWindowConfig>().PinnedTags;
+
+    public async Task SetPinnedTagsAsync(IEnumerable<string> names)
+    {
+        var pinned = names.Select(HistoryTags.NormalizeName).Distinct(StringComparer.Ordinal).ToArray();
+        runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { PinnedTags = pinned });
+        await RefreshTagOptionsAsync();
+    }
+
+    private static string[] GetTagOrder(IEnumerable<string> known, IEnumerable<string> pinned, IEnumerable<string> selected)
+    {
+        var first = pinned.Distinct(StringComparer.Ordinal).ToArray();
+        return [.. first, .. known.Concat(selected).Except(first, StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+    }
+
     private void InitializeTagRefresh()
     {
         _tagRefresh = new(
@@ -133,37 +148,47 @@ public partial class HistoryViewModel
         // Merge bursts of history changes without canceling an in-flight database query.
         await Task.Delay(60, token);
         var counts = await Task.Run(() => historyManager.GetTagCountsAsync(token), token);
-        await _threadDispatcher.RunOnMainThreadAsync(() =>
-        {
-            var selected = SelectedTags;
-            var names = counts.Keys.Concat(selected).ToHashSet(StringComparer.Ordinal);
-            for (var i = TagOptions.Count - 1; i >= 0; i--)
-            {
-                if (TagOptions[i].Name is { } name && !names.Contains(name))
-                    TagOptions.RemoveAt(i);
-            }
+        await _threadDispatcher.RunOnMainThreadAsync(() => UpdateTagOptions(counts));
+    }
 
-            var index = 0;
-            foreach (var name in names.Order(StringComparer.Ordinal).Cast<string?>().Prepend(null))
-            {
-                var count = name is null ? 0 : counts.GetValueOrDefault(name);
-                var isSelected = name is null ? selected.Length == 0 : selected.Contains(name, StringComparer.Ordinal);
-                if (index < TagOptions.Count && string.Equals(TagOptions[index].Name, name, StringComparison.Ordinal))
-                {
-                    var option = TagOptions[index];
-                    option.Count = count;
-                    option.ShowCount = ShowTagCounts;
-                    option.IsSelected = isSelected;
-                }
-                else
-                {
-                    TagOptions.Insert(index, new HistoryTagFilter(name, count, ShowTagCounts, ToggleTagFilter)
-                    {
-                        IsSelected = isSelected
-                    });
-                }
-                index++;
-            }
-        });
+    private void UpdateTagOptions(IReadOnlyDictionary<string, int> counts)
+    {
+        var selected = SelectedTags;
+        var ordered = GetTagOrder(counts.Keys, PinnedTags, selected);
+        var names = ordered.ToHashSet(StringComparer.Ordinal);
+        for (var i = TagOptions.Count - 1; i >= 0; i--)
+        {
+            if (TagOptions[i].Name is { } name && !names.Contains(name))
+                TagOptions.RemoveAt(i);
+        }
+
+        var index = 0;
+        foreach (var name in ordered.Cast<string?>().Prepend(null))
+        {
+            var count = name is null ? 0 : counts.GetValueOrDefault(name);
+            var option = GetOrMoveTagOption(name, index, count);
+            option.Count = count;
+            option.ShowCount = ShowTagCounts;
+            option.IsSelected = name is null ? selected.Length == 0 : selected.Contains(name, StringComparer.Ordinal);
+            index++;
+        }
+    }
+
+    private HistoryTagFilter GetOrMoveTagOption(string? name, int index, int count)
+    {
+        if (index < TagOptions.Count && string.Equals(TagOptions[index].Name, name, StringComparison.Ordinal))
+            return TagOptions[index];
+
+        var option = TagOptions.FirstOrDefault(tag => string.Equals(tag.Name, name, StringComparison.Ordinal));
+        if (option is null)
+        {
+            option = new HistoryTagFilter(name, count, ShowTagCounts, ToggleTagFilter);
+            TagOptions.Insert(index, option);
+        }
+        else
+        {
+            TagOptions.Move(TagOptions.IndexOf(option), index);
+        }
+        return option;
     }
 }
