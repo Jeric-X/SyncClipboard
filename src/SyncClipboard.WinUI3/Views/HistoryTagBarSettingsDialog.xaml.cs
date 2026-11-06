@@ -196,14 +196,12 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
     {
         if (dragState is null)
             return;
-        if (!ContainsPointer(_TagScroll, e))
+        if (!ContainsPointer(_TagDropArea, e))
             dragState.ClearTarget();
-        else if (ContainsPointer(_PinnedArea, e))
+        else if (e.GetCurrentPoint(_PinDivider).Position.Y < 0)
             PreviewPinnedPosition(e.GetCurrentPoint(_PinnedTags).Position);
-        else if (ContainsPointer(_UnpinnedArea, e))
-            dragState.PreviewUnpinned();
         else
-            dragState.ClearTarget();
+            dragState.PreviewUnpinned();
         RefreshDragLayout();
     }
 

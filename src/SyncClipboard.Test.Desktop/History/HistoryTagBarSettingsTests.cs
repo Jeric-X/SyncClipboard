@@ -189,10 +189,11 @@ public class HistoryTagBarSettingsTests
     }
 
     [TestMethod]
-    [DataRow("text")]
-    [DataRow("padding")]
-    [DataRow("pin")]
-    public async Task WholePillDragsWithoutTogglingAndPinStillClicks(string part)
+    [DataRow("text", false)]
+    [DataRow("padding", false)]
+    [DataRow("pin", false)]
+    [DataRow("pin", true)]
+    public async Task WholePillDragsWithoutTogglingAndPinStillClicks(string part, bool dropInBlankArea)
     {
         var token = TestContext.CancellationTokenSource.Token;
         await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryTagBarSettingsTests));
@@ -213,6 +214,17 @@ public class HistoryTagBarSettingsTests
                 await SettleAsync(token);
                 var area = dialog.FindControl<Border>("_UnpinnedArea")!;
                 var target = area.TranslatePoint(new Point(15, area.Bounds.Height - 5), owner)!.Value;
+                if (dropInBlankArea)
+                {
+                    var apply = dialog.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "PrimaryButton");
+                    var footer = apply.TranslatePoint(new Point(15, apply.Bounds.Height / 2), owner)!.Value;
+                    DragPill(owner, dialog, part, footer);
+                    Assert.IsTrue(item.IsPinned, "The button area must not accept a drop.");
+                    await SettleAsync(token);
+                    target = apply.TranslatePoint(new Point(15, -50), owner)!.Value;
+                    var groupBottom = area.TranslatePoint(new Point(0, area.Bounds.Height), owner)!.Value.Y;
+                    Assert.IsGreaterThan(groupBottom + 20, target.Y, "The target must be below the tag group.");
+                }
                 DragPill(owner, dialog, part, target);
                 Assert.IsFalse(item.IsPinned, "Dropping into the unpinned group must unpin.");
                 await SettleAsync(token);
@@ -222,6 +234,18 @@ public class HistoryTagBarSettingsTests
                 owner.MouseUp(point, MouseButton.Left);
                 Dispatcher.UIThread.RunJobs();
                 Assert.IsTrue(item.IsPinned, "A click without a drag must still toggle the pin.");
+                if (dropInBlankArea)
+                {
+                    await SettleAsync(token);
+                    var divider = dialog.FindControl<Border>("_PinDivider")!;
+                    var below = divider.TranslatePoint(new Point(15, 4), owner)!.Value;
+                    DragPill(owner, dialog, part, below);
+                    Assert.IsFalse(item.IsPinned, "Dropping just below the divider must unpin.");
+                    await SettleAsync(token);
+                    var above = divider.TranslatePoint(new Point(15, -4), owner)!.Value;
+                    DragPill(owner, dialog, part, above);
+                    Assert.IsTrue(item.IsPinned, "Dropping just above the divider must pin.");
+                }
             }
             finally
             {

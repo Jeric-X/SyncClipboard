@@ -66,47 +66,49 @@
             </Grid>
         </DataTemplate>
     </ui:FAContentDialog.Resources>
-    <StackPanel Spacing="12">
-        <TextBlock Text="{x:Static i18n:Strings.HistoryTagBarSettingsHint}" TextWrapping="Wrap" Opacity="0.65" />
-        <ScrollViewer x:Name="_TagScroll"
-                      MaxHeight="300"
-                      HorizontalScrollBarVisibility="Disabled"
-                      VerticalScrollBarVisibility="Auto">
-            <StackPanel Spacing="12">
-                <Border x:Name="_PinnedArea" Background="Transparent" MinHeight="72">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="{x:Static i18n:Strings.HistoryTagBarPinned}" FontSize="12" Opacity="0.65" />
-                        <ItemsControl x:Name="_PinnedTags"
-                                      ItemsSource="{Binding PinnedTags}"
-                                      ItemTemplate="{StaticResource TagPillTemplate}"
-                                      MinHeight="28">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel ItemSpacing="6" LineSpacing="6" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
-                    </StackPanel>
-                </Border>
-                <Border Height="1" Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
-                <Border x:Name="_UnpinnedArea" Background="Transparent" MinHeight="72">
-                    <StackPanel Spacing="8">
-                        <TextBlock Text="{x:Static i18n:Strings.HistoryTagBarUnpinned}" FontSize="12" Opacity="0.65" />
-                        <ItemsControl x:Name="_UnpinnedTags"
-                                      ItemsSource="{Binding UnpinnedTags}"
-                                      ItemTemplate="{StaticResource TagPillTemplate}"
-                                      MinHeight="28">
-                            <ItemsControl.ItemsPanel>
-                                <ItemsPanelTemplate>
-                                    <WrapPanel ItemSpacing="6" LineSpacing="6" />
-                                </ItemsPanelTemplate>
-                            </ItemsControl.ItemsPanel>
-                        </ItemsControl>
-                    </StackPanel>
-                </Border>
-            </StackPanel>
-        </ScrollViewer>
-        <TextBlock Text="{x:Static i18n:Strings.HistoryTagBarEmpty}" IsVisible="{Binding IsEmpty}" />
-        <TextBlock Text="{Binding Error}" TextWrapping="Wrap" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-    </StackPanel>
+    <Grid x:Name="_TagDropArea">
+        <StackPanel Spacing="12">
+            <TextBlock Text="{x:Static i18n:Strings.HistoryTagBarSettingsHint}" TextWrapping="Wrap" Opacity="0.65" />
+            <ScrollViewer x:Name="_TagScroll"
+                          MaxHeight="300"
+                          HorizontalScrollBarVisibility="Disabled"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="12">
+                    <Border x:Name="_PinnedArea" Background="Transparent" MinHeight="72">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="{x:Static i18n:Strings.HistoryTagBarPinned}" FontSize="12" Opacity="0.65" />
+                            <ItemsControl x:Name="_PinnedTags"
+                                          ItemsSource="{Binding PinnedTags}"
+                                          ItemTemplate="{StaticResource TagPillTemplate}"
+                                          MinHeight="28">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel ItemSpacing="6" LineSpacing="6" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                    <Border x:Name="_PinDivider" Height="1" Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                    <Border x:Name="_UnpinnedArea" Background="Transparent" MinHeight="72">
+                        <StackPanel Spacing="8">
+                            <TextBlock Text="{x:Static i18n:Strings.HistoryTagBarUnpinned}" FontSize="12" Opacity="0.65" />
+                            <ItemsControl x:Name="_UnpinnedTags"
+                                          ItemsSource="{Binding UnpinnedTags}"
+                                          ItemTemplate="{StaticResource TagPillTemplate}"
+                                          MinHeight="28">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel ItemSpacing="6" LineSpacing="6" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+            <TextBlock Text="{x:Static i18n:Strings.HistoryTagBarEmpty}" IsVisible="{Binding IsEmpty}" />
+            <TextBlock Text="{Binding Error}" TextWrapping="Wrap" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+        </StackPanel>
+    </Grid>
 </ui:FAContentDialog>

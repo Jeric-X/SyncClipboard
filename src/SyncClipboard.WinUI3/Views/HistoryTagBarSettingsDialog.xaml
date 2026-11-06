@@ -65,7 +65,7 @@
             </Grid>
         </DataTemplate>
     </ContentDialog.Resources>
-    <Grid>
+    <Grid x:Name="_TagDropArea">
         <StackPanel Spacing="12">
             <TextBlock Text="{x:Bind i18n:Strings.HistoryTagBarSettingsHint}" TextWrapping="Wrap" Opacity="0.65" />
             <ScrollViewer x:Name="_TagScroll"
@@ -88,7 +88,7 @@
                             </ItemsControl>
                         </StackPanel>
                     </Border>
-                    <Border Height="1" Background="{ThemeResource ControlStrokeColorDefaultBrush}" />
+                    <Border x:Name="_PinDivider" Height="1" Background="{ThemeResource ControlStrokeColorDefaultBrush}" />
                     <Border x:Name="_UnpinnedArea" Background="Transparent" MinHeight="72">
                         <StackPanel Spacing="8">
                             <TextBlock Text="{x:Bind i18n:Strings.HistoryTagBarUnpinned}" FontSize="12" Opacity="0.65" />
