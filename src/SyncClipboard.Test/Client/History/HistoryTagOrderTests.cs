@@ -1,3 +1,4 @@
+using SyncClipboard.Core;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.ViewModels;
@@ -95,6 +96,37 @@ public class HistoryTagOrderTests
         Assert.AreSame(red, options[2]);
         Assert.IsTrue(red.IsSelected);
         fixture.Logger.VerifyNoOtherCalls();
+    }
+
+    [TestMethod]
+    public async Task SavingOrder_WriteFailurePreservesSavedPinsAndAllowsRetry()
+    {
+        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
+        Fixture.SetField(AppCore.TryGetCurrent()!, "<Logger>k__BackingField", fixture.Logger.Object);
+        fixture.InitializeTags();
+        await fixture.ViewModel.SetPinnedTagsAsync(["saved"]);
+        var draft = new HistoryTagBarSettingsViewModel(new Dictionary<string, int> { ["new"] = 1 }, ["saved"]);
+        draft.UnpinnedTags[0].IsPinned = true;
+        var path = fixture.RuntimeConfig.Path;
+        var backup = path + ".backup";
+        File.Move(path, backup);
+        Directory.CreateDirectory(path);
+        try
+        {
+            await Assert.ThrowsExactlyAsync<IOException>(() => fixture.ViewModel.SetPinnedTagsAsync(draft.PinnedNames));
+            AssertNames(fixture.ViewModel.PinnedTags, "saved");
+            AssertNames(fixture.ViewModel.TagOptions.Select(item => item.Name), null, "saved");
+            Assert.IsTrue(draft.HasChanges);
+            AssertNames(draft.PinnedNames, "saved", "new");
+        }
+        finally
+        {
+            Directory.Delete(path);
+            File.Move(backup, path);
+        }
+        await fixture.ViewModel.SetPinnedTagsAsync(draft.PinnedNames);
+        AssertNames(new ConfigBase(path).GetConfig<HistoryWindowConfig>().PinnedTags, "saved", "new");
+        AssertNames(fixture.ViewModel.TagOptions.Select(item => item.Name), null, "saved", "new");
     }
 
     [TestMethod]

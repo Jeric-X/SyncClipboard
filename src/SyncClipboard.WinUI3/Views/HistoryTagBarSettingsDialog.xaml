@@ -15,74 +15,6 @@
         <x:Double x:Key="ContentDialogMaxWidth">520</x:Double>
         <Style TargetType="local:HistoryTagBarSettingsDialog" BasedOn="{StaticResource DefaultContentDialogStyle}" />
         <vc:StringToVisibilityConverter x:Key="StringToVisibility" />
-        <PathGeometry x:Key="PinOutlineGeometry" FillRule="EvenOdd">
-            <PathFigure StartPoint="12.1523,3.7617" IsClosed="True">
-                <QuadraticBezierSegment Point1="12.5156,3.0469" Point2="13.2012,2.6953" />
-                <QuadraticBezierSegment Point1="13.8867,2.3438" Point2="14.6543,2.4609" />
-                <QuadraticBezierSegment Point1="15.4219,2.5781" Point2="15.9844,3.1406" />
-                <LineSegment Point="20.8594,8.0039" />
-                <QuadraticBezierSegment Point1="21.4219,8.5664" Point2="21.5391,9.334" />
-                <QuadraticBezierSegment Point1="21.6562,10.1016" Point2="21.3047,10.793" />
-                <QuadraticBezierSegment Point1="20.9531,11.4844" Point2="20.2383,11.8477" />
-                <LineSegment Point="16.0898,13.9336" />
-                <QuadraticBezierSegment Point1="15.4688,14.2383" Point2="15.2227,14.8711" />
-                <LineSegment Point="13.5,19.1719" />
-                <QuadraticBezierSegment Point1="13.2656,19.7695" Point2="12.627,19.9043" />
-                <QuadraticBezierSegment Point1="11.9883,20.0391" Point2="11.5312,19.582" />
-                <LineSegment Point="8.4023,16.4531" />
-                <LineSegment Point="4.4531,20.4023" />
-                <LineSegment Point="3.5977,20.4023" />
-                <LineSegment Point="3.5977,19.5469" />
-                <LineSegment Point="7.5469,15.5977" />
-                <LineSegment Point="4.418,12.4688" />
-                <QuadraticBezierSegment Point1="3.9609,12.0117" Point2="4.0898,11.373" />
-                <QuadraticBezierSegment Point1="4.2188,10.7344" Point2="4.8164,10.5" />
-                <LineSegment Point="9.1289,8.7773" />
-                <QuadraticBezierSegment Point1="9.7617,8.5312" Point2="10.0664,7.9102" />
-                <LineSegment Point="12.1523,3.7617" />
-            </PathFigure>
-            <PathFigure StartPoint="15.1406,3.9844" IsClosed="True">
-                <QuadraticBezierSegment Point1="14.707,3.5508" Point2="14.0977,3.6504" />
-                <QuadraticBezierSegment Point1="13.4883,3.75" Point2="13.2188,4.3008" />
-                <LineSegment Point="11.1445,8.4492" />
-                <QuadraticBezierSegment Point1="10.6289,9.4688" Point2="9.5742,9.8906" />
-                <LineSegment Point="5.2734,11.6133" />
-                <LineSegment Point="12.3867,18.7266" />
-                <LineSegment Point="14.1094,14.4258" />
-                <QuadraticBezierSegment Point1="14.5312,13.3711" Point2="15.5508,12.8555" />
-                <LineSegment Point="19.6992,10.7812" />
-                <QuadraticBezierSegment Point1="20.25,10.5117" Point2="20.3496,9.9023" />
-                <QuadraticBezierSegment Point1="20.4492,9.293" Point2="20.0156,8.8594" />
-                <LineSegment Point="15.1406,3.9844" />
-            </PathFigure>
-        </PathGeometry>
-        <PathGeometry x:Key="PinnedGeometry" FillRule="EvenOdd">
-            <PathFigure StartPoint="12.1523,3.7617" IsClosed="True">
-                <QuadraticBezierSegment Point1="12.5156,3.0469" Point2="13.2012,2.6953" />
-                <QuadraticBezierSegment Point1="13.8867,2.3438" Point2="14.6543,2.4609" />
-                <QuadraticBezierSegment Point1="15.4219,2.5781" Point2="15.9844,3.1406" />
-                <LineSegment Point="20.8594,8.0039" />
-                <QuadraticBezierSegment Point1="21.4219,8.5664" Point2="21.5391,9.334" />
-                <QuadraticBezierSegment Point1="21.6562,10.1016" Point2="21.3047,10.793" />
-                <QuadraticBezierSegment Point1="20.9531,11.4844" Point2="20.2383,11.8477" />
-                <LineSegment Point="16.0898,13.9336" />
-                <QuadraticBezierSegment Point1="15.4688,14.2383" Point2="15.2227,14.8711" />
-                <LineSegment Point="13.5,19.1719" />
-                <QuadraticBezierSegment Point1="13.2656,19.7695" Point2="12.627,19.9043" />
-                <QuadraticBezierSegment Point1="11.9883,20.0391" Point2="11.5312,19.582" />
-                <LineSegment Point="8.4023,16.4531" />
-                <LineSegment Point="4.4531,20.4023" />
-                <LineSegment Point="3.5977,20.4023" />
-                <LineSegment Point="3.5977,19.5469" />
-                <LineSegment Point="7.5469,15.5977" />
-                <LineSegment Point="4.418,12.4688" />
-                <QuadraticBezierSegment Point1="3.9609,12.0117" Point2="4.0898,11.373" />
-                <QuadraticBezierSegment Point1="4.2188,10.7344" Point2="4.8164,10.5" />
-                <LineSegment Point="9.1289,8.7773" />
-                <QuadraticBezierSegment Point1="9.7617,8.5312" Point2="10.0664,7.9102" />
-                <LineSegment Point="12.1523,3.7617" />
-            </PathFigure>
-        </PathGeometry>
         <DataTemplate x:Key="TagPillTemplate" x:DataType="vm:HistoryTagBarItem">
             <Grid Background="Transparent">
                 <Border x:Name="TagPill"
@@ -125,8 +57,8 @@
                             </ToggleButton.Resources>
                             <Viewbox Width="14" Height="14">
                                 <Canvas Width="24" Height="24">
-                                    <Path Data="{StaticResource PinnedGeometry}" Fill="{ThemeResource TextFillColorPrimaryBrush}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsPinned), Mode=OneWay}" />
-                                    <Path Data="{StaticResource PinOutlineGeometry}" Fill="{ThemeResource TextFillColorPrimaryBrush}" />
+                                    <Path Data="M12.1523 3.7617 Q12.5156 3.0469 13.2012 2.6953 Q13.8867 2.3438 14.6543 2.4609 Q15.4219 2.5781 15.9844 3.1406 L20.8594 8.0039 Q21.4219 8.5664 21.5391 9.334 Q21.6562 10.1016 21.3047 10.793 Q20.9531 11.4844 20.2383 11.8477 L16.0898 13.9336 Q15.4688 14.2383 15.2227 14.8711 L13.5 19.1719 Q13.2656 19.7695 12.627 19.9043 Q11.9883 20.0391 11.5312 19.582 L8.4023 16.4531 L4.4531 20.4023 L3.5977 20.4023 L3.5977 19.5469 L7.5469 15.5977 L4.418 12.4688 Q3.9609 12.0117 4.0898 11.373 Q4.2188 10.7344 4.8164 10.5 L9.1289 8.7773 Q9.7617 8.5312 10.0664 7.9102 L12.1523 3.7617 Z" Fill="{ThemeResource TextFillColorPrimaryBrush}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsPinned), Mode=OneWay}" />
+                                    <Path Data="M12.1523 3.7617 Q12.5156 3.0469 13.2012 2.6953 Q13.8867 2.3438 14.6543 2.4609 Q15.4219 2.5781 15.9844 3.1406 L20.8594 8.0039 Q21.4219 8.5664 21.5391 9.334 Q21.6562 10.1016 21.3047 10.793 Q20.9531 11.4844 20.2383 11.8477 L16.0898 13.9336 Q15.4688 14.2383 15.2227 14.8711 L13.5 19.1719 Q13.2656 19.7695 12.627 19.9043 Q11.9883 20.0391 11.5312 19.582 L8.4023 16.4531 L4.4531 20.4023 L3.5977 20.4023 L3.5977 19.5469 L7.5469 15.5977 L4.418 12.4688 Q3.9609 12.0117 4.0898 11.373 Q4.2188 10.7344 4.8164 10.5 L9.1289 8.7773 Q9.7617 8.5312 10.0664 7.9102 L12.1523 3.7617 Z M15.1406 3.9844 Q14.707 3.5508 14.0977 3.6504 Q13.4883 3.75 13.2188 4.3008 L11.1445 8.4492 Q10.6289 9.4688 9.5742 9.8906 L5.2734 11.6133 L12.3867 18.7266 L14.1094 14.4258 Q14.5312 13.3711 15.5508 12.8555 L19.6992 10.7812 Q20.25 10.5117 20.3496 9.9023 Q20.4492 9.293 20.0156 8.8594 L15.1406 3.9844 Z" Fill="{ThemeResource TextFillColorPrimaryBrush}" />
                                 </Canvas>
                             </Viewbox>
                         </ToggleButton>
