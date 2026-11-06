@@ -431,6 +431,11 @@
                             </TextBlock>
                         </CommandBar.Content>
                         <CommandBar.PrimaryCommands>
+                            <CommandBarButton Label="{x:Static i18n:Strings.HistoryTagsEdit}" IsEnabled="{Binding HasSelectedRecords}" Click="EditTags_Click">
+                                <CommandBarButton.Icon>
+                                    <TextBlock Text="&#xE70F;" FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="16" />
+                                </CommandBarButton.Icon>
+                            </CommandBarButton>
                             <CommandBarButton Label="{x:Static i18n:Strings.HistoryMultiSelectAll}" Command="{Binding ToggleCurrentFilterSelectionCommand}">
                                 <CommandBarButton.Icon>
                                     <TextBlock x:Name="_SelectAllIcon"
