@@ -121,7 +121,7 @@ public class HistoryTagBarSettingsTests
             Assert.IsGreaterThanOrEqualTo(-1d, bounds.Left);
             Assert.IsLessThanOrEqualTo(root.ActualWidth + 1, bounds.Right);
         }
-        await ResizeAndVerifyBoundsAsync(window, root, dialog, 1200, 650, token);
+        await ResizeAndVerifyBoundsAsync(window, root, dialog, 850, 650, token);
     }
 
     private static async Task ResizeAndVerifyBoundsAsync(Window window, Grid root,
