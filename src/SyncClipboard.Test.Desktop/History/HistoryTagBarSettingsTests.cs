@@ -5,6 +5,7 @@ using Avalonia.Automation.Provider;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAvalonia.Styling;
@@ -22,7 +23,7 @@ public class HistoryTagBarSettingsTests
     public TestContext TestContext { get; set; } = null!;
 
     public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<Application>()
-        .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).UseSkia();
+        .UseHeadless(new AvaloniaHeadlessPlatformOptions());
 
     [TestMethod]
     [DataRow("en-US")]
@@ -49,6 +50,9 @@ public class HistoryTagBarSettingsTests
                 owner.Show();
                 var result = dialog.ShowAsync(owner);
                 Dispatcher.UIThread.RunJobs();
+                await Task.Delay(800, token);
+                Dispatcher.UIThread.RunJobs();
+                VerifyDialogBounds(dialog, owner);
                 var pills = dialog.GetVisualDescendants().OfType<ToggleButton>().ToArray();
                 foreach (var pill in pills)
                     Assert.IsLessThanOrEqualTo(28, ((Control)pill.Parent!.Parent!).Bounds.Height);
@@ -66,20 +70,25 @@ public class HistoryTagBarSettingsTests
                 Toggle(dialog, "Pinned");
                 Assert.IsFalse(model.Tags.Single(item => item.Name == "Pinned").IsPinned);
                 owner.Width = 300;
+                owner.Height = 400;
                 Dispatcher.UIThread.RunJobs();
                 owner.UpdateLayout();
                 await Task.Delay(800, token);
                 Dispatcher.UIThread.RunJobs();
                 var panel = (WrapPanel)dialog.FindControl<ItemsControl>("_UnpinnedTags")!.ItemsPanelRoot!;
                 Assert.IsGreaterThan(1, panel.Children.Select(c => c.Bounds.Y).Distinct().Count());
-                var background = dialog.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "BackgroundElement");
-                Assert.IsLessThanOrEqualTo(owner.Bounds.Width, background.Bounds.Width);
+                VerifyDialogBounds(dialog, owner);
                 foreach (var toggle in dialog.GetVisualDescendants().OfType<ToggleButton>())
                 {
                     var point = toggle.TranslatePoint(default, owner)!.Value;
                     Assert.IsGreaterThanOrEqualTo(0, point.X);
                     Assert.IsLessThanOrEqualTo(owner.Bounds.Width, point.X + toggle.Bounds.Width);
                 }
+                owner.Width = 1200;
+                owner.Height = 650;
+                Dispatcher.UIThread.RunJobs();
+                owner.UpdateLayout();
+                VerifyDialogBounds(dialog, owner);
                 Invoke(dialog, "CloseButton");
                 Assert.AreEqual(Strings.HistoryTagBarDiscardTitle, dialog.Title);
                 Assert.IsFalse(result.IsCompleted);
@@ -177,6 +186,97 @@ public class HistoryTagBarSettingsTests
             }
             return true;
         }, TestContext.CancellationTokenSource.Token);
+    }
+
+    [TestMethod]
+    [DataRow("text")]
+    [DataRow("padding")]
+    [DataRow("pin")]
+    public async Task WholePillDragsWithoutTogglingAndPinStillClicks(string part)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryTagBarSettingsTests));
+        await session.Dispatch(async () =>
+        {
+            Application.Current!.Styles.Add(new FluentAvaloniaTheme());
+            var model = CreateModel();
+            var item = model.Tags.Single(t => t.Name == "Pinned");
+            var dialog = new HistoryTagBarSettingsDialog(model, () => Task.CompletedTask);
+            var owner = new Window { Width = 850, Height = 650, Content = new Button() };
+            try
+            {
+                owner.Show();
+                _ = dialog.ShowAsync(owner);
+                await SettleAsync(token);
+                DragPill(owner, dialog, part, new Point(5, 5));
+                Assert.IsTrue(item.IsPinned, "Dragging out of the target must not toggle the pin.");
+                await SettleAsync(token);
+                var area = dialog.FindControl<Border>("_UnpinnedArea")!;
+                var target = area.TranslatePoint(new Point(15, area.Bounds.Height - 5), owner)!.Value;
+                DragPill(owner, dialog, part, target);
+                Assert.IsFalse(item.IsPinned, "Dropping into the unpinned group must unpin.");
+                await SettleAsync(token);
+                var pin = dialog.GetVisualDescendants().OfType<ToggleButton>().Single(b => b.DataContext == item);
+                var point = pin.TranslatePoint(new Point(pin.Bounds.Width / 2, pin.Bounds.Height / 2), owner)!.Value;
+                owner.MouseDown(point, MouseButton.Left);
+                owner.MouseUp(point, MouseButton.Left);
+                Dispatcher.UIThread.RunJobs();
+                Assert.IsTrue(item.IsPinned, "A click without a drag must still toggle the pin.");
+            }
+            finally
+            {
+                model.AcceptChanges();
+                dialog.Hide();
+                owner.Close();
+            }
+            return true;
+        }, token);
+    }
+
+    private static void DragPill(Window owner, HistoryTagBarSettingsDialog dialog, string part, Point target)
+    {
+        owner.UpdateLayout();
+        var pill = dialog.GetVisualDescendants().OfType<Border>()
+            .Single(b => b.Name == "TagPill" && b.DataContext is HistoryTagBarItem { Name: "Pinned" });
+        Control source = part switch
+        {
+            "text" => pill.GetVisualDescendants().OfType<TextBlock>().First(),
+            "pin" => pill.GetVisualDescendants().OfType<ToggleButton>().Single(),
+            _ => pill
+        };
+        var offset = part == "padding" ? new Point(3, 14) : new Point(source.Bounds.Width / 2, source.Bounds.Height / 2);
+        var start = source.TranslatePoint(offset, owner)!.Value;
+        owner.MouseMove(start);
+        owner.MouseDown(start, MouseButton.Left);
+        owner.MouseMove(start + new Vector(8, 0));
+        Dispatcher.UIThread.RunJobs();
+        Assert.IsTrue(owner.GetVisualDescendants().Any(c => c is Control { Name: "TagDragPreview" }),
+            $"Dragging from {part} must show the moving pill.");
+        owner.MouseMove(target);
+        owner.MouseUp(target, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static async Task SettleAsync(CancellationToken token)
+    {
+        Dispatcher.UIThread.RunJobs();
+        await Task.Delay(800, token);
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static void VerifyDialogBounds(HistoryTagBarSettingsDialog dialog, Window owner)
+    {
+        var background = dialog.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "BackgroundElement");
+        var left = background.TranslatePoint(default, owner)!.Value.X;
+        Assert.AreEqual(16d, left, 1d);
+        Assert.AreEqual(16d, owner.Bounds.Width - left - background.Bounds.Width, 1d);
+        var top = background.TranslatePoint(default, owner)!.Value.Y;
+        Assert.AreEqual(40d, top, 1d);
+        Assert.AreEqual(40d, owner.Bounds.Height - top - background.Bounds.Height, 1d);
+        var apply = dialog.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "PrimaryButton");
+        var buttonTop = apply.TranslatePoint(default, owner)!.Value.Y;
+        Assert.IsGreaterThanOrEqualTo(top, buttonTop);
+        Assert.IsLessThanOrEqualTo(top + background.Bounds.Height, buttonTop + apply.Bounds.Height);
     }
 
     private static void Invoke(HistoryTagBarSettingsDialog dialog, string name)

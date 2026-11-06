@@ -67,7 +67,7 @@ public class HistoryTagBarSettingsTests
             Assert.AreEqual("Work", ordered[0].Text);
             Toggle(dialog, "Pinned");
             await WaitUntilAsync(() => model.PinnedNames.Length == 1, token);
-            await VerifyNarrowLayoutAsync(window, root, dialog, token);
+            await VerifyResponsiveLayoutAsync(window, root, dialog, token);
             Assert.IsEmpty(saved);
             await VerifySaveRetryAsync(dialog, model, token);
             Assert.AreEqual(ContentDialogResult.Primary, await result);
@@ -107,14 +107,11 @@ public class HistoryTagBarSettingsTests
         Invoke(apply);
     }
 
-    private static async Task VerifyNarrowLayoutAsync(Window window, Grid root,
+    private static async Task VerifyResponsiveLayoutAsync(Window window, Grid root,
         HistoryTagBarSettingsDialog dialog, CancellationToken token)
     {
-        var scale = root.XamlRoot.RasterizationScale;
-        window.AppWindow.ResizeClient(new SizeInt32((int)Math.Round(300 * scale), (int)Math.Round(650 * scale)));
-        await WaitUntilAsync(() => Math.Abs(root.ActualWidth - 300) <= 1, token);
-        dialog.UpdateLayout();
-        await Task.Delay(800, token);
+        await ResizeAndVerifyBoundsAsync(window, root, dialog, 850, 650, token);
+        await ResizeAndVerifyBoundsAsync(window, root, dialog, 300, 400, token);
         var buttons = Descendants<ToggleButton>(dialog).ToArray();
         var rows = buttons.Select(b => b.TransformToVisual(root).TransformPoint(default).Y).Distinct().Count();
         Assert.IsGreaterThan(1, rows);
@@ -124,6 +121,28 @@ public class HistoryTagBarSettingsTests
             Assert.IsGreaterThanOrEqualTo(-1d, bounds.Left);
             Assert.IsLessThanOrEqualTo(root.ActualWidth + 1, bounds.Right);
         }
+        await ResizeAndVerifyBoundsAsync(window, root, dialog, 1200, 650, token);
+    }
+
+    private static async Task ResizeAndVerifyBoundsAsync(Window window, Grid root,
+        HistoryTagBarSettingsDialog dialog, double width, double height, CancellationToken token)
+    {
+        var scale = root.XamlRoot.RasterizationScale;
+        window.AppWindow.ResizeClient(new SizeInt32((int)Math.Round(width * scale), (int)Math.Round(height * scale)));
+        await WaitUntilAsync(() => Math.Abs(root.ActualWidth - width) <= 1 && Math.Abs(root.ActualHeight - height) <= 1, token);
+        dialog.UpdateLayout();
+        await Task.Delay(800, token);
+        var background = Descendants<Border>(dialog).Single(b => b.Name == "BackgroundElement");
+        var left = background.TransformToVisual(root).TransformPoint(default).X;
+        Assert.AreEqual(16d, left, 1d);
+        Assert.AreEqual(16d, root.ActualWidth - left - background.ActualWidth, 1d);
+        var top = background.TransformToVisual(root).TransformPoint(default).Y;
+        Assert.AreEqual(40d, top, 1d);
+        Assert.AreEqual(40d, root.ActualHeight - top - background.ActualHeight, 1d);
+        var apply = Descendants<Button>(dialog).Single(b => b.Name == "PrimaryButton");
+        var buttonTop = apply.TransformToVisual(root).TransformPoint(default).Y;
+        Assert.IsGreaterThanOrEqualTo(top, buttonTop);
+        Assert.IsLessThanOrEqualTo(top + background.ActualHeight, buttonTop + apply.ActualHeight);
     }
 
     private static void Toggle(HistoryTagBarSettingsDialog dialog, string name)

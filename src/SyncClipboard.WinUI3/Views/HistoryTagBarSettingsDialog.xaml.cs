@@ -1,5 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
@@ -26,6 +27,7 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
     private HistoryTagBarItem? pressedItem;
     private Border? pressedPill;
     private Pointer? pointer;
+    private ToggleButton? pressedToggle;
     private ContentPresenter? dragPreview;
     private HistoryTagBarDragPreview? dragState;
     private double scrollMinHeight;
@@ -46,8 +48,9 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
         };
         LayoutUpdated += (_, _) => AnimateTagPositions();
         Closing += OnClosing;
-        PointerMoved += OnPillMoved;
-        PointerReleased += OnPillReleased;
+        AddHandler(PointerPressedEvent, new PointerEventHandler(OnPillPressed), true);
+        AddHandler(PointerMovedEvent, new PointerEventHandler(OnPillMoved), true);
+        AddHandler(PointerReleasedEvent, new PointerEventHandler(OnPillReleased), true);
         PointerCaptureLost += OnPillCaptureLost;
     }
 
@@ -55,7 +58,13 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
     {
         base.OnApplyTemplate();
         if (GetTemplateChild("BackgroundElement") is FrameworkElement background)
+        {
+            background.MaxWidth = double.PositiveInfinity;
             background.HorizontalAlignment = HorizontalAlignment.Stretch;
+            background.VerticalAlignment = VerticalAlignment.Stretch;
+            background.MaxHeight = double.PositiveInfinity;
+            background.Margin = new Thickness(16, 40, 16, 40);
+        }
     }
 
     private async void OnPrimaryButtonClick(ContentDialog _, ContentDialogButtonClickEventArgs args)
@@ -109,9 +118,8 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
 
     private void OnPillPressed(object sender, PointerRoutedEventArgs e)
     {
-        if (sender is not FrameworkElement { DataContext: HistoryTagBarItem item } label
-            || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed
-            || VisualTreeHelper.GetParent(label) is not Grid { Parent: Border pill })
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed
+            || FindPressedPill(e.OriginalSource as DependencyObject, out var toggle) is not { DataContext: HistoryTagBarItem item } pill)
             return;
         FinishDrag();
         pressedItem = item;
@@ -119,7 +127,22 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
         pressPosition = e.GetCurrentPoint(this).Position;
         previewOffset = e.GetCurrentPoint(pill).Position;
         pointer = e.Pointer;
-        CapturePointer(pointer);
+        pressedToggle = toggle;
+        if (toggle is null && !CapturePointer(pointer))
+            FinishDrag();
+    }
+
+    private static Border? FindPressedPill(DependencyObject? source, out ToggleButton? toggle)
+    {
+        toggle = null;
+        for (var current = source; current is not null; current = VisualTreeHelper.GetParent(current))
+        {
+            if (current is ToggleButton button)
+                toggle = button;
+            if (current is Border { Name: "TagPill" } pill)
+                return pill;
+        }
+        return null;
     }
 
     private void OnPillMoved(object sender, PointerRoutedEventArgs e)
@@ -131,7 +154,8 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
             var position = e.GetCurrentPoint(this).Position;
             if (Math.Abs(position.X - pressPosition.X) < 4 && Math.Abs(position.Y - pressPosition.Y) < 4)
                 return;
-            StartDragPreview();
+            if (!StartDragPreview())
+                return;
         }
         e.Handled = true;
         var point = e.GetCurrentPoint(_DragLayer).Position;
@@ -141,8 +165,14 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
         UpdateDropTarget(e);
     }
 
-    private void StartDragPreview()
+    private bool StartDragPreview()
     {
+        pressedToggle?.ReleasePointerCapture(pointer!);
+        if (!CapturePointer(pointer!))
+        {
+            FinishDrag();
+            return false;
+        }
         dragPreview = new ContentPresenter
         {
             Content = pressedItem,
@@ -159,6 +189,7 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
         dragState = new(Model, pressedItem!);
         _PinnedTags.ItemsSource = dragState.PinnedTags;
         RefreshDragLayout();
+        return true;
     }
 
     private void UpdateDropTarget(PointerRoutedEventArgs e)
@@ -243,7 +274,11 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
         preview?.Commit();
     }
 
-    private void OnPillCaptureLost(object _, PointerRoutedEventArgs __) => FinishDrag();
+    private void OnPillCaptureLost(object _, PointerRoutedEventArgs e)
+    {
+        if (e.OriginalSource == this)
+            FinishDrag();
+    }
 
     private void FinishDrag()
     {
@@ -261,6 +296,7 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
         dragPreview = null;
         pressedPill = null;
         pressedItem = null;
+        pressedToggle = null;
         if (captured is not null)
             ReleasePointerCapture(captured);
     }

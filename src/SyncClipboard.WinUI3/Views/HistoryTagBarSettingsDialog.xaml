@@ -12,7 +12,6 @@
                PrimaryButtonClick="OnPrimaryButtonClick">
     <ContentDialog.Resources>
         <x:Double x:Key="ContentDialogMinWidth">0</x:Double>
-        <x:Double x:Key="ContentDialogMaxWidth">520</x:Double>
         <Style TargetType="local:HistoryTagBarSettingsDialog" BasedOn="{StaticResource DefaultContentDialogStyle}" />
         <vc:StringToVisibilityConverter x:Key="StringToVisibility" />
         <DataTemplate x:Key="TagPillTemplate" x:DataType="vm:HistoryTagBarItem">
@@ -30,8 +29,7 @@
                                    VerticalAlignment="Center"
                                    TextTrimming="CharacterEllipsis"
                                    TextWrapping="NoWrap"
-                                   Padding="0,0,4,0"
-                                   PointerPressed="OnPillPressed" />
+                                   Padding="0,0,4,0" />
                         <ToggleButton Grid.Column="1"
                                       Width="22"
                                       Height="22"

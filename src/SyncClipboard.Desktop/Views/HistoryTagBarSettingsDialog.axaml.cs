@@ -57,9 +57,22 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
         };
         LayoutUpdated += (_, _) => AnimateTagPositions();
         Closing += OnClosing;
-        PointerMoved += OnPillMoved;
-        PointerReleased += OnPillReleased;
+        AddHandler(PointerPressedEvent, OnPillPressed, handledEventsToo: true);
+        AddHandler(PointerMovedEvent, OnPillMoved, handledEventsToo: true);
+        AddHandler(PointerReleasedEvent, OnPillReleased, handledEventsToo: true);
         PointerCaptureLost += OnPillCaptureLost;
+    }
+
+    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+    {
+        base.OnApplyTemplate(e);
+        if (e.NameScope.Find<Border>("BackgroundElement") is { } background)
+        {
+            background.HorizontalAlignment = HorizontalAlignment.Stretch;
+            background.VerticalAlignment = VerticalAlignment.Stretch;
+            background.MaxHeight = double.PositiveInfinity;
+            background.Margin = new Thickness(16, 40);
+        }
     }
 
     private async void OnPrimaryButtonClick(FAContentDialog _, FAContentDialogButtonClickEventArgs args)
@@ -113,11 +126,12 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
 
     private void OnPillPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is not Control { DataContext: HistoryTagBarItem item } label
+        if (e.Source is not Visual source
             || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             return;
-        var pill = label.GetVisualAncestors().OfType<Border>().FirstOrDefault(b => b.Name == "TagPill");
-        if (pill is null)
+        var ancestors = source.GetVisualAncestors().Prepend(source).ToArray();
+        var pill = ancestors.OfType<Border>().FirstOrDefault(b => b.Name == "TagPill");
+        if (pill?.DataContext is not HistoryTagBarItem item)
             return;
         FinishDrag();
         pressedItem = item;
@@ -125,7 +139,8 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
         pressPosition = e.GetPosition(this);
         previewOffset = e.GetPosition(pill);
         pointer = e.Pointer;
-        pointer.Capture(this);
+        if (!ancestors.OfType<ToggleButton>().Any())
+            pointer.Capture(this);
     }
 
     private void OnPillMoved(object? _, PointerEventArgs e)
@@ -153,6 +168,7 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
         dragLayer = OverlayLayer.GetOverlayLayer(this);
         if (dragLayer is null || pressedPill is null)
             return false;
+        pointer?.Capture(this);
         // Reuse the actual pill template in logical units, without a bitmap or OS drag image.
         dragPreview = new ContentPresenter
         {
@@ -255,7 +271,11 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
         preview?.Commit();
     }
 
-    private void OnPillCaptureLost(object? _, PointerCaptureLostEventArgs __) => FinishDrag();
+    private void OnPillCaptureLost(object? _, PointerCaptureLostEventArgs e)
+    {
+        if (e.Source == this)
+            FinishDrag();
+    }
 
     private void FinishDrag()
     {
