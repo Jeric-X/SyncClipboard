@@ -18,6 +18,8 @@ namespace SyncClipboard.Test.Desktop.History;
 [DoNotParallelize]
 public class HistoryTagEditorDialogTests
 {
+    public TestContext TestContext { get; set; } = null!;
+
     private static readonly string[] AddedTags = ["工作"];
 
     public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<Application>()
@@ -92,6 +94,58 @@ public class HistoryTagEditorDialogTests
             }
             return true;
         }, CancellationToken.None);
+    }
+
+    [TestMethod]
+    public async Task Editor_KeepsItsWidthAcrossSearchesAndFitsWhenWindowShrinks()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryTagEditorDialogTests));
+        await session.Dispatch(async () =>
+        {
+            Application.Current!.Styles.Add(new FluentAvaloniaTheme());
+            var vm = new HistoryTagEditorViewModel(["short", new string('W', 100)], [[]]);
+            var dialog = new HistoryTagEditorDialog(vm);
+            var owner = new Window { Width = 850, Height = 650, Content = new Button() };
+            try
+            {
+                owner.Show();
+                var result = dialog.ShowAsync(owner);
+                Dispatcher.UIThread.RunJobs();
+                var background = dialog.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "BackgroundElement");
+                await Task.Delay(300, token);
+                Dispatcher.UIThread.RunJobs();
+                var wideWidth = background.Bounds.Width;
+                Assert.IsLessThanOrEqualTo(400, wideWidth);
+                vm.Search = "short";
+                Dispatcher.UIThread.RunJobs();
+                Assert.AreEqual(wideWidth, background.Bounds.Width, 1);
+                owner.Width = 300;
+                Dispatcher.UIThread.RunJobs();
+                owner.UpdateLayout();
+                Assert.IsLessThan(wideWidth, background.Bounds.Width);
+                var search = dialog.GetVisualDescendants().OfType<TextBox>().Single();
+                var apply = dialog.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "PrimaryButton");
+                foreach (var control in new Control[] { background, search, apply })
+                {
+                    var point = control.TranslatePoint(default, owner)!.Value;
+                    Assert.IsGreaterThanOrEqualTo(0, point.X);
+                    Assert.IsLessThanOrEqualTo(owner.Bounds.Width, point.X + control.Bounds.Width);
+                }
+                owner.Width = 850;
+                Dispatcher.UIThread.RunJobs();
+                owner.UpdateLayout();
+                Assert.AreEqual(wideWidth, background.Bounds.Width, 1);
+                dialog.Hide();
+                await result;
+            }
+            finally
+            {
+                dialog.Hide();
+                owner.Close();
+            }
+            return true;
+        }, token);
     }
 
     [TestMethod]
