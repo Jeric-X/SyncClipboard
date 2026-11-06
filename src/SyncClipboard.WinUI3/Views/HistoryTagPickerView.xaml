@@ -1,0 +1,62 @@
+﻿<UserControl x:Class="SyncClipboard.WinUI3.Views.HistoryTagPickerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
+             xmlns:i18n="using:SyncClipboard.Core.I18n">
+    <UserControl.Resources>
+        <Style x:Key="TagPickerFlyoutStyle" TargetType="FlyoutPresenter">
+            <Setter Property="Padding" Value="8" />
+            <Setter Property="CornerRadius" Value="{ThemeResource OverlayCornerRadius}" />
+        </Style>
+    </UserControl.Resources>
+    <StackPanel Width="280" Spacing="8">
+        <Grid ColumnDefinitions="*,Auto">
+            <TextBox x:Name="_TagSearch"
+                     MinWidth="0"
+                     Text="{x:Bind ViewModel.Search, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     PlaceholderText="{x:Bind i18n:Strings.HistoryTagsSearch}"
+                     AutomationProperties.Name="{x:Bind i18n:Strings.HistoryTagsSearch}" />
+            <Button x:Name="_AddInput"
+                    Grid.Column="1"
+                    Margin="8,0,0,0"
+                    Style="{StaticResource DefaultButtonStyle}"
+                    Content="{x:Bind ViewModel.AddInputLabel, Mode=OneWay}"
+                    IsEnabled="{x:Bind ViewModel.CanAddInput, Mode=OneWay}"
+                    Click="AddInput_Click" />
+        </Grid>
+        <ScrollViewer MaxHeight="200"
+                      VerticalAlignment="Top"
+                      VerticalContentAlignment="Top"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled"
+                      HorizontalScrollMode="Disabled">
+            <ItemsControl Margin="0,0,12,0" ItemsSource="{x:Bind ViewModel.Suggestions, Mode=OneWay}" IsEnabled="{x:Bind ViewModel.CanInteract, Mode=OneWay}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:HistoryTagSuggestion">
+                        <Button Style="{StaticResource DefaultButtonStyle}"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                HorizontalAlignment="Stretch"
+                                HorizontalContentAlignment="Stretch"
+                                MinHeight="32"
+                                Padding="8,6"
+                                Tag="{x:Bind Name}"
+                                Click="Suggestion_Click"
+                                ToolTipService.ToolTip="{x:Bind Name}">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Column="1"
+                                           Text="✓"
+                                           Margin="8,0,0,0"
+                                           Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsAssigned), Mode=OneWay}" />
+                            </Grid>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+        <TextBlock Text="{x:Bind i18n:Strings.HistoryTagsNoMatches}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ViewModel.HasNoSuggestions), Mode=OneWay}" Opacity="0.65" />
+        <TextBlock Text="{x:Bind ViewModel.ValidationMessage, Mode=OneWay}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ViewModel.HasValidationMessage), Mode=OneWay}" TextWrapping="Wrap" />
+    </StackPanel>
+</UserControl>
