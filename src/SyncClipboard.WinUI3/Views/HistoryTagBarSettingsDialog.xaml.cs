@@ -276,7 +276,7 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
 
     private void OnPillCaptureLost(object _, PointerRoutedEventArgs e)
     {
-        if (e.OriginalSource == this)
+        if (ReferenceEquals(e.OriginalSource, this))
             FinishDrag();
     }
 
