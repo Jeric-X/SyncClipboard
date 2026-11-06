@@ -7,6 +7,8 @@ public record class HistoryWindowConfig
 {
     public const string ConfigKey = "HistoryWindow";
 
+    public string[] PinnedTags { get; init; } = [];
+
     public int Width { get; set; } = 850;
     public int Height { get; set; } = 530;
     public bool IsTopmost { get; set; } = false;
