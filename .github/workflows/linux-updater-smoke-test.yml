@@ -1,0 +1,31 @@
+name: linux-updater-smoke-test
+
+on:
+  workflow_call:
+
+jobs:
+  updater-smoke-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.302
+      - name: Install Avalonia display dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y xvfb xauth libice6 libsm6 libx11-6 libfontconfig1 libgl1
+      - uses: actions/download-artifact@v8
+        with:
+          name: linux-x64-self-contained
+          path: application
+      - name: Restore executable permissions lost by artifact transport
+        run: chmod +x application/SyncClipboard.Updater
+      - name: updater-smoke-test
+        env:
+          SYNC_CLIPBOARD_UPDATER_TEST_SOURCE: ${{ github.workspace }}/application
+        run: >-
+          xvfb-run -a dotnet test src/SyncClipboard.Test --configuration Release --arch x64
+          --filter "TestCategory=PlatformLinux&TestCategory=UpdaterSmoke"
+          --blame-hang-timeout 2m
