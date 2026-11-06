@@ -107,6 +107,9 @@ public class HistoryInlineTagsTests
             Console.Error.WriteLine("Opening the tag flyout.");
             Invoke(trigger);
             await WaitUntilAsync(() => FindPopupTags(panel).Any(), timeout.Token);
+            var presenter = VisualTreeHelper.GetOpenPopupsForXamlRoot(panel.XamlRoot)
+                .SelectMany(p => Descendants<FlyoutPresenter>(p.Child)).Single();
+            Assert.AreEqual((CornerRadius)Application.Current.Resources["OverlayCornerRadius"], presenter.CornerRadius);
             Assert.AreSame(search, FocusManager.GetFocusedElement(panel.XamlRoot));
             var hidden = FindPopupTags(panel).ToArray();
             CollectionAssert.AreEqual(names[visible..], RenderedNames(panel));

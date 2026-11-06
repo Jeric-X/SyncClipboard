@@ -13,10 +13,12 @@
                DefaultButton="Primary"
                PrimaryButtonClick="OnPrimaryButtonClick">
     <ContentDialog.Resources>
+        <x:Double x:Key="ContentDialogMinWidth">0</x:Double>
+        <x:Double x:Key="ContentDialogMaxWidth">380</x:Double>
         <vc:StringToVisibilityConverter x:Key="StringToVisibility" />
         <Style TargetType="local:HistoryTagEditorDialog" BasedOn="{StaticResource DefaultContentDialogStyle}" />
     </ContentDialog.Resources>
-    <StackPanel Width="420" Spacing="10">
+    <StackPanel Spacing="10">
         <Grid ColumnSpacing="8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />

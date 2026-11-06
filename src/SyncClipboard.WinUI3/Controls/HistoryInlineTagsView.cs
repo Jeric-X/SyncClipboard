@@ -214,7 +214,10 @@ public sealed class HistoryInlineTagsView : Panel
             return;
         var tags = new WrapPanel { MaxWidth = 224, HorizontalSpacing = 5, VerticalSpacing = 5 };
         FillOverflow(tags);
-        var presenter = new Style(typeof(FlyoutPresenter));
+        var presenter = new Style(typeof(FlyoutPresenter))
+        {
+            BasedOn = (Style)Application.Current.Resources["DefaultFlyoutPresenterStyle"]
+        };
         presenter.Setters.Add(new Setter(Control.PaddingProperty, new Thickness(8)));
         presenter.Setters.Add(new Setter(FrameworkElement.MinWidthProperty, 0d));
         var flyout = new Flyout

@@ -44,7 +44,6 @@
     </Application.Resources>
     <Application.Styles>
         <sty:FluentAvaloniaTheme PreferSystemTheme="False" PreferUserAccentColor="True" />
-        <StyleInclude Source="avares://SyncClipboard.Desktop/Styling/PopupStyles.axaml" />
         <Style Selector="Window">
             <Setter Property="FontFamily" Value="{DynamicResource ProgramFont}" />
         </Style>

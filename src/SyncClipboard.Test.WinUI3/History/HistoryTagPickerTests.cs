@@ -49,6 +49,9 @@ public class HistoryTagPickerTests
             await WaitUntilAsync(() => bar.IsLoaded, timeout.Token);
             flyout = view.ShowAt((Button)bar.FindName("_AddTagButton"));
             await WaitUntilAsync(() => view.IsLoaded && Search(view).FocusState != FocusState.Unfocused, timeout.Token);
+            var presenter = VisualTreeHelper.GetOpenPopupsForXamlRoot(view.XamlRoot)
+                .SelectMany(p => Descendants<FlyoutPresenter>(p.Child)).Single();
+            Assert.AreEqual((CornerRadius)Application.Current.Resources["OverlayCornerRadius"], presenter.CornerRadius);
             await VerifySearchAndRetryAsync(view, pending, saved, timeout.Token);
             await VerifyContinuousEditingAsync(view, saved, timeout.Token);
             Assert.IsTrue(flyout.IsOpen);

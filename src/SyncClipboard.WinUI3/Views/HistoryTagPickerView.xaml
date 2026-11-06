@@ -1,13 +1,12 @@
-﻿<UserControl x:Class="SyncClipboard.WinUI3.Views.HistoryTagPickerView"
+<UserControl x:Class="SyncClipboard.WinUI3.Views.HistoryTagPickerView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:SyncClipboard.Core.ViewModels"
              xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
              xmlns:i18n="using:SyncClipboard.Core.I18n">
     <UserControl.Resources>
-        <Style x:Key="TagPickerFlyoutStyle" TargetType="FlyoutPresenter">
+        <Style x:Key="TagPickerFlyoutStyle" TargetType="FlyoutPresenter" BasedOn="{StaticResource DefaultFlyoutPresenterStyle}">
             <Setter Property="Padding" Value="8" />
-            <Setter Property="CornerRadius" Value="{ThemeResource OverlayCornerRadius}" />
         </Style>
     </UserControl.Resources>
     <StackPanel Width="280" Spacing="8">

@@ -1,3 +1,4 @@
+using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
 using SyncClipboard.Core.ViewModels;
 using System;
@@ -11,4 +12,10 @@ public partial class HistoryTagEditorDialog : FAContentDialog
     public HistoryTagEditorDialog() => InitializeComponent();
 
     public HistoryTagEditorDialog(HistoryTagEditorViewModel viewModel) : this() => DataContext = viewModel;
+
+    protected override void OnOpened()
+    {
+        base.OnOpened();
+        Dispatcher.UIThread.Post(() => _TagSearch.Focus(), DispatcherPriority.Input);
+    }
 }
