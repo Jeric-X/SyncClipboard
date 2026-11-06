@@ -12,30 +12,30 @@ using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.Views;
 
-public partial class HistoryWindow
+public partial class RecordControlBar
 {
-    private async void AddRecordTag(object? sender, RoutedEventArgs e)
+    private async void AddTagButtonClicked(object? sender, RoutedEventArgs e)
     {
         e.Handled = true;
-        if (e.Source is not RecordControlBar { Record: { } record } bar)
+        if (Record is not { } record || ViewModel is null || TopLevel.GetTopLevel(this) is not Window owner)
             return;
 
         var key = record.Key;
-        bar.AddTagAnchor.IsEnabled = false;
+        _AddTagButton.IsEnabled = false;
         try
         {
             var picker = await CreateTagPickerAsync(key);
-            if (picker is null || bar.Record?.Key != key || !bar.IsEffectivelyVisible || !IsVisible || TopLevel.GetTopLevel(bar) != this)
+            if (picker is null || Record?.Key != key || !IsEffectivelyVisible || !owner.IsVisible || TopLevel.GetTopLevel(this) != owner)
                 return;
-            ShowTagPicker(bar, key, picker);
+            ShowTagPicker(key, picker);
         }
         catch (Exception ex)
         {
-            await new AvaloniaDialog(this).ShowMessageAsync(Strings.HistoryTagsQuickAdd, ex.Message);
+            await new AvaloniaDialog(owner).ShowMessageAsync(Strings.HistoryTagsQuickAdd, ex.Message);
         }
         finally
         {
-            bar.AddTagAnchor.IsEnabled = true;
+            _AddTagButton.IsEnabled = true;
         }
     }
 
@@ -54,21 +54,21 @@ public partial class HistoryWindow
         }));
     }
 
-    private static void ShowTagPicker(RecordControlBar bar, HistoryRecordKey key, HistoryTagPickerViewModel picker)
+    private void ShowTagPicker(HistoryRecordKey key, HistoryTagPickerViewModel picker)
     {
-        var flyout = new HistoryTagPickerView(picker).ShowAt(bar.AddTagAnchor);
+        var flyout = new HistoryTagPickerView(picker).ShowAt(_AddTagButton);
         void RecordChanged(object? _, AvaloniaPropertyChangedEventArgs args)
         {
-            if (args.Property == RecordControlBar.RecordProperty && bar.Record?.Key != key)
+            if (args.Property == RecordControlBar.RecordProperty && Record?.Key != key)
                 flyout.Hide();
         }
         void Detached(object? _, VisualTreeAttachmentEventArgs __) => flyout.Hide();
-        bar.PropertyChanged += RecordChanged;
-        bar.DetachedFromVisualTree += Detached;
+        PropertyChanged += RecordChanged;
+        DetachedFromVisualTree += Detached;
         flyout.Closed += (_, _) =>
         {
-            bar.PropertyChanged -= RecordChanged;
-            bar.DetachedFromVisualTree -= Detached;
+            PropertyChanged -= RecordChanged;
+            DetachedFromVisualTree -= Detached;
         };
     }
 }

@@ -98,7 +98,6 @@ public partial class HistoryWindow : Window, IWindow
             this.WindowDecorations = WindowDecorations.BorderOnly;
 
         InitializeComponent();
-        AddHandler(RecordControlBar.AddTagRequestedEvent, AddRecordTag);
         // Handle configured keys before the search box, without intercepting modal dialog input.
         _HistoryContent.AddHandler(KeyDownEvent, HistoryWindow_KeyDown, RoutingStrategies.Tunnel);
         if (OperatingSystem.IsLinux())

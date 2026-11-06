@@ -47,7 +47,7 @@ public class HistoryTagPickerTests
                 bar.Record = (SyncClipboard.Core.ViewModels.Sub.HistoryRecordVM)
                     System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(typeof(SyncClipboard.Core.ViewModels.Sub.HistoryRecordVM));
                 owner.UpdateLayout();
-                flyout = view.ShowAt(bar.AddTagAnchor);
+                flyout = view.ShowAt(bar.FindControl<Button>("_AddTagButton")!);
                 Dispatcher.UIThread.RunJobs();
                 VerifySearchAndPendingSave(view, flyout, pendingSave, saved);
                 VerifyContinuousEditing(view, flyout, saved);
