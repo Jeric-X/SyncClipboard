@@ -1,0 +1,112 @@
+﻿<ui:FAContentDialog x:Class="SyncClipboard.Desktop.Views.HistoryTagBarSettingsDialog"
+                    xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:ui="using:FluentAvalonia.UI.Controls"
+                    xmlns:vm="using:SyncClipboard.Core.ViewModels"
+                    xmlns:i18n="using:SyncClipboard.Core.I18n"
+                    x:DataType="vm:HistoryTagBarSettingsViewModel"
+                    Title="{x:Static i18n:Strings.HistoryTagBarSettings}"
+                    PrimaryButtonText="{x:Static i18n:Strings.HistoryTagsApply}"
+                    CloseButtonText="{x:Static i18n:Strings.Cancel}"
+                    PrimaryButtonClick="OnPrimaryButtonClick">
+    <ui:FAContentDialog.Resources>
+        <x:Double x:Key="ContentDialogMinWidth">0</x:Double>
+        <x:Double x:Key="ContentDialogMaxWidth">Infinity</x:Double>
+        <StreamGeometry x:Key="PinOutlineGeometry">M12.1523 3.7617 Q12.5156 3.0469 13.2012 2.6953 Q13.8867 2.3438 14.6543 2.4609 Q15.4219 2.5781 15.9844 3.1406 L20.8594 8.0039 Q21.4219 8.5664 21.5391 9.334 Q21.6562 10.1016 21.3047 10.793 Q20.9531 11.4844 20.2383 11.8477 L16.0898 13.9336 Q15.4688 14.2383 15.2227 14.8711 L13.5 19.1719 Q13.2656 19.7695 12.627 19.9043 Q11.9883 20.0391 11.5312 19.582 L8.4023 16.4531 L4.4531 20.4023 L3.5977 20.4023 L3.5977 19.5469 L7.5469 15.5977 L4.418 12.4688 Q3.9609 12.0117 4.0898 11.373 Q4.2188 10.7344 4.8164 10.5 L9.1289 8.7773 Q9.7617 8.5312 10.0664 7.9102 L12.1523 3.7617 Z M15.1406 3.9844 Q14.707 3.5508 14.0977 3.6504 Q13.4883 3.75 13.2188 4.3008 L11.1445 8.4492 Q10.6289 9.4688 9.5742 9.8906 L5.2734 11.6133 L12.3867 18.7266 L14.1094 14.4258 Q14.5312 13.3711 15.5508 12.8555 L19.6992 10.7812 Q20.25 10.5117 20.3496 9.9023 Q20.4492 9.293 20.0156 8.8594 L15.1406 3.9844 Z</StreamGeometry>
+        <StreamGeometry x:Key="PinnedGeometry">M12.1523 3.7617 Q12.5156 3.0469 13.2012 2.6953 Q13.8867 2.3438 14.6543 2.4609 Q15.4219 2.5781 15.9844 3.1406 L20.8594 8.0039 Q21.4219 8.5664 21.5391 9.334 Q21.6562 10.1016 21.3047 10.793 Q20.9531 11.4844 20.2383 11.8477 L16.0898 13.9336 Q15.4688 14.2383 15.2227 14.8711 L13.5 19.1719 Q13.2656 19.7695 12.627 19.9043 Q11.9883 20.0391 11.5312 19.582 L8.4023 16.4531 L4.4531 20.4023 L3.5977 20.4023 L3.5977 19.5469 L7.5469 15.5977 L4.418 12.4688 Q3.9609 12.0117 4.0898 11.373 Q4.2188 10.7344 4.8164 10.5 L9.1289 8.7773 Q9.7617 8.5312 10.0664 7.9102 L12.1523 3.7617 Z</StreamGeometry>
+        <DataTemplate x:Key="TagPillTemplate" x:DataType="vm:HistoryTagBarItem">
+            <Grid Background="Transparent">
+                <Border x:Name="TagPill"
+                        CornerRadius="14"
+                        Padding="10,2,3,2"
+                        Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                        BorderThickness="1">
+                    <Grid ColumnDefinitions="*,Auto" MaxWidth="204">
+                        <TextBlock Background="Transparent"
+                                   Text="{Binding Text}"
+                                   ToolTip.Tip="{Binding Name}"
+                                   FontSize="12"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"
+                                   TextWrapping="NoWrap"
+                                   Padding="0,0,4,0" />
+                        <ToggleButton Grid.Column="1"
+                                      Width="22"
+                                      Height="22"
+                                      MinWidth="0"
+                                      MinHeight="0"
+                                      Padding="0"
+                                      CornerRadius="11"
+                                      Background="Transparent"
+                                      BorderThickness="0"
+                                      Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                      IsChecked="{Binding IsPinned, Mode=TwoWay}"
+                                      AutomationProperties.Name="{Binding Name}"
+                                      ToolTip.Tip="{x:Static i18n:Strings.HistoryTagTogglePin}">
+                            <ToggleButton.Resources>
+                                <SolidColorBrush x:Key="ToggleButtonBackgroundChecked" Color="Transparent" />
+                                <SolidColorBrush x:Key="ToggleButtonBackgroundPointerOver" Color="{DynamicResource SubtleFillColorSecondary}" />
+                                <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPointerOver" Color="{DynamicResource SubtleFillColorSecondary}" />
+                                <SolidColorBrush x:Key="ToggleButtonBackgroundPressed" Color="{DynamicResource SubtleFillColorSecondary}" />
+                                <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPressed" Color="{DynamicResource SubtleFillColorSecondary}" />
+                                <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="{DynamicResource TextFillColorPrimary}" />
+                                <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPointerOver" Color="{DynamicResource TextFillColorPrimary}" />
+                                <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPressed" Color="{DynamicResource TextFillColorPrimary}" />
+                            </ToggleButton.Resources>
+                            <Viewbox Width="14" Height="14">
+                                <Canvas Width="24" Height="24">
+                                    <Path Data="{StaticResource PinnedGeometry}" Fill="{DynamicResource TextFillColorPrimaryBrush}" IsVisible="{Binding IsPinned}" />
+                                    <Path Data="{StaticResource PinOutlineGeometry}" Fill="{DynamicResource TextFillColorPrimaryBrush}" />
+                                </Canvas>
+                            </Viewbox>
+                        </ToggleButton>
+                    </Grid>
+                </Border>
+            </Grid>
+        </DataTemplate>
+    </ui:FAContentDialog.Resources>
+    <StackPanel Spacing="12">
+        <TextBlock Text="{x:Static i18n:Strings.HistoryTagBarSettingsHint}" TextWrapping="Wrap" Opacity="0.65" />
+        <ScrollViewer x:Name="_TagScroll"
+                      MaxHeight="300"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <StackPanel Spacing="12">
+                <Border x:Name="_PinnedArea" Background="Transparent" MinHeight="72">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{x:Static i18n:Strings.HistoryTagBarPinned}" FontSize="12" Opacity="0.65" />
+                        <ItemsControl x:Name="_PinnedTags"
+                                      ItemsSource="{Binding PinnedTags}"
+                                      ItemTemplate="{StaticResource TagPillTemplate}"
+                                      MinHeight="28">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel ItemSpacing="6" LineSpacing="6" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+                <Border Height="1" Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                <Border x:Name="_UnpinnedArea" Background="Transparent" MinHeight="72">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{x:Static i18n:Strings.HistoryTagBarUnpinned}" FontSize="12" Opacity="0.65" />
+                        <ItemsControl x:Name="_UnpinnedTags"
+                                      ItemsSource="{Binding UnpinnedTags}"
+                                      ItemTemplate="{StaticResource TagPillTemplate}"
+                                      MinHeight="28">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel ItemSpacing="6" LineSpacing="6" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+        <TextBlock Text="{x:Static i18n:Strings.HistoryTagBarEmpty}" IsVisible="{Binding IsEmpty}" />
+        <TextBlock Text="{Binding Error}" TextWrapping="Wrap" IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+    </StackPanel>
+</ui:FAContentDialog>

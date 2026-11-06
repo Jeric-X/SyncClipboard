@@ -189,7 +189,13 @@
         <Grid Grid.Row="2"
               Margin="20,12,12,0"
               ColumnDefinitions="*,Auto"
-              Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsTagBarVisible), Mode=OneWay}">
+              Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsTagBarVisible), Mode=OneWay}"
+              Background="Transparent">
+            <Grid.ContextFlyout>
+                <MenuFlyout>
+                    <MenuFlyoutItem Text="{x:Bind i18n:Strings.HistoryTagBarEditPins}" Click="TagBarSettings_Click" />
+                </MenuFlyout>
+            </Grid.ContextFlyout>
             <ScrollViewer x:Name="_TagFilterScroll"
                           HorizontalScrollBarVisibility="Disabled"
                           HorizontalScrollMode="Disabled"

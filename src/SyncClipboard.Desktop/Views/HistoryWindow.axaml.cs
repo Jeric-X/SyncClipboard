@@ -459,6 +459,23 @@ public partial class HistoryWindow : Window, IWindow
     private async void EditTags_Click(object? _, RoutedEventArgs __) =>
         await EditTagsAsync(_viewModel.GetTagEditSelection());
 
+    private async void TagBarSettings_Click(object? _, RoutedEventArgs __)
+    {
+        using var hold = _viewModel.HoldForModalOperation();
+        try
+        {
+            var manager = App.Current.Services.GetRequiredService<HistoryManager>();
+            var counts = await manager.GetTagCountsAsync();
+            var model = new HistoryTagBarSettingsViewModel(counts, _viewModel.PinnedTags, _viewModel.ShowTagCounts);
+            var dialog = new HistoryTagBarSettingsDialog(model, () => _viewModel.SetPinnedTagsAsync(model.PinnedNames));
+            await dialog.ShowAsync(this);
+        }
+        catch (Exception ex)
+        {
+            await new AvaloniaDialog(this).ShowMessageAsync(Strings.HistoryTagBarSettings, ex.Message);
+        }
+    }
+
     private async Task EditTagsAsync(HistoryRecordKey[] keys)
     {
         using var hold = _viewModel.HoldForModalOperation();

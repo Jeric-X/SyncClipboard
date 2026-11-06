@@ -124,6 +124,8 @@ public partial class HistoryViewModel
     {
         var pinned = names.Select(HistoryTags.NormalizeName).Distinct(StringComparer.Ordinal).ToArray();
         runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { PinnedTags = pinned });
+        if (!PinnedTags.SequenceEqual(pinned, StringComparer.Ordinal))
+            throw new IOException(string.Format(Strings.SaveConfigFailed, runtimeConfig.Path));
         await RefreshTagOptionsAsync();
     }
 
