@@ -31,6 +31,18 @@ public partial class RecordControlBar : UserControl
         InitializeComponent();
     }
 
+    public static readonly RoutedEvent<RoutedEventArgs> AddTagRequestedEvent =
+        RoutedEvent.Register<RecordControlBar, RoutedEventArgs>(nameof(AddTagRequestedEvent), RoutingStrategies.Bubble);
+
+    public Control AddTagAnchor => _AddTagButton;
+
+    private void AddTagButtonClicked(object? sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if (Record is not null && ViewModel is not null)
+            RaiseEvent(new RoutedEventArgs(AddTagRequestedEvent));
+    }
+
     private void DownloadButtonClicked(object? sender, RoutedEventArgs e)
     {
         if (Record != null && ViewModel != null)

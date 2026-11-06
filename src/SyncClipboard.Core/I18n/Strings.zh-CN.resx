@@ -1703,4 +1703,13 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryTagsShowMore" xml:space="preserve">
     <value>显示收起的标签</value>
   </data>
+  <data name="HistoryTagsQuickAdd" xml:space="preserve">
+    <value>添加标签</value>
+  </data>
+  <data name="HistoryTagsCreateAndAdd" xml:space="preserve">
+    <value>新建并添加</value>
+  </data>
+  <data name="HistoryTagsNoMatches" xml:space="preserve">
+    <value>没有匹配的标签</value>
+  </data>
 </root>
