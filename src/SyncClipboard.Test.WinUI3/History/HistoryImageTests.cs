@@ -172,20 +172,27 @@ public class HistoryImageTests
         }
         finally
         {
-            window.Close();
-            // Closing the window cancels results, but in-flight native decodes still finish asynchronously.
-            await WaitUntilAsync(() =>
+            try
             {
-                try
+                // Unload images while the window keeps the UI dispatcher alive for pending decodes and cleanup.
+                window.Content = null;
+                await WaitUntilAsync(() =>
                 {
-                    directory.Delete(true);
-                    return true;
-                }
-                catch (IOException)
-                {
-                    return false;
-                }
-            });
+                    try
+                    {
+                        directory.Delete(true);
+                        return true;
+                    }
+                    catch (IOException)
+                    {
+                        return false;
+                    }
+                });
+            }
+            finally
+            {
+                window.Close();
+            }
         }
     }
 

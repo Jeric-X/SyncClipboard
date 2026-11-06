@@ -35,6 +35,7 @@ public sealed class HistoryInlineTagsView : Panel
     }
 
     private Button? _more;
+    private HistoryRecordTagChip? _widthProbe;
     private HistoryPreviewTag[] _tags = [];
     private int _measuredForWidth;
     private int _measuredCount;
@@ -90,6 +91,9 @@ public sealed class HistoryInlineTagsView : Panel
             _flyout?.Hide();
             Children.Clear();
             _more = null;
+            if (_widthProbe is not null)
+                LogicalChildren.Remove(_widthProbe);
+            _widthProbe = null;
         }
         else if (_more is null)
         {
@@ -139,6 +143,12 @@ public sealed class HistoryInlineTagsView : Panel
 
     private IEnumerable<HistoryTagSize> MeasureTags(double width)
     {
+        if (_widthProbe is null)
+        {
+            _widthProbe = new HistoryRecordTagChip { Margin = new Thickness(4, 0, 0, 0) };
+            // Inherit styles without participating in the visual layout or automation tree.
+            LogicalChildren.Add(_widthProbe);
+        }
         _measuredCount = 0;
         for (var i = 0; i < _tags.Length; i++)
         {
@@ -148,10 +158,10 @@ public sealed class HistoryInlineTagsView : Panel
                 chip.Margin = new Thickness(4, 0, 0, 0);
                 Children.Insert(i, chip);
             }
-            var child = Children[i];
-            child.Measure(new Size(width, double.PositiveInfinity));
+            _widthProbe.DataContext = _tags[i];
+            _widthProbe.Measure(new Size(width, double.PositiveInfinity));
             _measuredCount++;
-            yield return new(child.DesiredSize.Width, child.DesiredSize.Height);
+            yield return new(_widthProbe.DesiredSize.Width, _widthProbe.DesiredSize.Height);
         }
     }
 
@@ -169,18 +179,7 @@ public sealed class HistoryInlineTagsView : Panel
             Children.RemoveRange(keep, Children.Count - 1 - keep);
         var hiddenCount = _tags.Length - layout.Tags.Length;
         _more.Content = layout.More.HasValue ? $"+{hiddenCount}" : null;
-        var top = Math.Max(0, (finalSize.Height - layout.Height) / 2);
-        // Keep overflow items measured for resizing; their slots lie entirely outside the clipped panel.
-        for (var i = 0; i < Children.Count; i++)
-        {
-            var childIsMore = Children[i] == _more;
-            HistoryTagPlacement? slot = childIsMore ? layout.More : i < layout.Tags.Length ? layout.Tags[i] : null;
-            var child = Children[i];
-            var rect = slot is { } p ? new Rect(p.X, top + p.Y, p.Width, p.Height)
-                : new Rect(finalSize.Width + 1, 0, child.DesiredSize.Width, child.DesiredSize.Height);
-            child.Arrange(rect);
-            SetSlotAccessibility(child, slot.HasValue);
-        }
+        ArrangeChildren(layout, finalSize);
         if (_visibleCount != layout.Tags.Length)
         {
             _visibleCount = layout.Tags.Length;
@@ -190,6 +189,25 @@ public sealed class HistoryInlineTagsView : Panel
         if (layout.More is null)
             _flyout?.Hide();
         return finalSize;
+    }
+
+    private void ArrangeChildren(HistoryTagOverflowLayout layout, Size finalSize)
+    {
+        var top = Math.Max(0, (finalSize.Height - layout.Height) / 2);
+        // Keep overflow items measured for resizing; their slots lie entirely outside the clipped panel.
+        for (var i = 0; i < Children.Count; i++)
+        {
+            var childIsMore = Children[i] == _more;
+            HistoryTagPlacement? slot = childIsMore ? layout.More : i < layout.Tags.Length ? layout.Tags[i] : null;
+            var child = Children[i];
+            var constraint = slot is { } size ? new Size(size.Width, size.Height)
+                : new Size(finalSize.Width, double.PositiveInfinity);
+            child.Measure(constraint);
+            var rect = slot is { } p ? new Rect(p.X, top + p.Y, p.Width, p.Height)
+                : new Rect(finalSize.Width + 1, 0, child.DesiredSize.Width, child.DesiredSize.Height);
+            child.Arrange(rect);
+            SetSlotAccessibility(child, slot.HasValue);
+        }
     }
 
     private static void SetSlotAccessibility(Control child, bool visible)

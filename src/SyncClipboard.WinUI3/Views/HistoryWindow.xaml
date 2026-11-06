@@ -48,6 +48,23 @@
             <Style TargetType="FontIcon">
                 <Setter Property="FontSize" Value="12" />
             </Style>
+            <DataTemplate x:Key="HistoryTagOverflowTemplate" x:DataType="vms:HistoryRecordVM">
+                <Button Style="{StaticResource DefaultButtonStyle}"
+                        Width="28"
+                        Height="22"
+                        MinWidth="0"
+                        MinHeight="0"
+                        Margin="4,0,0,0"
+                        Padding="0"
+                        CornerRadius="5"
+                        FontSize="11"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        IsTabStop="False"
+                        AllowFocusOnInteraction="False"
+                        AutomationProperties.Name="{x:Bind i18n:Strings.HistoryTagsShowMore}"
+                        ToolTipService.ToolTip="{x:Bind i18n:Strings.HistoryTagsShowMore}" />
+            </DataTemplate>
             <DataTemplate x:Key="normalTemplate" x:DataType="vms:HistoryRecordVM">
                 <TextBlock Text="{x:Bind vc:ConvertMethod.LimitHistoryListText(Text, local:HistoryListModeProxy.Current.IsCompactListMode), Mode=OneWay}" TextTrimming="CharacterEllipsis" />
             </DataTemplate>
@@ -199,6 +216,7 @@
                                           IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
                                           Command="{x:Bind SelectCommand}"
                                           CornerRadius="14"
+                                          Background="{ThemeResource SubtleFillColorSecondaryBrush}"
                                           Padding="10,4"
                                           Margin="0,0,6,0"
                                           MinHeight="28"
@@ -277,14 +295,18 @@
                                       StrokeThickness="1"
                                       Data="{x:Bind vc:ConvertMethod.HistoryRecordToHugeiconsGeometry(Type, FilePath), Mode=OneWay}" />
                             </Border>
-                            <StackPanel Grid.Column="2" Orientation="Vertical" VerticalAlignment="Center">
+                            <toolkit:DockPanel Grid.Column="2" LastChildFill="True">
+                                <controls:HistoryInlineTagsView toolkit:DockPanel.Dock="Right"
+                                                                Tags="{x:Bind PreviewTags, Mode=OneWay}"
+                                                                OverflowTemplate="{StaticResource HistoryTagOverflowTemplate}"
+                                                                Loaded="InlineTagsLoaded" />
                                 <ContentControl Padding="8,8,0,8"
                                                 HorizontalAlignment="Left"
                                                 VerticalAlignment="Center"
                                                 FontSize="{Binding FontSize, Source={StaticResource FontScaleProxy}}"
                                                 Content="{x:Bind}"
                                                 ContentTemplateSelector="{StaticResource clipboardTemplateSelector}" />
-                            </StackPanel>
+                            </toolkit:DockPanel>
                             <Border Grid.Column="3"
                                     Height="40"
                                     VerticalAlignment="Top"
