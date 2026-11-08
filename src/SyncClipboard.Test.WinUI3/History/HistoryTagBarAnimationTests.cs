@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Test.WinUI3.App;
@@ -39,6 +40,7 @@ public class HistoryTagBarAnimationTests
         var model = new HistoryTagBarSettingsViewModel(
             new Dictionary<string, int> { ["First"] = 1, ["Move me"] = 1, ["Last"] = 1 }, ["First"]);
         HistoryTagBarSettingsDialog? dialog = null;
+        var pointerTrace = new Queue<string>();
         GetCursorPos(out var originalCursor);
         try
         {
@@ -47,6 +49,15 @@ public class HistoryTagBarAnimationTests
             var scale = root.XamlRoot.RasterizationScale;
             window.AppWindow.ResizeClient(new SizeInt32((int)(850 * scale), (int)(650 * scale)));
             dialog = new HistoryTagBarSettingsDialog(model, () => Task.CompletedTask) { XamlRoot = root.XamlRoot };
+            foreach (var (routedEvent, name) in new[]
+            {
+                (UIElement.PointerPressedEvent, "pressed"), (UIElement.PointerMovedEvent, "moved"),
+                (UIElement.PointerReleasedEvent, "released"), (UIElement.PointerCaptureLostEvent, "capture lost")
+            })
+            {
+                dialog.AddHandler(routedEvent, new PointerEventHandler((_, e) =>
+                    RecordPointerTrace(dialog, e, name, pointerTrace)), true);
+            }
             _ = dialog.ShowAsync();
             await WaitUntilAsync(() => Descendants<ToggleButton>(dialog).Any(), token);
             await Task.Delay(800, token);
@@ -58,6 +69,10 @@ public class HistoryTagBarAnimationTests
             await Task.Delay(800, token);
             await VerifyUnpinnedGhostAsync(window, root, dialog, true, token);
         }
+        catch (Exception ex)
+        {
+            throw new AssertFailedException($"Native pointer events:\n{string.Join("\n", pointerTrace)}", ex);
+        }
         finally
         {
             SendMouseButton(false);
@@ -67,6 +82,22 @@ public class HistoryTagBarAnimationTests
             window.Close();
             SetCursorPos(originalCursor.X, originalCursor.Y);
         }
+    }
+
+    private static void RecordPointerTrace(HistoryTagBarSettingsDialog dialog, PointerRoutedEventArgs e,
+        string name, Queue<string> trace)
+    {
+        var point = e.GetCurrentPoint(dialog);
+        var viewport = Descendants<ScrollViewer>(dialog).FirstOrDefault(v => v.Name == "ContentScrollViewer");
+        var viewportBounds = viewport?.TransformToVisual(dialog)
+            .TransformBounds(new Rect(0, 0, viewport.ActualWidth, viewport.ActualHeight));
+        var previewCount = Descendants<Canvas>(dialog).Single(c => c.Name == "_DragLayer").Children.Count;
+        var unpinned = Descendants<ItemsControl>(dialog).Single(c => c.Name == "_UnpinnedTags");
+        trace.Enqueue($"{name}: source={e.OriginalSource.GetType().Name}, position={point.Position}, "
+            + $"left={point.Properties.IsLeftButtonPressed}, captures={dialog.PointerCaptures.Count}, "
+            + $"preview={previewCount}, viewport={viewportBounds}, unpinned={unpinned.Items.Count}");
+        while (trace.Count > 30)
+            trace.Dequeue();
     }
 
     private static async Task VerifyClickAsync(Window window, Grid root, HistoryTagBarSettingsDialog dialog,
