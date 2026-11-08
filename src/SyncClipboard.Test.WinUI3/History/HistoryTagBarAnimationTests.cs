@@ -158,12 +158,20 @@ public class HistoryTagBarAnimationTests
         var scale = root.XamlRoot.RasterizationScale;
         var point = new NativePoint { X = (int)Math.Round(position.X * scale), Y = (int)Math.Round(position.Y * scale) };
         Assert.IsTrue(ClientToScreen(WinRT.Interop.WindowNative.GetWindowHandle(window), ref point));
-        Assert.IsTrue(SetCursorPos(point.X, point.Y));
+        SendMouseInput(new MouseInput
+        {
+            X = (int)Math.Round((point.X - GetSystemMetrics(76)) * 65535d / (GetSystemMetrics(78) - 1)),
+            Y = (int)Math.Round((point.Y - GetSystemMetrics(77)) * 65535d / (GetSystemMetrics(79) - 1)),
+            Flags = 0x0001 | 0x8000 | 0x4000 // MOVE | ABSOLUTE | VIRTUALDESK
+        });
     }
 
-    private static void SendMouseButton(bool down)
+    private static void SendMouseButton(bool down) =>
+        SendMouseInput(new MouseInput { Flags = down ? 0x0002u : 0x0004u });
+
+    private static void SendMouseInput(MouseInput mouse)
     {
-        var input = new MouseInputEvent { Mouse = new MouseInput { Flags = down ? 0x0002u : 0x0004u } };
+        var input = new MouseInputEvent { Mouse = mouse };
         Assert.AreEqual(1u, SendInput(1, [input], Marshal.SizeOf<MouseInputEvent>()));
     }
 
@@ -200,6 +208,9 @@ public class HistoryTagBarAnimationTests
 
     [StructLayout(LayoutKind.Sequential)]
     private struct MouseInputEvent { public uint Type; public MouseInput Mouse; }
+
+    [DllImport("user32.dll")]
+    private static extern int GetSystemMetrics(int index);
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern uint SendInput(uint count, MouseInputEvent[] inputs, int size);
