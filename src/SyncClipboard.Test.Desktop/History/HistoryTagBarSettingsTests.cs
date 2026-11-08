@@ -447,6 +447,49 @@ public class HistoryTagBarSettingsTests
         }, token);
     }
 
+    [TestMethod]
+    public async Task HorizontalDragOfLastWrappedRowKeepsTagPinned()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryTagBarSettingsTests));
+        await session.Dispatch(async () =>
+        {
+            Application.Current!.Styles.Add(new FluentAvaloniaTheme());
+            var tags = Enumerable.Range(0, 5).ToDictionary(i => $"Tag-long-name-{i}", _ => 1);
+            var model = new HistoryTagBarSettingsViewModel(tags, tags.Keys);
+            var dialog = new HistoryTagBarSettingsDialog(model, () => Task.CompletedTask);
+            var owner = new Window { Width = 400, Height = 650, Content = new Button() };
+            try
+            {
+                owner.Show();
+                _ = dialog.ShowAsync(owner);
+                await SettleAsync(token);
+                var item = model.PinnedTags.Last();
+                var pill = dialog.GetVisualDescendants().OfType<Border>()
+                    .Single(b => b.Name == "TagPill" && b.DataContext == item);
+                var text = pill.GetVisualDescendants().OfType<TextBlock>().First();
+                var start = text.TranslatePoint(new Point(text.Bounds.Width / 2, text.Bounds.Height / 2), owner)!.Value;
+                owner.MouseMove(start);
+                owner.MouseDown(start, MouseButton.Left);
+                owner.MouseMove(start + new Vector(8, 0));
+                Dispatcher.UIThread.RunJobs();
+                owner.MouseUp(start + new Vector(8, 0), MouseButton.Left);
+                Dispatcher.UIThread.RunJobs();
+                Assert.IsTrue(item.IsPinned, "Lifting the last row must not move the divider above the pointer and unpin it.");
+                Assert.AreEqual(5, model.PinnedCount);
+            }
+            finally
+            {
+                owner.MouseUp(new Point(5, 5), MouseButton.Left);
+                Dispatcher.UIThread.RunJobs();
+                model.AcceptChanges();
+                dialog.Hide();
+                owner.Close();
+            }
+            return true;
+        }, token);
+    }
+
     private static void DragPill(Window owner, HistoryTagBarSettingsDialog dialog, string part, Point target)
     {
         StartPillDrag(owner, dialog, part);

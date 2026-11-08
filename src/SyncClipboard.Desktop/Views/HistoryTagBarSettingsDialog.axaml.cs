@@ -38,6 +38,7 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
     private OverlayLayer? dragLayer;
     private HistoryTagBarDragPreview? dragState;
     private double scrollMinHeight;
+    private double pinnedMinHeight;
     private ScrollViewer? contentViewport;
     private Border? dialogBackground;
     private readonly DispatcherTimer dragScrollTimer = new() { Interval = TimeSpan.FromMilliseconds(50) };
@@ -200,6 +201,8 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
             ZIndex = int.MaxValue
         };
         dragLayer.Children.Add(dragPreview);
+        pinnedMinHeight = _PinnedArea.MinHeight;
+        _PinnedArea.MinHeight = _PinnedArea.Bounds.Height;
         scrollMinHeight = _TagScroll.MinHeight;
         _TagScroll.MinHeight = _TagScroll.Bounds.Height;
         tagMotions.Remove(pressedItem!);
@@ -314,6 +317,7 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
             _UnpinnedTags.SetCurrentValue(ItemsControl.ItemsSourceProperty, Model.UnpinnedTags);
             dragState = null;
             _TagScroll.MinHeight = scrollMinHeight;
+            _PinnedArea.MinHeight = pinnedMinHeight;
         }
         if (dragPreview is not null)
             dragLayer?.Children.Remove(dragPreview);
