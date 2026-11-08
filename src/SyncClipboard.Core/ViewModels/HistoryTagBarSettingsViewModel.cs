@@ -124,6 +124,7 @@ public sealed class HistoryTagBarDragPreview(HistoryTagBarSettingsViewModel mode
 
     public void PreviewPinned(int index)
     {
+        RemoveUnpinnedPlaceholder();
         var oldIndex = PinnedTags.IndexOf(Item);
         var maxIndex = PinnedTags.Count - (oldIndex >= 0 ? 1 : 0);
         index = Math.Clamp(index, 0, maxIndex);
@@ -137,13 +138,25 @@ public sealed class HistoryTagBarDragPreview(HistoryTagBarSettingsViewModel mode
     public void PreviewUnpinned()
     {
         PinnedTags.Remove(Item);
+        if (StartedPinned && !UnpinnedTags.Contains(Item))
+        {
+            var index = UnpinnedTags.TakeWhile(tag => StringComparer.Ordinal.Compare(tag.Name, Item.Name) < 0).Count();
+            UnpinnedTags.Insert(index, Item);
+        }
         TargetPinned = false;
     }
 
     public void ClearTarget()
     {
         PinnedTags.Remove(Item);
+        RemoveUnpinnedPlaceholder();
         TargetPinned = null;
+    }
+
+    private void RemoveUnpinnedPlaceholder()
+    {
+        if (StartedPinned)
+            UnpinnedTags.Remove(Item);
     }
 
     public void Commit()

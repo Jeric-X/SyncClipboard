@@ -80,8 +80,13 @@ public class HistoryTagBarSettingsTests
             Toggle(dialog, "Code");
             dialog.Hide();
             await WaitUntilAsync(() => Equals(dialog.Title, Strings.HistoryTagBarDiscardTitle), token);
+            dialog.UpdateLayout();
+            var confirmation = Descendants<Border>(dialog).Single(b => b.Name == "BackgroundElement");
+            Assert.IsLessThanOrEqualTo(420d, confirmation.ActualWidth);
+            Assert.IsLessThan(400d, confirmation.ActualHeight);
             Invoke(Descendants<Button>(dialog).Single(b => b.Name == "CloseButton"));
             await WaitUntilAsync(() => Equals(dialog.Title, Strings.HistoryTagBarSettings), token);
+            await ResizeAndVerifyBoundsAsync(window, root, dialog, 850, 650, token);
             Assert.IsTrue(model.HasChanges);
             dialog.Hide();
             await WaitUntilAsync(() => Equals(dialog.Title, Strings.HistoryTagBarDiscardTitle), token);

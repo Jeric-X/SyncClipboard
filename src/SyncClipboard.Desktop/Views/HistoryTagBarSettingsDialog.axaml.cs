@@ -39,6 +39,7 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
     private HistoryTagBarDragPreview? dragState;
     private double scrollMinHeight;
     private ScrollViewer? contentViewport;
+    private Border? dialogBackground;
     private readonly DispatcherTimer dragScrollTimer = new() { Interval = TimeSpan.FromMilliseconds(50) };
     private int scrollDirection;
     public HistoryTagBarSettingsViewModel Model { get; }
@@ -72,13 +73,19 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
     {
         base.OnApplyTemplate(e);
         contentViewport = e.NameScope.Find<ScrollViewer>("ContentScrollViewer");
-        if (e.NameScope.Find<Border>("BackgroundElement") is { } background)
-        {
-            background.HorizontalAlignment = HorizontalAlignment.Stretch;
-            background.VerticalAlignment = VerticalAlignment.Stretch;
-            background.MaxHeight = double.PositiveInfinity;
-            background.Margin = new Thickness(16, 40);
-        }
+        dialogBackground = e.NameScope.Find<Border>("BackgroundElement");
+        UpdateDialogSize();
+    }
+
+    private void UpdateDialogSize()
+    {
+        if (dialogBackground is null)
+            return;
+        dialogBackground.MaxWidth = confirmingDiscard ? 420 : double.PositiveInfinity;
+        dialogBackground.HorizontalAlignment = HorizontalAlignment.Stretch;
+        dialogBackground.VerticalAlignment = confirmingDiscard ? VerticalAlignment.Center : VerticalAlignment.Stretch;
+        dialogBackground.MaxHeight = double.PositiveInfinity;
+        dialogBackground.Margin = new Thickness(16, 40, 16, 40);
     }
 
     private async void OnPrimaryButtonClick(FAContentDialog _, FAContentDialogButtonClickEventArgs args)
@@ -120,6 +127,7 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
             PrimaryButtonText = Strings.HistoryTagsApply;
             CloseButtonText = Strings.Cancel;
             confirmingDiscard = false;
+            UpdateDialogSize();
             return;
         }
         settingsContent = Content;
@@ -128,6 +136,7 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
         Content = new TextBlock { Text = Strings.HistoryTagBarDiscardMessage, TextWrapping = TextWrapping.Wrap };
         PrimaryButtonText = Strings.HistoryTagBarDiscard;
         CloseButtonText = Strings.HistoryTagBarContinueEditing;
+        UpdateDialogSize();
     }
 
     private void OnPillPressed(object? sender, PointerPressedEventArgs e)
@@ -196,6 +205,7 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
         tagMotions.Remove(pressedItem!);
         dragState = new(Model, pressedItem!);
         _PinnedTags.SetCurrentValue(ItemsControl.ItemsSourceProperty, dragState.PinnedTags);
+        _UnpinnedTags.SetCurrentValue(ItemsControl.ItemsSourceProperty, dragState.UnpinnedTags);
         RefreshDragLayout();
         return true;
     }
@@ -265,6 +275,7 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
     private void RefreshDragLayout()
     {
         _PinnedTags.UpdateLayout();
+        _UnpinnedTags.UpdateLayout();
         foreach (var container in _PinnedTags.GetRealizedContainers())
             container.Opacity = container.DataContext == pressedItem ? 0 : 1;
         foreach (var container in _UnpinnedTags.GetRealizedContainers())
@@ -300,6 +311,7 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
             foreach (var container in _PinnedTags.GetRealizedContainers().Concat(_UnpinnedTags.GetRealizedContainers()))
                 container.Opacity = 1;
             _PinnedTags.SetCurrentValue(ItemsControl.ItemsSourceProperty, Model.PinnedTags);
+            _UnpinnedTags.SetCurrentValue(ItemsControl.ItemsSourceProperty, Model.UnpinnedTags);
             dragState = null;
             _TagScroll.MinHeight = scrollMinHeight;
         }

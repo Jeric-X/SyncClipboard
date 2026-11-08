@@ -33,6 +33,7 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
     private HistoryTagBarDragPreview? dragState;
     private double scrollMinHeight;
     private ScrollViewer? contentViewport;
+    private Border? dialogBackground;
     private readonly DispatcherTimer dragScrollTimer = new() { Interval = TimeSpan.FromMilliseconds(50) };
     private int scrollDirection;
     public HistoryTagBarSettingsViewModel Model { get; }
@@ -63,14 +64,19 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
     {
         base.OnApplyTemplate();
         contentViewport = GetTemplateChild("ContentScrollViewer") as ScrollViewer;
-        if (GetTemplateChild("BackgroundElement") is FrameworkElement background)
-        {
-            background.MaxWidth = double.PositiveInfinity;
-            background.HorizontalAlignment = HorizontalAlignment.Stretch;
-            background.VerticalAlignment = VerticalAlignment.Stretch;
-            background.MaxHeight = double.PositiveInfinity;
-            background.Margin = new Thickness(16, 40, 16, 40);
-        }
+        dialogBackground = GetTemplateChild("BackgroundElement") as Border;
+        UpdateDialogSize();
+    }
+
+    private void UpdateDialogSize()
+    {
+        if (dialogBackground is null)
+            return;
+        dialogBackground.MaxWidth = confirmingDiscard ? 420 : double.PositiveInfinity;
+        dialogBackground.HorizontalAlignment = HorizontalAlignment.Stretch;
+        dialogBackground.VerticalAlignment = confirmingDiscard ? VerticalAlignment.Center : VerticalAlignment.Stretch;
+        dialogBackground.MaxHeight = double.PositiveInfinity;
+        dialogBackground.Margin = new Thickness(16, 40, 16, 40);
     }
 
     private async void OnPrimaryButtonClick(ContentDialog _, ContentDialogButtonClickEventArgs args)
@@ -112,6 +118,7 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
             PrimaryButtonText = Strings.HistoryTagsApply;
             CloseButtonText = Strings.Cancel;
             confirmingDiscard = false;
+            UpdateDialogSize();
             return;
         }
         settingsContent = Content;
@@ -120,6 +127,7 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
         Content = new TextBlock { Text = Strings.HistoryTagBarDiscardMessage, TextWrapping = TextWrapping.Wrap };
         PrimaryButtonText = Strings.HistoryTagBarDiscard;
         CloseButtonText = Strings.HistoryTagBarContinueEditing;
+        UpdateDialogSize();
     }
 
     private void OnPillPressed(object sender, PointerRoutedEventArgs e)
@@ -207,6 +215,7 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
         tagMotions.Remove(pressedItem!);
         dragState = new(Model, pressedItem!);
         _PinnedTags.ItemsSource = dragState.PinnedTags;
+        _UnpinnedTags.ItemsSource = dragState.UnpinnedTags;
         RefreshDragLayout();
         return true;
     }
@@ -276,14 +285,17 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
     private void RefreshDragLayout()
     {
         _PinnedTags.UpdateLayout();
+        _UnpinnedTags.UpdateLayout();
         for (var index = 0; index < dragState!.PinnedTags.Count; index++)
         {
             if (_PinnedTags.ContainerFromIndex(index) is UIElement container)
                 container.Opacity = dragState.PinnedTags[index] == pressedItem ? 0 : 1;
         }
-        var sourceIndex = Model.UnpinnedTags.IndexOf(pressedItem!);
-        if (sourceIndex >= 0 && _UnpinnedTags.ContainerFromIndex(sourceIndex) is UIElement source)
-            source.Opacity = 0.25;
+        for (var index = 0; index < dragState.UnpinnedTags.Count; index++)
+        {
+            if (_UnpinnedTags.ContainerFromIndex(index) is UIElement container)
+                container.Opacity = dragState.UnpinnedTags[index] == pressedItem ? 0.25 : 1;
+        }
     }
 
     private void OnPillReleased(object _, PointerRoutedEventArgs e)
@@ -315,6 +327,7 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
             RestoreOpacity(_PinnedTags);
             RestoreOpacity(_UnpinnedTags);
             _PinnedTags.ItemsSource = Model.PinnedTags;
+            _UnpinnedTags.ItemsSource = Model.UnpinnedTags;
             dragState = null;
             _TagScroll.MinHeight = scrollMinHeight;
         }

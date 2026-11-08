@@ -56,6 +56,33 @@ public class HistoryTagBarSettingsTests
     }
 
     [TestMethod]
+    public void UnpinDropShowsSortedPlaceholderWithoutChangingTheDraft()
+    {
+        var model = new HistoryTagBarSettingsViewModel(
+            new Dictionary<string, int> { ["a"] = 1, ["b"] = 1, ["c"] = 1 }, ["b"]);
+        var item = model.PinnedTags[0];
+        var drag = new HistoryTagBarDragPreview(model, item);
+        drag.PreviewUnpinned();
+        drag.PreviewUnpinned();
+        AssertNames(drag.UnpinnedTags.Select(t => t.Name), "a", "b", "c");
+        Assert.AreSame(item, drag.UnpinnedTags[1]);
+        AssertNames(model.UnpinnedTags.Select(t => t.Name), "a", "c");
+        Assert.IsTrue(item.IsPinned);
+        Assert.IsFalse(model.HasChanges);
+        drag.PreviewPinned(0);
+        AssertNames(drag.UnpinnedTags.Select(t => t.Name), "a", "c");
+        drag.PreviewUnpinned();
+        drag.ClearTarget();
+        AssertNames(drag.UnpinnedTags.Select(t => t.Name), "a", "c");
+        drag.Commit();
+        Assert.IsFalse(model.HasChanges);
+        drag.PreviewUnpinned();
+        drag.Commit();
+        AssertNames(model.UnpinnedTags.Select(t => t.Name), "a", "b", "c");
+        Assert.IsFalse(item.IsPinned);
+    }
+
+    [TestMethod]
     public void CancellingDragAndRestoringOrderDoNotLeaveUnsavedChanges()
     {
         var model = new HistoryTagBarSettingsViewModel(new Dictionary<string, int> { ["a"] = 1, ["b"] = 1 }, ["a", "b"]);

@@ -52,6 +52,7 @@ public class HistoryTagBarAnimationTests
             await Task.Delay(800, token);
             await VerifyClickAsync(window, root, dialog, true, token);
             await VerifyClickAsync(window, root, dialog, false, token);
+            await VerifyUnpinnedGhostAsync(window, root, dialog, token);
         }
         finally
         {
@@ -92,6 +93,25 @@ public class HistoryTagBarAnimationTests
             }
         }
         SendMouseButton(false);
+    }
+
+    private static async Task VerifyUnpinnedGhostAsync(Window window, Grid root,
+        HistoryTagBarSettingsDialog dialog, CancellationToken token)
+    {
+        MovePointer(window, root, Descendants<TextBlock>(dialog).Single(t => t.Text == "First"));
+        SendMouseButton(true);
+        await Task.Delay(50, token);
+        MovePointer(window, root, Descendants<Border>(dialog).Single(b => b.Name == "_UnpinnedArea"));
+        var unpinned = Descendants<ItemsControl>(dialog).Single(c => c.Name == "_UnpinnedTags");
+        var item = dialog.Model.Tags.Single(t => t.Name == "First");
+        await WaitUntilAsync(() => unpinned.Items.Contains(item), token);
+        var ghost = (UIElement)unpinned.ContainerFromItem(item);
+        Assert.AreEqual(0.25, ghost.Opacity);
+        Assert.IsTrue(item.IsPinned);
+        SendMouseButton(false);
+        await WaitUntilAsync(() => !item.IsPinned, token);
+        dialog.UpdateLayout();
+        Assert.AreEqual(1d, ((UIElement)unpinned.ContainerFromItem(item)).Opacity);
     }
 
     private static void MovePointer(Window window, Grid root, FrameworkElement element)

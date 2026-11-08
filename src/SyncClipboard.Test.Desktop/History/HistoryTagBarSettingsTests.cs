@@ -91,9 +91,15 @@ public class HistoryTagBarSettingsTests
                 VerifyDialogBounds(dialog, owner);
                 Invoke(dialog, "CloseButton");
                 Assert.AreEqual(Strings.HistoryTagBarDiscardTitle, dialog.Title);
+                await SettleAsync(token);
+                var confirmation = dialog.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "BackgroundElement");
+                Assert.IsLessThanOrEqualTo(420d, confirmation.Bounds.Width);
+                Assert.IsLessThan(400d, confirmation.Bounds.Height);
                 Assert.IsFalse(result.IsCompleted);
                 Invoke(dialog, "CloseButton");
                 Assert.AreEqual(Strings.HistoryTagBarSettings, dialog.Title);
+                await SettleAsync(token);
+                VerifyDialogBounds(dialog, owner);
                 Assert.IsTrue(model.Tags.Single(item => item.Name == "Work").IsPinned);
                 Invoke(dialog, "CloseButton");
                 Invoke(dialog, "PrimaryButton");
@@ -375,6 +381,59 @@ public class HistoryTagBarSettingsTests
                 owner.MouseUp(edge, MouseButton.Left);
                 Dispatcher.UIThread.RunJobs();
                 Assert.IsFalse(model.Tags.Single(t => t.Name == "Pinned").IsPinned);
+            }
+            finally
+            {
+                owner.MouseUp(new Point(5, 5), MouseButton.Left);
+                Dispatcher.UIThread.RunJobs();
+                model.AcceptChanges();
+                dialog.Hide();
+                owner.Close();
+            }
+            return true;
+        }, token);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task DragToUnpinnedAreaShowsGhostBeforeRelease(bool emptyUnpinned)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryTagBarSettingsTests));
+        await session.Dispatch(async () =>
+        {
+            Application.Current!.Styles.Add(new FluentAvaloniaTheme());
+            var tags = new Dictionary<string, int> { ["Pinned"] = 1 };
+            if (!emptyUnpinned)
+                tags["Free"] = 1;
+            var model = new HistoryTagBarSettingsViewModel(tags, ["Pinned"]);
+            var dialog = new HistoryTagBarSettingsDialog(model, () => Task.CompletedTask);
+            var owner = new Window { Width = 850, Height = 650, Content = new Button() };
+            try
+            {
+                owner.Show();
+                _ = dialog.ShowAsync(owner);
+                await SettleAsync(token);
+                StartPillDrag(owner, dialog, "text");
+                var area = dialog.FindControl<Border>("_UnpinnedArea")!;
+                var target = area.TranslatePoint(new Point(area.Bounds.Width / 2, area.Bounds.Height / 2), owner)!.Value;
+                owner.MouseMove(target);
+                Dispatcher.UIThread.RunJobs();
+                var unpinned = dialog.FindControl<ItemsControl>("_UnpinnedTags")!;
+                var ghost = unpinned.GetRealizedContainers().Single(c => c.DataContext is HistoryTagBarItem { Name: "Pinned" });
+                Assert.AreEqual(0.25, ghost.Opacity);
+                Assert.IsTrue(model.PinnedTags.Single().IsPinned);
+                Assert.IsFalse(model.HasChanges);
+                owner.MouseMove(new Point(5, 5));
+                Dispatcher.UIThread.RunJobs();
+                Assert.IsFalse(unpinned.GetRealizedContainers().Any(c => c.DataContext is HistoryTagBarItem { Name: "Pinned" }));
+                owner.MouseMove(target);
+                owner.MouseUp(target, MouseButton.Left);
+                Dispatcher.UIThread.RunJobs();
+                Assert.IsEmpty(model.PinnedTags);
+                var restored = unpinned.GetRealizedContainers().Single(c => c.DataContext is HistoryTagBarItem { Name: "Pinned" });
+                Assert.AreEqual(1d, restored.Opacity);
             }
             finally
             {
