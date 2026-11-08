@@ -91,11 +91,11 @@ public class HistoryTagBarAnimationTests
         var viewport = Descendants<ScrollViewer>(dialog).FirstOrDefault(v => v.Name == "ContentScrollViewer");
         var viewportBounds = viewport?.TransformToVisual(dialog)
             .TransformBounds(new Rect(0, 0, viewport.ActualWidth, viewport.ActualHeight));
-        var previewCount = Descendants<Canvas>(dialog).Single(c => c.Name == "_DragLayer").Children.Count;
-        var unpinned = Descendants<ItemsControl>(dialog).Single(c => c.Name == "_UnpinnedTags");
-        trace.Enqueue($"{name}: source={e.OriginalSource.GetType().Name}, position={point.Position}, "
-            + $"left={point.Properties.IsLeftButtonPressed}, captures={dialog.PointerCaptures.Count}, "
-            + $"preview={previewCount}, viewport={viewportBounds}, unpinned={unpinned.Items.Count}");
+        var previewCount = Descendants<Canvas>(dialog).FirstOrDefault(c => c.Name == "_DragLayer")?.Children.Count;
+        var unpinned = Descendants<ItemsControl>(dialog).FirstOrDefault(c => c.Name == "_UnpinnedTags");
+        trace.Enqueue($"{name}: source={e.OriginalSource?.GetType().Name}, position={point.Position}, "
+            + $"left={point.Properties.IsLeftButtonPressed}, captures={dialog.PointerCaptures?.Count ?? 0}, "
+            + $"preview={previewCount}, viewport={viewportBounds}, unpinned={unpinned?.Items.Count}");
         while (trace.Count > 30)
             trace.Dequeue();
     }
