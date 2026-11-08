@@ -52,7 +52,11 @@ public class HistoryTagBarAnimationTests
             await Task.Delay(800, token);
             await VerifyClickAsync(window, root, dialog, true, token);
             await VerifyClickAsync(window, root, dialog, false, token);
-            await VerifyUnpinnedGhostAsync(window, root, dialog, token);
+            await VerifyUnpinnedGhostAsync(window, root, dialog, false, token);
+            model.Tags.Single(t => t.Name == "First").IsPinned = true;
+            dialog.UpdateLayout();
+            await Task.Delay(800, token);
+            await VerifyUnpinnedGhostAsync(window, root, dialog, true, token);
         }
         finally
         {
@@ -96,9 +100,12 @@ public class HistoryTagBarAnimationTests
     }
 
     private static async Task VerifyUnpinnedGhostAsync(Window window, Grid root,
-        HistoryTagBarSettingsDialog dialog, CancellationToken token)
+        HistoryTagBarSettingsDialog dialog, bool fromPin, CancellationToken token)
     {
-        MovePointer(window, root, Descendants<TextBlock>(dialog).Single(t => t.Text == "First"));
+        FrameworkElement source = fromPin
+            ? Descendants<ToggleButton>(dialog).Single(b => b.DataContext is HistoryTagBarItem { Name: "First" })
+            : Descendants<TextBlock>(dialog).Single(t => t.Text == "First");
+        MovePointer(window, root, source);
         SendMouseButton(true);
         await Task.Delay(50, token);
         MovePointer(window, root, Descendants<Border>(dialog).Single(b => b.Name == "_UnpinnedArea"));

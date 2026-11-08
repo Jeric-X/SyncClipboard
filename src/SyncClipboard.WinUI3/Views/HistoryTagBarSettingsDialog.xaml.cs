@@ -194,11 +194,14 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
 
     private bool StartDragPreview()
     {
-        pressedToggle?.ReleasePointerCapture(pointer!);
-        if (!CapturePointer(pointer!))
+        if (pressedToggle is not null)
         {
-            FinishDrag();
-            return false;
+            pressedToggle.ReleasePointerCapture(pointer!);
+            if (!CapturePointer(pointer!))
+            {
+                FinishDrag();
+                return false;
+            }
         }
         dragPreview = new ContentPresenter
         {
