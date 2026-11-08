@@ -23,6 +23,7 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
     private bool confirmingDiscard;
     private bool discardConfirmed;
     private Point pressPosition;
+    private Point dragPosition;
     private Point previewOffset;
     private HistoryTagBarItem? pressedItem;
     private Border? pressedPill;
@@ -31,6 +32,9 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
     private ContentPresenter? dragPreview;
     private HistoryTagBarDragPreview? dragState;
     private double scrollMinHeight;
+    private ScrollViewer? contentViewport;
+    private readonly DispatcherTimer dragScrollTimer = new() { Interval = TimeSpan.FromMilliseconds(50) };
+    private int scrollDirection;
     public HistoryTagBarSettingsViewModel Model { get; }
 
     public HistoryTagBarSettingsDialog(HistoryTagBarSettingsViewModel model, Func<Task> save)
@@ -39,6 +43,7 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
         this.save = save;
         InitializeComponent();
         DataContext = model;
+        dragScrollTimer.Tick += (_, _) => ScrollDragStep();
         Closed += (_, _) =>
         {
             FinishDrag();
@@ -57,6 +62,7 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
     protected override void OnApplyTemplate()
     {
         base.OnApplyTemplate();
+        contentViewport = GetTemplateChild("ContentScrollViewer") as ScrollViewer;
         if (GetTemplateChild("BackgroundElement") is FrameworkElement background)
         {
             background.MaxWidth = double.PositiveInfinity;
@@ -149,6 +155,11 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
     {
         if (pressedItem is null || pressedPill is null)
             return;
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            FinishDrag();
+            return;
+        }
         if (dragPreview is null)
         {
             var position = e.GetCurrentPoint(this).Position;
@@ -158,11 +169,19 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
                 return;
         }
         e.Handled = true;
-        var point = e.GetCurrentPoint(_DragLayer).Position;
-        Canvas.SetLeft(dragPreview!, point.X - previewOffset.X);
-        Canvas.SetTop(dragPreview!, point.Y - previewOffset.Y);
-        ScrollDuringDrag(e.GetCurrentPoint(_TagScroll).Position);
-        UpdateDropTarget(e);
+        dragPosition = e.GetCurrentPoint(this).Position;
+        UpdateDragPreviewPosition();
+        ScrollDuringDrag(GetDragPosition(_TagScroll));
+        UpdateDropTarget();
+    }
+
+    private void UpdateDragPreviewPosition()
+    {
+        if (dragPreview is null)
+            return;
+        var point = GetDragPosition(_DragLayer);
+        Canvas.SetLeft(dragPreview, point.X - previewOffset.X);
+        Canvas.SetTop(dragPreview, point.Y - previewOffset.Y);
     }
 
     private bool StartDragPreview()
@@ -192,21 +211,25 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
         return true;
     }
 
-    private void UpdateDropTarget(PointerRoutedEventArgs e)
+    private void UpdateDropTarget()
     {
         if (dragState is null)
             return;
-        if (!ContainsPointer(_TagDropArea, e))
+        var position = GetDragPosition(_TagDropArea);
+        if (contentViewport is null || !ContainsPointer(contentViewport)
+            || position.X < 0 || position.X > _TagDropArea.ActualWidth || position.Y < 0)
             dragState.ClearTarget();
-        else if (e.GetCurrentPoint(_PinDivider).Position.Y < 0)
-            PreviewPinnedPosition(e.GetCurrentPoint(_PinnedTags).Position);
+        else if (GetDragPosition(_PinDivider).Y < 0)
+            PreviewPinnedPosition(GetDragPosition(_PinnedTags));
         else
             dragState.PreviewUnpinned();
         RefreshDragLayout();
     }
 
-    private static bool ContainsPointer(FrameworkElement element, PointerRoutedEventArgs e) =>
-        new Rect(0, 0, element.ActualWidth, element.ActualHeight).Contains(e.GetCurrentPoint(element).Position);
+    private Point GetDragPosition(UIElement element) => TransformToVisual(element).TransformPoint(dragPosition);
+
+    private bool ContainsPointer(FrameworkElement element) =>
+        new Rect(0, 0, element.ActualWidth, element.ActualHeight).Contains(GetDragPosition(element));
 
     private void PreviewPinnedPosition(Point position)
     {
@@ -266,7 +289,10 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
     private void OnPillReleased(object _, PointerRoutedEventArgs e)
     {
         if (dragPreview is not null)
-            UpdateDropTarget(e);
+        {
+            dragPosition = e.GetCurrentPoint(this).Position;
+            UpdateDropTarget();
+        }
         var preview = dragState;
         FinishDrag();
         preview?.Commit();
@@ -280,6 +306,8 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
 
     private void FinishDrag()
     {
+        dragScrollTimer.Stop();
+        scrollDirection = 0;
         var captured = pointer;
         pointer = null;
         if (dragState is not null)
@@ -318,7 +346,7 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
     {
         for (var index = 0; index < items.Items.Count; index++)
         {
-            if (items.Items[index] is not HistoryTagBarItem item || item == pressedItem
+            if (items.Items[index] is not HistoryTagBarItem item || (dragState is not null && item == pressedItem)
                 || items.ContainerFromIndex(index) is not FrameworkElement container)
                 continue;
             var pill = FindTagPill(container);
@@ -356,7 +384,7 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
         var dx = previous.Position.X + previous.Transform.X - position.X;
         var dy = previous.Position.Y + previous.Transform.Y - position.Y;
         previous.Animation.Stop();
-        var transform = new TranslateTransform();
+        var transform = new TranslateTransform { X = dx, Y = dy };
         pill.RenderTransform = transform;
         var animation = new Storyboard();
         AddMovement(animation, transform, nameof(TranslateTransform.X), dx);
@@ -381,9 +409,40 @@ public sealed partial class HistoryTagBarSettingsDialog : ContentDialog
 
     private void ScrollDuringDrag(Point position)
     {
-        if (position.Y < 24)
-            _TagScroll.ChangeView(null, _TagScroll.VerticalOffset - 12, null, true);
-        else if (position.Y > _TagScroll.ActualHeight - 24)
-            _TagScroll.ChangeView(null, _TagScroll.VerticalOffset + 12, null, true);
+        if (contentViewport is null)
+            return;
+        var origin = contentViewport.TransformToVisual(_TagScroll).TransformPoint(default);
+        var top = Math.Max(0, origin.Y);
+        var bottom = Math.Min(_TagScroll.ActualHeight, origin.Y + contentViewport.ActualHeight);
+        scrollDirection = GetScrollDirection(position, _TagScroll.ActualWidth, top, bottom);
+        if (scrollDirection == 0)
+            dragScrollTimer.Stop();
+        else if (!dragScrollTimer.IsEnabled)
+            dragScrollTimer.Start();
+    }
+
+    private void ScrollDragStep()
+    {
+        if (dragState is null || contentViewport is null)
+            return;
+        var offset = Math.Clamp(_TagScroll.VerticalOffset + (scrollDirection * 12), 0, _TagScroll.ScrollableHeight);
+        var remaining = (scrollDirection * 12) - (offset - _TagScroll.VerticalOffset);
+        _TagScroll.ChangeView(null, offset, null, true);
+        contentViewport.ChangeView(null, contentViewport.VerticalOffset + remaining, null, true);
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            UpdateLayout();
+            UpdateDropTarget();
+            UpdateDragPreviewPosition();
+        });
+    }
+
+    private static int GetScrollDirection(Point position, double width, double top, double bottom)
+    {
+        if (position.X < 0 || position.X > width || position.Y < top || position.Y > bottom)
+            return 0;
+        if (position.Y < top + 24)
+            return -1;
+        return position.Y > bottom - 24 ? 1 : 0;
     }
 }

@@ -29,6 +29,7 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
     private bool confirmingDiscard;
     private bool discardConfirmed;
     private Point pressPosition;
+    private Point dragPosition;
     private Point previewOffset;
     private HistoryTagBarItem? pressedItem;
     private Border? pressedPill;
@@ -37,6 +38,9 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
     private OverlayLayer? dragLayer;
     private HistoryTagBarDragPreview? dragState;
     private double scrollMinHeight;
+    private ScrollViewer? contentViewport;
+    private readonly DispatcherTimer dragScrollTimer = new() { Interval = TimeSpan.FromMilliseconds(50) };
+    private int scrollDirection;
     public HistoryTagBarSettingsViewModel Model { get; }
     protected override Type StyleKeyOverride => typeof(FAContentDialog);
 
@@ -48,6 +52,7 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
         this.save = save;
         InitializeComponent();
         DataContext = model;
+        dragScrollTimer.Tick += (_, _) => ScrollDragStep();
         Closed += (_, _) =>
         {
             FinishDrag();
@@ -66,6 +71,7 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
         base.OnApplyTemplate(e);
+        contentViewport = e.NameScope.Find<ScrollViewer>("ContentScrollViewer");
         if (e.NameScope.Find<Border>("BackgroundElement") is { } background)
         {
             background.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -159,8 +165,9 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
         var position = e.GetPosition(dragLayer!);
         Canvas.SetLeft(dragPreview!, position.X - previewOffset.X);
         Canvas.SetTop(dragPreview!, position.Y - previewOffset.Y);
-        ScrollDuringDrag(e.GetPosition(_TagScroll));
-        UpdateDropTarget(e);
+        dragPosition = e.GetPosition(this);
+        ScrollDuringDrag(GetDragPosition(_TagScroll));
+        UpdateDropTarget();
     }
 
     private bool StartDragPreview()
@@ -193,21 +200,25 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
         return true;
     }
 
-    private void UpdateDropTarget(PointerEventArgs e)
+    private void UpdateDropTarget()
     {
         if (dragState is null)
             return;
-        if (!ContainsPointer(_TagDropArea, e))
+        var position = GetDragPosition(_TagDropArea);
+        if (contentViewport is null || !ContainsPointer(contentViewport)
+            || position.X < 0 || position.X > _TagDropArea.Bounds.Width || position.Y < 0)
             dragState.ClearTarget();
-        else if (e.GetPosition(_PinDivider).Y < 0)
-            PreviewPinnedPosition(e.GetPosition(_PinnedTags));
+        else if (GetDragPosition(_PinDivider).Y < 0)
+            PreviewPinnedPosition(GetDragPosition(_PinnedTags));
         else
             dragState.PreviewUnpinned();
         RefreshDragLayout();
     }
 
-    private static bool ContainsPointer(Control control, PointerEventArgs e) =>
-        new Rect(control.Bounds.Size).Contains(e.GetPosition(control));
+    private Point GetDragPosition(Visual visual) => this.TranslatePoint(dragPosition, visual)!.Value;
+
+    private bool ContainsPointer(Control control) =>
+        new Rect(control.Bounds.Size).Contains(GetDragPosition(control));
 
     private void PreviewPinnedPosition(Point position)
     {
@@ -263,7 +274,10 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
     private void OnPillReleased(object? _, PointerReleasedEventArgs e)
     {
         if (dragPreview is not null)
-            UpdateDropTarget(e);
+        {
+            dragPosition = e.GetPosition(this);
+            UpdateDropTarget();
+        }
         var preview = dragState;
         FinishDrag();
         preview?.Commit();
@@ -277,6 +291,8 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
 
     private void FinishDrag()
     {
+        dragScrollTimer.Stop();
+        scrollDirection = 0;
         var capturedPointer = pointer;
         pointer = null;
         if (dragState is not null)
@@ -340,9 +356,35 @@ public partial class HistoryTagBarSettingsDialog : FAContentDialog
 
     private void ScrollDuringDrag(Point position)
     {
-        if (position.Y < 24)
-            _TagScroll.Offset -= new Vector(0, 12);
-        else if (position.Y > _TagScroll.Bounds.Height - 24)
-            _TagScroll.Offset += new Vector(0, 12);
+        if (contentViewport?.TranslatePoint(default, _TagScroll) is not { } origin)
+            return;
+        var top = Math.Max(0, origin.Y);
+        var bottom = Math.Min(_TagScroll.Bounds.Height, origin.Y + contentViewport.Bounds.Height);
+        scrollDirection = GetScrollDirection(position, _TagScroll.Bounds.Width, top, bottom);
+        if (scrollDirection == 0)
+            dragScrollTimer.Stop();
+        else if (!dragScrollTimer.IsEnabled)
+            dragScrollTimer.Start();
+    }
+
+    private void ScrollDragStep()
+    {
+        if (dragState is null || contentViewport is null)
+            return;
+        var previousOffset = _TagScroll.Offset.Y;
+        _TagScroll.Offset += new Vector(0, scrollDirection * 12);
+        var remaining = (scrollDirection * 12) - (_TagScroll.Offset.Y - previousOffset);
+        contentViewport.Offset += new Vector(0, remaining);
+        UpdateLayout();
+        UpdateDropTarget();
+    }
+
+    private static int GetScrollDirection(Point position, double width, double top, double bottom)
+    {
+        if (position.X < 0 || position.X > width || position.Y < top || position.Y > bottom)
+            return 0;
+        if (position.Y < top + 24)
+            return -1;
+        return position.Y > bottom - 24 ? 1 : 0;
     }
 }

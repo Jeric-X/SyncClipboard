@@ -257,7 +257,146 @@ public class HistoryTagBarSettingsTests
         }, token);
     }
 
+    [TestMethod]
+    public async Task DropOverFooterDoesNotUnpinWhenContentScrolls()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryTagBarSettingsTests));
+        await session.Dispatch(async () =>
+        {
+            Application.Current!.Styles.Add(new FluentAvaloniaTheme());
+            var tags = Enumerable.Range(0, 40).ToDictionary(i => $"Tag {i}", _ => 1);
+            tags["Pinned"] = 1;
+            var model = new HistoryTagBarSettingsViewModel(tags, ["Pinned"]);
+            var dialog = new HistoryTagBarSettingsDialog(model, () => Task.CompletedTask);
+            var owner = new Window { Width = 300, Height = 400, Content = new Button() };
+            try
+            {
+                owner.Show();
+                _ = dialog.ShowAsync(owner);
+                await SettleAsync(token);
+                var apply = dialog.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "PrimaryButton");
+                var footer = apply.TranslatePoint(new Point(15, apply.Bounds.Height / 2), owner)!.Value;
+                DragPill(owner, dialog, "text", footer);
+                Assert.IsTrue(model.Tags.Single(t => t.Name == "Pinned").IsPinned);
+            }
+            finally
+            {
+                model.AcceptChanges();
+                dialog.Hide();
+                owner.Close();
+            }
+            return true;
+        }, token);
+    }
+
+    [TestMethod]
+    public async Task HoldingDragAtEdgeKeepsScrollingUntilReleased()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryTagBarSettingsTests));
+        await session.Dispatch(async () =>
+        {
+            Application.Current!.Styles.Add(new FluentAvaloniaTheme());
+            var tags = new Dictionary<string, int> { ["Pinned"] = 1 };
+            foreach (var index in Enumerable.Range(0, 100))
+                tags[$"Tag {index}"] = 1;
+            var model = new HistoryTagBarSettingsViewModel(tags, tags.Keys.ToArray());
+            var dialog = new HistoryTagBarSettingsDialog(model, () => Task.CompletedTask);
+            var owner = new Window { Width = 850, Height = 650, Content = new Button() };
+            try
+            {
+                owner.Show();
+                _ = dialog.ShowAsync(owner);
+                await SettleAsync(token);
+                StartPillDrag(owner, dialog, "text");
+                var scroll = dialog.FindControl<ScrollViewer>("_TagScroll")!;
+                var edge = scroll.TranslatePoint(new Point(15, scroll.Bounds.Height - 4), owner)!.Value;
+                owner.MouseMove(edge);
+                Dispatcher.UIThread.RunJobs();
+                await Task.Delay(300, token);
+                Dispatcher.UIThread.RunJobs();
+                Assert.IsGreaterThan(12d, scroll.Offset.Y, "A stationary pointer at the edge must keep scrolling.");
+                owner.MouseUp(new Point(5, 5), MouseButton.Left);
+                Dispatcher.UIThread.RunJobs();
+                var stoppedOffset = scroll.Offset.Y;
+                await Task.Delay(150, token);
+                Dispatcher.UIThread.RunJobs();
+                Assert.AreEqual(stoppedOffset, scroll.Offset.Y);
+                Assert.IsFalse(model.HasChanges);
+            }
+            finally
+            {
+                owner.MouseUp(new Point(5, 5), MouseButton.Left);
+                Dispatcher.UIThread.RunJobs();
+                model.AcceptChanges();
+                dialog.Hide();
+                owner.Close();
+            }
+            return true;
+        }, token);
+    }
+
+    [TestMethod]
+    public async Task DragScrollReachesUnpinnedGroupInShortWindow()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryTagBarSettingsTests));
+        await session.Dispatch(async () =>
+        {
+            Application.Current!.Styles.Add(new FluentAvaloniaTheme());
+            var tags = new Dictionary<string, int> { ["Pinned"] = 1 };
+            foreach (var index in Enumerable.Range(0, 10))
+                tags[$"Tag {index}"] = 1;
+            var model = new HistoryTagBarSettingsViewModel(tags, tags.Keys.ToArray());
+            var dialog = new HistoryTagBarSettingsDialog(model, () => Task.CompletedTask);
+            var owner = new Window { Width = 300, Height = 400, Content = new Button() };
+            try
+            {
+                owner.Show();
+                _ = dialog.ShowAsync(owner);
+                await SettleAsync(token);
+                StartPillDrag(owner, dialog, "text");
+                var viewport = dialog.GetVisualDescendants().OfType<ScrollViewer>()
+                    .Single(v => v.Name == "ContentScrollViewer");
+                var edge = viewport.TranslatePoint(new Point(viewport.Bounds.Width / 2, viewport.Bounds.Height - 4), owner)!.Value;
+                owner.MouseMove(edge);
+                for (var i = 0; i < 40; i++)
+                {
+                    await Task.Delay(50, token);
+                    Dispatcher.UIThread.RunJobs();
+                }
+                var divider = dialog.FindControl<Border>("_PinDivider")!;
+                Assert.IsLessThan(edge.Y, divider.TranslatePoint(default, owner)!.Value.Y,
+                    "Edge scrolling must expose the unpinned group even when the outer viewport clips content.");
+                var pinned = dialog.FindControl<ItemsControl>("_PinnedTags")!;
+                Assert.IsFalse(pinned.Items.Cast<HistoryTagBarItem>().Any(t => t.Name == "Pinned"),
+                    "The preview must follow the stationary pointer across the divider before release.");
+                owner.MouseUp(edge, MouseButton.Left);
+                Dispatcher.UIThread.RunJobs();
+                Assert.IsFalse(model.Tags.Single(t => t.Name == "Pinned").IsPinned);
+            }
+            finally
+            {
+                owner.MouseUp(new Point(5, 5), MouseButton.Left);
+                Dispatcher.UIThread.RunJobs();
+                model.AcceptChanges();
+                dialog.Hide();
+                owner.Close();
+            }
+            return true;
+        }, token);
+    }
+
     private static void DragPill(Window owner, HistoryTagBarSettingsDialog dialog, string part, Point target)
+    {
+        StartPillDrag(owner, dialog, part);
+        owner.MouseMove(target);
+        owner.MouseUp(target, MouseButton.Left);
+        Dispatcher.UIThread.RunJobs();
+    }
+
+    private static void StartPillDrag(Window owner, HistoryTagBarSettingsDialog dialog, string part)
     {
         owner.UpdateLayout();
         var pill = dialog.GetVisualDescendants().OfType<Border>()
@@ -276,9 +415,6 @@ public class HistoryTagBarSettingsTests
         Dispatcher.UIThread.RunJobs();
         Assert.IsTrue(owner.GetVisualDescendants().Any(c => c is Control { Name: "TagDragPreview" }),
             $"Dragging from {part} must show the moving pill.");
-        owner.MouseMove(target);
-        owner.MouseUp(target, MouseButton.Left);
-        Dispatcher.UIThread.RunJobs();
     }
 
     private static async Task SettleAsync(CancellationToken token)
