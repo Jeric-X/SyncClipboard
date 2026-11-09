@@ -1712,4 +1712,37 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryTagsNoMatches" xml:space="preserve">
     <value>No matching tags</value>
   </data>
+  <data name="HistoryTagBarSettings" xml:space="preserve">
+    <value>Pinned tags</value>
+  </data>
+  <data name="HistoryTagBarSettingsHint" xml:space="preserve">
+    <value>Drag tags between the two groups to pin or unpin them. Drag pinned tags to change their order.</value>
+  </data>
+  <data name="HistoryTagTogglePin" xml:space="preserve">
+    <value>Pin / unpin tag</value>
+  </data>
+  <data name="HistoryTagBarEmpty" xml:space="preserve">
+    <value>No tags yet.</value>
+  </data>
+  <data name="HistoryTagBarPinned" xml:space="preserve">
+    <value>Pinned</value>
+  </data>
+  <data name="HistoryTagBarUnpinned" xml:space="preserve">
+    <value>Unpinned</value>
+  </data>
+  <data name="HistoryTagBarDiscardTitle" xml:space="preserve">
+    <value>Discard changes?</value>
+  </data>
+  <data name="HistoryTagBarDiscardMessage" xml:space="preserve">
+    <value>The tag bar has unsaved changes. Discard them?</value>
+  </data>
+  <data name="HistoryTagBarDiscard" xml:space="preserve">
+    <value>Discard changes</value>
+  </data>
+  <data name="HistoryTagBarContinueEditing" xml:space="preserve">
+    <value>Continue editing</value>
+  </data>
+  <data name="HistoryTagBarEditPins" xml:space="preserve">
+    <value>Edit pinned tags</value>
+  </data>
 </root>

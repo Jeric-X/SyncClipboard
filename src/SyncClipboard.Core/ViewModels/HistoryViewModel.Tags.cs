@@ -124,7 +124,15 @@ public partial class HistoryViewModel
     {
         var pinned = names.Select(HistoryTags.NormalizeName).Distinct(StringComparer.Ordinal).ToArray();
         runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { PinnedTags = pinned });
-        await RefreshTagOptionsAsync();
+        if (!PinnedTags.SequenceEqual(pinned, StringComparer.Ordinal))
+            throw new IOException(string.Format(Strings.SaveConfigFailed, runtimeConfig.Path));
+        // Saving local pins must not wait for database refreshes driven by history synchronization.
+        await _threadDispatcher.RunOnMainThreadAsync(() =>
+        {
+            var counts = TagOptions.Where(tag => tag.Name is not null && tag.Count > 0)
+                .ToDictionary(tag => tag.Name!, tag => tag.Count, StringComparer.Ordinal);
+            UpdateTagOptions(counts);
+        });
     }
 
     private static string[] GetTagOrder(IEnumerable<string> known, IEnumerable<string> pinned, IEnumerable<string> selected)
