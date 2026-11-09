@@ -422,11 +422,8 @@
                         Padding="8,4"
                         Background="{DynamicResource HistoryMultiSelectBarBackground}"
                         IsVisible="{Binding IsMultiSelecting}">
-                    <CommandBar MinHeight="40"
-                                Background="Transparent"
-                                DefaultLabelPosition="Right"
-                                IsDynamicOverflowEnabled="True">
-                        <CommandBar.Content>
+                    <controls:HistoryMultiSelectCommandBar MinHeight="40" Background="Transparent" DefaultLabelPosition="Right">
+                        <controls:HistoryMultiSelectCommandBar.Content>
                             <TextBlock Margin="8,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
                                 <TextBlock.Text>
                                     <MultiBinding StringFormat="{x:Static i18n:Strings.HistoryMultiSelectStatus}">
@@ -435,13 +432,8 @@
                                     </MultiBinding>
                                 </TextBlock.Text>
                             </TextBlock>
-                        </CommandBar.Content>
-                        <CommandBar.PrimaryCommands>
-                            <CommandBarButton Label="{x:Static i18n:Strings.HistoryTagsEdit}" IsEnabled="{Binding HasSelectedRecords}" Click="EditTags_Click">
-                                <CommandBarButton.Icon>
-                                    <TextBlock Text="&#xE70F;" FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="16" />
-                                </CommandBarButton.Icon>
-                            </CommandBarButton>
+                        </controls:HistoryMultiSelectCommandBar.Content>
+                        <controls:HistoryMultiSelectCommandBar.PrimaryCommands>
                             <CommandBarButton Label="{x:Static i18n:Strings.HistoryMultiSelectAll}" Command="{Binding ToggleCurrentFilterSelectionCommand}">
                                 <CommandBarButton.Icon>
                                     <TextBlock x:Name="_SelectAllIcon"
@@ -463,6 +455,11 @@
                                                FontSize="16" />
                                 </CommandBarButton.Icon>
                             </CommandBarButton>
+                            <CommandBarButton Label="{x:Static i18n:Strings.HistoryTagsEdit}" IsEnabled="{Binding HasSelectedRecords}" Click="EditTags_Click">
+                                <CommandBarButton.Icon>
+                                    <TextBlock Text="&#xE70F;" FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="16" />
+                                </CommandBarButton.Icon>
+                            </CommandBarButton>
                             <CommandBarButton Label="{x:Static i18n:Strings.HistoryExportSelected}" Command="{Binding ExportSelectedCommand}">
                                 <CommandBarButton.Icon>
                                     <TextBlock Text="&#xE74E;" FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="16" />
@@ -473,8 +470,8 @@
                                     <TextBlock Text="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="16" />
                                 </CommandBarButton.Icon>
                             </CommandBarButton>
-                        </CommandBar.PrimaryCommands>
-                    </CommandBar>
+                        </controls:HistoryMultiSelectCommandBar.PrimaryCommands>
+                    </controls:HistoryMultiSelectCommandBar>
                 </Border>
             </Grid>
             <ui:FAInfoBar x:Name="_InfoBar"
