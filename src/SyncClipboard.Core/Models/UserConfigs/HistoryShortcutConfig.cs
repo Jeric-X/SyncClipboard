@@ -6,7 +6,8 @@ namespace SyncClipboard.Core.Models.UserConfigs;
 public enum HistoryShortcutAction
 {
     Search, PreviousItem, NextItem, FirstItem, LastItem, ToggleStar, ToggleStarredFilter,
-    ToggleTopmost, Delete, TogglePreview, NextFilter, PreviousFilter, CopyAndPaste, Copy, ExecuteRecommendedAction
+    ToggleTopmost, Delete, TogglePreview, NextFilter, PreviousFilter, CopyAndPaste, Copy, ExecuteRecommendedAction,
+    PreviousTag, NextTag, ToggleTagsExpanded, TagAbove, TagBelow
 }
 
 public enum HistoryMouseAction
@@ -56,6 +57,11 @@ public record HistoryShortcutConfig
         HistoryShortcutAction.TogglePreview => new(Key.Ctrl, Key.P),
         HistoryShortcutAction.NextFilter => new(Key.Tab),
         HistoryShortcutAction.PreviousFilter => new(Key.Shift, Key.Tab),
+        HistoryShortcutAction.PreviousTag => new(Key.Ctrl, Key.Left),
+        HistoryShortcutAction.NextTag => new(Key.Ctrl, Key.Right),
+        HistoryShortcutAction.ToggleTagsExpanded => new(Key.Ctrl, Key.G),
+        HistoryShortcutAction.TagAbove => new(Key.Ctrl, Key.Up),
+        HistoryShortcutAction.TagBelow => new(Key.Ctrl, Key.Down),
         HistoryShortcutAction.CopyAndPaste => new(Key.Enter),
         HistoryShortcutAction.Copy => new(Key.Alt, Key.Enter),
         _ => Hotkey.Nothing

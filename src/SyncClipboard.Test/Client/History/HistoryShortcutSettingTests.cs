@@ -8,7 +8,7 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer;
 using SyncClipboard.Core.ViewModels;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Client.History;
 
 [TestClass]
 public class HistoryShortcutSettingTests

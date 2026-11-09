@@ -1414,6 +1414,21 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryShortcutTogglePreview" xml:space="preserve">
     <value>Toggle preview panel</value>
   </data>
+  <data name="HistoryShortcutTagAbove" xml:space="preserve">
+    <value>Switch to tag above</value>
+  </data>
+  <data name="HistoryShortcutTagBelow" xml:space="preserve">
+    <value>Switch to tag below</value>
+  </data>
+  <data name="HistoryShortcutToggleTagsExpanded" xml:space="preserve">
+    <value>Expand/collapse tag bar</value>
+  </data>
+  <data name="HistoryShortcutPreviousTag" xml:space="preserve">
+    <value>Switch to previous tag</value>
+  </data>
+  <data name="HistoryShortcutNextTag" xml:space="preserve">
+    <value>Switch to next tag</value>
+  </data>
   <data name="HistoryShortcutNextFilter" xml:space="preserve">
     <value>Next filter</value>
   </data>
