@@ -364,6 +364,7 @@
                     Background="{ThemeResource SystemControlBackgroundBaseLowBrush}"
                     Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsMultiSelecting), Mode=OneWay}">
                 <CommandBar MinHeight="40"
+                            VerticalContentAlignment="Center"
                             DefaultLabelPosition="Right"
                             IsOpen="True"
                             IsDynamicOverflowEnabled="True"
@@ -375,11 +376,6 @@
                                    Margin="8,0"
                                    TextTrimming="CharacterEllipsis" />
                     </CommandBar.Content>
-                    <AppBarButton Label="{x:Bind i18n:Strings.HistoryTagsEdit}"
-                                  LabelPosition="Default"
-                                  Icon="Edit"
-                                  IsEnabled="{x:Bind _viewModel.HasSelectedRecords, Mode=OneWay}"
-                                  Click="EditTags_Click" />
                     <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectAll}" LabelPosition="Default" Command="{x:Bind _viewModel.ToggleCurrentFilterSelectionCommand}">
                         <AppBarButton.Icon>
                             <FontIcon x:Name="_SelectAllIcon" Glyph="&#xE739;" />
@@ -394,6 +390,11 @@
                             <SymbolIcon x:Name="_ToggleStarIcon" Symbol="OutlineStar" />
                         </AppBarButton.Icon>
                     </AppBarButton>
+                    <AppBarButton Label="{x:Bind i18n:Strings.HistoryTagsEdit}"
+                                  LabelPosition="Default"
+                                  Icon="Edit"
+                                  IsEnabled="{x:Bind _viewModel.HasSelectedRecords, Mode=OneWay}"
+                                  Click="EditTags_Click" />
                     <AppBarButton Label="{x:Bind i18n:Strings.HistoryExportSelected}"
                                   Icon="Save"
                                   LabelPosition="Default"
