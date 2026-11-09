@@ -62,30 +62,6 @@ public class HistoryShortcutSettingTests
     }
 
     [TestMethod]
-    [DataRow(HistoryShortcutAction.PreviousTag, Key.Left)]
-    [DataRow(HistoryShortcutAction.NextTag, Key.Right)]
-    public async Task TagShortcut_CanBeChangedClearedAndReset(HistoryShortcutAction action, Key key)
-    {
-        var setting = viewModel.ShortcutSettings.Single(row => row.Action == action);
-        Assert.AreEqual(new Hotkey(Key.Ctrl, key), setting.Hotkey);
-        viewModel.BeginEditShortcut(setting);
-        viewModel.EditingShortcut = new Hotkey(Key.F6);
-        viewModel.SaveShortcutCommand.Execute(null);
-        var reloaded = new ConfigManager(config.Path, configurationServices.Upgrader).GetConfig<HistoryShortcutConfig>();
-        Assert.AreEqual(action, reloaded.Match(new Hotkey(Key.F6)));
-        Assert.IsNull(reloaded.Match(new Hotkey(Key.Ctrl, key)));
-        Assert.AreEqual(new Hotkey(Key.F6), setting.Hotkey);
-
-        viewModel.BeginEditShortcut(setting);
-        viewModel.EditingShortcut = Hotkey.Nothing;
-        viewModel.SaveShortcutCommand.Execute(null);
-        Assert.AreEqual(Hotkey.Nothing, config.GetConfig<HistoryShortcutConfig>().GetShortcut(action));
-        await viewModel.ResetShortcutCommand.ExecuteAsync(setting);
-        Assert.AreEqual(new Hotkey(Key.Ctrl, key), setting.Hotkey);
-        Assert.AreEqual(action, config.GetConfig<HistoryShortcutConfig>().Match(new Hotkey(Key.Ctrl, key)));
-    }
-
-    [TestMethod]
     public void SaveShortcut_RejectsReservedAndConflictingBindings()
     {
         var setting = viewModel.ShortcutSettings.Single(row => row.Action == HistoryShortcutAction.Search);

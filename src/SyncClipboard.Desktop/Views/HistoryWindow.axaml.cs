@@ -34,6 +34,9 @@ public partial class HistoryWindow : Window, IWindow
     public void NavigateTagFilter(bool forward) =>
         HistoryTagNavigation.Navigate(_TagFilterItems, _TagFilterScroll, _viewModel, _tagsExpanded, forward);
 
+    public void NavigateTagFilterVertically(bool down) =>
+        HistoryTagNavigation.Navigate(_TagFilterItems, _TagFilterScroll, _viewModel, _tagsExpanded, down, vertical: true);
+
     private bool _tagsExpanded;
 
     private void TagFilterItems_LayoutUpdated(object? _, EventArgs __)
@@ -68,8 +71,12 @@ public partial class HistoryWindow : Window, IWindow
             _TagFilterScroll.MaxHeight = maxHeight;
     }
 
-    private void ExpandTags_Click(object? _, RoutedEventArgs __)
+    private void ExpandTags_Click(object? _, RoutedEventArgs __) => ToggleTagBarExpanded();
+
+    public void ToggleTagBarExpanded()
     {
+        if (!_ExpandTagsButton.IsVisible)
+            return;
         SetTagsExpanded(!_tagsExpanded);
         TagFilterItems_LayoutUpdated(this, EventArgs.Empty);
     }

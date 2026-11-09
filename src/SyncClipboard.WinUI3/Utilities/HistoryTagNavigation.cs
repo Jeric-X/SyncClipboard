@@ -27,10 +27,17 @@ internal static class HistoryTagNavigation
         return candidates;
     }
 
-    internal static void Navigate(ItemsControl items, ScrollViewer scroll, HistoryViewModel model, bool expanded, bool forward)
+    internal static void Navigate(ItemsControl items, ScrollViewer scroll, HistoryViewModel model,
+        bool expanded, bool forward, bool vertical = false)
     {
         var candidates = GetCandidates(items, scroll, expanded);
-        var target = model.SelectAdjacentTag(candidates.Select(child => (HistoryTagFilter)child.DataContext).ToArray(), forward);
+        var target = vertical
+            ? model.SelectTagInAdjacentRow(candidates.Select(child =>
+            {
+                var bounds = LayoutInformation.GetLayoutSlot(child);
+                return ((HistoryTagFilter)child.DataContext, bounds.X, bounds.Y, bounds.Width);
+            }).ToArray(), forward)
+            : model.SelectAdjacentTag(candidates.Select(child => (HistoryTagFilter)child.DataContext).ToArray(), forward);
         if (target is not null && expanded)
             candidates.First(child => ReferenceEquals(child.DataContext, target)).StartBringIntoView();
     }

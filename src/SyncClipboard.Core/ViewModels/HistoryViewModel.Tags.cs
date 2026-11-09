@@ -134,6 +134,29 @@ public partial class HistoryViewModel
         return target;
     }
 
+    public HistoryTagFilter? SelectTagInAdjacentRow(
+        IReadOnlyList<(HistoryTagFilter Tag, double X, double Y, double Width)> options, bool down)
+    {
+        if (!IsTagBarVisible || HasModalOperation)
+            return null;
+
+        // Multi-tag filters use the first selected tag in display order, as horizontal navigation does.
+        var current = options.FirstOrDefault(option => option.Tag.IsSelected);
+        if (current.Tag is null)
+            return null;
+
+        var nextRow = options.Where(option => down ? option.Y > current.Y + 0.5 : option.Y < current.Y - 0.5)
+            .OrderBy(option => Math.Abs(option.Y - current.Y)).FirstOrDefault();
+        if (nextRow.Tag is null)
+            return null;
+
+        var center = current.X + current.Width / 2;
+        var target = options.Where(option => Math.Abs(option.Y - nextRow.Y) <= 0.5)
+            .MinBy(option => Math.Abs(option.X + option.Width / 2 - center)).Tag;
+        SelectedTags = target.Name is { } name ? [name] : [];
+        return target;
+    }
+
     private void UpdateTagSelection()
     {
         var selected = SelectedTags;
