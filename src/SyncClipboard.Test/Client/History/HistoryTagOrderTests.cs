@@ -58,17 +58,56 @@ public class HistoryTagOrderTests
     }
 
     [TestMethod]
-    public void Order_UnpinningUnusedNameDropsItAndDraftDoesNotChangeSavedPreference()
+    public void Order_UnpinningUnusedNameDoesNotChangeSavedPreference()
     {
         string[] saved = ["empty", "used"];
         var counts = new Dictionary<string, int> { ["used"] = 2 };
         var order = new HistoryTagOrderViewModel(counts, saved);
         order.Move(order.Pinned[0], false, 0);
         AssertNames(order.PinnedNames, "used");
-        Assert.IsEmpty(order.Unpinned);
         AssertNames(saved, "empty", "used");
         var reopened = new HistoryTagOrderViewModel(counts, saved);
         CollectionAssert.AreEqual(saved, reopened.PinnedNames);
+    }
+
+    [TestMethod]
+    public async Task RemovedLastAssignment_LeavesPinnedTagsSelectableInSavedOrder()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var fixture = await Fixture.CreateAsync(token);
+        fixture.InitializeTags();
+        await fixture.LoadAsync();
+        var key = fixture.Records[0].Key;
+        await fixture.ChangeStoredTagsAsync(0, ["Z-pin", "A-pin"]);
+        await fixture.ChangeStoredTagsAsync(1, ["known"]);
+        await fixture.ViewModel.SetPinnedTagsAsync(["Z-pin", "A-pin"]);
+        await fixture.Manager.EditTagsAsync([key], [], ["Z-pin", "A-pin"], token);
+        await fixture.ViewModel.RefreshTagOptionsAsync();
+        var counts = await fixture.Manager.GetTagCountsAsync(token);
+        AssertNames(counts.Keys, "known");
+
+        var pinned = new ConfigBase(fixture.RuntimeConfig.Path).GetConfig<HistoryWindowConfig>().PinnedTags;
+        var settings = new HistoryTagBarSettingsViewModel(counts, pinned, true);
+        AssertNames(settings.PinnedNames, "Z-pin", "A-pin");
+        Assert.AreEqual("Z-pin (0)", settings.PinnedTags[0].Text);
+        var editor = new HistoryTagEditorViewModel(counts.Keys, [[]], pinned);
+        AssertNames(editor.Choices.Select(tag => tag.Name), "Z-pin", "A-pin", "known");
+        editor.Choices.Single(tag => tag.Name == "A-pin").IsChecked = true;
+        await fixture.Manager.EditTagsAsync([key], editor.Added, editor.Removed, token);
+        AssertNames((await fixture.Manager.GetSyncSnapshotAsync(key, token))!.Tags, "A-pin");
+
+        var picker = new HistoryTagPickerViewModel(counts.Keys, ["A-pin"], async (name, add) =>
+        {
+            await fixture.Manager.EditTagsAsync([key], add ? [name] : [], add ? [] : [name], token);
+        }, pinned);
+        await picker.ToggleAsync("Z-pin");
+        AssertNames((await fixture.Manager.GetSyncSnapshotAsync(key, token))!.Tags, "A-pin", "Z-pin");
+        await picker.ToggleAsync("Z-pin");
+        await picker.AddAsync("0-new");
+        AssertNames(picker.Suggestions.Select(tag => tag.Name), "Z-pin", "A-pin", "0-new", "known");
+        picker.Search = "pin";
+        AssertNames(picker.Suggestions.Select(tag => tag.Name), "Z-pin", "A-pin");
+        AssertNames(new ConfigBase(fixture.RuntimeConfig.Path).GetConfig<HistoryWindowConfig>().PinnedTags, "Z-pin", "A-pin");
     }
 
     [TestMethod]

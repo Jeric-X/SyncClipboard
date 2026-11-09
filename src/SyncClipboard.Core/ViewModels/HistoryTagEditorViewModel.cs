@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SyncClipboard.Core.I18n;
+using SyncClipboard.Core.Utilities.History;
 using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels;
@@ -19,11 +20,11 @@ public partial class HistoryTagEditorViewModel : ObservableObject
     public ObservableCollection<HistoryTagChoice> Choices { get; } = [];
     public string Title { get; }
 
-    public HistoryTagEditorViewModel(IEnumerable<string> knownTags, IReadOnlyList<string[]> assignments)
+    public HistoryTagEditorViewModel(IEnumerable<string> knownTags, IReadOnlyList<string[]> assignments,
+        IEnumerable<string>? pinnedNames = null)
     {
         Title = assignments.Count == 1 ? Strings.HistoryTagsEdit : string.Format(Strings.HistoryTagsSelected, assignments.Count);
-        foreach (var name in knownTags.Concat(assignments.SelectMany(t => t)).Distinct(StringComparer.Ordinal)
-            .Order(StringComparer.Ordinal))
+        foreach (var name in HistoryTagOrdering.Order(knownTags.Concat(assignments.SelectMany(t => t)), pinnedNames ?? []))
         {
             var count = assignments.Count(t => t.Contains(name, StringComparer.Ordinal));
             Choices.Add(new(name, count == 0 ? false : count == assignments.Count ? true : null));

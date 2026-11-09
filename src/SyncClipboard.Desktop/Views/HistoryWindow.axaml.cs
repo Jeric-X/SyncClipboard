@@ -523,7 +523,7 @@ public partial class HistoryWindow : Window, IWindow
                 return;
             }
             var counts = await manager.GetTagCountsAsync();
-            var editor = new HistoryTagEditorViewModel(counts.Keys, assignments);
+            var editor = new HistoryTagEditorViewModel(counts.Keys, assignments, _viewModel.PinnedTags);
             var dialog = new HistoryTagEditorDialog(editor);
             // Keep validation errors in the editor so the user can correct the selection.
             dialog.PrimaryButtonClick += async (_, args) =>

@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Runner;
+using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.ViewModels.Sub;
 
 namespace SyncClipboard.Core.ViewModels;
@@ -205,12 +206,6 @@ public partial class HistoryViewModel
         });
     }
 
-    private static string[] GetTagOrder(IEnumerable<string> known, IEnumerable<string> pinned, IEnumerable<string> selected)
-    {
-        var first = pinned.Distinct(StringComparer.Ordinal).ToArray();
-        return [.. first, .. known.Concat(selected).Except(first, StringComparer.Ordinal).Order(StringComparer.Ordinal)];
-    }
-
     private void InitializeTagRefresh()
     {
         _tagRefresh = new(
@@ -232,7 +227,7 @@ public partial class HistoryViewModel
     private void UpdateTagOptions(IReadOnlyDictionary<string, int> counts)
     {
         var selected = SelectedTags;
-        var ordered = GetTagOrder(counts.Keys, PinnedTags, selected);
+        var ordered = HistoryTagOrdering.Order(counts.Keys.Concat(selected), PinnedTags);
         var names = ordered.ToHashSet(StringComparer.Ordinal);
         for (var i = TagOptions.Count - 1; i >= 0; i--)
         {

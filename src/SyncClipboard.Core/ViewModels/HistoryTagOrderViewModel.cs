@@ -9,14 +9,12 @@ public sealed record HistoryTagOrderItem(string Name, int Count)
 
 public sealed class HistoryTagOrderViewModel
 {
-    private readonly HashSet<string> _knownNames;
     public ObservableCollection<HistoryTagOrderItem> Pinned { get; }
     public ObservableCollection<HistoryTagOrderItem> Unpinned { get; }
     public string[] PinnedNames => Pinned.Select(item => item.Name).ToArray();
 
     public HistoryTagOrderViewModel(IReadOnlyDictionary<string, int> counts, IEnumerable<string> pinned)
     {
-        _knownNames = counts.Keys.ToHashSet(StringComparer.Ordinal);
         var names = pinned.Distinct(StringComparer.Ordinal).ToArray();
         Pinned = new(names.Select(name => new HistoryTagOrderItem(name, counts.GetValueOrDefault(name))));
         Unpinned = new(counts.Keys.Except(names, StringComparer.Ordinal).Order(StringComparer.Ordinal)
@@ -37,7 +35,7 @@ public sealed class HistoryTagOrderViewModel
         {
             Pinned.Insert(Math.Clamp(index, 0, Pinned.Count), item);
         }
-        else if (_knownNames.Contains(item.Name))
+        else
         {
             var sortedIndex = Unpinned.TakeWhile(tag => StringComparer.Ordinal.Compare(tag.Name, item.Name) < 0).Count();
             Unpinned.Insert(sortedIndex, item);

@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using SyncClipboard.Core.I18n;
+using SyncClipboard.Core.Utilities.History;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -14,16 +15,19 @@ public sealed partial class HistoryTagSuggestion(string name, bool isAssigned) :
 public sealed partial class HistoryTagPickerViewModel : ObservableObject
 {
     private readonly List<string> names;
+    private readonly int pinnedCount;
     private readonly HashSet<string> assigned;
     private readonly Dictionary<string, HistoryTagSuggestion> suggestionsByName;
     private readonly Func<string, bool, Task> saveTag;
     private string? inputName;
 
     public HistoryTagPickerViewModel(IEnumerable<string> knownNames, IEnumerable<string> assignedNames,
-        Func<string, bool, Task> saveTag)
+        Func<string, bool, Task> saveTag, IEnumerable<string>? pinnedNames = null)
     {
         assigned = assignedNames.ToHashSet(StringComparer.Ordinal);
-        names = knownNames.Concat(assigned).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        var pinned = (pinnedNames ?? []).Distinct(StringComparer.Ordinal).ToArray();
+        pinnedCount = pinned.Length;
+        names = HistoryTagOrdering.Order(knownNames.Concat(assigned), pinned).ToList();
         suggestionsByName = names.ToDictionary(name => name,
             name => new HistoryTagSuggestion(name, assigned.Contains(name)), StringComparer.Ordinal);
         this.saveTag = saveTag;
@@ -132,7 +136,7 @@ public sealed partial class HistoryTagPickerViewModel : ObservableObject
             assigned.Remove(name);
         if (!suggestionsByName.TryGetValue(name, out var suggestion))
         {
-            var index = names.BinarySearch(name, StringComparer.Ordinal);
+            var index = names.BinarySearch(pinnedCount, names.Count - pinnedCount, name, StringComparer.Ordinal);
             names.Insert(~index, name);
             suggestion = new HistoryTagSuggestion(name, shouldAssign);
             suggestionsByName.Add(name, suggestion);

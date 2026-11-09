@@ -927,7 +927,7 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
                 return;
             }
             var counts = await manager.GetTagCountsAsync();
-            var editor = new HistoryTagEditorViewModel(counts.Keys, assignments);
+            var editor = new HistoryTagEditorViewModel(counts.Keys, assignments, _viewModel.PinnedTags);
             var dialog = new HistoryTagEditorDialog(editor, () => manager.EditTagsAsync(keys, editor.Added, editor.Removed))
             {
                 XamlRoot = Content.XamlRoot
