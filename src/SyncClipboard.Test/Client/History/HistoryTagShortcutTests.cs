@@ -59,10 +59,10 @@ public class HistoryTagShortcutTests
         model.MultiTagFilter = true;
         model.SelectedTags = ["red", "Blue"];
         Assert.AreEqual("Red", model.SelectAdjacentTag(model.TagOptions, true)!.Name);
-        CollectionAssert.AreEqual(new[] { "Red" }, model.SelectedTags);
+        Assert.AreEqual("Red", model.SelectedTags.Single());
         Assert.IsTrue(model.MultiTagFilter);
         Assert.IsNull(model.SelectAdjacentTag([], true));
-        CollectionAssert.AreEqual(new[] { "Red" }, model.SelectedTags);
+        Assert.AreEqual("Red", model.SelectedTags.Single());
         Assert.IsNull(model.SelectAdjacentTag([model.TagOptions[0]], false)!.Name);
         Assert.IsEmpty(model.SelectedTags);
 
