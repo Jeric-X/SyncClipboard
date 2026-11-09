@@ -111,6 +111,30 @@ public partial class HistoryViewModel
         UpdateTagSelection();
     }
 
+    private bool HandleTagShortcut(HistoryShortcutAction action)
+    {
+        if (!IsTagBarVisible || HasModalOperation)
+            return false;
+
+        switch (action)
+        {
+            case HistoryShortcutAction.PreviousTag:
+            case HistoryShortcutAction.NextTag:
+                window?.NavigateTagFilter(action == HistoryShortcutAction.NextTag);
+                break;
+            case HistoryShortcutAction.TagAbove:
+            case HistoryShortcutAction.TagBelow:
+                window?.NavigateTagFilterVertically(action == HistoryShortcutAction.TagBelow);
+                break;
+            case HistoryShortcutAction.ToggleTagsExpanded:
+                window?.ToggleTagBarExpanded();
+                break;
+            default:
+                return false;
+        }
+        return true;
+    }
+
     public HistoryTagFilter? SelectAdjacentTag(IReadOnlyList<HistoryTagFilter> options, bool forward)
     {
         if (!IsTagBarVisible || HasModalOperation || options.Count == 0)
@@ -150,9 +174,9 @@ public partial class HistoryViewModel
         if (nextRow.Tag is null)
             return null;
 
-        var center = current.X + current.Width / 2;
+        var center = current.X + (current.Width / 2);
         var target = options.Where(option => Math.Abs(option.Y - nextRow.Y) <= 0.5)
-            .MinBy(option => Math.Abs(option.X + option.Width / 2 - center)).Tag;
+            .MinBy(option => Math.Abs(option.X + (option.Width / 2) - center)).Tag;
         SelectedTags = target.Name is { } name ? [name] : [];
         return target;
     }

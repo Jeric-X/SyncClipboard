@@ -942,21 +942,10 @@ public partial class HistoryViewModel : ObservableObject
             case HistoryShortcutAction.PreviousFilter: NavigateToPreviousFilter(); break;
             case HistoryShortcutAction.PreviousTag:
             case HistoryShortcutAction.NextTag:
-                if (!IsTagBarVisible || HasModalOperation)
-                    return false;
-                window?.NavigateTagFilter(action == HistoryShortcutAction.NextTag);
-                break;
             case HistoryShortcutAction.TagAbove:
             case HistoryShortcutAction.TagBelow:
-                if (!IsTagBarVisible || HasModalOperation)
-                    return false;
-                window?.NavigateTagFilterVertically(action == HistoryShortcutAction.TagBelow);
-                break;
             case HistoryShortcutAction.ToggleTagsExpanded:
-                if (!IsTagBarVisible || HasModalOperation)
-                    return false;
-                window?.ToggleTagBarExpanded();
-                break;
+                return HandleTagShortcut(action.Value);
             case HistoryShortcutAction.CopyAndPaste: HandleEnterKey(false); break;
             case HistoryShortcutAction.Copy: HandleEnterKey(true); break;
             case HistoryShortcutAction.ExecuteRecommendedAction:
