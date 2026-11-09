@@ -19,7 +19,7 @@ public class HistoryTagNavigationTests
         .UseHeadless(new AvaloniaHeadlessPlatformOptions());
 
     [TestMethod]
-    public async Task CandidatesFollowViewportAfterResizingScrollingAndExpanding()
+    public async Task CollapsedSelectionSurvivesReflowAndManualScrollingUsesWholeRows()
     {
         await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryTagNavigationTests));
         await session.Dispatch(() =>
@@ -29,37 +29,66 @@ public class HistoryTagNavigationTests
             var items = new ItemsControl
             {
                 ItemsSource = tags,
-                ItemsPanel = new FuncTemplate<Panel?>(() => new WrapPanel()),
+                ItemsPanel = new FuncTemplate<Panel?>(() => new WrapPanel { LineSpacing = 6 }),
                 ItemTemplate = new FuncDataTemplate<HistoryTagFilter>((_, _) => new Border { Width = 80, Height = 32 })
             };
             var scroll = new ScrollViewer
             {
                 Content = items,
-                Height = 32,
+                Height = 108,
                 HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled,
                 VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Hidden
             };
-            var window = new Window { Content = scroll, Width = 170, Height = 32 };
+            var navigation = new HistoryTagNavigation();
+            items.LayoutUpdated += (_, _) => navigation.KeepSelectionVisible(items, scroll);
+            scroll.ScrollChanged += (_, _) => navigation.SnapToRow(items, scroll);
+            tags[4].IsSelected = true;
+            var window = new Window { Content = scroll, Width = 170, Height = 108 };
             try
             {
                 window.Show();
                 Layout(window);
-                AssertCandidates(items, scroll, false, tags[..2]);
-                AssertCandidates(items, scroll, true, tags);
+                scroll.Height = 32;
+                window.Height = 32;
+                Layout(window);
+                AssertTagVisible(items, scroll, tags[4]);
+                Assert.AreEqual(76d, scroll.Offset.Y, 0.5);
+
+                navigation.ScrollByWheel(items, scroll, 1);
+                Layout(window);
+                Assert.AreEqual(38d, scroll.Offset.Y, 0.5); // Layout must not undo manual scrolling.
+                navigation.ScrollByWheel(items, scroll, 0.4);
+                Layout(window);
+                Assert.AreEqual(38d, scroll.Offset.Y, 0.5);
+                navigation.ScrollByWheel(items, scroll, 0.6);
+                Layout(window);
+                Assert.AreEqual(0d, scroll.Offset.Y, 0.5);
+                scroll.LineDown();
+                Layout(window);
+                Assert.AreEqual(38d, scroll.Offset.Y, 0.5);
+
                 window.Width = 250;
                 Layout(window);
-                AssertCandidates(items, scroll, false, tags[..3]);
-                scroll.Offset = new Vector(0, 32);
-                Layout(window);
-                AssertCandidates(items, scroll, false, tags[3..6]);
-                scroll.Offset = default;
+                AssertTagVisible(items, scroll, tags[4]);
                 window.Width = 90;
                 Layout(window);
-                AssertCandidates(items, scroll, false, tags[..1]);
-                AssertCandidates(items, scroll, true, tags);
+                AssertTagVisible(items, scroll, tags[4]);
+
+                scroll.Height = 108;
+                window.Height = 108;
+                Layout(window);
+                scroll.Offset = new Vector(0, 51);
+                Layout(window);
+                Assert.AreEqual(38d, scroll.Offset.Y, 0.5);
+                navigation.ScrollByWheel(items, scroll, -100);
+                Layout(window);
+                Assert.AreEqual(190d, scroll.Offset.Y, 0.5); // The final three rows fit without clipping.
+                AssertTagVisible(items, scroll, tags[7]);
+
                 items.ItemsSource = Array.Empty<HistoryTagFilter>();
                 Layout(window);
-                Assert.IsEmpty(HistoryTagNavigation.GetCandidates(items, scroll, false));
+                navigation.ScrollByWheel(items, scroll, 1);
+                Assert.IsEmpty(HistoryTagNavigation.GetCandidates(items));
             }
             finally
             {
@@ -69,9 +98,11 @@ public class HistoryTagNavigationTests
         }, TestContext.CancellationTokenSource.Token);
     }
 
-    private static void AssertCandidates(ItemsControl items, ScrollViewer scroll, bool expanded, HistoryTagFilter[] expected) =>
-        CollectionAssert.AreEqual(expected, HistoryTagNavigation.GetCandidates(items, scroll, expanded)
-            .Select(child => (HistoryTagFilter)child.DataContext!).ToArray());
+    private static void AssertTagVisible(ItemsControl items, ScrollViewer scroll, HistoryTagFilter tag)
+    {
+        var bounds = HistoryTagNavigation.GetCandidates(items).Single(child => ReferenceEquals(child.DataContext, tag)).Bounds;
+        Assert.IsTrue(bounds.Y >= scroll.Offset.Y - 0.5 && bounds.Bottom <= scroll.Offset.Y + scroll.Viewport.Height + 0.5);
+    }
 
     private static void Layout(Window window)
     {

@@ -32,12 +32,21 @@ namespace SyncClipboard.Desktop.Views;
 public partial class HistoryWindow : Window, IWindow
 {
     public void NavigateTagFilter(bool forward) =>
-        HistoryTagNavigation.Navigate(_TagFilterItems, _TagFilterScroll, _viewModel, _tagsExpanded, forward);
+        HistoryTagNavigation.Navigate(_TagFilterItems, _TagFilterScroll, _viewModel, forward);
 
     public void NavigateTagFilterVertically(bool down) =>
-        HistoryTagNavigation.Navigate(_TagFilterItems, _TagFilterScroll, _viewModel, _tagsExpanded, down, vertical: true);
+        HistoryTagNavigation.Navigate(_TagFilterItems, _TagFilterScroll, _viewModel, down, vertical: true);
+
+    private void TagFilterScroll_PointerWheelChanged(object? sender, PointerWheelEventArgs e)
+    {
+        if (e.Delta.Y == 0)
+            return;
+        _tagNavigation.ScrollByWheel(_TagFilterItems, _TagFilterScroll, e.Delta.Y);
+        e.Handled = true;
+    }
 
     private bool _tagsExpanded;
+    private readonly HistoryTagNavigation _tagNavigation = new();
 
     private void TagFilterItems_LayoutUpdated(object? _, EventArgs __)
     {
@@ -69,6 +78,8 @@ public partial class HistoryWindow : Window, IWindow
         var maxHeight = rows > rowLimit ? height : double.PositiveInfinity;
         if (Math.Abs(_TagFilterScroll.MaxHeight - maxHeight) > 0.5)
             _TagFilterScroll.MaxHeight = maxHeight;
+
+        _tagNavigation.KeepSelectionVisible(_TagFilterItems, _TagFilterScroll);
     }
 
     private void ExpandTags_Click(object? _, RoutedEventArgs __) => ToggleTagBarExpanded();
@@ -83,17 +94,7 @@ public partial class HistoryWindow : Window, IWindow
 
     private void SetTagsExpanded(bool expanded)
     {
-        if (!expanded)
-        {
-            var candidates = HistoryTagNavigation.GetCandidates(_TagFilterItems, _TagFilterScroll, expanded: true);
-            if (candidates.Count > 0 && candidates.Any(child =>
-                child.DataContext is HistoryTagFilter { IsSelected: true }
-                && child.Bounds.Y > candidates[0].Bounds.Y + 0.5))
-                _viewModel.SelectedTags = [];
-        }
-
         _tagsExpanded = expanded;
-        _TagFilterScroll.Offset = default;
         _ExpandTagsIcon.Glyph = expanded ? "\uE70E" : "\uE70D";
         var label = expanded ? Strings.HistoryTagsCollapse : Strings.HistoryTagsExpand;
         ToolTip.SetTip(_ExpandTagsButton, label);
@@ -117,6 +118,8 @@ public partial class HistoryWindow : Window, IWindow
             this.WindowDecorations = WindowDecorations.BorderOnly;
 
         InitializeComponent();
+        _TagFilterScroll.AddHandler(PointerWheelChangedEvent, TagFilterScroll_PointerWheelChanged, RoutingStrategies.Tunnel);
+        _TagFilterScroll.ScrollChanged += (_, _) => _tagNavigation.SnapToRow(_TagFilterItems, _TagFilterScroll);
         // Handle configured keys before the search box, without intercepting modal dialog input.
         _HistoryContent.AddHandler(KeyDownEvent, HistoryWindow_KeyDown, RoutingStrategies.Tunnel);
         if (OperatingSystem.IsLinux())

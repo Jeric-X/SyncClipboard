@@ -15,26 +15,6 @@ public class HistoryTagShortcutTests
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
-    public async Task ClippedSelection_StaysWithinVisibleCandidates()
-    {
-        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
-        await fixture.AddTagsAsync();
-        fixture.InitializeTags();
-        await fixture.ViewModel.RefreshTagOptionsAsync();
-        await fixture.ViewModel.SetPinnedTagsAsync(["Red"]);
-        var model = fixture.ViewModel;
-        var visible = model.TagOptions.Take(3).ToArray(); // All, Red, Blue; red is clipped.
-
-        model.SelectedTags = ["red"];
-        // If resizing clips the selected tag, navigation enters the visible range at its boundary.
-        Assert.IsNull(model.SelectAdjacentTag(visible, true)!.Name);
-        model.SelectedTags = ["red"];
-        Assert.AreEqual("Blue", model.SelectAdjacentTag(visible, false)!.Name);
-        await fixture.ReloadAsync();
-        fixture.Logger.VerifyNoOtherCalls();
-    }
-
-    [TestMethod]
     public async Task EmptyCandidates_PreserveCurrentFilter()
     {
         await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
