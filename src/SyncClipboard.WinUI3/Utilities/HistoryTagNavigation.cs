@@ -63,13 +63,11 @@ internal sealed class HistoryTagNavigation
         }
 
         // Native scrollbar steps can be shorter than half a row; keep their direction.
-        double target;
-        if (offset > _lastSnappedOffset + 0.5)
-            target = rows.FirstOrDefault(row => row >= offset - 0.5, rows[^1]);
-        else if (offset < _lastSnappedOffset - 0.5)
-            target = rows.LastOrDefault(row => row <= offset + 0.5, rows[0]);
-        else
-            target = rows.MinBy(row => Math.Abs(row - offset));
+        var target = offset > _lastSnappedOffset + 0.5
+            ? rows.FirstOrDefault(row => row >= offset - 0.5, rows[^1])
+            : offset < _lastSnappedOffset - 0.5
+                ? rows.LastOrDefault(row => row <= offset + 0.5, rows[0])
+                : rows.MinBy(row => Math.Abs(row - offset));
         _lastSnappedOffset = target;
         SetOffset(scroll, target);
     }
