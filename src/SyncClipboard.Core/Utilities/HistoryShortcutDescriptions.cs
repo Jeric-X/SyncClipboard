@@ -19,6 +19,8 @@ public static class HistoryShortcutDescriptions
         HistoryShortcutAction.TogglePreview => Strings.HistoryShortcutTogglePreview,
         HistoryShortcutAction.NextFilter => Strings.HistoryShortcutNextFilter,
         HistoryShortcutAction.PreviousFilter => Strings.HistoryShortcutPreviousFilter,
+        HistoryShortcutAction.PreviousTag => Strings.HistoryShortcutPreviousTag,
+        HistoryShortcutAction.NextTag => Strings.HistoryShortcutNextTag,
         HistoryShortcutAction.CopyAndPaste => Strings.HistoryShortcutCopyAndPaste,
         HistoryShortcutAction.Copy => Strings.HistoryShortcutCopy,
         HistoryShortcutAction.ExecuteRecommendedAction => Strings.ExecuteRecommendedAction,

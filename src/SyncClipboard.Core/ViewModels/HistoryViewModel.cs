@@ -925,7 +925,8 @@ public partial class HistoryViewModel : ObservableObject
             return true;
         }
 
-        switch (_configManager.GetConfig<HistoryShortcutConfig>().Match(hotkey))
+        var action = _configManager.GetConfig<HistoryShortcutConfig>().Match(hotkey);
+        switch (action)
         {
             case HistoryShortcutAction.Search: window?.FocusSearch(); break;
             case HistoryShortcutAction.PreviousItem: NavigateUp(); break;
@@ -939,6 +940,12 @@ public partial class HistoryViewModel : ObservableObject
             case HistoryShortcutAction.TogglePreview: ShowPreviewPanel = !ShowPreviewPanel; break;
             case HistoryShortcutAction.NextFilter: NavigateToNextFilter(); break;
             case HistoryShortcutAction.PreviousFilter: NavigateToPreviousFilter(); break;
+            case HistoryShortcutAction.PreviousTag:
+            case HistoryShortcutAction.NextTag:
+                if (!IsTagBarVisible || HasModalOperation)
+                    return false;
+                window?.NavigateTagFilter(action == HistoryShortcutAction.NextTag);
+                break;
             case HistoryShortcutAction.CopyAndPaste: HandleEnterKey(false); break;
             case HistoryShortcutAction.Copy: HandleEnterKey(true); break;
             case HistoryShortcutAction.ExecuteRecommendedAction:

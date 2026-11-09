@@ -10,6 +10,7 @@ public interface IWindow
     void Hide();
     void CenterOnScreen(int width, int height);
     void FocusSearch();
+    void NavigateTagFilter(bool forward) { }
     void ScrollToTop() { }
     void ScrollToSelectedItem() { }
     void SetTopmost(bool topmost) { }

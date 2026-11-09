@@ -1414,6 +1414,12 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryShortcutTogglePreview" xml:space="preserve">
     <value>切换预览面板</value>
   </data>
+  <data name="HistoryShortcutPreviousTag" xml:space="preserve">
+    <value>切换到上一个标签</value>
+  </data>
+  <data name="HistoryShortcutNextTag" xml:space="preserve">
+    <value>切换到下一个标签</value>
+  </data>
   <data name="HistoryShortcutNextFilter" xml:space="preserve">
     <value>下一个分类</value>
   </data>

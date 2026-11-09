@@ -31,6 +31,9 @@ namespace SyncClipboard.Desktop.Views;
 
 public partial class HistoryWindow : Window, IWindow
 {
+    public void NavigateTagFilter(bool forward) =>
+        HistoryTagNavigation.Navigate(_TagFilterItems, _TagFilterScroll, _viewModel, _tagsExpanded, forward);
+
     private bool _tagsExpanded;
 
     private void TagFilterItems_LayoutUpdated(object? _, EventArgs __)

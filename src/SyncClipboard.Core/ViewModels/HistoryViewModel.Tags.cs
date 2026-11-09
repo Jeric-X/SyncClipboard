@@ -111,6 +111,29 @@ public partial class HistoryViewModel
         UpdateTagSelection();
     }
 
+    public HistoryTagFilter? SelectAdjacentTag(IReadOnlyList<HistoryTagFilter> options, bool forward)
+    {
+        if (!IsTagBarVisible || HasModalOperation || options.Count == 0)
+            return null;
+
+        // Use the first selected tag in display order as the anchor for a multi-tag filter.
+        var current = -1;
+        for (var i = 0; i < options.Count; i++)
+        {
+            if (options[i].Name is { } name ? SelectedTags.Contains(name, StringComparer.Ordinal) : SelectedTags.Length == 0)
+            {
+                current = i;
+                break;
+            }
+        }
+
+        var next = current < 0 ? (forward ? 0 : options.Count - 1)
+            : (current + (forward ? 1 : options.Count - 1)) % options.Count;
+        var target = options[next];
+        SelectedTags = target.Name is { } targetName ? [targetName] : [];
+        return target;
+    }
+
     private void UpdateTagSelection()
     {
         var selected = SelectedTags;

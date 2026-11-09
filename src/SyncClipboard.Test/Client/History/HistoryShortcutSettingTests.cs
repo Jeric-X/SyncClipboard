@@ -8,7 +8,7 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer;
 using SyncClipboard.Core.ViewModels;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Client.History;
 
 [TestClass]
 public class HistoryShortcutSettingTests
@@ -59,6 +59,30 @@ public class HistoryShortcutSettingTests
         Assert.AreEqual(new Hotkey(Key.F2), setting.Hotkey);
         Assert.AreEqual(HistoryShortcutAction.Search, config.GetConfig<HistoryShortcutConfig>().Match(new Hotkey(Key.F2)));
         Assert.IsNull(config.GetConfig<HistoryShortcutConfig>().Match(new Hotkey(Key.Ctrl, Key.F)));
+    }
+
+    [TestMethod]
+    [DataRow(HistoryShortcutAction.PreviousTag, Key.Left)]
+    [DataRow(HistoryShortcutAction.NextTag, Key.Right)]
+    public async Task TagShortcut_CanBeChangedClearedAndReset(HistoryShortcutAction action, Key key)
+    {
+        var setting = viewModel.ShortcutSettings.Single(row => row.Action == action);
+        Assert.AreEqual(new Hotkey(Key.Ctrl, key), setting.Hotkey);
+        viewModel.BeginEditShortcut(setting);
+        viewModel.EditingShortcut = new Hotkey(Key.F6);
+        viewModel.SaveShortcutCommand.Execute(null);
+        var reloaded = new ConfigManager(config.Path, configurationServices.Upgrader).GetConfig<HistoryShortcutConfig>();
+        Assert.AreEqual(action, reloaded.Match(new Hotkey(Key.F6)));
+        Assert.IsNull(reloaded.Match(new Hotkey(Key.Ctrl, key)));
+        Assert.AreEqual(new Hotkey(Key.F6), setting.Hotkey);
+
+        viewModel.BeginEditShortcut(setting);
+        viewModel.EditingShortcut = Hotkey.Nothing;
+        viewModel.SaveShortcutCommand.Execute(null);
+        Assert.AreEqual(Hotkey.Nothing, config.GetConfig<HistoryShortcutConfig>().GetShortcut(action));
+        await viewModel.ResetShortcutCommand.ExecuteAsync(setting);
+        Assert.AreEqual(new Hotkey(Key.Ctrl, key), setting.Hotkey);
+        Assert.AreEqual(action, config.GetConfig<HistoryShortcutConfig>().Match(new Hotkey(Key.Ctrl, key)));
     }
 
     [TestMethod]
