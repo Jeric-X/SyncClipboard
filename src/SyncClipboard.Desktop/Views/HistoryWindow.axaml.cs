@@ -86,9 +86,9 @@ public partial class HistoryWindow : Window, IWindow
         if (!expanded)
         {
             var candidates = HistoryTagNavigation.GetCandidates(_TagFilterItems, _TagFilterScroll, expanded: true);
-            if (candidates.FirstOrDefault() is { } first && candidates.Any(child =>
+            if (candidates.Count > 0 && candidates.Any(child =>
                 child.DataContext is HistoryTagFilter { IsSelected: true }
-                && child.Bounds.Y > first.Bounds.Y + 0.5))
+                && child.Bounds.Y > candidates[0].Bounds.Y + 0.5))
                 _viewModel.SelectedTags = [];
         }
 

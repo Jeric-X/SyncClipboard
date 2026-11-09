@@ -101,9 +101,9 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         if (!expanded)
         {
             var candidates = HistoryTagNavigation.GetCandidates(_TagFilterItems, _TagFilterScroll, expanded: true);
-            if (candidates.FirstOrDefault() is { } first && candidates.Any(child =>
+            if (candidates.Count > 0 && candidates.Any(child =>
                 child.DataContext is HistoryTagFilter { IsSelected: true }
-                && LayoutInformation.GetLayoutSlot(child).Y > LayoutInformation.GetLayoutSlot(first).Y + 0.5))
+                && LayoutInformation.GetLayoutSlot(child).Y > LayoutInformation.GetLayoutSlot(candidates[0]).Y + 0.5))
                 _viewModel.SelectedTags = [];
         }
 
