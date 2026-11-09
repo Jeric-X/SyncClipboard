@@ -83,6 +83,15 @@ public partial class HistoryWindow : Window, IWindow
 
     private void SetTagsExpanded(bool expanded)
     {
+        if (!expanded)
+        {
+            var candidates = HistoryTagNavigation.GetCandidates(_TagFilterItems, _TagFilterScroll, expanded: true);
+            if (candidates.FirstOrDefault() is { } first && candidates.Any(child =>
+                child.DataContext is HistoryTagFilter { IsSelected: true }
+                && child.Bounds.Y > first.Bounds.Y + 0.5))
+                _viewModel.SelectedTags = [];
+        }
+
         _tagsExpanded = expanded;
         _TagFilterScroll.Offset = default;
         _ExpandTagsIcon.Glyph = expanded ? "\uE70E" : "\uE70D";

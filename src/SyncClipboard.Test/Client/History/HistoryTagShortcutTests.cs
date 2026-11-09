@@ -26,7 +26,7 @@ public class HistoryTagShortcutTests
         var visible = model.TagOptions.Take(3).ToArray(); // All, Red, Blue; red is clipped.
 
         model.SelectedTags = ["red"];
-        // Collapsing while a clipped tag is selected enters the visible range at its boundary.
+        // If resizing clips the selected tag, navigation enters the visible range at its boundary.
         Assert.IsNull(model.SelectAdjacentTag(visible, true)!.Name);
         model.SelectedTags = ["red"];
         Assert.AreEqual("Blue", model.SelectAdjacentTag(visible, false)!.Name);
