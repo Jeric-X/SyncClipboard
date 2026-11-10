@@ -12,7 +12,7 @@ using SyncClipboard.Server.Core.Utilities.History;
 using SyncClipboard.Shared.Profiles;
 using SyncClipboard.Shared.Utilities;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Server.History;
 
 [TestClass]
 public class ServerHistoryTagWriteTests
@@ -31,7 +31,7 @@ public class ServerHistoryTagWriteTests
         var result = await f.PostAsync(tagsJson, Token);
         Assert.IsInstanceOfType<OkObjectResult>(result);
         var returned = (HistoryRecordDto)((OkObjectResult)result).Value!;
-        string[] expected = tagsJson is null or "null" or "[]" ? [] : ["Work", "work", "é", "工作"];
+        string[]? expected = tagsJson is null or "null" ? null : tagsJson == "[]" ? [] : ["Work", "work", "é", "工作"];
         CollectionAssert.AreEqual(expected, returned.Tags);
         await AssertSavedAndNotifiedAsync(f, expected);
     }
@@ -60,7 +60,9 @@ public class ServerHistoryTagWriteTests
         if (tagsJson == "[]")
         {
             await f.PatchAsync(null, Token, version: 12);
-            Assert.IsEmpty((await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token)).Tags);
+            var cleared = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+            Assert.IsNotNull(cleared.Tags);
+            Assert.IsEmpty(cleared.Tags);
         }
     }
 
@@ -120,7 +122,7 @@ public class ServerHistoryTagWriteTests
             var result = patch ? await f.PatchAsync(json, Token) : await f.PostAsync(json, Token);
             Assert.IsInstanceOfType<BadRequestObjectResult>(result);
             var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
-            Assert.AreEqual("kept", saved.Tags.Single());
+            Assert.AreEqual("kept", saved.Tags!.Single());
             Assert.AreEqual(10, saved.Version);
             Assert.IsFalse(saved.Stared);
             Assert.IsEmpty(f.Notifications);
@@ -145,12 +147,12 @@ public class ServerHistoryTagWriteTests
         transfer.VerifyNoOtherCalls();
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
         Assert.IsTrue(saved.IsDeleted);
-        Assert.AreEqual("kept", saved.Tags.Single());
+        Assert.AreEqual("kept", saved.Tags!.Single());
         Assert.IsEmpty(Directory.EnumerateFileSystemEntries(f.Root));
         Assert.IsEmpty(f.Notifications);
     }
 
-    private async Task AssertSavedAndNotifiedAsync(Fixture f, string[] expected)
+    private async Task AssertSavedAndNotifiedAsync(Fixture f, string[]? expected)
     {
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
         CollectionAssert.AreEqual(expected, saved.Tags);

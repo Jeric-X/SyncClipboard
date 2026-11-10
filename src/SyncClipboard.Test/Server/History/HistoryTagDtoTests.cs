@@ -1,7 +1,7 @@
 using System.Text.Json;
 using SyncClipboard.Server.Core.Models;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Server.History;
 
 [TestClass]
 public class HistoryTagDtoTests
@@ -34,7 +34,10 @@ public class HistoryTagDtoTests
             Assert.IsEmpty(record.ToUpdateDto().Tags!);
         }
 
-        Assert.IsEmpty(record.ToEntity("user").Tags);
+        if (unknown)
+            Assert.IsNull(record.ToEntity("user").Tags);
+        else
+            Assert.IsEmpty(record.ToEntity("user").Tags!);
     }
 
     [TestMethod]
@@ -59,19 +62,19 @@ public class HistoryTagDtoTests
 
         record.Tags![0] = "changed";
         Assert.AreEqual("工作", entity.Tags[0]);
-        Assert.AreEqual("工作", restored.Tags[0]);
+        Assert.AreEqual("工作", restored.Tags![0]);
         Assert.AreEqual("工作", update.Tags![0]);
 
         entity.Tags[0] = "entity-only";
         Assert.AreEqual("changed", record.Tags[0]);
-        Assert.AreEqual("工作", restored.Tags[0]);
+        Assert.AreEqual("工作", restored.Tags![0]);
         Assert.AreEqual("工作", update.Tags[0]);
     }
 
     [TestMethod]
     public void FromEntity_ReportsKnownEmptyTags()
     {
-        var record = HistoryRecordDto.FromEntity(new HistoryRecordEntity());
+        var record = HistoryRecordDto.FromEntity(new HistoryRecordEntity { Tags = [] });
         Assert.IsNotNull(record.Tags);
         Assert.IsEmpty(record.Tags);
         var json = JsonSerializer.SerializeToElement(record, JsonSerializerOptions.Web);

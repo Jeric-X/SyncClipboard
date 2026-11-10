@@ -9,12 +9,12 @@ using SyncClipboard.Server.Core.Utilities.History;
 using SyncClipboard.Shared;
 using SyncClipboard.Shared.Profiles;
 
-namespace SyncClipboard.Test.Server;
+namespace SyncClipboard.Test.Server.History;
 
 [TestClass]
 public class ServerHistoryTagSettingsTests
 {
-    private static readonly string[] RecordHashes = ["UNTAGGED", "TAGGED", "STARRED", "PINNED", "ALREADY-DELETED"];
+    private static readonly string[] RecordHashes = ["UNTAGGED", "UNKNOWN", "TAGGED", "STARRED", "PINNED", "ALREADY-DELETED"];
 
     public TestContext TestContext { get; set; } = null!;
 
@@ -60,6 +60,7 @@ public class ServerHistoryTagSettingsTests
 
             var saved = await db.HistoryRecords.AsNoTracking().ToDictionaryAsync(r => r.Hash, token);
             Assert.IsTrue(saved["UNTAGGED"].IsDeleted);
+            Assert.IsTrue(saved["UNKNOWN"].IsDeleted);
             Assert.AreEqual(protectTagged == false, saved["TAGGED"].IsDeleted);
             Assert.IsFalse(saved["STARRED"].IsDeleted);
             Assert.IsFalse(saved["PINNED"].IsDeleted);
@@ -70,7 +71,7 @@ public class ServerHistoryTagSettingsTests
                 Assert.IsFalse(saved["RECENT-MODIFIED"].IsDeleted);
             }
 
-            string[] expected = protectTagged == false ? ["UNTAGGED", "TAGGED"] : ["UNTAGGED"];
+            string[] expected = protectTagged == false ? ["UNTAGGED", "UNKNOWN", "TAGGED"] : ["UNTAGGED", "UNKNOWN"];
             CollectionAssert.AreEquivalent(expected, notifications.Select(r => r.Hash).ToArray());
             foreach (var notification in notifications)
             {
@@ -94,7 +95,7 @@ public class ServerHistoryTagSettingsTests
             UserId = HistoryService.HARD_CODED_USER_ID,
             Type = ProfileType.Text,
             Hash = hash,
-            Tags = hash == "UNTAGGED" ? [] : ["work"],
+            Tags = hash == "UNKNOWN" ? null : hash == "UNTAGGED" ? [] : ["work"],
             LastModified = old,
             LastAccessed = old,
             Stared = hash == "STARRED",
