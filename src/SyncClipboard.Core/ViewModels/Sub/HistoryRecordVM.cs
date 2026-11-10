@@ -51,7 +51,25 @@ public partial class HistoryRecordVM : ObservableObject
     [NotifyPropertyChangedFor(nameof(PreviewTags))]
     private string[] tags = [];
 
-    public IEnumerable<HistoryPreviewTag> PreviewTags => (Tags ?? []).Select(tag => new HistoryPreviewTag(Key, tag));
+    private string[] _pinnedTagNames = [];
+
+    public IEnumerable<HistoryPreviewTag> PreviewTags
+    {
+        get
+        {
+            var names = Tags ?? [];
+            var pinned = _pinnedTagNames.Intersect(names, StringComparer.Ordinal);
+            return HistoryTagOrdering.Order(names, pinned).Select(tag => new HistoryPreviewTag(Key, tag));
+        }
+    }
+
+    internal void SetTagDisplayOrder(string[] pinnedNames)
+    {
+        if (_pinnedTagNames.SequenceEqual(pinnedNames, StringComparer.Ordinal))
+            return;
+        _pinnedTagNames = [.. pinnedNames];
+        OnPropertyChanged(nameof(PreviewTags));
+    }
 
     public string Hash { get; set; }
     public string? TransferDataFile { get; set; }
@@ -423,6 +441,7 @@ public partial class HistoryRecordVM : ObservableObject
             SortByLastAccessed = this.SortByLastAccessed
         };
 
+        copy.SetTagDisplayOrder(_pinnedTagNames);
         return copy;
     }
 }

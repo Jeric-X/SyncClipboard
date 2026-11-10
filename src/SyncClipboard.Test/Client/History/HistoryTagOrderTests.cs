@@ -2,6 +2,7 @@ using SyncClipboard.Core;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.ViewModels;
+using SyncClipboard.Core.ViewModels.Sub;
 using System.Text.Json.Nodes;
 using Fixture = SyncClipboard.Test.Client.History.HistoryViewModelPagingTests.Fixture;
 
@@ -134,6 +135,71 @@ public class HistoryTagOrderTests
         AssertNames(options.Select(item => item.Name), null, "Blue", "Red", "red");
         Assert.AreSame(red, options[2]);
         Assert.IsTrue(red.IsSelected);
+        fixture.Logger.VerifyNoOtherCalls();
+    }
+
+    [TestMethod]
+    public async Task RecordTags_FollowSavedPinsWithoutChangingStoredTags()
+    {
+        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
+        fixture.InitializeTags();
+        await fixture.AddTagsAsync();
+        await fixture.LoadAsync();
+        await fixture.ViewModel.RefreshTagOptionsAsync();
+        var record = fixture.Records[0];
+        fixture.ViewModel.SelectedItem = record;
+        var original = record.Tags.ToArray();
+        var stored = (await fixture.ReadStoredRecordAsync(record)).Tags;
+        var notifications = 0;
+        record.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(HistoryRecordVM.PreviewTags))
+                notifications++;
+        };
+
+        await fixture.ViewModel.SetPinnedTagsAsync(["empty", "Red", "Blue"]);
+        AssertNames(record.PreviewTags.Select(tag => tag.Name), "Red", "Blue");
+        AssertNames(fixture.ViewModel.PreviewedHistoryItem!.PreviewTags.Select(tag => tag.Name), "Red", "Blue");
+        AssertNames(record.DeepCopy().PreviewTags.Select(tag => tag.Name), "Red", "Blue");
+        Assert.IsTrue(record.PreviewTags.All(tag => tag.Record == record.Key));
+        Assert.IsGreaterThan(0, notifications);
+        var previous = notifications;
+        await fixture.ViewModel.SetPinnedTagsAsync(["Blue", "Red"]);
+        AssertNames(record.PreviewTags.Select(tag => tag.Name), "Blue", "Red");
+        Assert.IsGreaterThan(previous, notifications);
+        await fixture.ViewModel.SetPinnedTagsAsync([]);
+        AssertNames(record.PreviewTags.Select(tag => tag.Name), "Blue", "Red");
+        CollectionAssert.AreEqual(original, record.Tags);
+        CollectionAssert.AreEqual(original, record.ToHistoryRecord().Tags);
+        CollectionAssert.AreEqual(stored, (await fixture.ReadStoredRecordAsync(record)).Tags);
+        fixture.Logger.VerifyNoOtherCalls();
+    }
+
+    [TestMethod]
+    public async Task RecordTags_UseSavedOrderForLoadingPagingAndLiveChanges()
+    {
+        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
+        fixture.InitializeTags();
+        await fixture.AddTagsAsync();
+        fixture.RuntimeConfig.SetConfig(new HistoryWindowConfig { PinnedTags = ["empty", "Red"] });
+        await fixture.LoadAsync();
+        AssertNames(fixture.Records[0].PreviewTags.Select(tag => tag.Name), "Red", "Blue");
+        await fixture.LoadAsync();
+        var paged = fixture.Records.Single(record => int.Parse(record.Hash) == 24);
+        AssertNames(paged.PreviewTags.Select(tag => tag.Name), "Red", "Blue");
+        var changed = paged.DeepCopy();
+        changed.Tags = ["a", "Red", "A", "Blue"];
+        fixture.Publish(changed);
+        AssertNames(paged.PreviewTags.Select(tag => tag.Name), "Red", "A", "Blue", "a");
+        changed.Tags = ["Blue"];
+        fixture.Publish(changed);
+        AssertNames(paged.PreviewTags.Select(tag => tag.Name), "Blue");
+        var inserted = paged.ToHistoryRecord();
+        inserted.Hash = "new-record";
+        inserted.Timestamp = DateTime.UtcNow;
+        inserted.Tags = ["a", "Red", "A"];
+        fixture.Publish(new HistoryRecordVM(inserted));
+        AssertNames(fixture.Records[0].PreviewTags.Select(tag => tag.Name), "Red", "A", "a");
         fixture.Logger.VerifyNoOtherCalls();
     }
 
