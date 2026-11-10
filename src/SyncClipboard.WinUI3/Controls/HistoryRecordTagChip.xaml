@@ -27,13 +27,13 @@
                     Padding="0"
                     HorizontalContentAlignment="Center"
                     VerticalContentAlignment="Center"
-                    Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                    Background="Transparent"
                     BorderThickness="0"
                     Click="RemoveTag_Click"
                     AutomationProperties.Name="{x:Bind i18n:Strings.HistoryTagRemove}"
                     AutomationProperties.HelpText="{Binding Name}"
                     ToolTipService.ToolTip="{x:Bind i18n:Strings.HistoryTagRemove}">
-                <PathIcon Width="8" Height="8" Data="M0,1 1,0 4,3 7,0 8,1 5,4 8,7 7,8 4,5 1,8 0,7 3,4 Z" />
+                <PathIcon Width="6" Height="6" Data="M0,1 1,0 4,3 7,0 8,1 5,4 8,7 7,8 4,5 1,8 0,7 3,4 Z" />
             </Button>
         </Grid>
     </Border>

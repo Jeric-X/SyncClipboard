@@ -18,21 +18,23 @@
                        ToolTip.Tip="{Binding Name}" />
             <Button Focusable="False"
                     Grid.Column="1"
-                    Content="×"
                     Width="16"
                     Height="16"
                     CornerRadius="8"
-                    FontSize="12"
                     MinWidth="0"
                     MinHeight="0"
                     Margin="2,0,0,0"
                     Padding="0"
+                    HorizontalContentAlignment="Center"
+                    VerticalContentAlignment="Center"
                     Background="{DynamicResource SubtleFillColorSecondaryBrush}"
                     BorderThickness="0"
                     Click="Remove_Click"
                     AutomationProperties.Name="{x:Static i18n:Strings.HistoryTagRemove}"
                     AutomationProperties.HelpText="{Binding Name}"
-                    ToolTip.Tip="{x:Static i18n:Strings.HistoryTagRemove}" />
+                    ToolTip.Tip="{x:Static i18n:Strings.HistoryTagRemove}">
+                <PathIcon Width="6" Height="6" Data="M0,1 1,0 4,3 7,0 8,1 5,4 8,7 7,8 4,5 1,8 0,7 3,4 Z" />
+            </Button>
         </Grid>
     </Border>
 </UserControl>
