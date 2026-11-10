@@ -175,30 +175,41 @@ public class HistorySyncer
         }
         catch (RemoteHistoryConflictException ex)
         {
-            if (ex.ServerRecord != null)
-            {
-                record.ApplyFromServerUpdateDto(ex.ServerRecord);
-                // Older tag-capable servers may reject metadata without filling in missing tags.
-                // Leave the local snapshot pending so the next sync can merge and send it again.
-                if (ex.ServerRecord.Tags is null && record.Tags.Length > 0 && !record.IsDeleted
-                    && await remoteServer.SupportsHistoryTagsAsync(token))
-                    throw;
-                if (await _historyManager.TryApplySyncResponseAsync(record, sentVersion, sentModified, token))
-                    _logger.Write("HistorySyncer", $"并发冲突，已回写服务器版本[{record.Hash}]");
-            }
+            if (ex.ServerRecord is not null && !await TryResolveConflictAsync(record, ex.ServerRecord, remoteServer, token))
+                throw;
         }
         catch (RemoteHistoryNotFoundException)
         {
-            record.SyncStatus = HistorySyncStatus.LocalOnly;
-            if (!await _historyManager.TryApplySyncResponseAsync(record, sentVersion, sentModified, token))
-                return;
-            if (!record.IsDeleted)
-            {
-                var profile = record.ToProfile();
-                if (await profile.IsDataComplete(false, token) && await CanUploadLocalProfileAsync(profile, token))
-                    await _historyTransferQueue.EnqueueUpload(profile, forceResume: true, token);
-            }
+            await UploadMissingRecordAsync(record, sentVersion, sentModified, token);
         }
+    }
+
+    private async Task<bool> TryResolveConflictAsync(
+        HistoryRecord record, HistoryRecordUpdateDto serverRecord, IOfficialSyncServer remoteServer, CancellationToken token)
+    {
+        var sentVersion = record.Version;
+        var sentModified = record.LastModified;
+        record.ApplyFromServerUpdateDto(serverRecord);
+        // Older tag-capable servers may reject metadata without filling in missing tags.
+        // Leave the local snapshot pending so the next sync can merge and send it again.
+        if (serverRecord.Tags is null && record.Tags.Length > 0 && !record.IsDeleted
+            && await remoteServer.SupportsHistoryTagsAsync(token))
+            return false;
+        if (await _historyManager.TryApplySyncResponseAsync(record, sentVersion, sentModified, token))
+            _logger.Write("HistorySyncer", $"并发冲突，已回写服务器版本[{record.Hash}]");
+        return true;
+    }
+
+    private async Task UploadMissingRecordAsync(
+        HistoryRecord record, int sentVersion, DateTime sentModified, CancellationToken token)
+    {
+        record.SyncStatus = HistorySyncStatus.LocalOnly;
+        if (!await _historyManager.TryApplySyncResponseAsync(record, sentVersion, sentModified, token) || record.IsDeleted)
+            return;
+
+        var profile = record.ToProfile();
+        if (await profile.IsDataComplete(false, token) && await CanUploadLocalProfileAsync(profile, token))
+            await _historyTransferQueue.EnqueueUpload(profile, forceResume: true, token);
     }
 
     private static HistoryRecordUpdateDto CreateUpdateDto(HistoryRecord record) => new()

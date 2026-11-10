@@ -58,40 +58,40 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         dto.Version ??= existing.Version + 1;
         dto.LastModified ??= DateTimeOffset.UtcNow;
 
-        var shouldUpdate = HistoryHelper.ShouldUpdate(
-            oldVersion: existing.Version,
-            newVersion: dto.Version.Value,
-            oldLastModified: new DateTimeOffset(existing.LastModified),
-            newLastModified: dto.LastModified.Value);
-
-        if (!shouldUpdate && !backfillTags)
-        {
-            return (false, HistoryRecordDto.FromEntity(existing));
-        }
-
-        if (shouldUpdate && dto.IsDelete is false && existing.IsDeleted && !string.IsNullOrEmpty(existing.TransferDataFile))
-        {
+        var updated = ApplyMetadataUpdate(existing, dto);
+        if (updated is null)
             return (null, null);
-        }
 
-        if (shouldUpdate)
-        {
-            ApplyOptionalUpdateFields(existing, dto);
-            existing.LastModified = dto.LastModified.Value.UtcDateTime;
-            existing.Version = dto.Version.Value;
-        }
         if (backfillTags)
         {
             existing.Tags = dto.Tags;
             existing.LastModified = DateTime.UtcNow;
         }
 
-        await _dbContext.SaveChangesAsync(token);
-        await NotifyProfileChangeAsync(existing);
-        if (shouldUpdate)
-            await DeleteProfileDataIfNeed(existing, token);
+        if (updated.Value || backfillTags)
+        {
+            await _dbContext.SaveChangesAsync(token);
+            await NotifyProfileChangeAsync(existing);
+            if (updated.Value)
+                await DeleteProfileDataIfNeed(existing, token);
+        }
 
-        return (shouldUpdate, HistoryRecordDto.FromEntity(existing));
+        return (updated, HistoryRecordDto.FromEntity(existing));
+    }
+
+    private static bool? ApplyMetadataUpdate(HistoryRecordEntity existing, HistoryRecordUpdateDto dto)
+    {
+        if (!HistoryHelper.ShouldUpdate(existing.Version, dto.Version!.Value,
+            new DateTimeOffset(existing.LastModified), dto.LastModified!.Value))
+            return false;
+
+        if (dto.IsDelete is false && existing.IsDeleted && !string.IsNullOrEmpty(existing.TransferDataFile))
+            return null;
+
+        ApplyOptionalUpdateFields(existing, dto);
+        existing.LastModified = dto.LastModified.Value.UtcDateTime;
+        existing.Version = dto.Version.Value;
+        return true;
     }
 
     private static void ApplyOptionalUpdateFields(HistoryRecordEntity existing, HistoryRecordUpdateDto dto)
