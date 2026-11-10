@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
+using Avalonia.Interactivity;
 using System;
 using System.Linq;
 
@@ -15,7 +16,18 @@ public sealed class HistoryMultiSelectCommandBar : CommandBar
     private Button? _more;
     private ItemsControl? _primaryHost;
 
+    public HistoryMultiSelectCommandBar()
+    {
+        AddHandler(Button.ClickEvent, OnCommandClick, handledEventsToo: true);
+    }
+
     protected override Type StyleKeyOverride => typeof(CommandBar);
+
+    private void OnCommandClick(object? sender, RoutedEventArgs e)
+    {
+        if (e.Source is CommandBarButton { IsInOverflow: true })
+            SetCurrentValue(IsOpenProperty, false);
+    }
 
     protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
     {
