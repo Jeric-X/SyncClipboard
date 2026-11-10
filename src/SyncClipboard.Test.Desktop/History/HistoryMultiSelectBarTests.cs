@@ -104,15 +104,17 @@ public class HistoryMultiSelectBarTests
         exit.Click += (_, _) => invoked++;
         var more = bar.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "PART_OverflowButton");
         Assert.IsTrue(more.IsEffectivelyVisible);
-        ((IInvokeProvider)ControlAutomationPeer.CreatePeerForElement(more)!).Invoke();
-        Layout(window);
-        Assert.IsTrue(bar.IsOpen);
-        Assert.IsTrue(exit.IsInOverflow);
-        ((IInvokeProvider)ControlAutomationPeer.CreatePeerForElement(exit)!).Invoke();
-        Dispatcher.UIThread.RunJobs();
-        Assert.AreEqual(1, invoked);
-        bar.IsOpen = false;
-        Layout(window);
+        for (var expectedInvocations = 1; expectedInvocations <= 2; expectedInvocations++)
+        {
+            ((IInvokeProvider)ControlAutomationPeer.CreatePeerForElement(more)!).Invoke();
+            Layout(window);
+            Assert.IsTrue(bar.IsOpen);
+            Assert.IsTrue(exit.IsInOverflow);
+            ((IInvokeProvider)ControlAutomationPeer.CreatePeerForElement(exit)!).Invoke();
+            Layout(window);
+            Assert.AreEqual(expectedInvocations, invoked);
+            Assert.IsFalse(bar.IsOpen, "Invoking an overflow command should close the menu.");
+        }
     }
 
     private static void VerifyBounds(CommandBar bar, TextBlock status)
