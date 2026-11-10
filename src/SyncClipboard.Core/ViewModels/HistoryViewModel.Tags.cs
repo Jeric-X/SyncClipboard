@@ -204,6 +204,7 @@ public partial class HistoryViewModel
         // Saving local pins must not wait for database refreshes driven by history synchronization.
         await _threadDispatcher.RunOnMainThreadAsync(() =>
         {
+            OnPropertyChanged(nameof(PinnedTags));
             var counts = TagOptions.Where(tag => tag.Name is not null && tag.Count > 0)
                 .ToDictionary(tag => tag.Name!, tag => tag.Count, StringComparer.Ordinal);
             UpdateTagOptions(counts);

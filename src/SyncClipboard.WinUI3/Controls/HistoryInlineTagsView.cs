@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using SyncClipboard.Core.ViewModels;
+using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.ViewModels.Sub;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,16 @@ public sealed class HistoryInlineTagsView : Panel
     public static readonly DependencyProperty TagsProperty = DependencyProperty.Register(
         nameof(Tags), typeof(object), typeof(HistoryInlineTagsView),
         new PropertyMetadata(null, (sender, _) => ((HistoryInlineTagsView)sender).UpdateTags()));
+
+    public static readonly DependencyProperty PinnedTagsProperty = DependencyProperty.Register(
+        nameof(PinnedTags), typeof(object), typeof(HistoryInlineTagsView),
+        new PropertyMetadata(null, (sender, _) => ((HistoryInlineTagsView)sender).UpdateTags()));
+
+    public IEnumerable<string>? PinnedTags
+    {
+        get => (IEnumerable<string>?)GetValue(PinnedTagsProperty);
+        set => SetValue(PinnedTagsProperty, value);
+    }
 
     public IEnumerable<HistoryPreviewTag>? Tags
     {
@@ -47,7 +58,7 @@ public sealed class HistoryInlineTagsView : Panel
 
     private void UpdateTags()
     {
-        var tags = Visibility == Visibility.Visible ? Tags?.ToArray() ?? [] : [];
+        var tags = Visibility == Visibility.Visible ? HistoryTagOrdering.OrderForDisplay(Tags, PinnedTags) : [];
         if (_tags.SequenceEqual(tags))
             return;
 

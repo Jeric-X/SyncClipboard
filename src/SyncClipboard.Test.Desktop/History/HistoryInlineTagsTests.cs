@@ -11,6 +11,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using FluentAvalonia.Styling;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
 using SyncClipboard.Desktop.Controls;
 using SyncClipboard.Test.Client.History;
@@ -241,6 +242,72 @@ public class HistoryInlineTagsTests
                 row.Children.Remove(tags);
                 Layout(window);
                 Assert.IsFalse(flyout.IsOpen);
+            }
+            finally
+            {
+                window.Close();
+            }
+            return true;
+        }, token);
+    }
+
+    [TestMethod]
+    public async Task InlineAndOpenOverflowFollowPinsAndReboundRecords()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryInlineTagsTests));
+        await session.Dispatch(async () =>
+        {
+            Application.Current!.Styles.Add(new FluentAvaloniaTheme());
+            await using var fixture = await HistoryViewModelPagingTests.Fixture.CreateAsync(token);
+            await fixture.LoadAsync();
+            var record = fixture.Records[0];
+            string[] names = ["d", "b", "a", "c", "e", "f", "g", "h"];
+            record.Tags = names;
+            await fixture.ViewModel.SetPinnedTagsAsync(["missing", "h", "g"]);
+            var tags = new HistoryInlineTagsView { DataContext = record, ViewModel = fixture.ViewModel, Height = 40 };
+            tags.Bind(HistoryInlineTagsView.TagsProperty, new Binding(nameof(HistoryRecordVM.PreviewTags)));
+            tags.Bind(HistoryInlineTagsView.PinnedTagsProperty,
+                new Binding(nameof(HistoryViewModel.PinnedTags)) { Source = fixture.ViewModel });
+            var window = new Window { Width = 240, Height = 100, Content = tags };
+            try
+            {
+                window.Show();
+                Layout(window);
+                var more = tags.Children.OfType<Button>().Single();
+                Click(more);
+                var flyout = (Flyout)FlyoutBase.GetAttachedFlyout(more)!;
+                string[] DisplayedNames()
+                {
+                    Layout(window);
+                    Assert.IsTrue(flyout.IsOpen);
+                    return VisibleTags(tags).Concat(((WrapPanel)flyout.Content!).Children.OfType<HistoryRecordTagChip>())
+                        .Select(chip => chip.GetVisualDescendants().OfType<TextBlock>().First().Text!).ToArray();
+                }
+
+                string[] initialOrder = ["h", "g", "a", "b", "c", "d", "e", "f"];
+                CollectionAssert.AreEqual(initialOrder, DisplayedNames());
+                await fixture.ViewModel.SetPinnedTagsAsync(["g", "h"]);
+                string[] reordered = ["g", "h", "a", "b", "c", "d", "e", "f"];
+                CollectionAssert.AreEqual(reordered, DisplayedNames());
+                await fixture.ViewModel.SetPinnedTagsAsync([]);
+                CollectionAssert.AreEqual(names.Order(StringComparer.Ordinal).ToArray(), DisplayedNames());
+                CollectionAssert.AreEqual(names, record.Tags);
+                CollectionAssert.AreEqual(names, record.ToHistoryRecord().Tags);
+
+                record.Tags = ["z", "a", "h", "b", "c", "d"];
+                await fixture.ViewModel.SetPinnedTagsAsync(["h"]);
+                string[] updated = ["h", "a", "b", "c", "d", "z"];
+                CollectionAssert.AreEqual(updated, DisplayedNames());
+                var next = fixture.Records[1];
+                next.Tags = ["z", "h"];
+                tags.DataContext = next;
+                Layout(window);
+                Assert.IsFalse(flyout.IsOpen);
+                string[] nextOrder = ["h", "z"];
+                CollectionAssert.AreEqual(nextOrder, VisibleTags(tags)
+                    .Select(chip => chip.GetVisualDescendants().OfType<TextBlock>().First().Text!).ToArray());
+                Assert.IsTrue(VisibleTags(tags).All(chip => ((HistoryPreviewTag)chip.DataContext!).Record == next.Key));
             }
             finally
             {

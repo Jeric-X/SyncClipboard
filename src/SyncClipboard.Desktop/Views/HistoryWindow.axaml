@@ -357,6 +357,7 @@
                                 <DockPanel Grid.Column="2">
                                     <controls:HistoryInlineTagsView DockPanel.Dock="Right"
                                                                     Tags="{Binding PreviewTags}"
+                                                                    PinnedTags="{Binding #_HistoryWindow.ViewModel.PinnedTags}"
                                                                     ViewModel="{Binding #_HistoryWindow.ViewModel}"
                                                                     IsVisible="{Binding !#_HistoryWindow.ViewModel.ShowPreviewPanel}" />
                                     <ContentControl Padding="8,8,0,8"

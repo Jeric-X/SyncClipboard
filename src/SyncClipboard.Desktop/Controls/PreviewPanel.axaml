@@ -58,7 +58,13 @@
                       MaxHeight="100"
                       HorizontalScrollBarVisibility="Disabled"
                       VerticalScrollBarVisibility="Auto">
-            <ItemsControl x:Name="_PreviewTags" Margin="12,0" ItemsSource="{Binding PreviewTags}">
+            <ItemsControl x:Name="_PreviewTags" Margin="12,0">
+                <ItemsControl.ItemsSource>
+                    <MultiBinding Converter="{x:Static vc:FuncConverter.OrderHistoryTags}">
+                        <Binding Path="PreviewTags" />
+                        <Binding Path="#_PreviewPanel.ViewModel.PinnedTags" />
+                    </MultiBinding>
+                </ItemsControl.ItemsSource>
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <WrapPanel />
