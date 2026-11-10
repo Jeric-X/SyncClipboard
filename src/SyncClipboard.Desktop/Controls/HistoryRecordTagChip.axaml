@@ -27,7 +27,7 @@
                     Padding="0"
                     HorizontalContentAlignment="Center"
                     VerticalContentAlignment="Center"
-                    Background="{DynamicResource SubtleFillColorSecondaryBrush}"
+                    Background="Transparent"
                     BorderThickness="0"
                     Click="Remove_Click"
                     AutomationProperties.Name="{x:Static i18n:Strings.HistoryTagRemove}"
