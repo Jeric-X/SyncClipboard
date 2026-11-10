@@ -205,7 +205,7 @@ public partial class HistoryViewModel
         await _threadDispatcher.RunOnMainThreadAsync(() =>
         {
             foreach (var record in allHistoryItems)
-                record.SetTagDisplayOrder(pinned);
+                record.PinnedTagNames = pinned;
             var counts = TagOptions.Where(tag => tag.Name is not null && tag.Count > 0)
                 .ToDictionary(tag => tag.Name!, tag => tag.Count, StringComparer.Ordinal);
             UpdateTagOptions(counts);

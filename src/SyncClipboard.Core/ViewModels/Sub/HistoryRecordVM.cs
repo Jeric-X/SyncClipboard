@@ -51,24 +51,18 @@ public partial class HistoryRecordVM : ObservableObject
     [NotifyPropertyChangedFor(nameof(PreviewTags))]
     private string[] tags = [];
 
-    private string[] _pinnedTagNames = [];
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PreviewTags))]
+    private string[] pinnedTagNames = [];
 
     public IEnumerable<HistoryPreviewTag> PreviewTags
     {
         get
         {
             var names = Tags ?? [];
-            var pinned = _pinnedTagNames.Intersect(names, StringComparer.Ordinal);
+            var pinned = PinnedTagNames.Intersect(names, StringComparer.Ordinal);
             return HistoryTagOrdering.Order(names, pinned).Select(tag => new HistoryPreviewTag(Key, tag));
         }
-    }
-
-    internal void SetTagDisplayOrder(string[] pinnedNames)
-    {
-        if (_pinnedTagNames.SequenceEqual(pinnedNames, StringComparer.Ordinal))
-            return;
-        _pinnedTagNames = [.. pinnedNames];
-        OnPropertyChanged(nameof(PreviewTags));
     }
 
     public string Hash { get; set; }
@@ -427,6 +421,7 @@ public partial class HistoryRecordVM : ObservableObject
             Timestamp = this.Timestamp,
             Stared = this.Stared,
             Tags = [.. this.Tags],
+            PinnedTagNames = [.. this.PinnedTagNames],
             Pinned = this.Pinned,
             SyncState = this.SyncState,
             IsDownloading = this.IsDownloading,
@@ -441,7 +436,6 @@ public partial class HistoryRecordVM : ObservableObject
             SortByLastAccessed = this.SortByLastAccessed
         };
 
-        copy.SetTagDisplayOrder(_pinnedTagNames);
         return copy;
     }
 }
