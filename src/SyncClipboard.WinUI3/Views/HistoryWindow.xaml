@@ -41,7 +41,7 @@
                 <Setter Property="IsTabStop" Value="False" />
                 <Setter Property="AllowFocusOnInteraction" Value="False" />
             </Style>
-            <Style TargetType="CheckBox">
+            <Style TargetType="CheckBox" BasedOn="{StaticResource DefaultCheckBoxStyle}">
                 <Setter Property="IsTabStop" Value="False" />
                 <Setter Property="AllowFocusOnInteraction" Value="False" />
             </Style>
