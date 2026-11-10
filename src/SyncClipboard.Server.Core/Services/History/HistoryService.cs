@@ -206,9 +206,9 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         if (names.Length > 0 && onlyUntagged)
             throw new ArgumentException("Tags and untagged filter cannot be combined.");
         if (names.Length > 0)
-            query = query.Where(r => r.Tags.Any(name => names.Contains(name)));
+            query = query.Where(r => r.Tags != null && r.Tags.Any(name => names.Contains(name)));
         if (onlyUntagged)
-            query = query.Where(r => r.Tags.Length == 0);
+            query = query.Where(r => r.Tags == null || r.Tags.Length == 0);
 
         return query;
     }
@@ -380,7 +380,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             incoming.Version = Math.Max(incoming.Version, existing.Version + 1);
             var updatedEntity = incoming.ToEntity(userId);
             if (incoming.Tags is null)
-                updatedEntity.Tags = [.. existing.Tags];
+                updatedEntity.Tags = existing.Tags is null ? null : [.. existing.Tags];
             UpdateEntityFields(updatedEntity, existing);
             await _dbContext.SaveChangesAsync(token);
             await NotifyProfileChangeAsync(existing);
@@ -448,7 +448,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         dstEntity.CreateTime = srcEntity.CreateTime;
         dstEntity.LastAccessed = srcEntity.LastAccessed;
         dstEntity.LastModified = srcEntity.LastModified;
-        dstEntity.Tags = [.. srcEntity.Tags];
+        dstEntity.Tags = srcEntity.Tags is null ? null : [.. srcEntity.Tags];
         dstEntity.Stared = srcEntity.Stared;
         dstEntity.Pinned = srcEntity.Pinned;
         dstEntity.Version = srcEntity.Version;
@@ -629,7 +629,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
     public Expression<Func<HistoryRecordEntity, bool>> QueryCount => entity => entity.UserId == HARD_CODED_USER_ID && !entity.IsDeleted;
     public Expression<Func<HistoryRecordEntity, bool>> AutoDeletePredicate =>
         entity => entity.UserId == HARD_CODED_USER_ID && !entity.Stared && !entity.Pinned && !entity.IsDeleted
-                  && (!_options.Value.ProtectTaggedRecords || entity.Tags.Length == 0);
+                  && (!_options.Value.ProtectTaggedRecords || entity.Tags == null || entity.Tags.Length == 0);
     public Expression<Func<HistoryRecordEntity, DateTime>> QueryLastActivityTime => entity =>
         entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;
 

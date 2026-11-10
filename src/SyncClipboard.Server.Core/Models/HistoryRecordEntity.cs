@@ -43,7 +43,8 @@ public class HistoryRecordEntity
     public bool Stared { get; set; }
     public bool Pinned { get; set; }
     public string From { get; set; } = string.Empty;
-    public string[] Tags { get; set; } = [];
+    // Null means tags have never been supplied; an empty array means they were explicitly cleared.
+    public string[]? Tags { get; set; }
     public string? ExtraData { get; set; }
     public int Version { get; set; } = 0;
     public bool IsDeleted { get; set; } = false;

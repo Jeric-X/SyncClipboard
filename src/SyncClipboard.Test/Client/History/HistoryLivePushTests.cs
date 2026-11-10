@@ -1,10 +1,14 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities.History;
+using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Shared.Profiles;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using ClientHistoryService = SyncClipboard.Core.UserServices.ClipboardService.HistoryService;
+using ServerHistoryDbContext = SyncClipboard.Server.Core.Utilities.History.HistoryDbContext;
 
 namespace SyncClipboard.Test.Client.History;
 
@@ -15,6 +19,78 @@ public class HistoryLivePushTests
     private CancellationToken Token => TestContext.CancellationTokenSource.Token;
     private static readonly string[] ExpectedLocalTags = ["local"];
     private static readonly string[] ExpectedNewTags = ["new"];
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ServerUpgrade_PreservesTagsPreviouslyKeptOnlyOnClient(bool livePush)
+    {
+        await using var fixture = await Fixture.CreateAsync(Token);
+        var record = new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = "UPGRADE",
+            Text = "content",
+            Version = 3,
+            SyncStatus = HistorySyncStatus.Synced
+        };
+        fixture.Db.Add(record);
+        await fixture.Db.SaveChangesAsync(Token);
+        await fixture.Manager.EditTagsAsync([HistoryRecordKey.From(record)], ["local"], [], Token);
+
+        // The legacy server accepts the version/time update but ignores the unsupported Tags field.
+        var serverRecord = record.ToHistoryRecordDto().ToEntity("user");
+        serverRecord.Tags = [];
+        await using var serverDb = new ServerHistoryDbContext();
+        serverDb.Database.SetConnectionString("Data Source=:memory:");
+        await serverDb.Database.OpenConnectionAsync(Token);
+        await serverDb.GetService<IMigrator>().MigrateAsync("20260901065719_AddHistoryTransferDataHash", Token);
+        serverDb.Add(serverRecord);
+        await serverDb.SaveChangesAsync(Token);
+        var legacyResponse = HistoryRecordDto.FromEntity(serverRecord);
+        legacyResponse.Tags = null;
+        await fixture.Manager.SyncRemoteHistoryAsync([legacyResponse], Token);
+        fixture.Db.ChangeTracker.Clear();
+        var beforeUpgrade = await fixture.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
+        Assert.IsNotNull(beforeUpgrade);
+        CollectionAssert.AreEqual(ExpectedLocalTags, beforeUpgrade.Tags);
+        Assert.AreEqual(HistorySyncStatus.Synced, beforeUpgrade.SyncStatus);
+
+        await serverDb.Database.MigrateAsync(Token);
+        serverDb.ChangeTracker.Clear();
+        var migrated = await serverDb.HistoryRecords.SingleAsync(Token);
+        var upgradedResponse = HistoryRecordDto.FromEntity(migrated);
+        Assert.IsNull(upgradedResponse.Tags);
+        if (livePush)
+        {
+            var service = (ClientHistoryService)RuntimeHelpers.GetUninitializedObject(typeof(ClientHistoryService));
+            typeof(ClientHistoryService).GetField("historyManager", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(service, fixture.Manager);
+            await service.ApplyRemoteHistoryChangeAsync(upgradedResponse, Token);
+        }
+        else
+        {
+            await fixture.Manager.SyncRemoteHistoryAsync([upgradedResponse], Token);
+        }
+
+        fixture.Db.ChangeTracker.Clear();
+        var afterUpgrade = await fixture.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
+        Assert.IsNotNull(afterUpgrade);
+        CollectionAssert.AreEqual(ExpectedLocalTags, afterUpgrade.Tags);
+
+        // An explicit clear after upgrade must remain an empty array across subsequent server starts.
+        migrated.Tags = [];
+        migrated.Version++;
+        await serverDb.SaveChangesAsync(Token);
+        await serverDb.Database.MigrateAsync(Token);
+        serverDb.ChangeTracker.Clear();
+        var cleared = HistoryRecordDto.FromEntity(await serverDb.HistoryRecords.SingleAsync(Token));
+        Assert.IsNotNull(cleared.Tags);
+        Assert.IsEmpty(cleared.Tags);
+        await fixture.Manager.SyncRemoteHistoryAsync([cleared], Token);
+        fixture.Db.ChangeTracker.Clear();
+        Assert.IsEmpty((await fixture.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token))!.Tags);
+    }
 
     [TestMethod]
     [DataRow(false)]

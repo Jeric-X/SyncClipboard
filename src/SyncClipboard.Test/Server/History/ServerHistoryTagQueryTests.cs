@@ -17,7 +17,7 @@ using SyncClipboard.Server.Core.Services.History;
 using SyncClipboard.Server.Core.Utilities.History;
 using SyncClipboard.Shared.Profiles;
 
-namespace SyncClipboard.Test.Server;
+namespace SyncClipboard.Test.Server.History;
 
 [TestClass]
 public class ServerHistoryTagQueryTests
@@ -82,15 +82,17 @@ public class ServerHistoryTagQueryTests
         await using var f = await Fixture.CreateAsync(Token);
         f.Add("tagged", ["A"]);
         f.Add("empty", []);
+        f.Add("unknown", null);
         f.Add("other-user", [], userId: "other");
         await f.Db.SaveChangesAsync(Token);
 
-        string[] expected = ["tagged", "empty"];
+        string[] expected = ["tagged", "empty", "unknown"];
         foreach (var query in new[] { new HistoryQueryDto(), new HistoryQueryDto { Tags = [] } })
             CollectionAssert.AreEquivalent(expected,
                 (await f.QueryAsync(query)).Select(x => x.Hash).ToArray());
         var untagged = await f.QueryAsync(new() { Tags = [], OnlyUntagged = true });
-        Assert.AreEqual("empty", untagged.Single().Hash);
+        string[] expectedUntagged = ["empty", "unknown"];
+        CollectionAssert.AreEquivalent(expectedUntagged, untagged.Select(x => x.Hash).ToArray());
         Assert.IsEmpty(await f.QueryAsync(new() { Tags = ["missing"] }));
     }
 
@@ -259,7 +261,7 @@ public class ServerHistoryTagQueryTests
             return f;
         }
 
-        public HistoryRecordEntity Add(string hash, string[] tags, string userId = HistoryService.HARD_CODED_USER_ID)
+        public HistoryRecordEntity Add(string hash, string[]? tags, string userId = HistoryService.HARD_CODED_USER_ID)
         {
             var record = new HistoryRecordEntity { Hash = hash, Tags = tags, UserId = userId, Type = ProfileType.Text };
             Db.Add(record);
