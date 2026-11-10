@@ -212,6 +212,15 @@ public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficia
         }
     }
 
+    public Task<bool> SupportsHistoryTagsAsync(CancellationToken cancellationToken = default)
+    {
+        if (_serverAdapter is not IOfficialSyncServer syncServer)
+        {
+            throw new NotSupportedException("The current server adapter does not support history sync.");
+        }
+        return syncServer.SupportsHistoryTagsAsync(cancellationToken);
+    }
+
     public Task<HistoryRecordDto?> GetHistoryByProfileIdAsync(string profileId, CancellationToken cancellationToken = default)
     {
         if (_serverAdapter is not IOfficialSyncServer syncServer)

@@ -18,6 +18,7 @@ public class HistorySyncer
     private readonly HistoryTransferQueue _historyTransferQueue;
     private readonly ConfigBase _runtimeConfig;
     private readonly HistorySyncSession _syncSession;
+    private IOfficialSyncServer? _tagBackfillServer;
 
     public HistorySyncer(
         HistoryManager historyManager,
@@ -81,6 +82,14 @@ public class HistorySyncer
             return;
         }
 
+        var supportsTags = await remoteServer.SupportsHistoryTagsAsync(token);
+        if (!supportsTags)
+            _tagBackfillServer = null;
+        // Migrated records retain their old modification time. The first tag-capable sync must
+        // include them even when a reconnect would otherwise fetch only recent changes.
+        if (supportsTags && !ReferenceEquals(_tagBackfillServer, remoteServer))
+            modifiedAfter = null;
+
         var remoteRecords = await FetchRemoteRangeAsync(
             remoteServer,
             null,
@@ -93,7 +102,7 @@ public class HistorySyncer
             false,
             token);
 
-        await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
+        await _historyManager.SyncRemoteHistoryAsync(remoteRecords, backfillMissingTags: supportsTags, token);
         if (modifiedAfter is null)
         {
             await DetectOrphanDataAsync(null, null, remoteRecords, ProfileTypeFilter.All, null, null, token);
@@ -102,6 +111,8 @@ public class HistorySyncer
         await SyncPendingHistoryDataAsync(token);
         await _historyTransferQueue.WaitAllTasks(token);
         await _historyManager.RemoveDeletedOrMissingLocalRecordsAsync(token);
+        token.ThrowIfCancellationRequested();
+        _tagBackfillServer = supportsTags ? remoteServer : null;
     }
 
     /// <summary>

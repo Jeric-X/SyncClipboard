@@ -14,6 +14,11 @@ public interface IOfficialSyncServer
     event Action<HistoryRecordDto>? HistoryChanged;
 
     /// <summary>
+    /// Checks whether the current server supports history tags, refreshing capabilities after reconnects.
+    /// </summary>
+    Task<bool> SupportsHistoryTagsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets a specific history record by profileId (format: "Type-Hash").
     /// </summary>
     /// <param name="profileId">The profile identifier in format "Type-Hash".</param>
