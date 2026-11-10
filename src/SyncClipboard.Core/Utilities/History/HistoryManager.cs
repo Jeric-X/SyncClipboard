@@ -472,8 +472,6 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
                     if (backfillMissingTags && dto.Tags is null && entity.Tags.Length > 0
                         && !entity.IsDeleted && entity.SyncStatus == HistorySyncStatus.Synced)
                     {
-                        entity.Version++;
-                        entity.LastModified = DateTime.UtcNow;
                         entity.SyncStatus = HistorySyncStatus.NeedSync;
                     }
                     TriggleUpdateOrDeleteEvent(entity);

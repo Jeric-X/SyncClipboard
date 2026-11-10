@@ -166,8 +166,11 @@ public class HistorySyncer
         var sentModified = record.LastModified;
         try
         {
-            await remoteServer.UpdateHistoryAsync(record.Type, record.Hash, CreateUpdateDto(record), token);
-            record.SyncStatus = HistorySyncStatus.Synced;
+            var serverRecord = await remoteServer.UpdateHistoryAsync(record.Type, record.Hash, CreateUpdateDto(record), token);
+            if (serverRecord is not null)
+                record.ApplyFromServerUpdateDto(serverRecord);
+            else
+                record.SyncStatus = HistorySyncStatus.Synced;
             await _historyManager.TryApplySyncResponseAsync(record, sentVersion, sentModified, token);
         }
         catch (RemoteHistoryConflictException ex)
@@ -175,15 +178,11 @@ public class HistorySyncer
             if (ex.ServerRecord != null)
             {
                 record.ApplyFromServerUpdateDto(ex.ServerRecord);
+                // Older tag-capable servers may reject metadata without filling in missing tags.
+                // Leave the local snapshot pending so the next sync can merge and send it again.
                 if (ex.ServerRecord.Tags is null && record.Tags.Length > 0 && !record.IsDeleted
                     && await remoteServer.SupportsHistoryTagsAsync(token))
-                {
-                    // A legacy client can advance the server version without initializing tags.
-                    // Retry once with its newer metadata; a second failure must leave the local edit pending.
-                    record.Version++;
-                    record.LastModified = DateTime.UtcNow;
-                    await remoteServer.UpdateHistoryAsync(record.Type, record.Hash, CreateUpdateDto(record), token);
-                }
+                    throw;
                 if (await _historyManager.TryApplySyncResponseAsync(record, sentVersion, sentModified, token))
                     _logger.Write("HistorySyncer", $"并发冲突，已回写服务器版本[{record.Hash}]");
             }

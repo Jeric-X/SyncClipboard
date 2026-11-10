@@ -254,7 +254,8 @@ public sealed class OfficialEventDrivenServer : IRemoteClipboardServer, IOfficia
         return syncServer.DownloadHistoryDataAsync(profileId, localPath, progress, cancellationToken);
     }
 
-    public Task UpdateHistoryAsync(ProfileType type, string hash, HistoryRecordUpdateDto dto, CancellationToken cancellationToken = default)
+    public Task<HistoryRecordUpdateDto?> UpdateHistoryAsync(
+        ProfileType type, string hash, HistoryRecordUpdateDto dto, CancellationToken cancellationToken = default)
     {
         if (_serverAdapter is not IOfficialSyncServer syncServer)
         {

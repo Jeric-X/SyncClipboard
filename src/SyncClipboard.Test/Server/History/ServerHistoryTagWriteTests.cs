@@ -96,6 +96,79 @@ public class ServerHistoryTagWriteTests
     }
 
     [TestMethod]
+    [DataRow(false, 1)]
+    [DataRow(false, 10)]
+    [DataRow(false, 11)]
+    [DataRow(true, 1)]
+    [DataRow(true, 10)]
+    [DataRow(true, 11)]
+    public async Task PostAndPatch_BackfillMissingTagsAndExposeChangeToIncrementalSync(bool patch, int version)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var entity = await f.SeedAsync(Token);
+        entity.Tags = null;
+        await f.Db.SaveChangesAsync(Token);
+        var before = DateTime.UtcNow;
+
+        var result = patch
+            ? await f.PatchAsync("""[" 工作 ","工作"]""", Token, version)
+            : await f.PostAsync("""[" 工作 ","工作"]""", Token, version);
+
+        string[] expectedTags = ["工作"];
+        await AssertSavedAndNotifiedAsync(f, expectedTags);
+        var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        Assert.IsTrue(saved.LastModified >= before);
+        Assert.AreEqual(version >= 10, saved.Stared);
+        Assert.AreEqual(version < 10 ? 10 : patch ? version : Math.Max(version, 11), saved.Version);
+        HistoryRecordUpdateDto returned;
+        if (patch && version < 10)
+        {
+            Assert.IsInstanceOfType<ConflictObjectResult>(result);
+            returned = (HistoryRecordUpdateDto)((ConflictObjectResult)result).Value!;
+        }
+        else
+        {
+            Assert.IsInstanceOfType<OkObjectResult>(result);
+            var value = ((OkObjectResult)result).Value!;
+            returned = patch ? (HistoryRecordUpdateDto)value : ((HistoryRecordDto)value).ToUpdateDto();
+        }
+        CollectionAssert.AreEqual(expectedTags, returned.Tags);
+        Assert.AreEqual(saved.LastModified, returned.LastModified!.Value.UtcDateTime);
+        Assert.AreEqual(saved.Version, returned.Version);
+        Assert.AreEqual(saved.Stared, returned.Starred);
+        Assert.AreEqual(saved.LastModified, f.Notifications.Single().LastModified.UtcDateTime);
+        var incremental = await f.Service.GetListAsync(HistoryService.HARD_CODED_USER_ID,
+            1, 50, modifiedAfter: before, token: Token);
+        Assert.HasCount(1, incremental);
+        CollectionAssert.AreEqual(expectedTags, incremental.Single().Tags);
+    }
+
+    [TestMethod]
+    [DataRow(false, "[]")]
+    [DataRow(false, "[\"kept\"]")]
+    [DataRow(true, "[]")]
+    [DataRow(true, "[\"kept\"]")]
+    public async Task PostAndPatch_StaleTagBackfillRespectsAlreadyInitializedTags(bool patch, string existingTags)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var entity = await f.SeedAsync(Token);
+        var expectedTags = JsonSerializer.Deserialize<string[]>(existingTags);
+        entity.Tags = expectedTags;
+        await f.Db.SaveChangesAsync(Token);
+        var modified = entity.LastModified;
+
+        _ = patch ? await f.PatchAsync("[\"new\"]", Token, version: 1)
+            : await f.PostAsync("[\"new\"]", Token, version: 1);
+
+        var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        CollectionAssert.AreEqual(expectedTags, saved.Tags);
+        Assert.AreEqual(modified, saved.LastModified);
+        Assert.AreEqual(10, saved.Version);
+        Assert.IsFalse(saved.Stared);
+        Assert.IsEmpty(f.Notifications);
+    }
+
+    [TestMethod]
     [DataRow("[")]
     [DataRow("{}")]
     [DataRow("[1]")]

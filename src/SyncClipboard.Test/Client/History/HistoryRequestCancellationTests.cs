@@ -113,6 +113,7 @@ public class HistoryRequestCancellationTests
                 sentUpdate = update;
                 started.SetResult();
                 await Task.Delay(Timeout.Infinite, token);
+                return (HistoryRecordUpdateDto?)null;
             });
         var syncing = syncer.SyncOneAsync(record, session.Token);
         await started.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);

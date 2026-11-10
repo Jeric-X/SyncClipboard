@@ -52,6 +52,9 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             return (null, null);
         }
 
+        if (dto.Tags is not null)
+            dto.Tags = HistoryTags.Normalize(dto.Tags);
+        var backfillTags = existing.Tags is null && dto.Tags is { Length: > 0 };
         dto.Version ??= existing.Version + 1;
         dto.LastModified ??= DateTimeOffset.UtcNow;
 
@@ -61,33 +64,40 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             oldLastModified: new DateTimeOffset(existing.LastModified),
             newLastModified: dto.LastModified.Value);
 
-        if (!shouldUpdate)
+        if (!shouldUpdate && !backfillTags)
         {
             return (false, HistoryRecordDto.FromEntity(existing));
         }
 
-        if (dto.IsDelete is false && existing.IsDeleted && !string.IsNullOrEmpty(existing.TransferDataFile))
+        if (shouldUpdate && dto.IsDelete is false && existing.IsDeleted && !string.IsNullOrEmpty(existing.TransferDataFile))
         {
             return (null, null);
         }
 
-        ApplyOptionalUpdateFields(existing, dto);
-        existing.LastModified = dto.LastModified.Value.UtcDateTime;
-        existing.Version = dto.Version.Value;
+        if (shouldUpdate)
+        {
+            ApplyOptionalUpdateFields(existing, dto);
+            existing.LastModified = dto.LastModified.Value.UtcDateTime;
+            existing.Version = dto.Version.Value;
+        }
+        if (backfillTags)
+        {
+            existing.Tags = dto.Tags;
+            existing.LastModified = DateTime.UtcNow;
+        }
 
         await _dbContext.SaveChangesAsync(token);
         await NotifyProfileChangeAsync(existing);
-        await DeleteProfileDataIfNeed(existing, token);
+        if (shouldUpdate)
+            await DeleteProfileDataIfNeed(existing, token);
 
-        return (true, HistoryRecordDto.FromEntity(existing));
+        return (shouldUpdate, HistoryRecordDto.FromEntity(existing));
     }
 
     private static void ApplyOptionalUpdateFields(HistoryRecordEntity existing, HistoryRecordUpdateDto dto)
     {
-        var tags = dto.Tags is null ? null : HistoryTags.Normalize(dto.Tags);
-
-        if (tags is not null)
-            existing.Tags = tags;
+        if (dto.Tags is not null)
+            existing.Tags = dto.Tags;
         if (dto.Starred.HasValue)
             existing.Stared = dto.Starred.Value;
         if (dto.Pinned.HasValue)
@@ -375,16 +385,27 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             await EnsureExistingRecordData(existing, declaredTransferDataHash, transferFileStream, token);
         }
 
-        if (ShouldUpdateExistingRecord(existing, incoming))
+        var backfillTags = existing.Tags is null && incoming.Tags is { Length: > 0 };
+        var shouldUpdate = ShouldUpdateExistingRecord(existing, incoming);
+        if (shouldUpdate)
         {
             incoming.Version = Math.Max(incoming.Version, existing.Version + 1);
             var updatedEntity = incoming.ToEntity(userId);
             if (incoming.Tags is null)
                 updatedEntity.Tags = existing.Tags is null ? null : [.. existing.Tags];
             UpdateEntityFields(updatedEntity, existing);
+        }
+        if (backfillTags)
+        {
+            existing.Tags = incoming.Tags;
+            existing.LastModified = DateTime.UtcNow;
+        }
+        if (shouldUpdate || backfillTags)
+        {
             await _dbContext.SaveChangesAsync(token);
             await NotifyProfileChangeAsync(existing);
-            await DeleteProfileDataIfNeed(existing, token);
+            if (shouldUpdate)
+                await DeleteProfileDataIfNeed(existing, token);
         }
 
         return HistoryRecordDto.FromEntity(existing);

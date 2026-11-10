@@ -327,7 +327,7 @@ public class HistoryImportTests
                     });
                 if (dto.IsDelete.HasValue)
                     remoteDeleted = dto.IsDelete.Value;
-            }).Returns(Task.CompletedTask);
+            }).ReturnsAsync((HistoryRecordUpdateDto?)null);
         var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
         SetPrivateField(factory, "_current", remote.Object);
         SetPrivateField(factory, "_serverStateLock", new Lock());
@@ -424,7 +424,7 @@ public class HistoryImportTests
                 Assert.AreEqual(8, dto.Version);
                 if (dto.IsDelete.HasValue)
                     remoteRecord.IsDeleted = dto.IsDelete.Value;
-            }).Returns(Task.CompletedTask);
+            }).ReturnsAsync((HistoryRecordUpdateDto?)null);
         var factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
         SetPrivateField(factory, "_current", remote.Object);
         SetPrivateField(factory, "_serverStateLock", new Lock());

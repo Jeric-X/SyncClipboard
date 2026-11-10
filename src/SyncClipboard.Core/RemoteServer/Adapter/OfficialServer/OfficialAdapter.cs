@@ -411,7 +411,8 @@ public sealed class OfficialAdapter(
         }
     }
 
-    public async Task UpdateHistoryAsync(ProfileType type, string hash, HistoryRecordUpdateDto dto, CancellationToken cancellationToken = default)
+    public async Task<HistoryRecordUpdateDto?> UpdateHistoryAsync(
+        ProfileType type, string hash, HistoryRecordUpdateDto dto, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -420,7 +421,9 @@ public sealed class OfficialAdapter(
 
             if (response.IsSuccessStatusCode)
             {
-                return; // 成功不再返回 payload
+                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                return string.IsNullOrWhiteSpace(content) ? null
+                    : JsonSerializer.Deserialize<HistoryRecordUpdateDto>(content, JsonSerializerOptions.Web);
             }
             if (response.StatusCode == HttpStatusCode.Conflict)
             {
@@ -433,7 +436,7 @@ public sealed class OfficialAdapter(
             }
 
             response.EnsureSuccessStatusCode();
-            return; // unreachable
+            return null; // unreachable
         }
         catch (Exception ex)
         {

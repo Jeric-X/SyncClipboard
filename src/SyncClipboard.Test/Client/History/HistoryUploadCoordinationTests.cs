@@ -20,6 +20,9 @@ using SyncClipboard.Shared.Utilities;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
+using ServerHistoryDbContext = SyncClipboard.Server.Core.Utilities.History.HistoryDbContext;
+using ServerHistoryService = SyncClipboard.Server.Core.Services.History.HistoryService;
+
 namespace SyncClipboard.Test.Client.History;
 
 [TestClass]
@@ -53,6 +56,24 @@ public class HistoryUploadCoordinationTests
         await f.Db.SaveChangesAsync(Token);
         f.RemoteRecord = record.ToHistoryRecordDto();
         f.RemoteRecord.Tags = null;
+        await using var serverDb = new ServerHistoryDbContext();
+        serverDb.Database.SetConnectionString("Data Source=:memory:");
+        await serverDb.Database.OpenConnectionAsync(Token);
+        await serverDb.Database.EnsureCreatedAsync(Token);
+        serverDb.Add(f.RemoteRecord.ToEntity(ServerHistoryService.HARD_CODED_USER_ID));
+        await serverDb.SaveChangesAsync(Token);
+        var serverService = new ServerHistoryService(serverDb, f, null!);
+        f.Server.Setup(x => x.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
+            It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
+            .Returns<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>(async (type, hash, dto, ct) =>
+            {
+                Interlocked.Increment(ref f.Updates);
+                var (updated, saved) = await serverService.Update(ServerHistoryService.HARD_CODED_USER_ID, type, hash, dto, ct);
+                f.RemoteRecord = saved!;
+                if (updated is false)
+                    throw new RemoteHistoryConflictException("server metadata retained", saved!.ToUpdateDto());
+                return saved!.ToUpdateDto();
+            });
         var supportsTags = false;
         f.Server.Setup(x => x.SupportsHistoryTagsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(() => supportsTags);
         List<DateTimeOffset?> requestedSince = [];
@@ -68,11 +89,11 @@ public class HistoryUploadCoordinationTests
 
         Assert.IsNull(requestedSince[1]);
         CollectionAssert.AreEqual(ExpectedLocalTags, f.RemoteRecord.Tags);
-        Assert.IsGreaterThan(3, f.RemoteRecord.Version);
         var saved = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
         Assert.IsNotNull(saved);
         Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
         CollectionAssert.AreEqual(ExpectedLocalTags, saved.Tags);
+        Assert.AreEqual(f.RemoteRecord.LastModified.UtcDateTime, saved.LastModified);
 
         var updates = f.Updates;
         await syncer.SyncAllAsync(reconnectedAt, Token);
@@ -151,7 +172,7 @@ public class HistoryUploadCoordinationTests
                 f.RemoteRecord.Version = dto.Version!.Value;
                 f.RemoteRecord.LastModified = dto.LastModified!.Value;
                 f.RemoteRecord.Starred = dto.Starred!.Value;
-                return Task.CompletedTask;
+                return Task.FromResult<HistoryRecordUpdateDto?>(f.RemoteRecord.ToUpdateDto());
             });
         var syncer = f.CreateSyncer();
         var reconnectedAt = DateTime.UtcNow;
@@ -171,66 +192,88 @@ public class HistoryUploadCoordinationTests
     [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task TagBackfill_ConflictWithMissingTagsRetriesWithoutLosingPendingChanges(bool repeatedConflict)
+    public async Task TagBackfill_AppliesFinalServerMetadata(bool conflict)
     {
         await using var f = await Fixture.CreateAsync(Token);
         var record = new HistoryRecord
         {
             Type = ProfileType.Text,
-            Hash = "CONFLICT",
+            Hash = "BACKFILL",
             Text = "content",
             Tags = ["local"],
             Version = 3,
-            SyncStatus = HistorySyncStatus.Synced
+            SyncStatus = HistorySyncStatus.NeedSync,
+            LastModified = DateTime.UtcNow.AddDays(-1)
+        };
+        f.Db.Add(record);
+        await f.Db.SaveChangesAsync(Token);
+        var savedTime = DateTimeOffset.UtcNow;
+        f.Server.Setup(x => x.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
+            It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
+            .Returns<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) =>
+            {
+                var result = new HistoryRecordUpdateDto
+                {
+                    Tags = dto.Tags,
+                    Version = 10,
+                    Starred = true,
+                    LastModified = savedTime
+                };
+                if (conflict)
+                    throw new RemoteHistoryConflictException("server metadata retained", result);
+                return Task.FromResult<HistoryRecordUpdateDto?>(result);
+            });
+
+        await f.CreateSyncer().SyncOneAsync(record, Token);
+
+        var saved = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
+        Assert.IsNotNull(saved);
+        CollectionAssert.AreEqual(ExpectedLocalTags, saved.Tags);
+        Assert.IsTrue(saved.Stared);
+        Assert.AreEqual(10, saved.Version);
+        Assert.AreEqual(savedTime.UtcDateTime, saved.LastModified);
+        Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
+    }
+
+    [TestMethod]
+    public async Task TagBackfill_LegacyConflictKeepsTagsPendingUntilNextSync()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var record = new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = "LEGACY",
+            Text = "content",
+            Tags = ["local"],
+            Version = 3,
+            SyncStatus = HistorySyncStatus.NeedSync
         };
         f.Db.Add(record);
         await f.Db.SaveChangesAsync(Token);
         f.RemoteRecord = record.ToHistoryRecordDto();
         f.RemoteRecord.Tags = null;
+        f.RemoteRecord.Version = 10;
+        f.RemoteRecord.Starred = true;
         f.Server.Setup(x => x.SupportsHistoryTagsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        List<DateTimeOffset?> requestedSince = [];
-        f.SetupHistoryQuery(requestedSince);
-        var conflict = true;
+        f.SetupHistoryQuery([]);
         f.Server.Setup(x => x.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
             It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
             .Returns<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) =>
             {
-                if (conflict)
-                {
-                    conflict = repeatedConflict;
-                    f.RemoteRecord.Version = 10;
-                    f.RemoteRecord.Starred = true;
-                }
-                if (conflict || dto.Version < f.RemoteRecord.Version)
-                {
-                    throw new RemoteHistoryConflictException("legacy update", new HistoryRecordUpdateDto
-                    {
-                        Version = f.RemoteRecord.Version,
-                        Starred = f.RemoteRecord.Starred,
-                        Tags = f.RemoteRecord.Tags,
-                        LastModified = f.RemoteRecord.LastModified
-                    });
-                }
-                Assert.IsTrue(dto.Starred);
-                Assert.IsGreaterThan(10, dto.Version!.Value);
+                if (dto.Version < f.RemoteRecord.Version)
+                    throw new RemoteHistoryConflictException("legacy conflict", f.RemoteRecord.ToUpdateDto());
                 f.RemoteRecord.Tags = dto.Tags;
-                f.RemoteRecord.Version = dto.Version.Value;
-                f.RemoteRecord.LastModified = dto.LastModified!.Value;
-                return Task.CompletedTask;
+                return Task.FromResult<HistoryRecordUpdateDto?>(f.RemoteRecord.ToUpdateDto());
             });
         var syncer = f.CreateSyncer();
-        if (repeatedConflict)
-        {
-            await Assert.ThrowsExactlyAsync<RemoteHistoryConflictException>(() => syncer.SyncAllAsync(null, Token));
-            var pending = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
-            Assert.IsNotNull(pending);
-            Assert.AreEqual(HistorySyncStatus.NeedSync, pending.SyncStatus);
-            CollectionAssert.AreEqual(ExpectedLocalTags, pending.Tags);
-            conflict = false;
-        }
+        await Assert.ThrowsExactlyAsync<RemoteHistoryConflictException>(() => syncer.SyncOneAsync(record, Token));
+        var pending = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
+        Assert.IsNotNull(pending);
+        CollectionAssert.AreEqual(ExpectedLocalTags, pending.Tags);
+        Assert.AreEqual(HistorySyncStatus.NeedSync, pending.SyncStatus);
 
         await syncer.SyncAllAsync(DateTime.UtcNow, Token);
-        Assert.IsTrue(requestedSince.All(since => since is null));
+
         CollectionAssert.AreEqual(ExpectedLocalTags, f.RemoteRecord.Tags);
         var saved = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
         Assert.IsNotNull(saved);
@@ -386,6 +429,7 @@ public class HistoryUploadCoordinationTests
                 await releasePatch.Task.WaitAsync(ct);
                 f.RemoteRecord.Version = dto.Version!.Value;
                 f.RemoteRecord.Starred = dto.Starred!.Value;
+                return (HistoryRecordUpdateDto?)null;
             });
         _ = f.CreateSyncer();
         var synced = Signal();
@@ -1205,7 +1249,7 @@ public class HistoryUploadCoordinationTests
                     RemoteRecord.Starred = dto.Starred!.Value;
                     RemoteRecord.Pinned = dto.Pinned!.Value;
                     RemoteRecord.IsDeleted = dto.IsDelete ?? RemoteRecord.IsDeleted;
-                    return Task.CompletedTask;
+                    return Task.FromResult<HistoryRecordUpdateDto?>(RemoteRecord.ToUpdateDto());
                 });
             var constructor = typeof(ConfigManager).GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance)
                 .Single(c => c.GetParameters().Length == 2 && c.GetParameters()[0].ParameterType != typeof(string));
