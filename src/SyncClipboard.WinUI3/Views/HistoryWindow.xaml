@@ -41,8 +41,7 @@
                 <Setter Property="IsTabStop" Value="False" />
                 <Setter Property="AllowFocusOnInteraction" Value="False" />
             </Style>
-            <Style TargetType="CheckBox">
-                <Setter Property="CornerRadius" Value="2" />
+            <Style TargetType="CheckBox" BasedOn="{StaticResource DefaultCheckBoxStyle}">
                 <Setter Property="IsTabStop" Value="False" />
                 <Setter Property="AllowFocusOnInteraction" Value="False" />
             </Style>
