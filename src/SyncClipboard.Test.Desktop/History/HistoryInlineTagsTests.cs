@@ -251,6 +251,55 @@ public class HistoryInlineTagsTests
     }
 
     [TestMethod]
+    public async Task MixedLengthInlineTagsKeepTheirLabelsVisible()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryInlineTagsTests));
+        await session.Dispatch(() =>
+        {
+            Application.Current!.Styles.Add(new FluentAvaloniaTheme());
+            string[] names = ["1", "2", "21321", "3", "412213", "99", "A01", "dgsg", "待修复"];
+            var tags = new HistoryInlineTagsView
+            {
+                Tags = names.Select(name => new HistoryPreviewTag(default, name)).ToArray()
+            };
+            DockPanel.SetDock(tags, Dock.Right);
+            var content = new Border { Height = 40 };
+            var row = new DockPanel { Children = { tags, content } };
+            var window = new Window { Width = 700, Height = 200, Content = new StackPanel { Children = { row } } };
+            try
+            {
+                window.Show();
+                Layout(window);
+                int[] heights = [40, 140, 40];
+                foreach (var height in heights)
+                {
+                    content.Height = height;
+                    Layout(window);
+                    foreach (var chip in VisibleTags(tags))
+                    {
+                        var label = chip.GetVisualDescendants().OfType<TextBlock>().First();
+                        var name = ((HistoryPreviewTag)chip.DataContext!).Name;
+                        Assert.AreEqual(name, label.Text);
+                        Assert.IsGreaterThan(0, label.TextLayout.Width, $"Tag {name} must render visible text.");
+                        Assert.IsFalse(label.TextLayout.TextLines.Any(line => line.HasCollapsed),
+                            $"Short tag {name} should fit: label width {label.Bounds.Width}, chip width {chip.Bounds.Width}");
+                    }
+                    Assert.IsGreaterThan(1, VisibleTags(tags).Length);
+                    if (height == 140)
+                        Assert.AreEqual(names.Length, VisibleTags(tags).Length);
+                    Assert.IsTrue(tags.IsMeasureValid && tags.IsArrangeValid);
+                }
+            }
+            finally
+            {
+                window.Close();
+            }
+            return true;
+        }, token);
+    }
+
+    [TestMethod]
     public async Task OverflowClosesWhenTheTriggerScrollsOutOfView()
     {
         var token = TestContext.CancellationTokenSource.Token;

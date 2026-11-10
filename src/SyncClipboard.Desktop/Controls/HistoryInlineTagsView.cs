@@ -35,7 +35,7 @@ public sealed class HistoryInlineTagsView : Panel
     }
 
     private Button? _more;
-    private HistoryRecordTagChip? _widthProbe;
+    private readonly List<HistoryRecordTagChip> _widthProbes = [];
     private HistoryPreviewTag[] _tags = [];
     private int _measuredForWidth;
     private int _measuredCount;
@@ -84,6 +84,9 @@ public sealed class HistoryInlineTagsView : Panel
         if (_tags.SequenceEqual(tags))
             return;
 
+        foreach (var probe in _widthProbes)
+            LogicalChildren.Remove(probe);
+        _widthProbes.Clear();
         _tags = tags;
         _visibleCount = -1;
         if (tags.Length == 0)
@@ -91,9 +94,6 @@ public sealed class HistoryInlineTagsView : Panel
             _flyout?.Hide();
             Children.Clear();
             _more = null;
-            if (_widthProbe is not null)
-                LogicalChildren.Remove(_widthProbe);
-            _widthProbe = null;
         }
         else if (_more is null)
         {
@@ -143,12 +143,6 @@ public sealed class HistoryInlineTagsView : Panel
 
     private IEnumerable<HistoryTagSize> MeasureTags(double width)
     {
-        if (_widthProbe is null)
-        {
-            _widthProbe = new HistoryRecordTagChip { Margin = new Thickness(4, 0, 0, 0) };
-            // Inherit styles without participating in the visual layout or automation tree.
-            LogicalChildren.Add(_widthProbe);
-        }
         _measuredCount = 0;
         for (var i = 0; i < _tags.Length; i++)
         {
@@ -158,10 +152,17 @@ public sealed class HistoryInlineTagsView : Panel
                 chip.Margin = new Thickness(4, 0, 0, 0);
                 Children.Insert(i, chip);
             }
-            _widthProbe.DataContext = _tags[i];
-            _widthProbe.Measure(new Size(width, double.PositiveInfinity));
+            if (i == _widthProbes.Count)
+            {
+                // Keep a stable binding per tag: rebinding during layout can reuse the previous label's measurement.
+                var probe = new HistoryRecordTagChip { DataContext = _tags[i], Margin = new Thickness(4, 0, 0, 0) };
+                LogicalChildren.Add(probe);
+                _widthProbes.Add(probe);
+            }
+            var widthProbe = _widthProbes[i];
+            widthProbe.Measure(new Size(width, double.PositiveInfinity));
             _measuredCount++;
-            yield return new(_widthProbe.DesiredSize.Width, _widthProbe.DesiredSize.Height);
+            yield return new(widthProbe.DesiredSize.Width, widthProbe.DesiredSize.Height);
         }
     }
 
