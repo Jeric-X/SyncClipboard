@@ -102,13 +102,13 @@ public class ServerHistoryTagWriteTests
     [DataRow(true, 1)]
     [DataRow(true, 10)]
     [DataRow(true, 11)]
-    public async Task PostAndPatch_BackfillMissingTagsAndExposeChangeToIncrementalSync(bool patch, int version)
+    public async Task PostAndPatch_BackfillTagsAndNotifyWithoutPromotingMetadata(bool patch, int version)
     {
         await using var f = await Fixture.CreateAsync(Token);
         var entity = await f.SeedAsync(Token);
         entity.Tags = null;
         await f.Db.SaveChangesAsync(Token);
-        var before = DateTime.UtcNow;
+        var modified = entity.LastModified;
 
         var result = patch
             ? await f.PatchAsync("""[" 工作 ","工作"]""", Token, version)
@@ -117,7 +117,7 @@ public class ServerHistoryTagWriteTests
         string[] expectedTags = ["工作"];
         await AssertSavedAndNotifiedAsync(f, expectedTags);
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
-        Assert.IsTrue(saved.LastModified >= before);
+        Assert.AreEqual(modified, saved.LastModified);
         Assert.AreEqual(version >= 10, saved.Stared);
         Assert.AreEqual(version < 10 ? 10 : patch ? version : Math.Max(version, 11), saved.Version);
         HistoryRecordUpdateDto returned;
@@ -137,10 +137,9 @@ public class ServerHistoryTagWriteTests
         Assert.AreEqual(saved.Version, returned.Version);
         Assert.AreEqual(saved.Stared, returned.Starred);
         Assert.AreEqual(saved.LastModified, f.Notifications.Single().LastModified.UtcDateTime);
-        var incremental = await f.Service.GetListAsync(HistoryService.HARD_CODED_USER_ID,
-            1, 50, modifiedAfter: before, token: Token);
-        Assert.HasCount(1, incremental);
-        CollectionAssert.AreEqual(expectedTags, incremental.Single().Tags);
+        var fullHistory = await f.Service.GetListAsync(HistoryService.HARD_CODED_USER_ID, 1, 50, token: Token);
+        Assert.HasCount(1, fullHistory);
+        CollectionAssert.AreEqual(expectedTags, fullHistory.Single().Tags);
     }
 
     [TestMethod]

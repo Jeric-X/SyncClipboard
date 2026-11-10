@@ -55,18 +55,13 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         if (dto.Tags is not null)
             dto.Tags = HistoryTags.Normalize(dto.Tags);
         var backfillTags = existing.Tags is null && dto.Tags is { Length: > 0 };
-        dto.Version ??= existing.Version + 1;
-        dto.LastModified ??= DateTimeOffset.UtcNow;
 
         var updated = ApplyMetadataUpdate(existing, dto);
         if (updated is null)
             return (null, null);
 
         if (backfillTags)
-        {
             existing.Tags = dto.Tags;
-            existing.LastModified = DateTime.UtcNow;
-        }
 
         if (updated.Value || backfillTags)
         {
@@ -81,8 +76,10 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
     private static bool? ApplyMetadataUpdate(HistoryRecordEntity existing, HistoryRecordUpdateDto dto)
     {
-        if (!HistoryHelper.ShouldUpdate(existing.Version, dto.Version!.Value,
-            new DateTimeOffset(existing.LastModified), dto.LastModified!.Value))
+        dto.Version ??= existing.Version + 1;
+        dto.LastModified ??= DateTimeOffset.UtcNow;
+        if (!HistoryHelper.ShouldUpdate(existing.Version, dto.Version.Value,
+            new DateTimeOffset(existing.LastModified), dto.LastModified.Value))
             return false;
 
         if (dto.IsDelete is false && existing.IsDeleted && !string.IsNullOrEmpty(existing.TransferDataFile))
@@ -396,10 +393,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             UpdateEntityFields(updatedEntity, existing);
         }
         if (backfillTags)
-        {
             existing.Tags = incoming.Tags;
-            existing.LastModified = DateTime.UtcNow;
-        }
         if (shouldUpdate || backfillTags)
         {
             await _dbContext.SaveChangesAsync(token);

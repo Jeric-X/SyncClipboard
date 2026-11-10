@@ -128,6 +128,59 @@ public class HistoryLivePushTests
     }
 
     [TestMethod]
+    [DataRow(false, false)]
+    [DataRow(false, true)]
+    [DataRow(true, false)]
+    [DataRow(true, true)]
+    public async Task TagBackfill_PushAndFullSyncPreservePendingMetadata(bool livePush, bool pendingEdit)
+    {
+        await using var fixture = await Fixture.CreateAsync(Token);
+        var modified = DateTime.UtcNow.AddHours(-2);
+        var record = new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = "BACKFILLED",
+            Text = "content",
+            Version = 10,
+            LastModified = modified,
+            SyncStatus = HistorySyncStatus.Synced
+        };
+        var notification = record.ToHistoryRecordDto();
+        notification.Tags = ["new"];
+        if (pendingEdit)
+        {
+            record.Stared = true;
+            record.Version++;
+            record.LastModified = modified.AddHours(1);
+            record.SyncStatus = HistorySyncStatus.NeedSync;
+        }
+        fixture.Db.Add(record);
+        await fixture.Db.SaveChangesAsync(Token);
+
+        if (livePush)
+        {
+            var service = (ClientHistoryService)RuntimeHelpers.GetUninitializedObject(typeof(ClientHistoryService));
+            typeof(ClientHistoryService).GetField("historyManager", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(service, fixture.Manager);
+            await service.ApplyRemoteHistoryChangeAsync(notification, Token);
+        }
+        else
+        {
+            await fixture.Manager.SyncRemoteHistoryAsync([notification], Token);
+        }
+
+        fixture.Db.ChangeTracker.Clear();
+        var saved = await fixture.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
+        Assert.IsNotNull(saved);
+        Assert.AreEqual(pendingEdit, saved.Stared);
+        Assert.AreEqual(pendingEdit ? 11 : 10, saved.Version);
+        Assert.AreEqual(pendingEdit ? modified.AddHours(1) : modified, saved.LastModified);
+        Assert.AreEqual(pendingEdit ? HistorySyncStatus.NeedSync : HistorySyncStatus.Synced, saved.SyncStatus);
+        if (!pendingEdit)
+            CollectionAssert.AreEqual(ExpectedNewTags, saved.Tags);
+    }
+
+    [TestMethod]
     public async Task LivePush_DelayedOlderMetadataDoesNotOverwritePendingLocalTags()
     {
         await using var fixture = await Fixture.CreateAsync(Token);
