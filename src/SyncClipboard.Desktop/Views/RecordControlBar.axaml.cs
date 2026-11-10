@@ -96,7 +96,7 @@ public partial class RecordControlBar : UserControl
         _AddTagButton.IsEnabled = false;
         try
         {
-            var picker = await CreateTagPickerAsync(key);
+            var picker = await CreateTagPickerAsync(key, ViewModel.PinnedTags);
             if (picker is null || Record?.Key != key || !IsEffectivelyVisible || !owner.IsVisible || TopLevel.GetTopLevel(this) != owner)
                 return;
             ShowTagPicker(key, picker);
@@ -111,7 +111,7 @@ public partial class RecordControlBar : UserControl
         }
     }
 
-    private static async Task<HistoryTagPickerViewModel?> CreateTagPickerAsync(HistoryRecordKey key)
+    private static async Task<HistoryTagPickerViewModel?> CreateTagPickerAsync(HistoryRecordKey key, string[] pinnedNames)
     {
         var manager = App.Current.Services.GetRequiredService<HistoryManager>();
         var snapshot = await Task.Run(() => manager.GetSyncSnapshotAsync(key));
@@ -123,7 +123,7 @@ public partial class RecordControlBar : UserControl
             await manager.EditTagsAsync([key], add ? [name] : [], add ? [] : [name]);
             if (await manager.GetSyncSnapshotAsync(key) is not { IsDeleted: false })
                 throw new InvalidOperationException(Strings.HistoryTagsNoSelection);
-        }));
+        }), pinnedNames);
     }
 
     private void ShowTagPicker(HistoryRecordKey key, HistoryTagPickerViewModel picker)

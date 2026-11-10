@@ -126,13 +126,16 @@ public class HistoryTagBarSettingsTests
     }
 
     [TestMethod]
-    public void LastUnusedPinCanBeRemovedAndCountPreferenceIsRespected()
+    public void UnusedPinCanBeUnpinnedAndRestoredWithoutLosingTheDraftOrder()
     {
-        var model = new HistoryTagBarSettingsViewModel(new Dictionary<string, int>(), ["empty"], true);
-        Assert.AreEqual("empty (0)", model.Tags[0].Text);
-        model.Tags[0].IsPinned = false;
-        Assert.IsTrue(model.IsEmpty);
-        Assert.IsEmpty(model.PinnedNames);
+        var model = new HistoryTagBarSettingsViewModel(new Dictionary<string, int>(), ["z-empty", "a-empty"], true);
+        var item = model.PinnedTags[0];
+        Assert.AreEqual("z-empty (0)", item.Text);
+        item.IsPinned = false;
+        var available = model.UnpinnedTags.Single(tag => tag.Name == "z-empty");
+        model.Move(available, true, 0);
+        AssertNames(model.PinnedNames, "z-empty", "a-empty");
+        Assert.IsFalse(model.HasChanges);
     }
 
     private static void AssertNames(IEnumerable<string> actual, params string[] expected) =>
