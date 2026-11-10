@@ -166,17 +166,7 @@ public class HistorySyncer
         var sentModified = record.LastModified;
         try
         {
-            var dto = new HistoryRecordUpdateDto
-            {
-                Tags = [.. record.Tags],
-                Starred = record.Stared,
-                Pinned = record.Pinned,
-                IsDelete = record.IsDeleted,
-                Version = record.Version,
-                LastModified = new DateTimeOffset(record.LastModified.ToUniversalTime(), TimeSpan.Zero),
-                LastAccessed = new DateTimeOffset(record.LastAccessed.ToUniversalTime(), TimeSpan.Zero)
-            };
-            await remoteServer.UpdateHistoryAsync(record.Type, record.Hash, dto, token);
+            await remoteServer.UpdateHistoryAsync(record.Type, record.Hash, CreateUpdateDto(record), token);
             record.SyncStatus = HistorySyncStatus.Synced;
             await _historyManager.TryApplySyncResponseAsync(record, sentVersion, sentModified, token);
         }
@@ -185,6 +175,15 @@ public class HistorySyncer
             if (ex.ServerRecord != null)
             {
                 record.ApplyFromServerUpdateDto(ex.ServerRecord);
+                if (ex.ServerRecord.Tags is null && record.Tags.Length > 0 && !record.IsDeleted
+                    && await remoteServer.SupportsHistoryTagsAsync(token))
+                {
+                    // A legacy client can advance the server version without initializing tags.
+                    // Retry once with its newer metadata; a second failure must leave the local edit pending.
+                    record.Version++;
+                    record.LastModified = DateTime.UtcNow;
+                    await remoteServer.UpdateHistoryAsync(record.Type, record.Hash, CreateUpdateDto(record), token);
+                }
                 if (await _historyManager.TryApplySyncResponseAsync(record, sentVersion, sentModified, token))
                     _logger.Write("HistorySyncer", $"并发冲突，已回写服务器版本[{record.Hash}]");
             }
@@ -202,6 +201,17 @@ public class HistorySyncer
             }
         }
     }
+
+    private static HistoryRecordUpdateDto CreateUpdateDto(HistoryRecord record) => new()
+    {
+        Tags = [.. record.Tags],
+        Starred = record.Stared,
+        Pinned = record.Pinned,
+        IsDelete = record.IsDeleted,
+        Version = record.Version,
+        LastModified = new DateTimeOffset(record.LastModified.ToUniversalTime(), TimeSpan.Zero),
+        LastAccessed = new DateTimeOffset(record.LastAccessed.ToUniversalTime(), TimeSpan.Zero)
+    };
 
     /// <summary>
     /// 从服务器拉取指定时间范围内的所有历史记录(分页获取)

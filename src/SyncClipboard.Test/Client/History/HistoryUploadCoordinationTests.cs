@@ -169,6 +169,76 @@ public class HistoryUploadCoordinationTests
     }
 
     [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task TagBackfill_ConflictWithMissingTagsRetriesWithoutLosingPendingChanges(bool repeatedConflict)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var record = new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = "CONFLICT",
+            Text = "content",
+            Tags = ["local"],
+            Version = 3,
+            SyncStatus = HistorySyncStatus.Synced
+        };
+        f.Db.Add(record);
+        await f.Db.SaveChangesAsync(Token);
+        f.RemoteRecord = record.ToHistoryRecordDto();
+        f.RemoteRecord.Tags = null;
+        f.Server.Setup(x => x.SupportsHistoryTagsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        List<DateTimeOffset?> requestedSince = [];
+        f.SetupHistoryQuery(requestedSince);
+        var conflict = true;
+        f.Server.Setup(x => x.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
+            It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
+            .Returns<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) =>
+            {
+                if (conflict)
+                {
+                    conflict = repeatedConflict;
+                    f.RemoteRecord.Version = 10;
+                    f.RemoteRecord.Starred = true;
+                }
+                if (conflict || dto.Version < f.RemoteRecord.Version)
+                {
+                    throw new RemoteHistoryConflictException("legacy update", new HistoryRecordUpdateDto
+                    {
+                        Version = f.RemoteRecord.Version,
+                        Starred = f.RemoteRecord.Starred,
+                        Tags = f.RemoteRecord.Tags,
+                        LastModified = f.RemoteRecord.LastModified
+                    });
+                }
+                Assert.IsTrue(dto.Starred);
+                Assert.IsGreaterThan(10, dto.Version!.Value);
+                f.RemoteRecord.Tags = dto.Tags;
+                f.RemoteRecord.Version = dto.Version.Value;
+                f.RemoteRecord.LastModified = dto.LastModified!.Value;
+                return Task.CompletedTask;
+            });
+        var syncer = f.CreateSyncer();
+        if (repeatedConflict)
+        {
+            await Assert.ThrowsExactlyAsync<RemoteHistoryConflictException>(() => syncer.SyncAllAsync(null, Token));
+            var pending = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
+            Assert.IsNotNull(pending);
+            Assert.AreEqual(HistorySyncStatus.NeedSync, pending.SyncStatus);
+            CollectionAssert.AreEqual(ExpectedLocalTags, pending.Tags);
+            conflict = false;
+        }
+
+        await syncer.SyncAllAsync(DateTime.UtcNow, Token);
+        Assert.IsTrue(requestedSince.All(since => since is null));
+        CollectionAssert.AreEqual(ExpectedLocalTags, f.RemoteRecord.Tags);
+        var saved = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
+        Assert.IsNotNull(saved);
+        Assert.IsTrue(saved.Stared);
+        Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
+    }
+
+    [TestMethod]
     [DataRow(null)]
     [DataRow("[]")]
     [DataRow("[\" 工作 \",\"Prompt\",\"Prompt\"]")]
