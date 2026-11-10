@@ -24,6 +24,7 @@ public partial class HistoryRecordVM : ObservableObject
         timestamp = record.Timestamp;
         lastAccessed = record.LastAccessed;
         tags = [.. record.Tags];
+        previewTags = tags.Select(tag => new HistoryPreviewTag(Key, tag)).ToArray();
         stared = record.Stared;
         pinned = record.Pinned;
         syncState = record.SyncStatus == HistorySyncStatus.LocalOnly ? SyncStatus.LocalOnly :
@@ -48,22 +49,13 @@ public partial class HistoryRecordVM : ObservableObject
     partial void OnFilePathChanged(string[]? oldValue, string[] newValue) => UpdatePreviewImage();
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(PreviewTags))]
     private string[] tags = [];
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(PreviewTags))]
-    private string[] pinnedTagNames = [];
+    partial void OnTagsChanged(string[] value) =>
+        PreviewTags = value.Select(tag => new HistoryPreviewTag(Key, tag)).ToArray();
 
-    public IEnumerable<HistoryPreviewTag> PreviewTags
-    {
-        get
-        {
-            var names = Tags ?? [];
-            var pinned = PinnedTagNames.Intersect(names, StringComparer.Ordinal);
-            return HistoryTagOrdering.Order(names, pinned).Select(tag => new HistoryPreviewTag(Key, tag));
-        }
-    }
+    [ObservableProperty]
+    private HistoryPreviewTag[] previewTags = [];
 
     public string Hash { get; set; }
     public string? TransferDataFile { get; set; }
@@ -339,6 +331,7 @@ public partial class HistoryRecordVM : ObservableObject
         Timestamp = record.Timestamp;
         Stared = record.Stared;
         Tags = [.. record.Tags];
+        PreviewTags = [.. record.PreviewTags];
         Pinned = record.Pinned;
         SyncState = record.SyncState;
         // IsDownloading = record.IsDownloading;
@@ -421,7 +414,7 @@ public partial class HistoryRecordVM : ObservableObject
             Timestamp = this.Timestamp,
             Stared = this.Stared,
             Tags = [.. this.Tags],
-            PinnedTagNames = [.. this.PinnedTagNames],
+            PreviewTags = [.. this.PreviewTags],
             Pinned = this.Pinned,
             SyncState = this.SyncState,
             IsDownloading = this.IsDownloading,

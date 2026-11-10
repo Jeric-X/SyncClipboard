@@ -9,7 +9,7 @@ using SyncClipboard.Core.ViewModels.Sub;
 using SyncClipboard.Desktop.Controls;
 using SyncClipboard.Test.Client.History;
 
-namespace SyncClipboard.Test.Desktop.Client.History;
+namespace SyncClipboard.Test.Desktop.History;
 
 [TestClass]
 [DoNotParallelize]
@@ -35,6 +35,8 @@ public class PreviewPanelTagTests
             var first = matches[0];
             var second = matches[1];
             var originalTags = first.Tags.ToArray();
+            string[] displayOrder = ["Blue", "Red"];
+            string[] pinnedOrder = ["Red", "Blue"];
             fixture.ViewModel.EnterMultiSelect(first);
             fixture.ViewModel.EnterMultiSelect(second);
             var panel = new PreviewPanel { ViewModel = fixture.ViewModel, SelectedItem = first };
@@ -67,12 +69,16 @@ public class PreviewPanelTagTests
             {
                 window.Show();
                 search.Focus();
-                CollectionAssert.AreEqual(first.Tags, Names());
+                CollectionAssert.AreEqual(displayOrder, Names());
+                await fixture.ViewModel.SetPinnedTagsAsync(["Red"]);
+                CollectionAssert.AreEqual(pinnedOrder, Names());
+                await fixture.ViewModel.SetPinnedTagsAsync([]);
+                CollectionAssert.AreEqual(displayOrder, Names());
 
                 var pressed = Center(RemoveButton("Red"));
                 window.MouseDown(pressed, MouseButton.Left);
                 panel.SelectedItem = second;
-                CollectionAssert.AreEqual(second.Tags, Names());
+                CollectionAssert.AreEqual(displayOrder, Names());
                 window.MouseUp(pressed, MouseButton.Left);
                 Dispatcher.UIThread.RunJobs();
                 CollectionAssert.AreEqual(originalTags, (await fixture.ReadStoredRecordAsync(first)).Tags);
@@ -95,7 +101,7 @@ public class PreviewPanelTagTests
                 CollectionAssert.AreEqual(remaining, Names());
                 Assert.AreSame(search, window.FocusManager!.GetFocusedElement());
                 panel.SelectedItem = first;
-                CollectionAssert.AreEqual(first.Tags, Names());
+                CollectionAssert.AreEqual(displayOrder, Names());
                 panel.SelectedItem = null!;
                 Assert.IsEmpty(Names());
             }
