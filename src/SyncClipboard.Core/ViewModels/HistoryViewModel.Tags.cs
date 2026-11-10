@@ -91,7 +91,11 @@ public partial class HistoryViewModel
                 return;
             runtimeConfig.SetConfig(runtimeConfig.GetConfig<HistoryWindowConfig>() with { MultiTagFilter = value });
             if (!value && SelectedTags.Length > 1)
-                SelectedTags = [SelectedTags[0]];
+            {
+                var first = TagOptions.FirstOrDefault(option => option.Name is { } name
+                    && SelectedTags.Contains(name, StringComparer.Ordinal))?.Name ?? SelectedTags[0];
+                SelectedTags = [first];
+            }
             OnPropertyChanged(nameof(MultiTagFilter));
         }
     }

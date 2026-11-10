@@ -217,14 +217,14 @@ public class HistoryViewModelPagingTests
 
         blue.IsSelected = true;
         blue.SelectCommand.Execute(null);
-        var retainedTag = fixture.ViewModel.SelectedTags[0];
+        await fixture.ViewModel.SetPinnedTagsAsync(["red", "Red"]);
         fixture.ViewModel.MultiTagFilter = false;
         await fixture.ReloadAsync();
         await fixture.RefreshCountsAsync();
         Assert.HasCount(1, fixture.ViewModel.SelectedTags);
-        Assert.AreEqual(retainedTag, fixture.ViewModel.SelectedTags[0]);
-        Assert.AreEqual(retainedTag == "Red" ? 50 : 34, fixture.ViewModel.SelectedInCurrentFilterCount);
-        Assert.IsTrue(fixture.Records.All(record => int.Parse(record.Hash) % (retainedTag == "Red" ? 2 : 3) == 0));
+        Assert.AreEqual("Red", fixture.ViewModel.SelectedTags[0]);
+        Assert.AreEqual(50, fixture.ViewModel.SelectedInCurrentFilterCount);
+        Assert.IsTrue(fixture.Records.All(record => record.Tags.Contains("Red")));
         Assert.IsFalse(new ConfigBase(fixture.RuntimeConfig.Path).GetConfig<HistoryWindowConfig>().MultiTagFilter);
 
         all.IsSelected = true;
