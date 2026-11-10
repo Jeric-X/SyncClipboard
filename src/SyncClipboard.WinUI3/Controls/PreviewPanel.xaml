@@ -55,10 +55,7 @@
                       MaxHeight="100"
                       HorizontalScrollBarVisibility="Disabled"
                       VerticalScrollBarVisibility="Auto">
-            <ItemsControl x:Name="_PreviewTags"
-                          Margin="12,0"
-                          DataContext="{x:Bind SelectedItem, Mode=OneWay}"
-                          ItemsSource="{Binding PreviewTags}">
+            <ItemsControl x:Name="_PreviewTags" Margin="12,0">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <toolkit:WrapPanel />

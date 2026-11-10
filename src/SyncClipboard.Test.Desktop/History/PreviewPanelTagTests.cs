@@ -37,6 +37,7 @@ public class PreviewPanelTagTests
             var originalTags = first.Tags.ToArray();
             string[] displayOrder = ["Blue", "Red"];
             string[] pinnedOrder = ["Red", "Blue"];
+            await fixture.ViewModel.SetPinnedTagsAsync(["missing", "Red"]);
             fixture.ViewModel.EnterMultiSelect(first);
             fixture.ViewModel.EnterMultiSelect(second);
             var panel = new PreviewPanel { ViewModel = fixture.ViewModel, SelectedItem = first };
@@ -69,8 +70,11 @@ public class PreviewPanelTagTests
             {
                 window.Show();
                 search.Focus();
-                CollectionAssert.AreEqual(displayOrder, Names());
-                await fixture.ViewModel.SetPinnedTagsAsync(["Red"]);
+                CollectionAssert.AreEqual(pinnedOrder, Names());
+                first.Tags = ["z", "Blue", "Red", "A"];
+                string[] updatedOrder = ["Red", "A", "Blue", "z"];
+                CollectionAssert.AreEqual(updatedOrder, Names());
+                first.Tags = originalTags;
                 CollectionAssert.AreEqual(pinnedOrder, Names());
                 await fixture.ViewModel.SetPinnedTagsAsync([]);
                 CollectionAssert.AreEqual(displayOrder, Names());

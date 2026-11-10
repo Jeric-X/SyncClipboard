@@ -24,7 +24,6 @@ public partial class HistoryRecordVM : ObservableObject
         timestamp = record.Timestamp;
         lastAccessed = record.LastAccessed;
         tags = [.. record.Tags];
-        previewTags = tags.Select(tag => new HistoryPreviewTag(Key, tag)).ToArray();
         stared = record.Stared;
         pinned = record.Pinned;
         syncState = record.SyncStatus == HistorySyncStatus.LocalOnly ? SyncStatus.LocalOnly :
@@ -49,13 +48,10 @@ public partial class HistoryRecordVM : ObservableObject
     partial void OnFilePathChanged(string[]? oldValue, string[] newValue) => UpdatePreviewImage();
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PreviewTags))]
     private string[] tags = [];
 
-    partial void OnTagsChanged(string[] value) =>
-        PreviewTags = value.Select(tag => new HistoryPreviewTag(Key, tag)).ToArray();
-
-    [ObservableProperty]
-    private HistoryPreviewTag[] previewTags = [];
+    public IEnumerable<HistoryPreviewTag> PreviewTags => (Tags ?? []).Select(tag => new HistoryPreviewTag(Key, tag));
 
     public string Hash { get; set; }
     public string? TransferDataFile { get; set; }
@@ -331,7 +327,6 @@ public partial class HistoryRecordVM : ObservableObject
         Timestamp = record.Timestamp;
         Stared = record.Stared;
         Tags = [.. record.Tags];
-        PreviewTags = [.. record.PreviewTags];
         Pinned = record.Pinned;
         SyncState = record.SyncState;
         // IsDownloading = record.IsDownloading;
@@ -414,7 +409,6 @@ public partial class HistoryRecordVM : ObservableObject
             Timestamp = this.Timestamp,
             Stared = this.Stared,
             Tags = [.. this.Tags],
-            PreviewTags = [.. this.PreviewTags],
             Pinned = this.Pinned,
             SyncState = this.SyncState,
             IsDownloading = this.IsDownloading,

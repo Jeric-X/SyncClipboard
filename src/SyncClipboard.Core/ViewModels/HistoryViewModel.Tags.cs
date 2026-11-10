@@ -204,19 +204,11 @@ public partial class HistoryViewModel
         // Saving local pins must not wait for database refreshes driven by history synchronization.
         await _threadDispatcher.RunOnMainThreadAsync(() =>
         {
-            foreach (var record in allHistoryItems)
-                UpdateRecordTagOrder(record, pinned);
+            OnPropertyChanged(nameof(PinnedTags));
             var counts = TagOptions.Where(tag => tag.Name is not null && tag.Count > 0)
                 .ToDictionary(tag => tag.Name!, tag => tag.Count, StringComparer.Ordinal);
             UpdateTagOptions(counts);
         });
-    }
-
-    private static void UpdateRecordTagOrder(HistoryRecordVM record, string[] pinnedTags)
-    {
-        var pinned = pinnedTags.Intersect(record.Tags, StringComparer.Ordinal);
-        record.PreviewTags = HistoryTagOrdering.Order(record.Tags, pinned)
-            .Select(name => new HistoryPreviewTag(record.Key, name)).ToArray();
     }
 
     private void InitializeTagRefresh()

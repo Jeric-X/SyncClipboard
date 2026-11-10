@@ -1280,6 +1280,12 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
     {
         var tags = (Controls.HistoryInlineTagsView)sender;
         tags.ViewModel = _viewModel;
+        tags.SetBinding(Controls.HistoryInlineTagsView.PinnedTagsProperty, new Binding
+        {
+            Source = _viewModel,
+            Path = new PropertyPath(nameof(HistoryViewModel.PinnedTags)),
+            Mode = BindingMode.OneWay
+        });
         BindVisibilityOutsidePreview(tags);
     }
 

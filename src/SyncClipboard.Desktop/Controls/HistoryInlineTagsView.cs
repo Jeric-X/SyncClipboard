@@ -5,6 +5,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using SyncClipboard.Core.I18n;
+using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
 using System;
@@ -21,6 +22,15 @@ public sealed class HistoryInlineTagsView : Panel
 
     public static readonly StyledProperty<HistoryViewModel?> ViewModelProperty =
         AvaloniaProperty.Register<HistoryInlineTagsView, HistoryViewModel?>(nameof(ViewModel));
+
+    public static readonly StyledProperty<IEnumerable<string>?> PinnedTagsProperty =
+        AvaloniaProperty.Register<HistoryInlineTagsView, IEnumerable<string>?>(nameof(PinnedTags));
+
+    public IEnumerable<string>? PinnedTags
+    {
+        get => GetValue(PinnedTagsProperty);
+        set => SetValue(PinnedTagsProperty, value);
+    }
 
     public IEnumerable<HistoryPreviewTag>? Tags
     {
@@ -74,13 +84,13 @@ public sealed class HistoryInlineTagsView : Panel
         if (change.Property == DataContextProperty || change.Property == ViewModelProperty ||
             (change.Property == IsVisibleProperty && !IsVisible))
             _flyout?.Hide();
-        if (change.Property == TagsProperty || change.Property == IsVisibleProperty)
+        if (change.Property == TagsProperty || change.Property == PinnedTagsProperty || change.Property == IsVisibleProperty)
             UpdateTags();
     }
 
     private void UpdateTags()
     {
-        var tags = IsVisible ? Tags?.ToArray() ?? [] : [];
+        var tags = IsVisible ? HistoryTagOrdering.OrderForDisplay(Tags, PinnedTags) : [];
         if (_tags.SequenceEqual(tags))
             return;
 

@@ -5,6 +5,7 @@ using Avalonia.Media.Imaging;
 using FluentAvalonia.UI.Controls;
 using SyncClipboard.Core.ViewModels.EmbeddedIcons;
 using SyncClipboard.Core.I18n;
+using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
@@ -15,6 +16,15 @@ namespace SyncClipboard.Desktop.ValueConverters;
 
 public static class FuncConverter
 {
+    public static IMultiValueConverter OrderHistoryTags { get; } =
+        new FuncMultiValueConverter<object?, HistoryPreviewTag[]>(values =>
+        {
+            var inputs = new List<object?>(values);
+            return HistoryTagOrdering.OrderForDisplay(
+                inputs.Count > 0 ? inputs[0] as IEnumerable<HistoryPreviewTag> : null,
+                inputs.Count > 1 ? inputs[1] as IEnumerable<string> : null);
+        });
+
     public static FuncValueConverter<bool, bool> Not { get; } =
         new FuncValueConverter<bool, bool>(value => !value);
 

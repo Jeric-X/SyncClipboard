@@ -61,6 +61,12 @@ public class HistoryInlineTagsTests
             Path = new PropertyPath(nameof(TagBindingSource.PreviewTags)),
             Mode = BindingMode.OneWay
         });
+        panel.SetBinding(HistoryInlineTagsView.PinnedTagsProperty, new Binding
+        {
+            Source = record,
+            Path = new PropertyPath(nameof(TagBindingSource.PinnedTags)),
+            Mode = BindingMode.OneWay
+        });
         var search = new TextBox();
         var row = new DockPanel { Width = 360, LastChildFill = true };
         DockPanel.SetDock(panel, Dock.Right);
@@ -114,6 +120,20 @@ public class HistoryInlineTagsTests
             var hidden = FindPopupTags(panel).ToArray();
             CollectionAssert.AreEqual(names[visible..], RenderedNames(panel));
 
+            record.PinnedTags = ["missing", "tag15", "tag14"];
+            string[] pinnedOrder = ["tag15", "tag14", .. names[..14]];
+            await WaitUntilAsync(() => VisibleChipNames(panel).Concat(RenderedNames(panel)).SequenceEqual(pinnedOrder), timeout.Token);
+            record.PinnedTags = ["tag14", "tag15"];
+            pinnedOrder = ["tag14", "tag15", .. names[..14]];
+            await WaitUntilAsync(() => VisibleChipNames(panel).Concat(RenderedNames(panel)).SequenceEqual(pinnedOrder), timeout.Token);
+            record.Tags = names.Reverse().ToArray();
+            await WaitUntilAsync(() => VisibleChipNames(panel).Concat(RenderedNames(panel)).SequenceEqual(pinnedOrder), timeout.Token);
+            record.PinnedTags = [];
+            await WaitUntilAsync(() => VisibleChipNames(panel).Concat(RenderedNames(panel)).SequenceEqual(names), timeout.Token);
+            record.Tags = names;
+            await DrainInputAsync(panel);
+            hidden = FindPopupTags(panel).ToArray();
+
             HistoryPreviewTag? requested = null;
             hidden[0].RemoveRequested += (_, tag) => requested = tag;
             Invoke(Descendants<Button>(hidden[0]).Single());
@@ -144,6 +164,13 @@ public class HistoryInlineTagsTests
     {
         public HistoryRecordKey Key { get; } = new(ProfileType.Text, "inline-tag-ui-test");
         private string[] _tags = [];
+        private string[] _pinnedTags = [];
+
+        public string[] PinnedTags
+        {
+            get => _pinnedTags;
+            set => SetProperty(ref _pinnedTags, value);
+        }
 
         public string[] Tags
         {

@@ -1087,7 +1087,6 @@ public partial class HistoryViewModel : ObservableObject
 
     private void RecordUpdated(HistoryRecordVM newRecord)
     {
-        UpdateRecordTagOrder(newRecord, PinnedTags);
         ApplySelectionToRecord(newRecord);
         if (SelectedFilter == HistoryFilterType.Transferring)
         {
@@ -1705,7 +1704,6 @@ public partial class HistoryViewModel : ObservableObject
             var record = await HistoryManager.ToRemoteHistoryRecord(task.Profile, token);
 
             vm = new HistoryRecordVM(record) { SortByLastAccessed = SortByLastAccessed };
-            UpdateRecordTagOrder(vm, PinnedTags);
             vm.UpdateFromTask(task);
             if (IsMatchUiFilter(vm))
             {
