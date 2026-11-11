@@ -236,64 +236,6 @@ public class HistoryUploadCoordinationTests
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task TagBackfill_LegacyConflictResendsUsingServerMetadata(bool uploadFails)
-    {
-        await using var f = await Fixture.CreateAsync(Token);
-        var record = new HistoryRecord
-        {
-            Type = ProfileType.Text,
-            Hash = "LEGACY",
-            Text = "content",
-            Tags = ["local"],
-            Version = 3,
-            SyncStatus = HistorySyncStatus.NeedSync
-        };
-        f.Db.Add(record);
-        await f.Db.SaveChangesAsync(Token);
-        f.RemoteRecord = record.ToHistoryRecordDto();
-        f.RemoteRecord.Tags = null;
-        f.RemoteRecord.Version = 10;
-        f.RemoteRecord.Starred = true;
-        f.Server.Setup(x => x.SupportsHistoryTagsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        f.SetupHistoryQuery();
-        f.Server.Setup(x => x.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
-            It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
-            .Returns<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) =>
-            {
-                if (dto.Version < f.RemoteRecord.Version)
-                    throw new RemoteHistoryConflictException("legacy conflict", f.RemoteRecord.ToUpdateDto());
-                if (uploadFails)
-                    throw new HttpRequestException("offline");
-                f.RemoteRecord.Tags = dto.Tags;
-                return Task.FromResult<HistoryRecordUpdateDto?>(f.RemoteRecord.ToUpdateDto());
-            });
-        var syncer = f.CreateSyncer();
-        if (uploadFails)
-        {
-            await Assert.ThrowsExactlyAsync<HttpRequestException>(() => syncer.SyncOneAsync(record, Token));
-            var pending = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
-            Assert.IsNotNull(pending);
-            CollectionAssert.AreEqual(ExpectedLocalTags, pending.Tags);
-            Assert.AreEqual(HistorySyncStatus.NeedSync, pending.SyncStatus);
-            uploadFails = false;
-            await syncer.SyncAllAsync(DateTime.UtcNow, Token);
-        }
-        else
-        {
-            await syncer.SyncOneAsync(record, Token);
-        }
-
-        CollectionAssert.AreEqual(ExpectedLocalTags, f.RemoteRecord.Tags);
-        var saved = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
-        Assert.IsNotNull(saved);
-        Assert.IsTrue(saved.Stared);
-        Assert.AreEqual(f.RemoteRecord.Version, saved.Version);
-        Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
-    }
-
-    [TestMethod]
     [DataRow(null)]
     [DataRow("[]")]
     [DataRow("[\" 工作 \",\"Prompt\",\"Prompt\"]")]

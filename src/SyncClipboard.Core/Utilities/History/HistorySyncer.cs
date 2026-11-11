@@ -169,7 +169,7 @@ public class HistorySyncer
         catch (RemoteHistoryConflictException ex)
         {
             if (ex.ServerRecord is not null)
-                await ResolveConflictAsync(record, ex.ServerRecord, remoteServer, token);
+                await ResolveConflictAsync(record, ex.ServerRecord, token);
         }
         catch (RemoteHistoryNotFoundException)
         {
@@ -178,20 +178,11 @@ public class HistorySyncer
     }
 
     private async Task ResolveConflictAsync(
-        HistoryRecord record, HistoryRecordUpdateDto serverRecord, IOfficialSyncServer remoteServer, CancellationToken token)
+        HistoryRecord record, HistoryRecordUpdateDto serverRecord, CancellationToken token)
     {
         var sentVersion = record.Version;
         var sentModified = record.LastModified;
         record.ApplyFromServerUpdateDto(serverRecord);
-        // Older tag-capable servers may reject metadata without filling in missing tags.
-        // Retry once with the returned metadata; failures leave the persisted local record pending.
-        if (serverRecord.Tags is null && record.Tags.Length > 0 && !record.IsDeleted
-            && await remoteServer.SupportsHistoryTagsAsync(token))
-        {
-            var response = await remoteServer.UpdateHistoryAsync(record.Type, record.Hash, CreateUpdateDto(record), token);
-            if (response is not null)
-                record.ApplyFromServerUpdateDto(response);
-        }
         if (await _historyManager.TryApplySyncResponseAsync(record, sentVersion, sentModified, token))
             _logger.Write("HistorySyncer", $"并发冲突，已回写服务器版本[{record.Hash}]");
     }
