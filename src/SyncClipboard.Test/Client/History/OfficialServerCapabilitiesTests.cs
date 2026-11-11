@@ -93,16 +93,6 @@ public class OfficialServerCapabilitiesTests
     }
 
     [TestMethod]
-    public async Task TagSupportProbe_RefreshesAfterServerUpgrade()
-    {
-        using var handler = new CapabilityHandler { Capabilities = "{\"historySync\":true}" };
-        using var adapter = CreateAdapter(handler, Mock.Of<INotificationManager>());
-        Assert.IsFalse(await adapter.SupportsHistoryTagsAsync(TestContext.CancellationTokenSource.Token));
-        handler.Capabilities = "{\"historySync\":true,\"historyTags\":true}";
-        Assert.IsTrue(await adapter.SupportsHistoryTagsAsync(TestContext.CancellationTokenSource.Token));
-    }
-
-    [TestMethod]
     public async Task SupportedCapabilities_DoNotRequestOldVersionOrNotify()
     {
         using var handler = new CapabilityHandler

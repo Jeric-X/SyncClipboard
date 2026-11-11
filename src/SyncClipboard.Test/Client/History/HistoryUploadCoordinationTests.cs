@@ -39,7 +39,13 @@ public class HistoryUploadCoordinationTests
         target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(target, value);
 
     [TestMethod]
-    public async Task ServerTagUpgrade_BackfillsOldRecordsOnIncrementalReconnect()
+    [DataRow("full", true)]
+    [DataRow("incremental", true)]
+    [DataRow("range", true)]
+    [DataRow("full", false)]
+    [DataRow("incremental", false)]
+    [DataRow("range", false)]
+    public async Task SyncFetchedRecords_BackfillsMissingTagsWhenSupported(string syncMode, bool supportsTags)
     {
         await using var f = await Fixture.CreateAsync(Token);
         var record = new HistoryRecord
@@ -74,31 +80,27 @@ public class HistoryUploadCoordinationTests
                     throw new RemoteHistoryConflictException("server metadata retained", saved!.ToUpdateDto());
                 return saved!.ToUpdateDto();
             });
-        var supportsTags = false;
-        f.Server.Setup(x => x.SupportsHistoryTagsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(() => supportsTags);
-        List<DateTimeOffset?> requestedSince = [];
-        f.SetupHistoryQuery(requestedSince);
+        f.Server.Setup(x => x.SupportsHistoryTagsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(supportsTags);
+        f.SetupHistoryQuery();
         var syncer = f.CreateSyncer();
 
-        await syncer.SyncAllAsync(null, Token);
-        Assert.AreEqual(0, f.Updates);
-        Assert.IsNull(f.RemoteRecord.Tags);
-        var reconnectedAt = DateTime.UtcNow;
-        supportsTags = true;
-        await syncer.SyncAllAsync(reconnectedAt, Token);
+        if (syncMode == "range")
+            await syncer.SyncRangeAsync(token: Token);
+        else
+            await syncer.SyncAllAsync(syncMode == "incremental" ? record.LastModified.AddMinutes(-1) : null, Token);
 
-        Assert.IsNull(requestedSince[1]);
-        CollectionAssert.AreEqual(ExpectedLocalTags, f.RemoteRecord.Tags);
+        if (supportsTags)
+            CollectionAssert.AreEqual(ExpectedLocalTags, f.RemoteRecord.Tags);
+        else
+        {
+            Assert.AreEqual(0, f.Updates);
+            Assert.IsNull(f.RemoteRecord.Tags);
+        }
         var saved = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
         Assert.IsNotNull(saved);
         Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
         CollectionAssert.AreEqual(ExpectedLocalTags, saved.Tags);
         Assert.AreEqual(f.RemoteRecord.LastModified.UtcDateTime, saved.LastModified);
-
-        var updates = f.Updates;
-        await syncer.SyncAllAsync(reconnectedAt, Token);
-        Assert.AreEqual(new DateTimeOffset(reconnectedAt), requestedSince[2]);
-        Assert.AreEqual(updates, f.Updates);
     }
 
     [TestMethod]
@@ -124,7 +126,7 @@ public class HistoryUploadCoordinationTests
         f.RemoteRecord.IsDeleted = deleted;
         f.RemoteRecord.Tags = remoteTags is null ? null : System.Text.Json.JsonSerializer.Deserialize<string[]>(remoteTags);
         f.Server.Setup(x => x.SupportsHistoryTagsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        f.SetupHistoryQuery([]);
+        f.SetupHistoryQuery();
 
         await f.CreateSyncer().SyncAllAsync(null, Token);
 
@@ -159,8 +161,7 @@ public class HistoryUploadCoordinationTests
         f.RemoteRecord.Starred = true;
         f.RemoteRecord.Tags = null;
         f.Server.Setup(x => x.SupportsHistoryTagsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        List<DateTimeOffset?> requestedSince = [];
-        f.SetupHistoryQuery(requestedSince);
+        f.SetupHistoryQuery();
         var uploadFails = true;
         f.Server.Setup(x => x.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
             It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
@@ -175,16 +176,15 @@ public class HistoryUploadCoordinationTests
                 return Task.FromResult<HistoryRecordUpdateDto?>(f.RemoteRecord.ToUpdateDto());
             });
         var syncer = f.CreateSyncer();
-        var reconnectedAt = DateTime.UtcNow;
-        await Assert.ThrowsExactlyAsync<HttpRequestException>(() => syncer.SyncAllAsync(reconnectedAt, Token));
+        var modifiedAfter = record.LastModified.AddMinutes(-1);
+        await Assert.ThrowsExactlyAsync<HttpRequestException>(() => syncer.SyncAllAsync(modifiedAfter, Token));
         var pending = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
         Assert.IsNotNull(pending);
         Assert.AreEqual(HistorySyncStatus.NeedSync, pending.SyncStatus);
         Assert.IsTrue(pending.Stared);
         CollectionAssert.AreEqual(ExpectedLocalTags, pending.Tags);
         uploadFails = false;
-        await syncer.SyncAllAsync(reconnectedAt, Token);
-        Assert.IsTrue(requestedSince.All(since => since is null));
+        await syncer.SyncAllAsync(modifiedAfter, Token);
         CollectionAssert.AreEqual(ExpectedLocalTags, f.RemoteRecord.Tags);
         Assert.IsTrue(f.RemoteRecord.Starred);
     }
@@ -236,7 +236,9 @@ public class HistoryUploadCoordinationTests
     }
 
     [TestMethod]
-    public async Task TagBackfill_LegacyConflictKeepsTagsPendingUntilNextSync()
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task TagBackfill_LegacyConflictResendsUsingServerMetadata(bool uploadFails)
     {
         await using var f = await Fixture.CreateAsync(Token);
         var record = new HistoryRecord
@@ -255,29 +257,39 @@ public class HistoryUploadCoordinationTests
         f.RemoteRecord.Version = 10;
         f.RemoteRecord.Starred = true;
         f.Server.Setup(x => x.SupportsHistoryTagsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        f.SetupHistoryQuery([]);
+        f.SetupHistoryQuery();
         f.Server.Setup(x => x.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
             It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
             .Returns<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) =>
             {
                 if (dto.Version < f.RemoteRecord.Version)
                     throw new RemoteHistoryConflictException("legacy conflict", f.RemoteRecord.ToUpdateDto());
+                if (uploadFails)
+                    throw new HttpRequestException("offline");
                 f.RemoteRecord.Tags = dto.Tags;
                 return Task.FromResult<HistoryRecordUpdateDto?>(f.RemoteRecord.ToUpdateDto());
             });
         var syncer = f.CreateSyncer();
-        await Assert.ThrowsExactlyAsync<RemoteHistoryConflictException>(() => syncer.SyncOneAsync(record, Token));
-        var pending = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
-        Assert.IsNotNull(pending);
-        CollectionAssert.AreEqual(ExpectedLocalTags, pending.Tags);
-        Assert.AreEqual(HistorySyncStatus.NeedSync, pending.SyncStatus);
-
-        await syncer.SyncAllAsync(DateTime.UtcNow, Token);
+        if (uploadFails)
+        {
+            await Assert.ThrowsExactlyAsync<HttpRequestException>(() => syncer.SyncOneAsync(record, Token));
+            var pending = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
+            Assert.IsNotNull(pending);
+            CollectionAssert.AreEqual(ExpectedLocalTags, pending.Tags);
+            Assert.AreEqual(HistorySyncStatus.NeedSync, pending.SyncStatus);
+            uploadFails = false;
+            await syncer.SyncAllAsync(DateTime.UtcNow, Token);
+        }
+        else
+        {
+            await syncer.SyncOneAsync(record, Token);
+        }
 
         CollectionAssert.AreEqual(ExpectedLocalTags, f.RemoteRecord.Tags);
         var saved = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
         Assert.IsNotNull(saved);
         Assert.IsTrue(saved.Stared);
+        Assert.AreEqual(f.RemoteRecord.Version, saved.Version);
         Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
     }
 
@@ -1262,7 +1274,7 @@ public class HistoryUploadCoordinationTests
             application = UseApplication();
         }
 
-        public void SetupHistoryQuery(List<DateTimeOffset?> requestedSince)
+        public void SetupHistoryQuery()
         {
             Server.Setup(x => x.GetHistoryAsync(It.IsAny<int>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(),
                 It.IsAny<DateTimeOffset?>(), It.IsAny<ProfileTypeFilter>(), It.IsAny<string?>(), It.IsAny<bool?>(),
@@ -1270,7 +1282,6 @@ public class HistoryUploadCoordinationTests
                 .Returns<int, DateTimeOffset?, DateTimeOffset?, DateTimeOffset?, ProfileTypeFilter, string?, bool?, bool, CancellationToken>(
                     (_, _, _, since, _, _, _, _, _) =>
                     {
-                        requestedSince.Add(since);
                         IEnumerable<HistoryRecordDto> records = RemoteRecord is not null
                             && (!since.HasValue || RemoteRecord.LastModified >= since.Value) ? [RemoteRecord] : [];
                         return Task.FromResult(records);

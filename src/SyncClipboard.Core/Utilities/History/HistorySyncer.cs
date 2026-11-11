@@ -18,7 +18,6 @@ public class HistorySyncer
     private readonly HistoryTransferQueue _historyTransferQueue;
     private readonly ConfigBase _runtimeConfig;
     private readonly HistorySyncSession _syncSession;
-    private IOfficialSyncServer? _tagBackfillServer;
 
     public HistorySyncer(
         HistoryManager historyManager,
@@ -68,7 +67,9 @@ public class HistorySyncer
             sortByLastAccessed,
             token);
 
-        var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
+        var backfillMissingTags = remoteRecords.Any(record => record.Tags is null)
+            && await remoteServer.SupportsHistoryTagsAsync(token);
+        var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, backfillMissingTags, token);
         await DetectOrphanDataAsync(before, after, remoteRecords, types, searchText, starred, token);
         await _historyManager.RemoveDeletedOrMissingLocalRecordsAsync(token);
         await PushLocalRangeAsync(before, after, types, searchText, starred, token);
@@ -82,14 +83,6 @@ public class HistorySyncer
             return;
         }
 
-        var supportsTags = await remoteServer.SupportsHistoryTagsAsync(token);
-        if (!supportsTags)
-            _tagBackfillServer = null;
-        // Migrated records retain their old modification time. The first tag-capable sync must
-        // include them even when a reconnect would otherwise fetch only recent changes.
-        if (supportsTags && !ReferenceEquals(_tagBackfillServer, remoteServer))
-            modifiedAfter = null;
-
         var remoteRecords = await FetchRemoteRangeAsync(
             remoteServer,
             null,
@@ -102,7 +95,9 @@ public class HistorySyncer
             false,
             token);
 
-        await _historyManager.SyncRemoteHistoryAsync(remoteRecords, backfillMissingTags: supportsTags, token);
+        var backfillMissingTags = remoteRecords.Any(record => record.Tags is null)
+            && await remoteServer.SupportsHistoryTagsAsync(token);
+        await _historyManager.SyncRemoteHistoryAsync(remoteRecords, backfillMissingTags, token);
         if (modifiedAfter is null)
         {
             await DetectOrphanDataAsync(null, null, remoteRecords, ProfileTypeFilter.All, null, null, token);
@@ -111,8 +106,6 @@ public class HistorySyncer
         await SyncPendingHistoryDataAsync(token);
         await _historyTransferQueue.WaitAllTasks(token);
         await _historyManager.RemoveDeletedOrMissingLocalRecordsAsync(token);
-        token.ThrowIfCancellationRequested();
-        _tagBackfillServer = supportsTags ? remoteServer : null;
     }
 
     /// <summary>
@@ -175,8 +168,8 @@ public class HistorySyncer
         }
         catch (RemoteHistoryConflictException ex)
         {
-            if (ex.ServerRecord is not null && !await TryResolveConflictAsync(record, ex.ServerRecord, remoteServer, token))
-                throw;
+            if (ex.ServerRecord is not null)
+                await ResolveConflictAsync(record, ex.ServerRecord, remoteServer, token);
         }
         catch (RemoteHistoryNotFoundException)
         {
@@ -184,20 +177,23 @@ public class HistorySyncer
         }
     }
 
-    private async Task<bool> TryResolveConflictAsync(
+    private async Task ResolveConflictAsync(
         HistoryRecord record, HistoryRecordUpdateDto serverRecord, IOfficialSyncServer remoteServer, CancellationToken token)
     {
         var sentVersion = record.Version;
         var sentModified = record.LastModified;
         record.ApplyFromServerUpdateDto(serverRecord);
         // Older tag-capable servers may reject metadata without filling in missing tags.
-        // Leave the local snapshot pending so the next sync can merge and send it again.
+        // Retry once with the returned metadata; failures leave the persisted local record pending.
         if (serverRecord.Tags is null && record.Tags.Length > 0 && !record.IsDeleted
             && await remoteServer.SupportsHistoryTagsAsync(token))
-            return false;
+        {
+            var response = await remoteServer.UpdateHistoryAsync(record.Type, record.Hash, CreateUpdateDto(record), token);
+            if (response is not null)
+                record.ApplyFromServerUpdateDto(response);
+        }
         if (await _historyManager.TryApplySyncResponseAsync(record, sentVersion, sentModified, token))
             _logger.Write("HistorySyncer", $"并发冲突，已回写服务器版本[{record.Hash}]");
-        return true;
     }
 
     private async Task UploadMissingRecordAsync(
