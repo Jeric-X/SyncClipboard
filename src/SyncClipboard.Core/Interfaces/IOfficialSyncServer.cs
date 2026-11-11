@@ -14,7 +14,7 @@ public interface IOfficialSyncServer
     event Action<HistoryRecordDto>? HistoryChanged;
 
     /// <summary>
-    /// Checks whether the current server supports history tags.
+    /// Gets whether the current connection supports history tags, using its cached capabilities.
     /// </summary>
     Task<bool> SupportsHistoryTagsAsync(CancellationToken cancellationToken = default);
 
