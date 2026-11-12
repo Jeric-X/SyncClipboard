@@ -1,9 +1,4 @@
 using Moq;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.DependencyInjection;
 using NativeNotification.Interface;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
@@ -11,7 +6,6 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 using SyncClipboard.Core.RemoteServer.Adapter.WebDavServer;
 using SyncClipboard.Core.Utilities.Web;
-using SyncClipboard.Server.Core.Constants;
 using System.Net;
 using System.Reflection;
 using System.Text.Json;
@@ -24,65 +18,6 @@ public class OfficialServerCapabilitiesTests
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
-    public async Task SignalRConnection_WaitsForCapabilitiesAndSharesThemWithHealthChecks()
-    {
-        var token = TestContext.CancellationTokenSource.Token;
-        var probeStarted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var releaseProbe = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var connected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var disconnected = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        var requests = 0;
-        var supportsTags = true;
-        var builder = WebApplication.CreateBuilder();
-        builder.WebHost.UseUrls("http://127.0.0.1:0");
-        builder.Services.AddSignalR();
-        await using var app = builder.Build();
-        app.MapHub<CapabilityTestHub>(SignalRConstants.HubPath);
-        app.MapMethods("/", ["PROPFIND"], () => Results.Ok());
-        app.MapGet("/api/capabilities", async (HttpContext context) =>
-        {
-            Interlocked.Increment(ref requests);
-            probeStarted.TrySetResult();
-            await releaseProbe.Task.WaitAsync(context.RequestAborted);
-            return Results.Text(supportsTags ? "{\"historySync\":true,\"historyTags\":true}" : "{\"historySync\":true}",
-                "application/json");
-        });
-        await app.StartAsync(token);
-        var appConfig = Mock.Of<IAppConfig>(config => config.AppStringId == "SyncClipboardTest" && config.AppVersion == "1.0");
-        using var adapter = new OfficialAdapter(Mock.Of<ILogger>(), appConfig);
-        adapter.SetConfig(new OfficialConfig { RemoteURL = app.Urls.Single() }, new SyncConfig());
-        adapter.ServerConnected += () => connected.TrySetResult();
-        adapter.ServerDisconnected += _ => disconnected.TrySetResult();
-        adapter.ApplyConfig();
-        try
-        {
-            await probeStarted.Task.WaitAsync(TimeSpan.FromSeconds(15), token);
-            Assert.IsFalse(connected.Task.IsCompleted);
-            await adapter.TestConnectionAsync(token);
-            adapter.StartListening();
-        }
-        finally
-        {
-            releaseProbe.TrySetResult();
-        }
-
-        await connected.Task.WaitAsync(TimeSpan.FromSeconds(15), token);
-        Assert.IsTrue(await adapter.SupportsHistoryTagsAsync(token));
-        await adapter.TestConnectionAsync(token);
-        Assert.AreEqual(1, Volatile.Read(ref requests));
-
-        adapter.StopListening();
-        await disconnected.Task.WaitAsync(TimeSpan.FromSeconds(15), token);
-        await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => adapter.SupportsHistoryTagsAsync(token));
-        connected = new(TaskCreationOptions.RunContinuationsAsynchronously);
-        supportsTags = false;
-        adapter.StartListening();
-        await connected.Task.WaitAsync(TimeSpan.FromSeconds(15), token);
-        Assert.IsFalse(await adapter.SupportsHistoryTagsAsync(token));
-        Assert.AreEqual(2, Volatile.Read(ref requests));
-    }
-
-    [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
     public async Task ConnectedCapabilities_AreSharedBySyncAndHealthChecks(bool supportsTags)
@@ -92,7 +27,7 @@ public class OfficialServerCapabilitiesTests
             Capabilities = supportsTags ? "{\"historySync\":true,\"historyTags\":true}" : "{\"historySync\":true}"
         };
         using var adapter = CreateAdapter(handler);
-        await adapter.RefreshCapabilitiesAsync(null, TestContext.CancellationTokenSource.Token);
+        await adapter.TestConnectionAsync(TestContext.CancellationTokenSource.Token);
 
         for (var i = 0; i < 3; i++)
         {
@@ -101,50 +36,50 @@ public class OfficialServerCapabilitiesTests
         }
 
         Assert.AreEqual(1, handler.CapabilityRequests);
-        Assert.AreEqual(3, handler.HealthRequests);
+        Assert.AreEqual(4, handler.HealthRequests);
     }
 
     [TestMethod]
-    public async Task Reconnection_UsesNewCapabilitiesAndPreservesUnknownOnFailure()
+    public async Task Disconnect_RefreshesCapabilitiesAndRetriesFailedProbe()
     {
+        var token = TestContext.CancellationTokenSource.Token;
         using var handler = new CapabilityHandler { Capabilities = "{\"historySync\":true}" };
         using var adapter = CreateAdapter(handler);
-        await adapter.RefreshCapabilitiesAsync(null, TestContext.CancellationTokenSource.Token);
-        Assert.IsFalse(await adapter.SupportsHistoryTagsAsync(TestContext.CancellationTokenSource.Token));
+        await adapter.TestConnectionAsync(token);
+        Assert.IsFalse(await adapter.SupportsHistoryTagsAsync(token));
 
         adapter.StopListening();
         handler.FailProbe = true;
-        await Assert.ThrowsExactlyAsync<HttpRequestException>(() =>
-            adapter.RefreshCapabilitiesAsync(null, TestContext.CancellationTokenSource.Token));
-        await Assert.ThrowsExactlyAsync<InvalidOperationException>(() =>
-            adapter.SupportsHistoryTagsAsync(TestContext.CancellationTokenSource.Token));
-
+        await Assert.ThrowsExactlyAsync<HttpRequestException>(() => adapter.TestConnectionAsync(token));
         handler.FailProbe = false;
         handler.Capabilities = "{\"historySync\":true,\"historyTags\":true}";
-        await adapter.RefreshCapabilitiesAsync(null, TestContext.CancellationTokenSource.Token);
-        Assert.IsTrue(await adapter.SupportsHistoryTagsAsync(TestContext.CancellationTokenSource.Token));
+        await adapter.TestConnectionAsync(token);
+        Assert.IsTrue(await adapter.SupportsHistoryTagsAsync(token));
+        Assert.AreEqual(3, handler.CapabilityRequests);
     }
 
     [TestMethod]
-    public async Task SwitchingServers_DiscardsLateCapabilityResponse()
+    public async Task Disconnect_DiscardsPendingCapabilityRequest()
     {
+        var token = TestContext.CancellationTokenSource.Token;
         var response = new TaskCompletionSource<HttpResponseMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
         using var handler = new CapabilityHandler { CapabilityResponse = response.Task };
         using var adapter = CreateAdapter(handler);
-        var loading = adapter.RefreshCapabilitiesAsync(null, TestContext.CancellationTokenSource.Token);
-        adapter.SetConfig(new OfficialConfig { RemoteURL = "https://other.test" }, new SyncConfig());
+        var loading = adapter.TestConnectionAsync(token);
+        var concurrentRead = adapter.SupportsHistoryTagsAsync(token);
+        Assert.AreEqual(1, handler.CapabilityRequests);
+        adapter.StopListening();
+        handler.CapabilityResponse = null;
+        handler.Capabilities = "{\"historySync\":true}";
+        await adapter.TestConnectionAsync(token);
         response.SetResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new StringContent("{\"historySync\":true,\"historyTags\":true}")
         });
-
-        Assert.IsFalse(await loading);
-        await Assert.ThrowsExactlyAsync<InvalidOperationException>(() =>
-            adapter.SupportsHistoryTagsAsync(TestContext.CancellationTokenSource.Token));
-        handler.CapabilityResponse = null;
-        handler.Capabilities = "{\"historySync\":true}";
-        await adapter.RefreshCapabilitiesAsync(null, TestContext.CancellationTokenSource.Token);
-        Assert.IsFalse(await adapter.SupportsHistoryTagsAsync(TestContext.CancellationTokenSource.Token));
+        await loading;
+        await concurrentRead;
+        Assert.IsFalse(await adapter.SupportsHistoryTagsAsync(token));
+        Assert.AreEqual(2, handler.CapabilityRequests);
     }
 
     [TestMethod]
@@ -166,12 +101,12 @@ public class OfficialServerCapabilitiesTests
                     return Task.CompletedTask;
                 });
             using var adapter = CreateAdapter(handler, notifications.Object, config, dispatcher.Object);
-            await adapter.RefreshCapabilitiesAsync(null, TestContext.CancellationTokenSource.Token);
+            await adapter.NotifyCapabilitiesOnConfigChangedAsync();
             var firstNotice = notifications.Invocations.Single(i => i.Method.Name == "Show");
             var button = ((IEnumerable<ActionButton>)firstNotice.Arguments[2]).Single();
 
             adapter.SetConfig(new OfficialConfig { RemoteURL = "https://other.test" }, new SyncConfig());
-            await adapter.RefreshCapabilitiesAsync(null, TestContext.CancellationTokenSource.Token);
+            await adapter.NotifyCapabilitiesOnConfigChangedAsync();
             Assert.AreEqual(2, notifications.Invocations.Count(i => i.Method.Name == "Show"));
             Assert.IsNotNull(button.Callback);
             await Task.Run(button.Callback, TestContext.CancellationTokenSource.Token);
@@ -181,10 +116,10 @@ public class OfficialServerCapabilitiesTests
             using var reloadedHandler = new CapabilityHandler { Capabilities = "{\"historySync\":true}" };
             using var reloadedAdapter = CreateAdapter(reloadedHandler, reloadedNotifications.Object, reloadedConfig, dispatcher.Object);
             reloadedAdapter.SetConfig(new OfficialConfig { RemoteURL = "https://HISTORY.test:443/" }, new SyncConfig());
-            await reloadedAdapter.RefreshCapabilitiesAsync(null, TestContext.CancellationTokenSource.Token);
+            await reloadedAdapter.NotifyCapabilitiesOnConfigChangedAsync();
             Assert.IsEmpty(reloadedNotifications.Invocations);
             reloadedAdapter.SetConfig(new OfficialConfig { RemoteURL = "https://other.test" }, new SyncConfig());
-            await reloadedAdapter.RefreshCapabilitiesAsync(null, TestContext.CancellationTokenSource.Token);
+            await reloadedAdapter.NotifyCapabilitiesOnConfigChangedAsync();
             Assert.AreEqual(1, reloadedNotifications.Invocations.Count(i => i.Method.Name == "Show"));
         }
         finally
@@ -201,14 +136,13 @@ public class OfficialServerCapabilitiesTests
         using var handler = new CapabilityHandler { Capabilities = hasCapabilities ? "{\"historySync\":true}" : null };
         var notifications = new Mock<INotificationManager>();
         using var adapter = CreateAdapter(handler, notifications.Object);
-        await adapter.RefreshCapabilitiesAsync(null, TestContext.CancellationTokenSource.Token);
-        adapter.StopListening();
-        await adapter.RefreshCapabilitiesAsync(null, TestContext.CancellationTokenSource.Token);
+        await adapter.NotifyCapabilitiesOnConfigChangedAsync();
+        await adapter.NotifyCapabilitiesOnConfigChangedAsync();
         Assert.AreEqual(1, notifications.Invocations.Count(i => i.Method.Name == "Show"));
         adapter.SetConfig(new OfficialConfig { RemoteURL = "https://other.test" }, new SyncConfig());
-        await adapter.RefreshCapabilitiesAsync(null, TestContext.CancellationTokenSource.Token);
+        await adapter.NotifyCapabilitiesOnConfigChangedAsync();
         Assert.AreEqual(2, notifications.Invocations.Count(i => i.Method.Name == "Show"));
-        Assert.AreEqual(hasCapabilities ? 0 : 3, handler.VersionRequests);
+        Assert.AreEqual(hasCapabilities ? 0 : 2, handler.VersionRequests);
     }
 
     [TestMethod]
@@ -217,14 +151,11 @@ public class OfficialServerCapabilitiesTests
         using var handler = new CapabilityHandler { FailProbe = true };
         var notifications = new Mock<INotificationManager>();
         using var adapter = CreateAdapter(handler, notifications.Object);
-        await Assert.ThrowsExactlyAsync<HttpRequestException>(() =>
-            adapter.RefreshCapabilitiesAsync(null, TestContext.CancellationTokenSource.Token));
+        await adapter.NotifyCapabilitiesOnConfigChangedAsync();
         Assert.IsEmpty(notifications.Invocations);
-        await Assert.ThrowsExactlyAsync<InvalidOperationException>(() =>
-            adapter.SupportsHistoryTagsAsync(TestContext.CancellationTokenSource.Token));
         handler.FailProbe = false;
         adapter.SetConfig(new OfficialConfig { RemoteURL = "https://other.test" }, new SyncConfig());
-        await adapter.RefreshCapabilitiesAsync(null, TestContext.CancellationTokenSource.Token);
+        await adapter.NotifyCapabilitiesOnConfigChangedAsync();
         Assert.AreEqual(1, notifications.Invocations.Count(i => i.Method.Name == "Show"));
     }
 
@@ -240,7 +171,7 @@ public class OfficialServerCapabilitiesTests
         using var adapter = CreateAdapter(handler, notifications.Object);
         using var client = new HttpClient(handler, disposeHandler: false) { BaseAddress = new Uri("https://history.test/") };
         await OfficialAdapter.CheckHistorySupportAsync(client, TestContext.CancellationTokenSource.Token);
-        await adapter.RefreshCapabilitiesAsync(null, TestContext.CancellationTokenSource.Token);
+        await adapter.NotifyCapabilitiesOnConfigChangedAsync();
         Assert.AreEqual(0, handler.VersionRequests);
         Assert.IsEmpty(notifications.Invocations);
     }
@@ -362,6 +293,4 @@ public class OfficialServerCapabilitiesTests
             throw new InvalidOperationException($"Unexpected request: {path}");
         }
     }
-
-    public sealed class CapabilityTestHub : Hub;
 }

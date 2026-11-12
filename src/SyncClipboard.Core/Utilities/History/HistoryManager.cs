@@ -439,10 +439,10 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     }
 
     public Task<List<HistoryRecord>> SyncRemoteHistoryAsync(IEnumerable<HistoryRecordDto> remoteRecords, CancellationToken token = default)
-        => SyncRemoteHistoryAsync(remoteRecords, backfillMissingTags: false, token);
+        => SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags: false, token);
 
     internal async Task<List<HistoryRecord>> SyncRemoteHistoryAsync(
-        IEnumerable<HistoryRecordDto> remoteRecords, bool backfillMissingTags, CancellationToken token = default)
+        IEnumerable<HistoryRecordDto> remoteRecords, bool supportsHistoryTags, CancellationToken token = default)
     {
         List<HistoryRecord> addedRecords = [];
         if (remoteRecords.Any() == false)
@@ -469,7 +469,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
                 else
                 {
                     ApplyRemoteHistory(entity, dto);
-                    if (backfillMissingTags && dto.Tags is null && entity.Tags.Length > 0
+                    if (supportsHistoryTags && dto.Tags is null && entity.Tags.Length > 0
                         && !entity.IsDeleted && entity.SyncStatus == HistorySyncStatus.Synced)
                     {
                         entity.SyncStatus = HistorySyncStatus.NeedSync;

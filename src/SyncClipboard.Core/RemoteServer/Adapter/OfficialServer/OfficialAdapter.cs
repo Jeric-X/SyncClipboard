@@ -38,8 +38,7 @@ public sealed class OfficialAdapter(
     private readonly Lock _hubLock = new();
     private readonly Lock _httpClientLock = new();
     private HubConnection? _hubConnection;
-    private Task? _connectionTask;
-    private ServerCapabilitiesDto? _serverCapabilities;
+    private Task<ServerCapabilitiesDto>? _capabilitiesTask;
     private OfficialConfig _officialConfig = new OfficialConfig();
     private HttpClient _httpClient = new HttpClient();
     private IWebProxy _proxy = new WebProxy();
@@ -53,15 +52,13 @@ public sealed class OfficialAdapter(
 
     public void SetConfig(OfficialConfig config, SyncConfig syncConfig)
     {
-        lock (_hubLock)
+        if (!Equals(_officialConfig, config))
         {
-            if (!Equals(_officialConfig, config))
-            {
-                _notifyCapabilitiesOnApply = true;
-                _serverCapabilities = null;
-            }
-            _officialConfig = config;
+            lock (_hubLock)
+                _capabilitiesTask = null;
         }
+        _notifyCapabilitiesOnApply |= !Equals(_officialConfig, config);
+        _officialConfig = config;
         _webDavAdapter.SetConfig(new WebDavConfig
         {
             RemoteURL = config.RemoteURL,
@@ -84,6 +81,7 @@ public sealed class OfficialAdapter(
             _webDavAdapter.ApplyConfig();
             ReCreateHttpClient();
             ReConnectSignalR();
+            _ = NotifyCapabilitiesOnConfigChangedAsync();
         }
         catch (Exception ex)
         {
@@ -98,73 +96,57 @@ public sealed class OfficialAdapter(
     {
         DisconnectSignalR();
 
-        HubConnection connection;
-        HttpClient client;
-        OfficialConfig config;
         lock (_hubLock)
         {
             if (_hubConnection != null)
                 return;
 
-            client = _httpClient;
-            config = _officialConfig;
-            var serverUrl = config.RemoteURL.TrimEnd('/');
+            var serverUrl = _officialConfig.RemoteURL.TrimEnd('/');
             var signalRUrl = $"{serverUrl}{SignalRConstants.HubPath}";
             if (string.IsNullOrWhiteSpace(signalRUrl))
                 return;
-            connection = new HubConnectionBuilder()
-                .WithUrl(new Uri(signalRUrl), options =>
+            _hubConnection = new HubConnectionBuilder()
+                .WithUrl(new Uri(signalRUrl), config =>
                 {
-                    var base64 = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{config.UserName}:{config.Password}"));
-                    options.Headers.Add("Authorization", "Basic " + base64);
-                    options.Proxy = _proxy;
+                    var base64 = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{_officialConfig.UserName}:{_officialConfig.Password}"));
+                    config.Headers.Add("Authorization", "Basic " + base64);
+                    config.Proxy = _proxy;
                 })
                 .Build();
-            _hubConnection = connection;
         }
 
-        connection.On<ProfileDto>(nameof(ISyncClipboardClient.RemoteProfileChanged), profile =>
+        _hubConnection.On<ProfileDto>(nameof(ISyncClipboardClient.RemoteProfileChanged), profile =>
         {
             ProfileDtoChanged?.Invoke(profile);
         });
 
-        connection.On<HistoryRecordDto>(nameof(ISyncClipboardClient.RemoteHistoryChanged), historyRecord =>
+        _hubConnection.On<HistoryRecordDto>(nameof(ISyncClipboardClient.RemoteHistoryChanged), historyRecord =>
         {
             HistoryChanged?.Invoke(historyRecord);
         });
 
-        var connectionTask = StartSignalRConnectionAsync(connection, client, config);
-        lock (_hubLock)
-        {
-            if (ReferenceEquals(_hubConnection, connection))
-                _connectionTask = connectionTask;
-        }
+        StartSignalRConnectiron(_hubConnection);
     }
 
-    private async Task StartSignalRConnectionAsync(HubConnection hubConnection, HttpClient client, OfficialConfig config)
+    private async void StartSignalRConnectiron(HubConnection hubConnection)
     {
-        hubConnection.Closed += arg =>
-        {
-            lock (_hubLock)
-            {
-                if (!ReferenceEquals(_hubConnection, hubConnection))
-                    return Task.CompletedTask;
-                _serverCapabilities = null;
-            }
-            ServerDisconnected?.Invoke(arg);
-            return Task.CompletedTask;
-        };
         try
         {
             await hubConnection.StartAsync();
-            if (await RefreshCapabilitiesAsync(hubConnection, client, config, CancellationToken.None)
-                && ReferenceEquals(_hubConnection, hubConnection) && hubConnection.State == HubConnectionState.Connected)
-                ServerConnected?.Invoke();
+            hubConnection.Closed += arg =>
+            {
+                lock (_hubLock)
+                {
+                    if (ReferenceEquals(_hubConnection, hubConnection))
+                        _capabilitiesTask = null;
+                }
+                ServerDisconnected?.Invoke(arg);
+                return Task.CompletedTask;
+            };
+            ServerConnected?.Invoke();
         }
         catch (Exception ex)
         {
-            if (!ReferenceEquals(_hubConnection, hubConnection) || _disposed)
-                return;
             ServerDisconnected?.Invoke(ex);
             await _logger.WriteAsync("OfficialAdapter", $"SignalR连接失败: {ex.Message}");
         }
@@ -177,21 +159,15 @@ public sealed class OfficialAdapter(
         {
             old = _hubConnection;
             _hubConnection = null;
-            _connectionTask = null;
-            _serverCapabilities = null;
+            _capabilitiesTask = null;
         }
 
-        if (old is not null)
-        {
-            if (old.State != HubConnectionState.Disconnected)
-                ServerDisconnected?.Invoke(null);
-            old.StopAsync().Wait();
-        }
+        old?.StopAsync().Wait();
     }
 
-    public Task TestConnectionAsync(CancellationToken cancellationToken = default)
+    public async Task TestConnectionAsync(CancellationToken cancellationToken = default)
     {
-        return _webDavAdapter.TestConnectionAsync(cancellationToken);
+        await TestHistoryConnectionAsync(cancellationToken);
     }
 
     public async Task<string?> TestConfigurationAsync(CancellationToken cancellationToken = default)
@@ -205,7 +181,7 @@ public sealed class OfficialAdapter(
     private async Task<ServerCapabilitiesDto> TestHistoryConnectionAsync(CancellationToken token)
     {
         await _webDavAdapter.TestConnectionAsync(token);
-        return await CheckHistorySupportAsync(_httpClient, token);
+        return await GetCapabilitiesAsync(token);
     }
 
     public Task InitializeAsync(CancellationToken cancellationToken = default)
@@ -248,11 +224,6 @@ public sealed class OfficialAdapter(
 
     public void StartListening()
     {
-        lock (_hubLock)
-        {
-            if (_connectionTask is { IsCompleted: false } && _hubConnection?.State != HubConnectionState.Disconnected)
-                return;
-        }
         ReConnectSignalR();
     }
 
@@ -279,42 +250,22 @@ public sealed class OfficialAdapter(
         }
     }
 
-    internal Task<bool> RefreshCapabilitiesAsync(HubConnection? connection, CancellationToken token = default)
-        => RefreshCapabilitiesAsync(connection, _httpClient, _officialConfig, token);
-
-    private async Task<bool> RefreshCapabilitiesAsync(
-        HubConnection? connection, HttpClient client, OfficialConfig config, CancellationToken token)
+    internal async Task NotifyCapabilitiesOnConfigChangedAsync()
     {
-        var capabilities = await CheckHistorySupportAsync(client, token);
-        lock (_hubLock)
-        {
-            if (_disposed || !ReferenceEquals(connection, _hubConnection)
-                || !ReferenceEquals(client, _httpClient) || !Equals(config, _officialConfig)
-                || (connection is not null && connection.State != HubConnectionState.Connected))
-                return false;
-            _serverCapabilities = capabilities;
-        }
-        await NotifyCapabilitiesOnConfigChangedAsync();
-        return true;
-    }
-
-    private async Task NotifyCapabilitiesOnConfigChangedAsync()
-    {
-        var capabilities = _serverCapabilities;
-        if (!_notifyCapabilitiesOnApply || _disposed || capabilities is null)
+        if (!_notifyCapabilitiesOnApply || _disposed)
             return;
         _notifyCapabilitiesOnApply = false;
         var client = _httpClient;
         var config = _officialConfig;
         try
         {
+            var capabilities = await GetCapabilitiesAsync(CancellationToken.None);
             if (capabilities.HistoryTags)
                 return;
 
             void NotifyIfCurrent()
             {
-                if (!_disposed && ReferenceEquals(client, _httpClient) && Equals(config, _officialConfig)
-                    && ReferenceEquals(capabilities, _serverCapabilities))
+                if (!_disposed && ReferenceEquals(client, _httpClient) && Equals(config, _officialConfig))
                     ShowHistoryTagsNotification(config);
             }
 
@@ -325,7 +276,7 @@ public sealed class OfficialAdapter(
         }
         catch (Exception ex)
         {
-            _logger.Write("OfficialAdapter", $"Failed to show history capabilities notification: {ex.Message}");
+            _logger.Write("OfficialAdapter", $"Failed to check history capabilities: {ex.Message}");
         }
     }
 
@@ -356,6 +307,17 @@ public sealed class OfficialAdapter(
             });
     }
 
+    private Task<ServerCapabilitiesDto> GetCapabilitiesAsync(CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        lock (_hubLock)
+        {
+            if (_capabilitiesTask is null || _capabilitiesTask.IsFaulted || _capabilitiesTask.IsCanceled)
+                _capabilitiesTask = CheckHistorySupportAsync(_httpClient, token);
+            return _capabilitiesTask.WaitAsync(token);
+        }
+    }
+
     internal static async Task<ServerCapabilitiesDto> CheckHistorySupportAsync(HttpClient client, CancellationToken token)
     {
         using var response = await client.GetAsync("api/capabilities", token);
@@ -376,15 +338,10 @@ public sealed class OfficialAdapter(
         return capabilities;
     }
 
-    public Task<bool> SupportsHistoryTagsAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> SupportsHistoryTagsAsync(CancellationToken cancellationToken = default)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        lock (_hubLock)
-        {
-            var capabilities = _serverCapabilities
-                ?? throw new InvalidOperationException("Server capabilities are unavailable before connection initialization.");
-            return Task.FromResult(capabilities.HistoryTags);
-        }
+        var capabilities = await GetCapabilitiesAsync(cancellationToken);
+        return capabilities.HistoryTags;
     }
 
     private static async Task<string> ReadVersionAsync(HttpClient client, CancellationToken token)
@@ -763,7 +720,7 @@ public sealed class OfficialAdapter(
     private void ReCreateHttpClient()
     {
         lock (_hubLock)
-            _serverCapabilities = null;
+            _capabilitiesTask = null;
         lock (_httpClientLock)
         {
             _httpClient.Dispose();

@@ -67,9 +67,8 @@ public class HistorySyncer
             sortByLastAccessed,
             token);
 
-        var backfillMissingTags = remoteRecords.Any(record => record.Tags is null)
-            && await remoteServer.SupportsHistoryTagsAsync(token);
-        var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, backfillMissingTags, token);
+        var supportsHistoryTags = await remoteServer.SupportsHistoryTagsAsync(token);
+        var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, token);
         await DetectOrphanDataAsync(before, after, remoteRecords, types, searchText, starred, token);
         await _historyManager.RemoveDeletedOrMissingLocalRecordsAsync(token);
         await PushLocalRangeAsync(before, after, types, searchText, starred, token);
@@ -95,9 +94,8 @@ public class HistorySyncer
             false,
             token);
 
-        var backfillMissingTags = remoteRecords.Any(record => record.Tags is null)
-            && await remoteServer.SupportsHistoryTagsAsync(token);
-        await _historyManager.SyncRemoteHistoryAsync(remoteRecords, backfillMissingTags, token);
+        var supportsHistoryTags = await remoteServer.SupportsHistoryTagsAsync(token);
+        await _historyManager.SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, token);
         if (modifiedAfter is null)
         {
             await DetectOrphanDataAsync(null, null, remoteRecords, ProfileTypeFilter.All, null, null, token);
