@@ -128,8 +128,7 @@ public sealed class PreviewImage : Image
             return;
         }
 
-        var scale = ScaleWithRenderScaling ? TopLevel.GetTopLevel(this)?.RenderScaling ?? 1 : 1;
-        var options = new DecodeOptions(DecodeBounds, scale, MaxPixelWidth, Dimensions: _cachedSize?.Dimensions);
+        var options = CreateDecodeOptions();
         if (!TryRestoreImageSize(options))
             return;
 
@@ -138,6 +137,12 @@ public sealed class PreviewImage : Image
 
         _request = new CancellationTokenSource();
         PendingLoad = ShowImageAsync(FilePath, options with { SizeOnly = !IsVisible }, _request.Token);
+    }
+
+    private DecodeOptions CreateDecodeOptions()
+    {
+        var scale = ScaleWithRenderScaling ? TopLevel.GetTopLevel(this)?.RenderScaling ?? 1 : 1;
+        return new DecodeOptions(DecodeBounds, scale, MaxPixelWidth, Dimensions: _cachedSize?.Dimensions);
     }
 
     private void ResetImage()
