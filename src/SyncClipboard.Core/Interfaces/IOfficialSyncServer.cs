@@ -14,6 +14,11 @@ public interface IOfficialSyncServer
     event Action<HistoryRecordDto>? HistoryChanged;
 
     /// <summary>
+    /// Gets whether the current connection supports history tags, using its cached capabilities.
+    /// </summary>
+    Task<bool> SupportsHistoryTagsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets a specific history record by profileId (format: "Type-Hash").
     /// </summary>
     /// <param name="profileId">The profile identifier in format "Type-Hash".</param>
@@ -50,11 +55,12 @@ public interface IOfficialSyncServer
 
     /// <summary>
     /// Update history record to server with optimistic concurrency.
-    /// - On 200 OK: completes without payload
+    /// - On 200 OK: returns the saved metadata, or null for legacy servers without a payload
     /// - On 409 Conflict: throws RemoteHistoryConflictException carrying server payload
     /// - On 404 NotFound: throws RemoteHistoryNotFoundException
     /// </summary>
-    Task UpdateHistoryAsync(ProfileType type, string hash, HistoryRecordUpdateDto dto, CancellationToken cancellationToken = default);
+    Task<HistoryRecordUpdateDto?> UpdateHistoryAsync(
+        ProfileType type, string hash, HistoryRecordUpdateDto dto, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// 上传一个本地仅存在的记录（初次同步），包括可选的本地传输文件。

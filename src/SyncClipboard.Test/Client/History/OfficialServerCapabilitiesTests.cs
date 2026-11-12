@@ -4,6 +4,8 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
+using SyncClipboard.Core.RemoteServer.Adapter.WebDavServer;
+using SyncClipboard.Core.Utilities.Web;
 using System.Net;
 using System.Reflection;
 using System.Text.Json;
@@ -14,6 +16,71 @@ namespace SyncClipboard.Test.Client.History;
 public class OfficialServerCapabilitiesTests
 {
     public TestContext TestContext { get; set; } = null!;
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ConnectedCapabilities_AreSharedBySyncAndHealthChecks(bool supportsTags)
+    {
+        using var handler = new CapabilityHandler
+        {
+            Capabilities = supportsTags ? "{\"historySync\":true,\"historyTags\":true}" : "{\"historySync\":true}"
+        };
+        using var adapter = CreateAdapter(handler);
+        await adapter.TestConnectionAsync(TestContext.CancellationTokenSource.Token);
+
+        for (var i = 0; i < 3; i++)
+        {
+            Assert.AreEqual(supportsTags, await adapter.SupportsHistoryTagsAsync(TestContext.CancellationTokenSource.Token));
+            await adapter.TestConnectionAsync(TestContext.CancellationTokenSource.Token);
+        }
+
+        Assert.AreEqual(1, handler.CapabilityRequests);
+        Assert.AreEqual(4, handler.HealthRequests);
+    }
+
+    [TestMethod]
+    public async Task Disconnect_RefreshesCapabilitiesAndRetriesFailedProbe()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        using var handler = new CapabilityHandler { Capabilities = "{\"historySync\":true}" };
+        using var adapter = CreateAdapter(handler);
+        await adapter.TestConnectionAsync(token);
+        Assert.IsFalse(await adapter.SupportsHistoryTagsAsync(token));
+
+        adapter.StopListening();
+        handler.FailProbe = true;
+        await Assert.ThrowsExactlyAsync<HttpRequestException>(() => adapter.TestConnectionAsync(token));
+        handler.FailProbe = false;
+        handler.Capabilities = "{\"historySync\":true,\"historyTags\":true}";
+        await adapter.TestConnectionAsync(token);
+        Assert.IsTrue(await adapter.SupportsHistoryTagsAsync(token));
+        Assert.AreEqual(3, handler.CapabilityRequests);
+    }
+
+    [TestMethod]
+    public async Task Disconnect_DiscardsPendingCapabilityRequest()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        var response = new TaskCompletionSource<HttpResponseMessage>(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var handler = new CapabilityHandler { CapabilityResponse = response.Task };
+        using var adapter = CreateAdapter(handler);
+        var loading = adapter.TestConnectionAsync(token);
+        var concurrentRead = adapter.SupportsHistoryTagsAsync(token);
+        Assert.AreEqual(1, handler.CapabilityRequests);
+        adapter.StopListening();
+        handler.CapabilityResponse = null;
+        handler.Capabilities = "{\"historySync\":true}";
+        await adapter.TestConnectionAsync(token);
+        response.SetResult(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("{\"historySync\":true,\"historyTags\":true}")
+        });
+        await loading;
+        await concurrentRead;
+        Assert.IsFalse(await adapter.SupportsHistoryTagsAsync(token));
+        Assert.AreEqual(2, handler.CapabilityRequests);
+    }
 
     [TestMethod]
     public async Task IgnoreTagNotice_PersistsForOriginalServerAfterSwitch()
@@ -174,13 +241,22 @@ public class OfficialServerCapabilitiesTests
         adapter.SetConfig(new OfficialConfig { RemoteURL = "https://history.test" }, new SyncConfig());
         var field = typeof(OfficialAdapter).GetField("_httpClient", BindingFlags.Instance | BindingFlags.NonPublic)!;
         ((HttpClient)field.GetValue(adapter)!).Dispose();
-        field.SetValue(adapter, new HttpClient(handler) { BaseAddress = new Uri("https://history.test/") });
+        field.SetValue(adapter, new HttpClient(handler, disposeHandler: false) { BaseAddress = new Uri("https://history.test/") });
+        var webDavAdapter = typeof(OfficialAdapter).GetField("_webDavAdapter", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(adapter)!;
+        var webDav = typeof(WebDavAdapter).GetField("_webDav", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(webDavAdapter)!;
+        typeof(WebDavBase).GetField("httpClient", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(webDav, new HttpClient(handler, disposeHandler: false) { BaseAddress = new Uri("https://history.test/") });
         return adapter;
     }
 
     private sealed class CapabilityHandler : HttpMessageHandler
     {
         public int VersionRequests { get; private set; }
+        public int CapabilityRequests { get; private set; }
+        public int HealthRequests { get; private set; }
+        public Task<HttpResponseMessage>? CapabilityResponse { get; set; }
         public bool FailProbe { get; set; }
         public string? Capabilities { get; set; }
         public HttpStatusCode? CapabilityStatus { get; set; }
@@ -191,12 +267,20 @@ public class OfficialServerCapabilitiesTests
             var path = request.RequestUri!.AbsolutePath;
             if (path == "/api/capabilities")
             {
+                CapabilityRequests++;
+                if (CapabilityResponse is not null)
+                    return CapabilityResponse.WaitAsync(token);
                 if (FailProbe)
                     throw new HttpRequestException("Network unavailable.");
                 return Task.FromResult(new HttpResponseMessage(CapabilityStatus ?? (Capabilities is null ? HttpStatusCode.NotFound : HttpStatusCode.OK))
                 {
                     Content = new StringContent(Capabilities ?? "")
                 });
+            }
+            if (request.Method.Method == "PROPFIND")
+            {
+                HealthRequests++;
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK));
             }
             if (path == "/api/version")
             {

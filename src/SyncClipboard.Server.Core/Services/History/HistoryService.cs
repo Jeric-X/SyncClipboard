@@ -52,42 +52,49 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             return (null, null);
         }
 
+        if (dto.Tags is not null)
+            dto.Tags = HistoryTags.Normalize(dto.Tags);
+        var backfillTags = existing.Tags is null && dto.Tags is { Length: > 0 };
+
+        var updated = ApplyMetadataUpdate(existing, dto);
+        if (updated is null)
+            return (null, null);
+
+        if (backfillTags)
+            existing.Tags = dto.Tags;
+
+        if (updated.Value || backfillTags)
+        {
+            await _dbContext.SaveChangesAsync(token);
+            await NotifyProfileChangeAsync(existing);
+            if (updated.Value)
+                await DeleteProfileDataIfNeed(existing, token);
+        }
+
+        return (updated, HistoryRecordDto.FromEntity(existing));
+    }
+
+    private static bool? ApplyMetadataUpdate(HistoryRecordEntity existing, HistoryRecordUpdateDto dto)
+    {
         dto.Version ??= existing.Version + 1;
         dto.LastModified ??= DateTimeOffset.UtcNow;
-
-        var shouldUpdate = HistoryHelper.ShouldUpdate(
-            oldVersion: existing.Version,
-            newVersion: dto.Version.Value,
-            oldLastModified: new DateTimeOffset(existing.LastModified),
-            newLastModified: dto.LastModified.Value);
-
-        if (!shouldUpdate)
-        {
-            return (false, HistoryRecordDto.FromEntity(existing));
-        }
+        if (!HistoryHelper.ShouldUpdate(existing.Version, dto.Version.Value,
+            new DateTimeOffset(existing.LastModified), dto.LastModified.Value))
+            return false;
 
         if (dto.IsDelete is false && existing.IsDeleted && !string.IsNullOrEmpty(existing.TransferDataFile))
-        {
-            return (null, null);
-        }
+            return null;
 
         ApplyOptionalUpdateFields(existing, dto);
         existing.LastModified = dto.LastModified.Value.UtcDateTime;
         existing.Version = dto.Version.Value;
-
-        await _dbContext.SaveChangesAsync(token);
-        await NotifyProfileChangeAsync(existing);
-        await DeleteProfileDataIfNeed(existing, token);
-
-        return (true, HistoryRecordDto.FromEntity(existing));
+        return true;
     }
 
     private static void ApplyOptionalUpdateFields(HistoryRecordEntity existing, HistoryRecordUpdateDto dto)
     {
-        var tags = dto.Tags is null ? null : HistoryTags.Normalize(dto.Tags);
-
-        if (tags is not null)
-            existing.Tags = tags;
+        if (dto.Tags is not null)
+            existing.Tags = dto.Tags;
         if (dto.Starred.HasValue)
             existing.Stared = dto.Starred.Value;
         if (dto.Pinned.HasValue)
@@ -375,16 +382,24 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             await EnsureExistingRecordData(existing, declaredTransferDataHash, transferFileStream, token);
         }
 
-        if (ShouldUpdateExistingRecord(existing, incoming))
+        var backfillTags = existing.Tags is null && incoming.Tags is { Length: > 0 };
+        var shouldUpdate = ShouldUpdateExistingRecord(existing, incoming);
+        if (shouldUpdate)
         {
             incoming.Version = Math.Max(incoming.Version, existing.Version + 1);
             var updatedEntity = incoming.ToEntity(userId);
             if (incoming.Tags is null)
                 updatedEntity.Tags = existing.Tags is null ? null : [.. existing.Tags];
             UpdateEntityFields(updatedEntity, existing);
+        }
+        if (backfillTags)
+            existing.Tags = incoming.Tags;
+        if (shouldUpdate || backfillTags)
+        {
             await _dbContext.SaveChangesAsync(token);
             await NotifyProfileChangeAsync(existing);
-            await DeleteProfileDataIfNeed(existing, token);
+            if (shouldUpdate)
+                await DeleteProfileDataIfNeed(existing, token);
         }
 
         return HistoryRecordDto.FromEntity(existing);

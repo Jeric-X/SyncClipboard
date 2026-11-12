@@ -365,7 +365,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
 
         if (updated.Value)
         {
-            return Ok(); // 成功时不返回 payload
+            return Ok(payload);
         }
 
         return Conflict(payload);

@@ -67,7 +67,8 @@ public class HistorySyncer
             sortByLastAccessed,
             token);
 
-        var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
+        var supportsHistoryTags = await remoteServer.SupportsHistoryTagsAsync(token);
+        var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, token);
         await DetectOrphanDataAsync(before, after, remoteRecords, types, searchText, starred, token);
         await _historyManager.RemoveDeletedOrMissingLocalRecordsAsync(token);
         await PushLocalRangeAsync(before, after, types, searchText, starred, token);
@@ -93,7 +94,8 @@ public class HistorySyncer
             false,
             token);
 
-        await _historyManager.SyncRemoteHistoryAsync(remoteRecords, token);
+        var supportsHistoryTags = await remoteServer.SupportsHistoryTagsAsync(token);
+        await _historyManager.SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, token);
         if (modifiedAfter is null)
         {
             await DetectOrphanDataAsync(null, null, remoteRecords, ProfileTypeFilter.All, null, null, token);
@@ -155,42 +157,56 @@ public class HistorySyncer
         var sentModified = record.LastModified;
         try
         {
-            var dto = new HistoryRecordUpdateDto
-            {
-                Tags = [.. record.Tags],
-                Starred = record.Stared,
-                Pinned = record.Pinned,
-                IsDelete = record.IsDeleted,
-                Version = record.Version,
-                LastModified = new DateTimeOffset(record.LastModified.ToUniversalTime(), TimeSpan.Zero),
-                LastAccessed = new DateTimeOffset(record.LastAccessed.ToUniversalTime(), TimeSpan.Zero)
-            };
-            await remoteServer.UpdateHistoryAsync(record.Type, record.Hash, dto, token);
-            record.SyncStatus = HistorySyncStatus.Synced;
+            var serverRecord = await remoteServer.UpdateHistoryAsync(record.Type, record.Hash, CreateUpdateDto(record), token);
+            if (serverRecord is not null)
+                record.ApplyFromServerUpdateDto(serverRecord);
+            else
+                record.SyncStatus = HistorySyncStatus.Synced;
             await _historyManager.TryApplySyncResponseAsync(record, sentVersion, sentModified, token);
         }
         catch (RemoteHistoryConflictException ex)
         {
-            if (ex.ServerRecord != null)
-            {
-                record.ApplyFromServerUpdateDto(ex.ServerRecord);
-                if (await _historyManager.TryApplySyncResponseAsync(record, sentVersion, sentModified, token))
-                    _logger.Write("HistorySyncer", $"并发冲突，已回写服务器版本[{record.Hash}]");
-            }
+            if (ex.ServerRecord is not null)
+                await ResolveConflictAsync(record, ex.ServerRecord, token);
         }
         catch (RemoteHistoryNotFoundException)
         {
-            record.SyncStatus = HistorySyncStatus.LocalOnly;
-            if (!await _historyManager.TryApplySyncResponseAsync(record, sentVersion, sentModified, token))
-                return;
-            if (!record.IsDeleted)
-            {
-                var profile = record.ToProfile();
-                if (await profile.IsDataComplete(false, token) && await CanUploadLocalProfileAsync(profile, token))
-                    await _historyTransferQueue.EnqueueUpload(profile, forceResume: true, token);
-            }
+            await UploadMissingRecordAsync(record, sentVersion, sentModified, token);
         }
     }
+
+    private async Task ResolveConflictAsync(
+        HistoryRecord record, HistoryRecordUpdateDto serverRecord, CancellationToken token)
+    {
+        var sentVersion = record.Version;
+        var sentModified = record.LastModified;
+        record.ApplyFromServerUpdateDto(serverRecord);
+        if (await _historyManager.TryApplySyncResponseAsync(record, sentVersion, sentModified, token))
+            _logger.Write("HistorySyncer", $"并发冲突，已回写服务器版本[{record.Hash}]");
+    }
+
+    private async Task UploadMissingRecordAsync(
+        HistoryRecord record, int sentVersion, DateTime sentModified, CancellationToken token)
+    {
+        record.SyncStatus = HistorySyncStatus.LocalOnly;
+        if (!await _historyManager.TryApplySyncResponseAsync(record, sentVersion, sentModified, token) || record.IsDeleted)
+            return;
+
+        var profile = record.ToProfile();
+        if (await profile.IsDataComplete(false, token) && await CanUploadLocalProfileAsync(profile, token))
+            await _historyTransferQueue.EnqueueUpload(profile, forceResume: true, token);
+    }
+
+    private static HistoryRecordUpdateDto CreateUpdateDto(HistoryRecord record) => new()
+    {
+        Tags = [.. record.Tags],
+        Starred = record.Stared,
+        Pinned = record.Pinned,
+        IsDelete = record.IsDeleted,
+        Version = record.Version,
+        LastModified = new DateTimeOffset(record.LastModified.ToUniversalTime(), TimeSpan.Zero),
+        LastAccessed = new DateTimeOffset(record.LastAccessed.ToUniversalTime(), TimeSpan.Zero)
+    };
 
     /// <summary>
     /// 从服务器拉取指定时间范围内的所有历史记录(分页获取)

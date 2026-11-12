@@ -38,6 +38,7 @@ public sealed class OfficialAdapter(
     private readonly Lock _hubLock = new();
     private readonly Lock _httpClientLock = new();
     private HubConnection? _hubConnection;
+    private Task<ServerCapabilitiesDto>? _capabilitiesTask;
     private OfficialConfig _officialConfig = new OfficialConfig();
     private HttpClient _httpClient = new HttpClient();
     private IWebProxy _proxy = new WebProxy();
@@ -51,6 +52,11 @@ public sealed class OfficialAdapter(
 
     public void SetConfig(OfficialConfig config, SyncConfig syncConfig)
     {
+        if (!Equals(_officialConfig, config))
+        {
+            lock (_hubLock)
+                _capabilitiesTask = null;
+        }
         _notifyCapabilitiesOnApply |= !Equals(_officialConfig, config);
         _officialConfig = config;
         _webDavAdapter.SetConfig(new WebDavConfig
@@ -129,6 +135,11 @@ public sealed class OfficialAdapter(
             await hubConnection.StartAsync();
             hubConnection.Closed += arg =>
             {
+                lock (_hubLock)
+                {
+                    if (ReferenceEquals(_hubConnection, hubConnection))
+                        _capabilitiesTask = null;
+                }
                 ServerDisconnected?.Invoke(arg);
                 return Task.CompletedTask;
             };
@@ -148,6 +159,7 @@ public sealed class OfficialAdapter(
         {
             old = _hubConnection;
             _hubConnection = null;
+            _capabilitiesTask = null;
         }
 
         old?.StopAsync().Wait();
@@ -169,7 +181,7 @@ public sealed class OfficialAdapter(
     private async Task<ServerCapabilitiesDto> TestHistoryConnectionAsync(CancellationToken token)
     {
         await _webDavAdapter.TestConnectionAsync(token);
-        return await CheckHistorySupportAsync(_httpClient, token);
+        return await GetCapabilitiesAsync(token);
     }
 
     public Task InitializeAsync(CancellationToken cancellationToken = default)
@@ -247,7 +259,7 @@ public sealed class OfficialAdapter(
         var config = _officialConfig;
         try
         {
-            var capabilities = await CheckHistorySupportAsync(client, CancellationToken.None);
+            var capabilities = await GetCapabilitiesAsync(CancellationToken.None);
             if (capabilities.HistoryTags)
                 return;
 
@@ -295,6 +307,17 @@ public sealed class OfficialAdapter(
             });
     }
 
+    private Task<ServerCapabilitiesDto> GetCapabilitiesAsync(CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        lock (_hubLock)
+        {
+            if (_capabilitiesTask is null || _capabilitiesTask.IsFaulted || _capabilitiesTask.IsCanceled)
+                _capabilitiesTask = CheckHistorySupportAsync(_httpClient, token);
+            return _capabilitiesTask.WaitAsync(token);
+        }
+    }
+
     internal static async Task<ServerCapabilitiesDto> CheckHistorySupportAsync(HttpClient client, CancellationToken token)
     {
         using var response = await client.GetAsync("api/capabilities", token);
@@ -313,6 +336,12 @@ public sealed class OfficialAdapter(
         if (!capabilities.HistorySync)
             throw new InvalidOperationException(Strings.HistorySyncUnsupported);
         return capabilities;
+    }
+
+    public async Task<bool> SupportsHistoryTagsAsync(CancellationToken cancellationToken = default)
+    {
+        var capabilities = await GetCapabilitiesAsync(cancellationToken);
+        return capabilities.HistoryTags;
     }
 
     private static async Task<string> ReadVersionAsync(HttpClient client, CancellationToken token)
@@ -405,7 +434,8 @@ public sealed class OfficialAdapter(
         }
     }
 
-    public async Task UpdateHistoryAsync(ProfileType type, string hash, HistoryRecordUpdateDto dto, CancellationToken cancellationToken = default)
+    public async Task<HistoryRecordUpdateDto?> UpdateHistoryAsync(
+        ProfileType type, string hash, HistoryRecordUpdateDto dto, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -414,7 +444,9 @@ public sealed class OfficialAdapter(
 
             if (response.IsSuccessStatusCode)
             {
-                return; // 成功不再返回 payload
+                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                return string.IsNullOrWhiteSpace(content) ? null
+                    : JsonSerializer.Deserialize<HistoryRecordUpdateDto>(content, JsonSerializerOptions.Web);
             }
             if (response.StatusCode == HttpStatusCode.Conflict)
             {
@@ -427,7 +459,7 @@ public sealed class OfficialAdapter(
             }
 
             response.EnsureSuccessStatusCode();
-            return; // unreachable
+            return null; // unreachable
         }
         catch (Exception ex)
         {
@@ -687,6 +719,8 @@ public sealed class OfficialAdapter(
 
     private void ReCreateHttpClient()
     {
+        lock (_hubLock)
+            _capabilitiesTask = null;
         lock (_httpClientLock)
         {
             _httpClient.Dispose();

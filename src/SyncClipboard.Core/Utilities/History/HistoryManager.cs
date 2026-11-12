@@ -438,7 +438,11 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         HistoryRemoved?.Invoke(entity);
     }
 
-    public async Task<List<HistoryRecord>> SyncRemoteHistoryAsync(IEnumerable<HistoryRecordDto> remoteRecords, CancellationToken token = default)
+    public Task<List<HistoryRecord>> SyncRemoteHistoryAsync(IEnumerable<HistoryRecordDto> remoteRecords, CancellationToken token = default)
+        => SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags: false, token);
+
+    internal async Task<List<HistoryRecord>> SyncRemoteHistoryAsync(
+        IEnumerable<HistoryRecordDto> remoteRecords, bool supportsHistoryTags, CancellationToken token = default)
     {
         List<HistoryRecord> addedRecords = [];
         if (remoteRecords.Any() == false)
@@ -465,6 +469,11 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
                 else
                 {
                     ApplyRemoteHistory(entity, dto);
+                    if (supportsHistoryTags && dto.Tags is null && entity.Tags.Length > 0
+                        && !entity.IsDeleted && entity.SyncStatus == HistorySyncStatus.Synced)
+                    {
+                        entity.SyncStatus = HistorySyncStatus.NeedSync;
+                    }
                     TriggleUpdateOrDeleteEvent(entity);
                 }
                 await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
