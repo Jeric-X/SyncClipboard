@@ -271,7 +271,11 @@
                                               MinHeight="28"
                                               MaxWidth="220"
                                               FontSize="12"
-                                              ToolTip.Tip="{Binding Text}" />
+                                              ToolTip.Tip="{Binding Text}">
+                                    <ToggleButton.ContextFlyout>
+                                        <ui:FAMenuFlyout Opening="TagContextFlyout_Opening" />
+                                    </ToggleButton.ContextFlyout>
+                                </ToggleButton>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>

@@ -481,6 +481,64 @@ public partial class HistoryWindow : Window, IWindow
     private async void EditTags_Click(object? _, RoutedEventArgs __) =>
         await EditTagsAsync(_viewModel.GetTagEditSelection());
 
+    private void TagContextFlyout_Opening(object? sender, EventArgs e)
+    {
+        if (sender is not FAMenuFlyout flyout)
+            return;
+        flyout.Items.Clear();
+        if (flyout.Target?.DataContext is HistoryTagFilter { Name: { } name })
+        {
+            var rename = new FAMenuFlyoutItem { Text = Strings.HistoryTagRename };
+            rename.Click += async (_, _) => await RenameTagAsync(name);
+            flyout.Items.Add(rename);
+            var delete = new FAMenuFlyoutItem { Text = Strings.HistoryTagDelete };
+            delete.Click += async (_, _) => await DeleteTagAsync(name);
+            flyout.Items.Add(delete);
+            flyout.Items.Add(new FAMenuFlyoutSeparator());
+        }
+        var settings = new FAMenuFlyoutItem { Text = Strings.HistoryTagBarEditPins };
+        settings.Click += TagBarSettings_Click;
+        flyout.Items.Add(settings);
+    }
+
+    private async Task RenameTagAsync(string name)
+    {
+        using var hold = _viewModel.HoldForModalOperation();
+        try
+        {
+            var model = new HistoryTagRenameViewModel(name, (newName, merge) => _viewModel.RenameTagAsync(name, newName, merge));
+            var dialog = new HistoryTagRenameDialog(model);
+            await dialog.ShowAsync(this);
+        }
+        catch (Exception ex)
+        {
+            await new AvaloniaDialog(this).ShowMessageAsync(Strings.HistoryTagRename, ex.Message);
+        }
+        finally
+        {
+            _SearchTextBox.Focus();
+        }
+    }
+
+    private async Task DeleteTagAsync(string name)
+    {
+        using var hold = _viewModel.HoldForModalOperation();
+        var messages = new AvaloniaDialog(this);
+        try
+        {
+            if (await messages.ShowConfirmationAsync(Strings.HistoryTagDelete, string.Format(Strings.HistoryTagDeleteConfirmation, name)))
+                await _viewModel.DeleteTagAsync(name);
+        }
+        catch (Exception ex)
+        {
+            await messages.ShowMessageAsync(Strings.HistoryTagDelete, ex.Message);
+        }
+        finally
+        {
+            _SearchTextBox.Focus();
+        }
+    }
+
     private async void TagBarSettings_Click(object? _, RoutedEventArgs __)
     {
         using var hold = _viewModel.HoldForModalOperation();
