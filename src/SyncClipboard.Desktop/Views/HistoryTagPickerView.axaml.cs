@@ -9,6 +9,8 @@ using Avalonia.Threading;
 using Avalonia.Styling;
 using SyncClipboard.Desktop.Controls;
 using SyncClipboard.Core.ViewModels;
+using SyncClipboard.Core.Utilities.History;
+using SyncClipboard.Desktop.Utilities;
 
 namespace SyncClipboard.Desktop.Views;
 
@@ -19,7 +21,7 @@ public partial class HistoryTagPickerView : UserControl
     internal bool ClosedByKeyboard { get; private set; }
 
     private Flyout? _flyout;
-    private Key? _activationKey;
+    private HistoryTagPickerKeyboard? _keyboard;
 
     public HistoryTagPickerView()
     {
@@ -39,7 +41,7 @@ public partial class HistoryTagPickerView : UserControl
             FlyoutPresenterTheme = (ControlTheme)Resources["TagPickerFlyoutTheme"]!
         };
         ClosedByKeyboard = false;
-        _activationKey = null;
+        _keyboard = new HistoryTagPickerKeyboard(ViewModel);
         _flyout = flyout;
         flyout.Opened += (_, _) => FocusSearch();
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
@@ -47,6 +49,7 @@ public partial class HistoryTagPickerView : UserControl
         {
             ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
             _flyout = null;
+            _keyboard = null;
         };
         flyout.ShowAt(anchor);
         return flyout;
@@ -56,11 +59,8 @@ public partial class HistoryTagPickerView : UserControl
 
     private void Picker_PreviewKeyUp(object? sender, KeyEventArgs e)
     {
-        if (e.Key == _activationKey)
-        {
-            _activationKey = null;
+        if (_keyboard?.HandleKeyUp(KeyboardMap.ConvertFromAvalonia(e.Key)) == true)
             e.Handled = true;
-        }
     }
 
     private void Picker_KeyDown(object? sender, KeyEventArgs e)
@@ -78,28 +78,16 @@ public partial class HistoryTagPickerView : UserControl
 
     private async void Picker_PreviewKeyDown(object? sender, KeyEventArgs e)
     {
-        if (IsComposing)
+        if (IsComposing || _keyboard is null)
             return;
         // macOS masks printable keys for composing input sources before preedit starts.
-        var activationKey = e.Key == Key.ImeProcessed && e.PhysicalKey == PhysicalKey.Space ? Key.Space : e.Key;
-        if (e.Key == Key.Tab && (e.KeyModifiers & ~KeyModifiers.Shift) == KeyModifiers.None)
+        var key = e.Key == Key.ImeProcessed && e.PhysicalKey == PhysicalKey.Space ? Key.Space : e.Key;
+        var shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+        var command = (e.KeyModifiers & ~KeyModifiers.Shift) != KeyModifiers.None;
+        if (_keyboard.TryHandleKeyDown(KeyboardMap.ConvertFromAvalonia(key), shift, command, false, out var operation))
         {
             e.Handled = true;
-            ViewModel.MoveSelection(!e.KeyModifiers.HasFlag(KeyModifiers.Shift));
-        }
-        else if (e.KeyModifiers == KeyModifiers.None && e.Key is Key.Up or Key.Down)
-        {
-            e.Handled = true;
-            ViewModel.MoveSelection(e.Key == Key.Down);
-        }
-        else if (e.KeyModifiers == KeyModifiers.None
-            && (activationKey == Key.Enter || (activationKey == Key.Space && ViewModel.Search.Length == 0)))
-        {
-            e.Handled = true;
-            if (_activationKey is not null)
-                return;
-            _activationKey = activationKey;
-            await ViewModel.ToggleSelectedAsync();
+            await operation;
         }
     }
 

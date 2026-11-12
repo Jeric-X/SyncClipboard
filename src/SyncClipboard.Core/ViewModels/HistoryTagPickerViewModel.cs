@@ -20,7 +20,6 @@ public sealed partial class HistoryTagPickerViewModel : ObservableObject
 {
     private readonly List<string> names;
     private readonly int pinnedCount;
-    private readonly HashSet<string> assigned;
     private readonly Dictionary<string, HistoryTagSuggestion> suggestionsByName;
     private readonly Func<string, bool, Task> saveTag;
     private string? inputName;
@@ -29,7 +28,7 @@ public sealed partial class HistoryTagPickerViewModel : ObservableObject
     public HistoryTagPickerViewModel(IEnumerable<string> knownNames, IEnumerable<string> assignedNames,
         Func<string, bool, Task> saveTag, IEnumerable<string>? pinnedNames = null)
     {
-        assigned = assignedNames.ToHashSet(StringComparer.Ordinal);
+        var assigned = assignedNames.ToHashSet(StringComparer.Ordinal);
         var pinned = (pinnedNames ?? []).Distinct(StringComparer.Ordinal).ToArray();
         pinnedCount = pinned.Length;
         names = HistoryTagOrdering.Order(knownNames.Concat(assigned), pinned).ToList();
@@ -130,8 +129,8 @@ public sealed partial class HistoryTagPickerViewModel : ObservableObject
         try
         {
             var name = HistoryTags.NormalizeName(value);
-            var shouldAssign = !assigned.Contains(name);
-            var isNewTag = !suggestionsByName.ContainsKey(name);
+            var isNewTag = !suggestionsByName.TryGetValue(name, out var suggestion);
+            var shouldAssign = suggestion?.IsAssigned != true;
             var searchBeforeSave = Search;
             var selectionBeforeSave = SelectedSuggestion;
             IsBusy = true;
@@ -160,10 +159,6 @@ public sealed partial class HistoryTagPickerViewModel : ObservableObject
 
     private void UpdateAssignment(string name, bool shouldAssign)
     {
-        if (shouldAssign)
-            assigned.Add(name);
-        else
-            assigned.Remove(name);
         if (!suggestionsByName.TryGetValue(name, out var suggestion))
         {
             var index = names.BinarySearch(pinnedCount, names.Count - pinnedCount, name, StringComparer.Ordinal);
