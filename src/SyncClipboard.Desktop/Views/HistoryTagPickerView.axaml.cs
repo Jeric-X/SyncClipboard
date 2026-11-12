@@ -80,6 +80,8 @@ public partial class HistoryTagPickerView : UserControl
     {
         if (IsComposing)
             return;
+        // macOS masks printable keys for composing input sources before preedit starts.
+        var activationKey = e.Key == Key.ImeProcessed && e.PhysicalKey == PhysicalKey.Space ? Key.Space : e.Key;
         if (e.Key == Key.Tab && (e.KeyModifiers & ~KeyModifiers.Shift) == KeyModifiers.None)
         {
             e.Handled = true;
@@ -91,12 +93,12 @@ public partial class HistoryTagPickerView : UserControl
             ViewModel.MoveSelection(e.Key == Key.Down);
         }
         else if (e.KeyModifiers == KeyModifiers.None
-            && (e.Key == Key.Enter || (e.Key == Key.Space && ViewModel.Search.Length == 0)))
+            && (activationKey == Key.Enter || (activationKey == Key.Space && ViewModel.Search.Length == 0)))
         {
             e.Handled = true;
             if (_activationKey is not null)
                 return;
-            _activationKey = e.Key;
+            _activationKey = activationKey;
             await ViewModel.ToggleSelectedAsync();
         }
     }

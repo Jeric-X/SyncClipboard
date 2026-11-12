@@ -86,8 +86,15 @@ public class HistoryTagPickerTests
                 var popup = TopLevel.GetTopLevel(view)!;
                 Assert.IsTrue(search.IsFocused);
                 Assert.AreEqual("code", picker.SelectedSuggestion?.Name);
-                Press(popup, Key.Space);
+                // macOS masks printable keys while a composing input source is selected,
+                // even before any preedit text exists. Key-up still reports the original key.
+                popup.KeyPress(Key.ImeProcessed, RawInputModifiers.None, PhysicalKey.Space, " ");
+                Dispatcher.UIThread.RunJobs();
                 CollectionAssert.AreEqual(new[] { ("code", true) }, saved);
+                popup.KeyPress(Key.ImeProcessed, RawInputModifiers.None, PhysicalKey.Space, " ");
+                Dispatcher.UIThread.RunJobs();
+                Assert.HasCount(1, saved);
+                popup.KeyRelease(Key.Space, RawInputModifiers.None, PhysicalKey.Space, " ");
                 Assert.IsTrue(search.IsFocused);
                 Press(popup, Key.Enter);
                 CollectionAssert.AreEqual(new[] { ("code", true), ("code", false) }, saved);
@@ -262,9 +269,10 @@ public class HistoryTagPickerTests
                 view.AddHandler(InputElement.KeyDownEvent, (_, args) => keyDown = args,
                     RoutingStrategies.Bubble, handledEventsToo: true);
                 var search = view.FindControl<TextBox>("_TagSearch")!;
-                search.Text = "pending";
                 var presenter = search.GetVisualDescendants().OfType<TextPresenter>().Single();
                 presenter.PreeditText = "中文";
+                popup.KeyPress(Key.ImeProcessed, RawInputModifiers.None, PhysicalKey.Space, " ");
+                popup.KeyRelease(Key.Space, RawInputModifiers.None, PhysicalKey.Space, " ");
                 Press(popup, Key.Enter);
                 Assert.IsEmpty(saved);
                 Assert.IsTrue(flyout.IsOpen);

@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Media;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Test.WinUI3.App;
 using SyncClipboard.WinUI3.Views;
+using Windows.Foundation;
 using Windows.Graphics;
 
 namespace SyncClipboard.Test.WinUI3.History;
@@ -52,6 +53,7 @@ public class HistoryTagPickerTests
             var presenter = VisualTreeHelper.GetOpenPopupsForXamlRoot(view.XamlRoot)
                 .SelectMany(p => Descendants<FlyoutPresenter>(p.Child)).Single();
             Assert.AreEqual((CornerRadius)Application.Current.Resources["OverlayCornerRadius"], presenter.CornerRadius);
+            await VerifySearchPositionAsync(view, timeout.Token);
             await VerifySearchAndRetryAsync(view, pending, saved, timeout.Token);
             await VerifyContinuousEditingAsync(view, saved, timeout.Token);
             Assert.IsTrue(flyout.IsOpen);
@@ -62,6 +64,29 @@ public class HistoryTagPickerTests
             window.Content = null;
             window.Close();
         }
+    }
+
+    private static async Task VerifySearchPositionAsync(HistoryTagPickerView view, CancellationToken token)
+    {
+        var search = Search(view);
+        view.UpdateLayout();
+        var position = search.TransformToVisual(null).TransformPoint(new Point());
+        var height = view.ActualHeight;
+        search.Text = "new tag";
+        await WaitUntilAsync(() => Suggestions(view).Count() == 1, token);
+        view.UpdateLayout();
+        Assert.AreEqual(height, view.ActualHeight, 1d);
+        var filteredPosition = search.TransformToVisual(null).TransformPoint(new Point());
+        Assert.AreEqual(position.X, filteredPosition.X, 1d);
+        Assert.AreEqual(position.Y, filteredPosition.Y, 1d);
+
+        search.Text = "";
+        await WaitUntilAsync(() => Suggestions(view).Count() == 22, token);
+        view.UpdateLayout();
+        Assert.AreEqual(height, view.ActualHeight, 1d);
+        var restoredPosition = search.TransformToVisual(null).TransformPoint(new Point());
+        Assert.AreEqual(position.X, restoredPosition.X, 1d);
+        Assert.AreEqual(position.Y, restoredPosition.Y, 1d);
     }
 
     private static async Task VerifySearchAndRetryAsync(HistoryTagPickerView view, TaskCompletionSource pending,

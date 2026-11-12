@@ -16,60 +16,64 @@
                  Text="{x:Bind ViewModel.Search, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                  PlaceholderText="{x:Bind i18n:Strings.HistoryTagsSearch}"
                  AutomationProperties.Name="{x:Bind i18n:Strings.HistoryTagsSearch}" />
-        <ScrollViewer MaxHeight="200"
-                      IsTabStop="False"
-                      AllowFocusOnInteraction="False"
-                      VerticalAlignment="Top"
-                      VerticalContentAlignment="Top"
-                      VerticalScrollBarVisibility="Auto"
-                      HorizontalScrollBarVisibility="Disabled"
-                      HorizontalScrollMode="Disabled">
-            <ItemsControl x:Name="_Suggestions" Margin="0,0,12,0" ItemsSource="{x:Bind ViewModel.Suggestions, Mode=OneWay}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:HistoryTagSuggestion">
-                        <Grid>
-                            <Button IsTabStop="False"
-                                    AllowFocusOnInteraction="False"
-                                    Style="{StaticResource DefaultButtonStyle}"
-                                    Background="Transparent"
-                                    BorderThickness="0"
-                                    HorizontalAlignment="Stretch"
-                                    HorizontalContentAlignment="Stretch"
-                                    MinHeight="32"
-                                    Padding="8,6"
-                                    Tag="{x:Bind Name}"
-                                    Click="Suggestion_Click"
-                                    ToolTipService.ToolTip="{x:Bind Name}">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock Grid.Column="1"
-                                               Text="✓"
-                                               Margin="8,0,0,0"
-                                               Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsAssigned), Mode=OneWay}" />
-                                    <Grid Grid.Column="1"
-                                          Margin="8,0,0,0"
-                                          VerticalAlignment="Center"
-                                          Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsNew), Mode=OneWay}">
-                                        <Border Background="{ThemeResource SystemControlForegroundAccentBrush}" Opacity="0.12" CornerRadius="10" />
-                                        <TextBlock Text="{x:Bind i18n:Strings.HistoryTagsNew}"
-                                                   Margin="8,2"
-                                                   FontSize="11"
-                                                   FontWeight="SemiBold"
-                                                   Foreground="{ThemeResource SystemControlForegroundAccentBrush}" />
+        <Grid Height="200">
+            <ScrollViewer IsTabStop="False"
+                          AllowFocusOnInteraction="False"
+                          VerticalAlignment="Top"
+                          VerticalContentAlignment="Top"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          HorizontalScrollMode="Disabled">
+                <ItemsControl x:Name="_Suggestions" Margin="0,0,12,0" ItemsSource="{x:Bind ViewModel.Suggestions, Mode=OneWay}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:HistoryTagSuggestion">
+                            <Grid>
+                                <Button IsTabStop="False"
+                                        AllowFocusOnInteraction="False"
+                                        Style="{StaticResource DefaultButtonStyle}"
+                                        Background="Transparent"
+                                        BorderThickness="0"
+                                        HorizontalAlignment="Stretch"
+                                        HorizontalContentAlignment="Stretch"
+                                        MinHeight="32"
+                                        Padding="8,6"
+                                        Tag="{x:Bind Name}"
+                                        Click="Suggestion_Click"
+                                        ToolTipService.ToolTip="{x:Bind Name}">
+                                    <Grid ColumnDefinitions="*,Auto">
+                                        <TextBlock Text="{x:Bind Name}" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Column="1"
+                                                   Text="✓"
+                                                   Margin="8,0,0,0"
+                                                   Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsAssigned), Mode=OneWay}" />
+                                        <Grid Grid.Column="1"
+                                              Margin="8,0,0,0"
+                                              VerticalAlignment="Center"
+                                              Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsNew), Mode=OneWay}">
+                                            <Border Background="{ThemeResource SystemControlForegroundAccentBrush}" Opacity="0.12" CornerRadius="10" />
+                                            <TextBlock Text="{x:Bind i18n:Strings.HistoryTagsNew}"
+                                                       Margin="8,2"
+                                                       FontSize="11"
+                                                       FontWeight="SemiBold"
+                                                       Foreground="{ThemeResource SystemControlForegroundAccentBrush}" />
+                                        </Grid>
                                     </Grid>
-                                </Grid>
-                            </Button>
-                            <Border BorderBrush="{ThemeResource SystemControlForegroundAccentBrush}"
-                                    BorderThickness="1"
-                                    CornerRadius="4"
-                                    IsHitTestVisible="False"
-                                    Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsCurrent), Mode=OneWay}" />
-                        </Grid>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
-        <TextBlock Text="{x:Bind i18n:Strings.HistoryTagsNoMatches}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ViewModel.HasNoSuggestions), Mode=OneWay}" Opacity="0.65" />
+                                </Button>
+                                <Border BorderBrush="{ThemeResource SystemControlForegroundAccentBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="4"
+                                        IsHitTestVisible="False"
+                                        Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(IsCurrent), Mode=OneWay}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+            <TextBlock Text="{x:Bind i18n:Strings.HistoryTagsNoMatches}"
+                       Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ViewModel.HasNoSuggestions), Mode=OneWay}"
+                       VerticalAlignment="Top"
+                       Opacity="0.65" />
+        </Grid>
         <TextBlock Text="{x:Bind ViewModel.ValidationMessage, Mode=OneWay}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ViewModel.HasValidationMessage), Mode=OneWay}" TextWrapping="Wrap" />
     </StackPanel>
 </UserControl>
