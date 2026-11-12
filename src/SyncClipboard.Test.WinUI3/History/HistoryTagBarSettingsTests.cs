@@ -53,8 +53,10 @@ public class HistoryTagBarSettingsTests
                 return Task.CompletedTask;
             })
             { XamlRoot = root.XamlRoot };
+            var opened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            dialog.Opened += (_, _) => opened.TrySetResult();
             var result = dialog.ShowAsync();
-            await WaitUntilAsync(() => Descendants<ToggleButton>(dialog).Any(), token);
+            await opened.Task.WaitAsync(token);
             Toggle(dialog, "Work");
             await WaitUntilAsync(() => model.PinnedNames.Length == 2, token);
             Assert.AreEqual("Work", model.PinnedNames[^1]);
@@ -75,9 +77,12 @@ public class HistoryTagBarSettingsTests
             // Closing a fresh draft must not call the save delegate.
             dialog = new HistoryTagBarSettingsDialog(model, () => throw new AssertFailedException("Cancel saved the draft"))
             { XamlRoot = root.XamlRoot };
+            var cancelOpened = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            dialog.Opened += (_, _) => cancelOpened.TrySetResult();
             var cancel = dialog.ShowAsync();
-            await WaitUntilAsync(() => Descendants<ToggleButton>(dialog).Any(), token);
+            await cancelOpened.Task.WaitAsync(token);
             Toggle(dialog, "Code");
+            await WaitUntilAsync(() => model.HasChanges, token);
             dialog.Hide();
             await WaitUntilAsync(() => Equals(dialog.Title, Strings.HistoryTagBarDiscardTitle), token);
             dialog.UpdateLayout();
