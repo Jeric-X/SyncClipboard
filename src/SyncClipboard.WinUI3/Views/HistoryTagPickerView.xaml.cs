@@ -9,6 +9,8 @@ using System.ComponentModel;
 using Windows.System;
 using Windows.UI.Core;
 using SyncClipboard.Core.ViewModels;
+using SyncClipboard.Core.Utilities.History;
+using SyncClipboard.WinUI3.Win32;
 
 namespace SyncClipboard.WinUI3.Views;
 
@@ -19,7 +21,7 @@ public sealed partial class HistoryTagPickerView : UserControl
     internal bool ClosedByKeyboard { get; private set; }
 
     private Flyout? _flyout;
-    private VirtualKey? _activationKey;
+    private HistoryTagPickerKeyboard? _keyboard;
     private bool _isComposing;
 
     public HistoryTagPickerView() : this(null!) { }
@@ -43,7 +45,7 @@ public sealed partial class HistoryTagPickerView : UserControl
             FlyoutPresenterStyle = (Style)Resources["TagPickerFlyoutStyle"]
         };
         ClosedByKeyboard = false;
-        _activationKey = null;
+        _keyboard = new HistoryTagPickerKeyboard(ViewModel);
         _flyout = flyout;
         flyout.Opened += (_, _) => FocusSearch();
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
@@ -51,6 +53,7 @@ public sealed partial class HistoryTagPickerView : UserControl
         {
             ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
             _flyout = null;
+            _keyboard = null;
         };
         flyout.ShowAt(anchor);
         return flyout;
@@ -60,11 +63,8 @@ public sealed partial class HistoryTagPickerView : UserControl
 
     private void Picker_PreviewKeyUp(object sender, KeyRoutedEventArgs e)
     {
-        if (e.Key == _activationKey)
-        {
-            _activationKey = null;
+        if (_keyboard?.HandleKeyUp(KeyboardMap.ConvertFromVirtualKey(e.Key)) == true)
             e.Handled = true;
-        }
     }
 
     private void Picker_KeyDown(object sender, KeyRoutedEventArgs e)
@@ -79,43 +79,21 @@ public sealed partial class HistoryTagPickerView : UserControl
 
     private async void Picker_PreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
-        if (_isComposing || HasCommandModifier())
+        if (_isComposing || _keyboard is null)
             return;
-        var shift = IsKeyDown(VirtualKey.Shift);
-        if (TryNavigate(e.Key, shift))
+        if (_keyboard.TryHandleKeyDown(KeyboardMap.ConvertFromVirtualKey(e.Key), IsKeyDown(VirtualKey.Shift),
+            HasCommandModifier(), e.KeyStatus.WasKeyDown, out var operation))
         {
             e.Handled = true;
-            return;
+            await operation;
         }
-        if (shift || !IsActivationKey(e.Key))
-            return;
-
-        e.Handled = true;
-        if (_activationKey is not null || e.KeyStatus.WasKeyDown)
-            return;
-        _activationKey = e.Key;
-        await ViewModel.ToggleSelectedAsync();
     }
-
-    private bool TryNavigate(VirtualKey key, bool shift)
-    {
-        if (key == VirtualKey.Tab)
-            ViewModel.MoveSelection(!shift);
-        else if (!shift && key is VirtualKey.Up or VirtualKey.Down)
-            ViewModel.MoveSelection(key == VirtualKey.Down);
-        else
-            return false;
-        return true;
-    }
-
-    private bool IsActivationKey(VirtualKey key) =>
-        key == VirtualKey.Enter || (key == VirtualKey.Space && ViewModel.Search.Length == 0);
 
     private static bool IsKeyDown(VirtualKey key) =>
         InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(CoreVirtualKeyStates.Down);
 
-    private static bool HasCommandModifier() => new[]
-        { VirtualKey.Control, VirtualKey.Menu, VirtualKey.LeftWindows, VirtualKey.RightWindows }.Any(IsKeyDown);
+    private static bool HasCommandModifier() => IsKeyDown(VirtualKey.Control) || IsKeyDown(VirtualKey.Menu)
+        || IsKeyDown(VirtualKey.LeftWindows) || IsKeyDown(VirtualKey.RightWindows);
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
