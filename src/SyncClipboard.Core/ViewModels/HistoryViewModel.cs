@@ -929,6 +929,11 @@ public partial class HistoryViewModel : ObservableObject
         }
 
         var action = _configManager.GetConfig<HistoryShortcutConfig>().Match(hotkey);
+        return HandleShortcut(action);
+    }
+
+    private bool HandleShortcut(HistoryShortcutAction? action)
+    {
         switch (action)
         {
             case HistoryShortcutAction.Search: window?.FocusSearch(); break;

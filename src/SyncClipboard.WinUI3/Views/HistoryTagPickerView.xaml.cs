@@ -82,25 +82,34 @@ public sealed partial class HistoryTagPickerView : UserControl
         if (_isComposing || HasCommandModifier())
             return;
         var shift = IsKeyDown(VirtualKey.Shift);
-        if (e.Key == VirtualKey.Tab)
+        if (TryNavigate(e.Key, shift))
         {
             e.Handled = true;
-            ViewModel.MoveSelection(!shift);
+            return;
         }
-        else if (!shift && e.Key is VirtualKey.Up or VirtualKey.Down)
-        {
-            e.Handled = true;
-            ViewModel.MoveSelection(e.Key == VirtualKey.Down);
-        }
-        else if (!shift && (e.Key == VirtualKey.Enter || (e.Key == VirtualKey.Space && ViewModel.Search.Length == 0)))
-        {
-            e.Handled = true;
-            if (_activationKey is not null || e.KeyStatus.WasKeyDown)
-                return;
-            _activationKey = e.Key;
-            await ViewModel.ToggleSelectedAsync();
-        }
+        if (shift || !IsActivationKey(e.Key))
+            return;
+
+        e.Handled = true;
+        if (_activationKey is not null || e.KeyStatus.WasKeyDown)
+            return;
+        _activationKey = e.Key;
+        await ViewModel.ToggleSelectedAsync();
     }
+
+    private bool TryNavigate(VirtualKey key, bool shift)
+    {
+        if (key == VirtualKey.Tab)
+            ViewModel.MoveSelection(!shift);
+        else if (!shift && key is VirtualKey.Up or VirtualKey.Down)
+            ViewModel.MoveSelection(key == VirtualKey.Down);
+        else
+            return false;
+        return true;
+    }
+
+    private bool IsActivationKey(VirtualKey key) =>
+        key == VirtualKey.Enter || (key == VirtualKey.Space && ViewModel.Search.Length == 0);
 
     private static bool IsKeyDown(VirtualKey key) =>
         InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(CoreVirtualKeyStates.Down);
