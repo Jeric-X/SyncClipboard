@@ -103,10 +103,10 @@ public class HistoryTagOrderTests
         await picker.ToggleAsync("Z-pin");
         AssertNames((await fixture.Manager.GetSyncSnapshotAsync(key, token))!.Tags, "A-pin", "Z-pin");
         await picker.ToggleAsync("Z-pin");
-        await picker.AddAsync("0-new");
+        await picker.ToggleAsync("0-new");
         AssertNames(picker.Suggestions.Select(tag => tag.Name), "Z-pin", "A-pin", "0-new", "known");
         picker.Search = "pin";
-        AssertNames(picker.Suggestions.Select(tag => tag.Name), "Z-pin", "A-pin");
+        AssertNames(picker.Suggestions.Select(tag => tag.Name), "pin", "Z-pin", "A-pin");
         AssertNames(new ConfigBase(fixture.RuntimeConfig.Path).GetConfig<HistoryWindowConfig>().PinnedTags, "Z-pin", "A-pin");
     }
 

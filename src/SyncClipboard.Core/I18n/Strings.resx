@@ -1721,8 +1721,8 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryTagsQuickAdd" xml:space="preserve">
     <value>Add tag</value>
   </data>
-  <data name="HistoryTagsCreateAndAdd" xml:space="preserve">
-    <value>Create and add</value>
+  <data name="HistoryTagsNew" xml:space="preserve">
+    <value>New</value>
   </data>
   <data name="HistoryTagsNoMatches" xml:space="preserve">
     <value>No matching tags</value>

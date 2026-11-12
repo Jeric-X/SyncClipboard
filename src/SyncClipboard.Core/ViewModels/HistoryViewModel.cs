@@ -900,6 +900,9 @@ public partial class HistoryViewModel : ObservableObject
         bool isCtrlPressed = false,
         bool isMetaPressed = false)
     {
+        if (HasModalOperation)
+            return false;
+
         if (key == Key.Esc)
         {
             if (IsMultiSelecting)
@@ -929,6 +932,10 @@ public partial class HistoryViewModel : ObservableObject
         switch (action)
         {
             case HistoryShortcutAction.Search: window?.FocusSearch(); break;
+            case HistoryShortcutAction.EditTags:
+                if (!IsMultiSelecting && SelectedItem is not null && SelectedFilter != HistoryFilterType.Transferring)
+                    window?.ShowTagPicker();
+                break;
             case HistoryShortcutAction.PreviousItem: NavigateUp(); break;
             case HistoryShortcutAction.NextItem: NavigateDown(); break;
             case HistoryShortcutAction.FirstItem: ScrollToTop(); break;

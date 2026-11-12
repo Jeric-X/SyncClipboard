@@ -68,14 +68,13 @@ public class HistoryTagPickerTests
         List<(string Name, bool Add)> saved, CancellationToken token)
     {
         var search = Search(view);
-        var add = (Button)view.FindName("_AddInput");
         search.Text = "cod";
-        await WaitUntilAsync(() => Suggestions(view).Count() == 1, token);
-        var code = Suggestions(view).Single();
+        await WaitUntilAsync(() => Suggestions(view).Count() == 2, token);
+        var code = Suggestions(view).Single(b => Equals(b.Tag, "code"));
         Assert.AreEqual("code", code.Tag);
         await WaitUntilAsync(() => code.ActualWidth > 100, token);
         Invoke(code);
-        await WaitUntilAsync(() => !add.IsEnabled && saved.Count == 1, token);
+        await WaitUntilAsync(() => saved.Count == 1, token);
         Assert.AreSame(search, FocusManager.GetFocusedElement(view.XamlRoot));
         search.Text = "next";
         pending.SetException(new InvalidOperationException("save failed"));
@@ -90,9 +89,10 @@ public class HistoryTagPickerTests
         List<(string Name, bool Add)> saved, CancellationToken token)
     {
         var search = Search(view);
-        var add = (Button)view.FindName("_AddInput");
-        await WaitUntilAsync(() => add.IsEnabled, token);
-        Invoke(add);
+        await WaitUntilAsync(() => Suggestions(view).Any(b => Equals(b.Tag, "next")), token);
+        var candidate = Suggestions(view).Single(b => Equals(b.Tag, "next"));
+        Assert.IsTrue(view.ViewModel.Suggestions.Single().IsNew);
+        Invoke(candidate);
         await WaitUntilAsync(() => search.Text.Length == 0 && Suggestions(view).Count() == 23, token);
         Assert.AreEqual(("next", true), saved[^1]);
         var code = Suggestions(view).Single(b => Equals(b.Tag, "code"));
