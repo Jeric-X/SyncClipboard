@@ -43,7 +43,10 @@ public class HistoryTagPickerKeyboardTests
         {
             saves++;
             return Task.CompletedTask;
-        }) { Search = search };
+        })
+        {
+            Search = search
+        };
         var selected = picker.SelectedSuggestion;
         var keyboard = new HistoryTagPickerKeyboard(picker);
 
@@ -77,11 +80,14 @@ public class HistoryTagPickerKeyboardTests
         Assert.IsFalse(keyboard.HandleKeyUp(Key.Enter));
         Assert.IsTrue(keyboard.TryHandleKeyDown(Key.Enter, false, false, false, out repeat));
         await repeat;
-        CollectionAssert.AreEqual(new[] { true }, saved);
+        Assert.HasCount(1, saved);
+        Assert.IsTrue(saved[0]);
 
         Assert.IsTrue(keyboard.HandleKeyUp(Key.Space));
         Assert.IsTrue(keyboard.TryHandleKeyDown(Key.Enter, false, false, false, out var second));
         await second;
-        CollectionAssert.AreEqual(new[] { true, false }, saved);
+        Assert.HasCount(2, saved);
+        Assert.IsTrue(saved[0]);
+        Assert.IsFalse(saved[1]);
     }
 }
