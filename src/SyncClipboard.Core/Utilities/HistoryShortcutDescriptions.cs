@@ -8,6 +8,7 @@ public static class HistoryShortcutDescriptions
     public static string GetActionName(HistoryShortcutAction action) => action switch
     {
         HistoryShortcutAction.Search => Strings.HistoryShortcutSearch,
+        HistoryShortcutAction.EditTags => Strings.HistoryTagsEdit,
         HistoryShortcutAction.PreviousItem => Strings.HistoryShortcutPreviousItem,
         HistoryShortcutAction.NextItem => Strings.HistoryShortcutNextItem,
         HistoryShortcutAction.FirstItem => Strings.HistoryShortcutFirstItem,

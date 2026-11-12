@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml.Media;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Test.WinUI3.App;
 using SyncClipboard.WinUI3.Views;
+using Windows.Foundation;
 using Windows.Graphics;
 
 namespace SyncClipboard.Test.WinUI3.History;
@@ -52,6 +53,7 @@ public class HistoryTagPickerTests
             var presenter = VisualTreeHelper.GetOpenPopupsForXamlRoot(view.XamlRoot)
                 .SelectMany(p => Descendants<FlyoutPresenter>(p.Child)).Single();
             Assert.AreEqual((CornerRadius)Application.Current.Resources["OverlayCornerRadius"], presenter.CornerRadius);
+            await VerifySearchPositionAsync(view, timeout.Token);
             await VerifySearchAndRetryAsync(view, pending, saved, timeout.Token);
             await VerifyContinuousEditingAsync(view, saved, timeout.Token);
             Assert.IsTrue(flyout.IsOpen);
@@ -64,18 +66,40 @@ public class HistoryTagPickerTests
         }
     }
 
+    private static async Task VerifySearchPositionAsync(HistoryTagPickerView view, CancellationToken token)
+    {
+        var search = Search(view);
+        view.UpdateLayout();
+        var position = search.TransformToVisual(null).TransformPoint(new Point());
+        var height = view.ActualHeight;
+        search.Text = "new tag";
+        await WaitUntilAsync(() => Suggestions(view).Count() == 1, token);
+        view.UpdateLayout();
+        Assert.AreEqual(height, view.ActualHeight, 1d);
+        var filteredPosition = search.TransformToVisual(null).TransformPoint(new Point());
+        Assert.AreEqual(position.X, filteredPosition.X, 1d);
+        Assert.AreEqual(position.Y, filteredPosition.Y, 1d);
+
+        search.Text = "";
+        await WaitUntilAsync(() => Suggestions(view).Count() == 22, token);
+        view.UpdateLayout();
+        Assert.AreEqual(height, view.ActualHeight, 1d);
+        var restoredPosition = search.TransformToVisual(null).TransformPoint(new Point());
+        Assert.AreEqual(position.X, restoredPosition.X, 1d);
+        Assert.AreEqual(position.Y, restoredPosition.Y, 1d);
+    }
+
     private static async Task VerifySearchAndRetryAsync(HistoryTagPickerView view, TaskCompletionSource pending,
         List<(string Name, bool Add)> saved, CancellationToken token)
     {
         var search = Search(view);
-        var add = (Button)view.FindName("_AddInput");
         search.Text = "cod";
-        await WaitUntilAsync(() => Suggestions(view).Count() == 1, token);
-        var code = Suggestions(view).Single();
+        await WaitUntilAsync(() => Suggestions(view).Count() == 2, token);
+        var code = Suggestions(view).Single(b => Equals(b.Tag, "code"));
         Assert.AreEqual("code", code.Tag);
         await WaitUntilAsync(() => code.ActualWidth > 100, token);
         Invoke(code);
-        await WaitUntilAsync(() => !add.IsEnabled && saved.Count == 1, token);
+        await WaitUntilAsync(() => saved.Count == 1, token);
         Assert.AreSame(search, FocusManager.GetFocusedElement(view.XamlRoot));
         search.Text = "next";
         pending.SetException(new InvalidOperationException("save failed"));
@@ -90,9 +114,10 @@ public class HistoryTagPickerTests
         List<(string Name, bool Add)> saved, CancellationToken token)
     {
         var search = Search(view);
-        var add = (Button)view.FindName("_AddInput");
-        await WaitUntilAsync(() => add.IsEnabled, token);
-        Invoke(add);
+        await WaitUntilAsync(() => Suggestions(view).Any(b => Equals(b.Tag, "next")), token);
+        var candidate = Suggestions(view).Single(b => Equals(b.Tag, "next"));
+        Assert.IsTrue(view.ViewModel.Suggestions.Single().IsNew);
+        Invoke(candidate);
         await WaitUntilAsync(() => search.Text.Length == 0 && Suggestions(view).Count() == 23, token);
         Assert.AreEqual(("next", true), saved[^1]);
         var code = Suggestions(view).Single(b => Equals(b.Tag, "code"));

@@ -900,6 +900,9 @@ public partial class HistoryViewModel : ObservableObject
         bool isCtrlPressed = false,
         bool isMetaPressed = false)
     {
+        if (HasModalOperation)
+            return false;
+
         if (key == Key.Esc)
         {
             if (IsMultiSelecting)
@@ -926,9 +929,18 @@ public partial class HistoryViewModel : ObservableObject
         }
 
         var action = _configManager.GetConfig<HistoryShortcutConfig>().Match(hotkey);
+        return HandleShortcut(action);
+    }
+
+    private bool HandleShortcut(HistoryShortcutAction? action)
+    {
         switch (action)
         {
             case HistoryShortcutAction.Search: window?.FocusSearch(); break;
+            case HistoryShortcutAction.EditTags:
+                if (!IsMultiSelecting && SelectedItem is not null && SelectedFilter != HistoryFilterType.Transferring)
+                    window?.ShowTagPicker();
+                break;
             case HistoryShortcutAction.PreviousItem: NavigateUp(); break;
             case HistoryShortcutAction.NextItem: NavigateDown(); break;
             case HistoryShortcutAction.FirstItem: ScrollToTop(); break;
@@ -1514,7 +1526,7 @@ public partial class HistoryViewModel : ObservableObject
 
     public void OnLostFocus()
     {
-        if (!HasModalOperation && !_remainWindowForViewDetail && !IsTopmost && CloseWhenLostFocus)
+        if (!_remainWindowForFolderPicker && !_remainWindowForViewDetail && !IsTopmost && CloseWhenLostFocus)
         {
             window.Hide();
         }

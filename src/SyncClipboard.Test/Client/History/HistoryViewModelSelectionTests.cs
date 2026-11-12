@@ -8,19 +8,19 @@ using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.Utilities.Runner;
 using System.Threading.Channels;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Client.History;
 
 [TestClass]
 public class HistoryViewModelSelectionTests
 {
     [TestMethod]
-    public void ExportModalKeepsHistoryVisibleAcrossFocusChanges()
+    public void NativeFolderPickerKeepsHistoryVisibleAcrossFocusChanges()
     {
         var viewModel = (HistoryViewModel)RuntimeHelpers.GetUninitializedObject(typeof(HistoryViewModel));
         var window = new Mock<IWindow>();
         typeof(HistoryViewModel).GetField("window", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(viewModel, window.Object);
-        using (viewModel.HoldForModalOperation())
+        using (viewModel.HoldForNativeFolderPicker())
         {
             viewModel.OnGotFocus();
             viewModel.OnLostFocus();

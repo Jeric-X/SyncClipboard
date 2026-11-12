@@ -1,9 +1,7 @@
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
-using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
 using System;
@@ -86,17 +84,18 @@ public sealed partial class RecordControlBar : UserControl
 
     private async void AddTagButtonClicked(object _, RoutedEventArgs _1)
     {
-        if (Record is not { } record || ViewModel is null || !IsLoaded || XamlRoot is not { } root)
+        if (Record is not { } record || ViewModel is null || ViewModel.HasModalOperation || !IsLoaded || XamlRoot is not { } root)
             return;
 
+        using var hold = ViewModel.HoldForModalOperation();
         var key = record.Key;
         _AddTagButton.IsEnabled = false;
         try
         {
-            var picker = await CreateTagPickerAsync(key, ViewModel.PinnedTags);
+            var picker = await ViewModel.CreateTagPickerAsync(key);
             if (picker is null || Record?.Key != key || !IsLoaded || Visibility != Visibility.Visible || XamlRoot != root)
                 return;
-            ShowTagPicker(key, picker);
+            await ShowTagPickerAsync(key, picker);
         }
         catch (Exception ex)
         {
@@ -114,23 +113,9 @@ public sealed partial class RecordControlBar : UserControl
         }
     }
 
-    private static async Task<HistoryTagPickerViewModel?> CreateTagPickerAsync(HistoryRecordKey key, string[] pinnedNames)
+    private Task ShowTagPickerAsync(HistoryRecordKey key, HistoryTagPickerViewModel picker)
     {
-        var manager = App.Current.Services.GetRequiredService<HistoryManager>();
-        var snapshot = await Task.Run(() => manager.GetSyncSnapshotAsync(key));
-        if (snapshot is null || snapshot.IsDeleted)
-            return null;
-        var counts = await Task.Run(() => manager.GetTagCountsAsync());
-        return new HistoryTagPickerViewModel(counts.Keys, snapshot.Tags, (name, add) => Task.Run(async () =>
-        {
-            await manager.EditTagsAsync([key], add ? [name] : [], add ? [] : [name]);
-            if (await manager.GetSyncSnapshotAsync(key) is not { IsDeleted: false })
-                throw new InvalidOperationException(Strings.HistoryTagsNoSelection);
-        }), pinnedNames);
-    }
-
-    private void ShowTagPicker(HistoryRecordKey key, HistoryTagPickerViewModel picker)
-    {
+        var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var flyout = new HistoryTagPickerView(picker).ShowAt(_AddTagButton);
         var callback = RegisterPropertyChangedCallback(RecordProperty, (_, _) =>
         {
@@ -143,7 +128,9 @@ public sealed partial class RecordControlBar : UserControl
         {
             UnregisterPropertyChangedCallback(RecordProperty, callback);
             Unloaded -= Unload;
+            closed.TrySetResult();
         };
+        return closed.Task;
     }
 
     private void StarButtonClicked(object _, RoutedEventArgs _1)

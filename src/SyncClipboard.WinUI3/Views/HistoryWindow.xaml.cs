@@ -46,6 +46,49 @@ namespace SyncClipboard.WinUI3.Views;
 
 public sealed partial class HistoryWindow : Window, IWindow, IDisposable
 {
+    public async void ShowTagPicker()
+    {
+        if (_viewModel.HasModalOperation || _viewModel.IsMultiSelecting || _viewModel.SelectedItem is not { } record)
+            return;
+
+        using var hold = _viewModel.HoldForModalOperation();
+        try
+        {
+            var picker = await _viewModel.CreateTagPickerAsync(record.Key);
+            if (picker is null || _viewModel.IsMultiSelecting || _viewModel.SelectedItem?.Key != record.Key
+                || _disposed || !((IWindow)this).IsVisible)
+                return;
+
+            ScrollToSelectedItem();
+            _ListView.UpdateLayout();
+            var anchor = _ListView.ContainerFromItem(_viewModel.SelectedItem) as FrameworkElement ?? _ListView;
+            var view = new HistoryTagPickerView(picker);
+            var flyout = view.ShowAt(anchor);
+            var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            void SelectionChanged(object? _, PropertyChangedEventArgs args)
+            {
+                if (_viewModel.SelectedItem?.Key != record.Key || _viewModel.IsMultiSelecting)
+                    flyout.Hide();
+            }
+            _viewModel.PropertyChanged += SelectionChanged;
+            flyout.Closed += (_, _) => closed.TrySetResult();
+            try
+            {
+                await closed.Task;
+            }
+            finally
+            {
+                _viewModel.PropertyChanged -= SelectionChanged;
+            }
+            if (view.ClosedByKeyboard && ((IWindow)this).IsVisible && ((IWindow)this).IsActive)
+                _SearchTextBox.Focus(FocusState.Keyboard);
+        }
+        catch (Exception ex)
+        {
+            await new WinUIDialog(this).ShowMessageAsync(Strings.HistoryTagsEdit, ex.Message);
+        }
+    }
+
     public void NavigateTagFilter(bool forward) =>
         HistoryTagNavigation.Navigate(_TagFilterItems, _TagFilterScroll, _viewModel, forward);
 

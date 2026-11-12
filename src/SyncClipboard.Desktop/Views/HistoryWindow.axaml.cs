@@ -31,6 +31,48 @@ namespace SyncClipboard.Desktop.Views;
 
 public partial class HistoryWindow : Window, IWindow
 {
+    public async void ShowTagPicker()
+    {
+        if (_viewModel.HasModalOperation || _viewModel.IsMultiSelecting || _viewModel.SelectedItem is not { } record)
+            return;
+
+        using var hold = _viewModel.HoldForModalOperation();
+        try
+        {
+            var picker = await _viewModel.CreateTagPickerAsync(record.Key);
+            if (picker is null || _viewModel.IsMultiSelecting || _viewModel.SelectedItem?.Key != record.Key || !IsVisible)
+                return;
+
+            ScrollToSelectedItem();
+            _ListBox.UpdateLayout();
+            var anchor = _ListBox.ContainerFromItem(_viewModel.SelectedItem) as Control ?? _ListBox;
+            var view = new HistoryTagPickerView(picker);
+            var flyout = view.ShowAt(anchor);
+            var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            void SelectionChanged(object? _, System.ComponentModel.PropertyChangedEventArgs args)
+            {
+                if (_viewModel.SelectedItem?.Key != record.Key || _viewModel.IsMultiSelecting)
+                    flyout.Hide();
+            }
+            _viewModel.PropertyChanged += SelectionChanged;
+            flyout.Closed += (_, _) => closed.TrySetResult();
+            try
+            {
+                await closed.Task;
+            }
+            finally
+            {
+                _viewModel.PropertyChanged -= SelectionChanged;
+            }
+            if (view.ClosedByKeyboard && IsVisible && IsActive)
+                _SearchTextBox.Focus();
+        }
+        catch (Exception ex)
+        {
+            await new AvaloniaDialog(this).ShowMessageAsync(Strings.HistoryTagsEdit, ex.Message);
+        }
+    }
+
     public void NavigateTagFilter(bool forward) =>
         HistoryTagNavigation.Navigate(_TagFilterItems, _TagFilterScroll, _viewModel, forward);
 

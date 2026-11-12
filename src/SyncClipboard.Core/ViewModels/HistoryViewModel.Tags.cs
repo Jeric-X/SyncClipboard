@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
 using SyncClipboard.Core.I18n;
+using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Core.Utilities.History;
@@ -37,6 +38,20 @@ public sealed partial class HistoryTagFilter : ObservableObject
 public partial class HistoryViewModel
 {
     private CoalescingTask<bool>? _tagRefresh;
+
+    public async Task<HistoryTagPickerViewModel?> CreateTagPickerAsync(HistoryRecordKey key)
+    {
+        var snapshot = await Task.Run(() => historyManager.GetSyncSnapshotAsync(key));
+        if (snapshot is null || snapshot.IsDeleted)
+            return null;
+        var counts = await Task.Run(() => historyManager.GetTagCountsAsync());
+        return new HistoryTagPickerViewModel(counts.Keys, snapshot.Tags, (name, add) => Task.Run(async () =>
+        {
+            await historyManager.EditTagsAsync([key], add ? [name] : [], add ? [] : [name]);
+            if (await historyManager.GetSyncSnapshotAsync(key) is not { IsDeleted: false })
+                throw new InvalidOperationException(Strings.HistoryTagsNoSelection);
+        }), PinnedTags);
+    }
 
     [ObservableProperty]
     private ObservableCollection<HistoryTagFilter> tagOptions = [];
