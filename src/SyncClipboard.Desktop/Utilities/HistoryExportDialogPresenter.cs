@@ -28,13 +28,15 @@ public sealed class HistoryExportDialogPresenter(IServiceProvider services, Hist
             await messages.ShowMessageAsync(Strings.HistoryExport, Strings.HistoryExportBusy);
             return;
         }
-        using var hold = fromHistoryWindow ? services.GetRequiredService<HistoryViewModel>().HoldForModalOperation() : null;
+        var history = fromHistoryWindow ? services.GetRequiredService<HistoryViewModel>() : null;
+        using var hold = history?.HoldForModalOperation();
         var topmost = owner.Topmost;
         try
         {
             owner.Topmost = false;
             async Task<string?> PickDirectory()
             {
+                using var pickerHold = history?.HoldForNativeFolderPicker();
                 var folders = await owner.StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
                 {
                     Title = Strings.HistoryExportChooseDirectory,

@@ -185,6 +185,12 @@ Strings are in `SyncClipboard.Core/I18n/Strings.resx` (auto-generated `Strings.D
 
 ## 测试原则
 
+- 测试文件必须按所属业务模块分目录，不直接放在测试项目根目录。
+- Core 测试项目 `SyncClipboard.Test` 按被测功能归属分为 `Client/`、`Server/`、`Shared/`，再放入对应业务目录，例如 `Client/History/`、`Server/History/`；`Shared/` 用于服务端与客户端（UI 端）共用功能的测试，不用于存放测试辅助代码。
+- UI 测试项目 `SyncClipboard.Test.WinUI3` 和 `SyncClipboard.Test.Desktop` 默认属于客户端，不增加 `Client/` 或 `Server/` 层，直接按业务模块分目录，例如 `History/`。
+- 测试宿主及测试辅助代码按职责和对应业务代码的组织逻辑归类；业务专用辅助代码放在对应业务目录。
+- 修改存量测试文件时，按上述规则调整本次涉及文件的目录、命名空间及引用，不顺带迁移无关测试。
+
 - 新增测试应验证明确的功能要求、重要失败路径或已确认缺陷，不应仅证明本次修改生效。
 - 用户要求删除或简化机制时，同步清理相关测试，不自动增加“旧机制不存在”的测试或把原断言取反。
 - “不保证”不等于“保证相反”：例如不保留旧权限，不代表新旧权限必须不同。

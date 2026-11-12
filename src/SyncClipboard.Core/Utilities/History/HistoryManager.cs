@@ -241,6 +241,22 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         return await Query(type, hash, token);
     }
 
+    public async Task<HistoryRecord?> GetSyncSnapshotAsync(HistoryRecordKey key, CancellationToken token = default)
+    {
+        await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        var entity = await Query(key.Type, key.Hash, token).ConfigureAwait(false);
+        return entity is null ? null : CreateSyncSnapshot(entity);
+    }
+
+    private HistoryRecord CreateSyncSnapshot(HistoryRecord entity)
+    {
+        var snapshot = (HistoryRecord)_dbContext.Entry(entity).CurrentValues.ToObject();
+        snapshot.Tags = [.. entity.Tags];
+        snapshot.FilePath = [.. entity.FilePath];
+        return snapshot;
+    }
+
     public async Task<HistoryRecord> GetOrCreateHistoryRecord(Profile profile, CancellationToken token)
     {
         await _dbSemaphore.WaitAsync(token);
@@ -256,9 +272,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             HistoryAdded?.Invoke(entity);
         }
         // Network operations must not mutate EF's tracked entity outside the database lock.
-        var snapshot = (HistoryRecord)_dbContext.Entry(entity).CurrentValues.ToObject();
-        snapshot.FilePath = [.. entity.FilePath];
-        return snapshot;
+        return CreateSyncSnapshot(entity);
     }
 
     public async Task UpdateHistoryProperty(HistoryRecord record, CancellationToken token = default)
@@ -348,14 +362,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             return record;
         }
 
-        // 同步服务器返回的并发字段与状态
-        entity.Stared = record.Stared;
-        entity.Pinned = record.Pinned;
-        entity.IsDeleted = record.IsDeleted;
-        entity.Version = record.Version;
-        entity.LastModified = record.LastModified;
-        entity.LastAccessed = record.LastAccessed;
-        entity.SyncStatus = record.SyncStatus; // 期望为 Synced
+        ApplyServerSyncedProperties(record, entity);
         if (record.IsLocalFileReady || !entity.IsLocalFileReady)
         {
             CopyLocalTransferDataBinding(record, entity);
@@ -364,6 +371,35 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         await _dbContext.SaveChangesAsync(token);
         TriggleUpdateOrDeleteEvent(entity);
         return entity;
+    }
+
+    public async Task<bool> TryApplySyncResponseAsync(
+        HistoryRecord record, int expectedVersion, DateTime expectedModified, CancellationToken token = default)
+    {
+        await _dbSemaphore.WaitAsync(token);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+
+        var entity = await Query(record.Type, record.Hash, token);
+        if (entity is null || entity.ID != record.ID || entity.Version != expectedVersion || entity.LastModified != expectedModified)
+            return false;
+
+        entity.Tags = [.. record.Tags];
+        ApplyServerSyncedProperties(record, entity);
+        await _dbContext.SaveChangesAsync(token);
+        TriggleUpdateOrDeleteEvent(entity);
+        return true;
+    }
+
+    private static void ApplyServerSyncedProperties(HistoryRecord record, HistoryRecord entity)
+    {
+        // 同步服务器返回的并发字段与状态
+        entity.Stared = record.Stared;
+        entity.Pinned = record.Pinned;
+        entity.IsDeleted = record.IsDeleted;
+        entity.Version = record.Version;
+        entity.LastModified = record.LastModified;
+        entity.LastAccessed = record.LastAccessed;
+        entity.SyncStatus = record.SyncStatus; // 期望为 Synced
     }
 
     public async Task DeleteHistory(HistoryRecord record, CancellationToken token = default)
@@ -402,7 +438,11 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         HistoryRemoved?.Invoke(entity);
     }
 
-    public async Task<List<HistoryRecord>> SyncRemoteHistoryAsync(IEnumerable<HistoryRecordDto> remoteRecords, CancellationToken token = default)
+    public Task<List<HistoryRecord>> SyncRemoteHistoryAsync(IEnumerable<HistoryRecordDto> remoteRecords, CancellationToken token = default)
+        => SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags: false, token);
+
+    internal async Task<List<HistoryRecord>> SyncRemoteHistoryAsync(
+        IEnumerable<HistoryRecordDto> remoteRecords, bool supportsHistoryTags, CancellationToken token = default)
     {
         List<HistoryRecord> addedRecords = [];
         if (remoteRecords.Any() == false)
@@ -429,6 +469,11 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
                 else
                 {
                     ApplyRemoteHistory(entity, dto);
+                    if (supportsHistoryTags && dto.Tags is null && entity.Tags.Length > 0
+                        && !entity.IsDeleted && entity.SyncStatus == HistorySyncStatus.Synced)
+                    {
+                        entity.SyncStatus = HistorySyncStatus.NeedSync;
+                    }
                     TriggleUpdateOrDeleteEvent(entity);
                 }
                 await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
@@ -524,6 +569,58 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         _logger.Write("HistoryManager", $"Cleared attachment data for {clearedCount} deleted history records");
     }
 
+    // 关闭历史记录同步功能后，将所有记录转为纯本地语义，再按本地记录清理规则处理。
+    public async Task ConvertToLocalRecordsAsync(CancellationToken token)
+    {
+        var records = await GetHistory(token).ConfigureAwait(false);
+        var cleanupConfig = _historyConfig;
+
+        await Task.Run(async () =>
+        {
+            foreach (var record in records)
+            {
+                var syncStatusChanged = record.SyncStatus is HistorySyncStatus.Synced or HistorySyncStatus.NeedSync;
+                if (syncStatusChanged)
+                {
+                    record.SyncStatus = HistorySyncStatus.LocalOnly;
+                }
+
+                if (ShouldDeleteLocalRecord(record, cleanupConfig))
+                {
+                    await RemoveHistory(record, token).ConfigureAwait(false);
+                    continue;
+                }
+
+                if (syncStatusChanged)
+                {
+                    await PersistServerSyncedAsync(record, token).ConfigureAwait(false);
+                }
+            }
+        }, token).ConfigureAwait(false);
+
+        await EnforceMaxItemCountAsync(token).ConfigureAwait(false);
+    }
+
+    public async Task RemoveDeletedOrMissingLocalRecordsAsync(CancellationToken token)
+    {
+        var cleanupConfig = _historyConfig;
+        var records = await GetHistory(token);
+
+        foreach (var record in records.Where(r => ShouldDeleteLocalRecord(r, cleanupConfig)))
+        {
+            await RemoveHistory(record, token);
+        }
+    }
+
+    private static bool ShouldDeleteLocalRecord(
+        HistoryRecord record,
+        HistoryConfig cleanupConfig)
+    {
+        return record.SyncStatus == HistorySyncStatus.LocalOnly &&
+               (record.IsDeleted || (cleanupConfig.AutoDeleteMissingLocalFiles && !record.Stared && !record.Pinned
+                   && (!cleanupConfig.ProtectTaggedRecords || record.Tags.Length == 0) && !record.IsLocalFileReady));
+    }
+
     public async Task CleanupExpiredHistory(CancellationToken token = default)
     {
         try
@@ -531,24 +628,14 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             if (_runtimeHistoryConfig.EnableSyncHistory)
             {
                 await RemoveSoftDeletedOutOfDateRecords(token);
-                return;
             }
-
-            if (_historyConfig.HistoryRetentionMinutes == 0)
-            {
-                return;
-            }
-
-            var cutoffTime = DateTime.UtcNow.AddMinutes(-_historyConfig.HistoryRetentionMinutes);
 
             await _dbSemaphore.WaitAsync(token);
             using var guard = new ScopeGuard(() => _dbSemaphore.Release());
             if (!EnableCleanup)
                 return;
 
-            var deleted = await _historyManagerHelper.RemoveExpiredInBatchesAsync(
-                r => r.LastModified < cutoffTime && r.LastAccessed < cutoffTime &&
-                    !r.Stared && !r.Pinned && r.SyncStatus == HistorySyncStatus.LocalOnly, token);
+            var deleted = await _historyManagerHelper.RemoveExpiredInBatchesAsync(token);
 
             if (deleted > 0)
             {
@@ -637,44 +724,48 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         _dbContext.Database.EnsureCreated();
     }
 
-    private IQueryable<HistoryRecord> BuildHistoryQuery(
-        ProfileTypeFilter typeFilter,
-        bool? starred,
-        string? searchText)
+    private IQueryable<HistoryRecord> BuildHistoryQuery(HistoryQueryPara queryPara)
     {
+        var names = HistoryTags.NormalizeNames(queryPara.Tags ?? []);
+        if (names.Length > 0 && queryPara.OnlyUntagged)
+            throw new ArgumentException("Tags and untagged filter cannot be combined.");
+
         var query = _dbContext.HistoryRecords.Where(record => !record.IsDeleted);
 
-        if (typeFilter != ProfileTypeFilter.All)
+        if (queryPara.TypeFilter != ProfileTypeFilter.All)
         {
             var includedTypes = Enum.GetValues<ProfileType>()
-                .Where(t => (typeFilter & (ProfileTypeFilter)(1 << (int)t)) != 0)
+                .Where(t => (queryPara.TypeFilter & (ProfileTypeFilter)(1 << (int)t)) != 0)
                 .ToArray();
             // Keep array membership in EF expression trees on LINQ rather than the C# 14 span overload.
             query = query.Where(r => Enumerable.Contains(includedTypes, r.Type));
         }
 
-        if (starred.HasValue)
-            query = query.Where(record => record.Stared == starred.Value);
+        if (queryPara.Starred.HasValue)
+            query = query.Where(record => record.Stared == queryPara.Starred.Value);
 
-        if (!string.IsNullOrEmpty(searchText))
-            query = query.Where(record => EF.Functions.Like(record.Text, $"%{searchText}%"));
+        if (!string.IsNullOrEmpty(queryPara.SearchText))
+            query = query.Where(record => EF.Functions.Like(record.Text, $"%{queryPara.SearchText}%"));
+
+        if (names.Length > 0)
+            query = query.Where(record => record.Tags.Any(name => names.Contains(name)));
+        if (queryPara.OnlyUntagged)
+            query = query.Where(record => record.Tags.Length == 0);
 
         return query;
     }
 
     public async Task<List<HistoryRecord>> GetHistoryAsync(
-        ProfileTypeFilter typeFilter,
-        bool? started = null,
+        HistoryQueryPara queryPara,
         DateTime? before = null,
         int minSize = int.MaxValue,
-        string? searchText = null,
         bool sortByLastAccessed = false,
         CancellationToken token = default)
     {
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        var query = BuildHistoryQuery(typeFilter, started, searchText);
+        var query = BuildHistoryQuery(queryPara);
 
         if (before.HasValue)
         {
@@ -722,16 +813,14 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     }
 
     public async Task<(int TotalCount, int SelectedCount)> GetHistorySelectionCountsAsync(
-        ProfileTypeFilter typeFilter,
-        bool? starred,
-        string? searchText,
+        HistoryQueryPara queryPara,
         IReadOnlyCollection<HistoryRecordKey> selectedKeys,
         CancellationToken token = default)
     {
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
 
-        var query = BuildHistoryQuery(typeFilter, starred, searchText);
+        var query = BuildHistoryQuery(queryPara);
 
         var totalCount = await query.CountAsync(token).ConfigureAwait(false);
         var selectedCount = 0;
@@ -914,8 +1003,14 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         HistoryRemoved?.Invoke(entity);
     }
 
-    public Expression<Func<HistoryRecord, bool>> QueryToDeleteByOverCount => entity => !entity.Stared &&
-        !entity.Pinned && entity.SyncStatus == HistorySyncStatus.LocalOnly;
+    public Expression<Func<HistoryRecord, bool>> AutoDeletePredicate => entity => !entity.Stared &&
+        !entity.Pinned && (!_historyConfig.ProtectTaggedRecords || entity.Tags.Length == 0)
+        && entity.SyncStatus == HistorySyncStatus.LocalOnly;
+
+    public Expression<Func<HistoryRecord, DateTime>> QueryLastActivityTime => entity =>
+        entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;
+
+    public uint HistoryRetentionMinutes => _historyConfig.HistoryRetentionMinutes;
 
     public Expression<Func<HistoryRecord, DateTime>> QueryDeleteOrderBy => entity =>
         entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;

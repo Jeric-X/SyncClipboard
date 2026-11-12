@@ -76,6 +76,14 @@
             <ui:FAFontIcon Glyph="&#xE77F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
         </Button>
 
+        <!--  Add tag button  -->
+        <Button x:Name="_AddTagButton"
+                Click="AddTagButtonClicked"
+                ToolTip.Tip="{x:Static i18n:Strings.HistoryTagsQuickAdd}"
+                AutomationProperties.Name="{x:Static i18n:Strings.HistoryTagsQuickAdd}">
+            <ui:FAFontIcon Glyph="&#xE8EC;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+        </Button>
+
         <!--  Star button  -->
         <Button Click="StarButtonClicked">
             <ui:FAFontIcon Glyph="{Binding Stared, Converter={x:Static vc:FuncConverter.ToStarIcon}}" FontFamily="{StaticResource SymbolThemeFontFamily}" />

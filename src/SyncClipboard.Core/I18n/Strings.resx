@@ -556,7 +556,7 @@ Shift + left click: Select a continuous range</value>
     <value>Clear All Local History</value>
   </data>
   <data name="ClearLocalHistoryDescription" xml:space="preserve">
-    <value>Clear local history records and cached files. Unsynced records will be permanently lost.</value>
+    <value>Clear local history records and cached files; unsynced records will be permanently lost</value>
   </data>
   <data name="ClearLocalHistoryConfirmMessage" xml:space="preserve">
     <value>This will permanently delete all local history records and cached files on this device. Synced records on the server will not be affected. Continue?</value>
@@ -880,10 +880,10 @@ Shift + left click: Select a continuous range</value>
     <value>Maximum number of records</value>
   </data>
   <data name="MaxItemCountDescription" xml:space="preserve">
-    <value>Only applies to unsynced records. Set to 0 for unlimited records.</value>
+    <value>Set to 0 for unlimited records</value>
   </data>
   <data name="HistoryRetentionDescription" xml:space="preserve">
-    <value>Set to 0 to disable time-based cleanup. Only applies to unsynced records.</value>
+    <value>Set to 0 for unlimited retention</value>
   </data>
   <data name="HistoryRetentionMinutes" xml:space="preserve">
     <value>History retention time (minutes)</value>
@@ -892,13 +892,13 @@ Shift + left click: Select a continuous range</value>
     <value>Sync History</value>
   </data>
   <data name="EnableSyncHistoryDescription" xml:space="preserve">
-    <value>Synced records will follow server settings for automatic deletion.</value>
+    <value>Synced records follow server settings for automatic deletion</value>
   </data>
   <data name="AutoDeleteMissingLocalFiles" xml:space="preserve">
     <value>Delete records with missing local files automatically</value>
   </data>
   <data name="AutoDeleteMissingLocalFilesDescription" xml:space="preserve">
-    <value>Automatically delete local-only records when their files are missing or incomplete.</value>
+    <value>Automatically delete records whose local files are missing or incomplete</value>
   </data>
   <data name="HistoryPanel" xml:space="preserve">
     <value>History Panel</value>
@@ -1251,6 +1251,9 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryMultiSelectUnstar" xml:space="preserve">
     <value>Unstar</value>
   </data>
+  <data name="HistoryMultiSelectEnter" xml:space="preserve">
+    <value>Multi-select</value>
+  </data>
   <data name="HistoryMultiSelectExit" xml:space="preserve">
     <value>Exit selection</value>
   </data>
@@ -1410,6 +1413,21 @@ Choose whether to use the default location or select another folder.</value>
   </data>
   <data name="HistoryShortcutTogglePreview" xml:space="preserve">
     <value>Toggle preview panel</value>
+  </data>
+  <data name="HistoryShortcutTagAbove" xml:space="preserve">
+    <value>Switch to tag above</value>
+  </data>
+  <data name="HistoryShortcutTagBelow" xml:space="preserve">
+    <value>Switch to tag below</value>
+  </data>
+  <data name="HistoryShortcutToggleTagsExpanded" xml:space="preserve">
+    <value>Expand/collapse tag bar</value>
+  </data>
+  <data name="HistoryShortcutPreviousTag" xml:space="preserve">
+    <value>Switch to previous tag</value>
+  </data>
+  <data name="HistoryShortcutNextTag" xml:space="preserve">
+    <value>Switch to next tag</value>
   </data>
   <data name="HistoryShortcutNextFilter" xml:space="preserve">
     <value>Next filter</value>
@@ -1630,5 +1648,131 @@ Choose whether to use the default location or select another folder.</value>
   </data>
   <data name="ExcludeFromLocalHistory" xml:space="preserve">
     <value>Do not add to local history</value>
+  </data>
+  <data name="HistoryTagsSyncTitle" xml:space="preserve">
+    <value>Tags will not sync</value>
+  </data>
+  <data name="HistoryTagsUpgrade" xml:space="preserve">
+    <value>The current server does not support tag sync, and unstarred records may be automatically deleted by the server. Upgrade the server for full tag support.</value>
+  </data>
+  <data name="HistorySyncUnsupported" xml:space="preserve">
+    <value>This server does not support history sync.</value>
+  </data>
+  <data name="HistoryTagsDontNotifyServer" xml:space="preserve">
+    <value>Don’t notify for this server</value>
+  </data>
+  <data name="ProtectTaggedRecords" xml:space="preserve">
+    <value>Protect tagged records</value>
+  </data>
+  <data name="ServerProtectTaggedRecordsDescription" xml:space="preserve">
+    <value>Tagged records are treated as starred and will not be automatically deleted</value>
+  </data>
+  <data name="ProtectTaggedRecordsDescription" xml:space="preserve">
+    <value>Treat tagged records as starred</value>
+  </data>
+  <data name="HistoryAutoDelete" xml:space="preserve">
+    <value>Automatic deletion</value>
+  </data>
+  <data name="HistoryAutoDeleteDescription" xml:space="preserve">
+    <value>Automatic deletion applies only to unsynced records; synced records follow server settings; starred records are protected</value>
+  </data>
+  <data name="HistoryTagsSelected" xml:space="preserve">
+    <value>Edit tags for {0} records</value>
+  </data>
+  <data name="HistoryTagsInvalid" xml:space="preserve">
+    <value>Use 1–64 characters without line breaks or control characters; at most 32 tags per record.</value>
+  </data>
+  <data name="HistoryTagsEdit" xml:space="preserve">
+    <value>Edit tags</value>
+  </data>
+  <data name="HistoryTagsSearch" xml:space="preserve">
+    <value>Search or add a tag…</value>
+  </data>
+  <data name="HistoryTagsAdd" xml:space="preserve">
+    <value>Add</value>
+  </data>
+  <data name="HistoryTagsApply" xml:space="preserve">
+    <value>Apply</value>
+  </data>
+  <data name="HistoryTagsNoSelection" xml:space="preserve">
+    <value>Select a record first.</value>
+  </data>
+  <data name="ShowTagBar" xml:space="preserve">
+    <value>Show tag bar</value>
+  </data>
+  <data name="ShowTagCounts" xml:space="preserve">
+    <value>Show tag record counts</value>
+  </data>
+  <data name="HistoryTagsExpand" xml:space="preserve">
+    <value>Expand tags</value>
+  </data>
+  <data name="HistoryTagsCollapse" xml:space="preserve">
+    <value>Collapse tags</value>
+  </data>
+  <data name="HistoryTagsMultiSelect" xml:space="preserve">
+    <value>Tag multi-select mode</value>
+  </data>
+  <data name="HistoryTagRemove" xml:space="preserve">
+    <value>Remove this tag</value>
+  </data>
+  <data name="HistoryTagsShowMore" xml:space="preserve">
+    <value>Show hidden tags</value>
+  </data>
+  <data name="HistoryTagsQuickAdd" xml:space="preserve">
+    <value>Add tag</value>
+  </data>
+  <data name="HistoryTagsNew" xml:space="preserve">
+    <value>New</value>
+  </data>
+  <data name="HistoryTagsNoMatches" xml:space="preserve">
+    <value>No matching tags</value>
+  </data>
+  <data name="HistoryTagBarSettings" xml:space="preserve">
+    <value>Pinned tags</value>
+  </data>
+  <data name="HistoryTagBarSettingsHint" xml:space="preserve">
+    <value>Drag tags between the two groups to pin or unpin them. Drag pinned tags to change their order.</value>
+  </data>
+  <data name="HistoryTagTogglePin" xml:space="preserve">
+    <value>Pin / unpin tag</value>
+  </data>
+  <data name="HistoryTagBarEmpty" xml:space="preserve">
+    <value>No tags yet.</value>
+  </data>
+  <data name="HistoryTagBarPinned" xml:space="preserve">
+    <value>Pinned</value>
+  </data>
+  <data name="HistoryTagBarUnpinned" xml:space="preserve">
+    <value>Unpinned</value>
+  </data>
+  <data name="HistoryTagBarDiscardTitle" xml:space="preserve">
+    <value>Discard changes?</value>
+  </data>
+  <data name="HistoryTagBarDiscardMessage" xml:space="preserve">
+    <value>The tag bar has unsaved changes. Discard them?</value>
+  </data>
+  <data name="HistoryTagBarDiscard" xml:space="preserve">
+    <value>Discard changes</value>
+  </data>
+  <data name="HistoryTagBarContinueEditing" xml:space="preserve">
+    <value>Continue editing</value>
+  </data>
+  <data name="HistoryTagBarEditPins" xml:space="preserve">
+    <value>Edit pinned tags</value>
+  </data>
+  <data name="HistoryTagRename" xml:space="preserve">
+    <value>Rename tag</value>
+  </data>
+  <data name="HistoryTagDelete" xml:space="preserve">
+    <value>Delete tag</value>
+  </data>
+  <data name="HistoryTagDeleteConfirmation" xml:space="preserve">
+    <value>Remove “{0}” from all history records known to this device?</value>
+  </data>
+  <data name="HistoryTagRenameDescription" xml:space="preserve">
+    <value>Rename this tag in all history records known to this device.</value>
+  </data>
+  <data name="HistoryTagMergeConfirmation" xml:space="preserve">
+    <value>The tag “{0}” already exists. Confirm to merge into it, or cancel to keep the tags unchanged.</value>
   </data>
 </root>

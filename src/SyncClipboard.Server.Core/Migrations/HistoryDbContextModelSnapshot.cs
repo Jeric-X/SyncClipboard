@@ -15,7 +15,7 @@ namespace SyncClipboard.Server.Core.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.8");
+            modelBuilder.HasAnnotation("ProductVersion", "9.0.20");
 
             modelBuilder.Entity("SyncClipboard.Server.Core.Models.HistoryRecordEntity", b =>
                 {
@@ -60,7 +60,6 @@ namespace SyncClipboard.Server.Core.Migrations
                         .HasColumnType("INTEGER");
 
                     b.PrimitiveCollection<string>("Tags")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Text")

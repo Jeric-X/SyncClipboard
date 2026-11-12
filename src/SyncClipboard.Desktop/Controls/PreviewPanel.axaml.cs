@@ -112,6 +112,12 @@ public sealed partial class PreviewPanel : UserControl
         }
     }
 
+    private async void RemoveTagRequested(object? _, HistoryPreviewTag tag)
+    {
+        if (SelectedItem?.Key == tag.Record)
+            await ViewModel.RemoveRecordTagAsync(tag);
+    }
+
     private void UpdatePreviewImageContent()
     {
         _PreviewImage.FilePath = SelectedItem?.Type == ProfileType.Image

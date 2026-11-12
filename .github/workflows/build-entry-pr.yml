@@ -7,9 +7,6 @@ jobs:
   code-style:
     uses: ./.github/workflows/code-style.yml
 
-  core-test:
-    uses: ./.github/workflows/core-test.yml
-
   prebuild:
     uses: ./.github/workflows/prebuild.yml
     with:
@@ -38,13 +35,22 @@ jobs:
       checkout-ref: ${{ github.ref }}
 
   windows-test:
-    needs: build-win
     uses: ./.github/workflows/windows-test.yml
 
+  windows-updater-smoke-test:
+    needs: build-win
+    uses: ./.github/workflows/windows-updater-smoke-test.yml
+
   macos-test:
-    needs: build-mac
     uses: ./.github/workflows/macos-test.yml
 
+  macos-updater-smoke-test:
+    needs: build-mac
+    uses: ./.github/workflows/macos-updater-smoke-test.yml
+
   linux-test:
-    needs: build-linux
     uses: ./.github/workflows/linux-test.yml
+
+  linux-updater-smoke-test:
+    needs: build-linux
+    uses: ./.github/workflows/linux-updater-smoke-test.yml

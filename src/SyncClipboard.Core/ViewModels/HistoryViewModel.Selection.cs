@@ -51,6 +51,10 @@ public partial class HistoryViewModel
 
     public HistoryRecordVM? PreviewedHistoryItem => SelectedItem;
 
+    public HistoryRecordKey[] GetTagEditSelection() => IsMultiSelecting
+        ? selectedHistoryRecords.Keys.ToArray()
+        : SelectedItem is { } selected ? [selected.Key] : [];
+
     // Resolve positions only when navigating; collection changes do not need to maintain an index.
     private int SelectedIndex
     {
@@ -236,6 +240,7 @@ public partial class HistoryViewModel
         await historyManager.DeleteHistory(record.ToHistoryRecord());
     }
 
+    [RelayCommand]
     public void EnterMultiSelect(HistoryRecordVM record)
     {
         if (!IsMultiSelecting)
@@ -466,9 +471,9 @@ public partial class HistoryViewModel
     {
         if (SelectedFilter == HistoryFilterType.Transferring)
             return allHistoryItems.Select(record => new FilteredHistoryRecord(record.Key, record.Stared)).ToList();
-        var (types, starred, searchText) = BuildQueryParameters();
+        var query = BuildQueryParameters();
         var records = await historyManager.GetHistoryAsync(
-            types, starred, null, int.MaxValue, searchText, SortByLastAccessed, token);
+            query, sortByLastAccessed: SortByLastAccessed, token: token);
         return records.Select(record => new FilteredHistoryRecord(HistoryRecordKey.From(record), record.Stared)).ToList();
     }
 
@@ -487,14 +492,9 @@ public partial class HistoryViewModel
             }
             else
             {
-                var (types, starred, searchText) = BuildQueryParameters();
+                var query = BuildQueryParameters();
                 (currentRecordCount, selectedInCurrentFilter) =
-                    await historyManager.GetHistorySelectionCountsAsync(
-                        types,
-                        starred,
-                        searchText,
-                        selectedKeys,
-                        token);
+                    await historyManager.GetHistorySelectionCountsAsync(query, selectedKeys, token);
             }
 
             if (!HasSameSelectedHistoryKeys(selectedKeys))

@@ -7,6 +7,8 @@ using SyncClipboard.Core.Utilities.History;
 
 namespace SyncClipboard.Core.ViewModels.Sub;
 
+public sealed record HistoryPreviewTag(HistoryRecordKey Record, string Name);
+
 public partial class HistoryRecordVM : ObservableObject
 {
     public HistoryRecordVM(HistoryRecord record)
@@ -21,6 +23,7 @@ public partial class HistoryRecordVM : ObservableObject
         Size = record.Size;
         timestamp = record.Timestamp;
         lastAccessed = record.LastAccessed;
+        tags = [.. record.Tags];
         stared = record.Stared;
         pinned = record.Pinned;
         syncState = record.SyncStatus == HistorySyncStatus.LocalOnly ? SyncStatus.LocalOnly :
@@ -43,6 +46,12 @@ public partial class HistoryRecordVM : ObservableObject
     [ObservableProperty]
     private string[] filePath;
     partial void OnFilePathChanged(string[]? oldValue, string[] newValue) => UpdatePreviewImage();
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PreviewTags))]
+    private string[] tags = [];
+
+    public IEnumerable<HistoryPreviewTag> PreviewTags => (Tags ?? []).Select(tag => new HistoryPreviewTag(Key, tag));
 
     public string Hash { get; set; }
     public string? TransferDataFile { get; set; }
@@ -299,6 +308,7 @@ public partial class HistoryRecordVM : ObservableObject
             TransferDataHash = TransferDataHash,
             Timestamp = Timestamp,
             Stared = Stared,
+            Tags = [.. Tags],
             Pinned = Pinned,
             IsLocalFileReady = IsLocalFileReady,
             Size = Size
@@ -316,6 +326,7 @@ public partial class HistoryRecordVM : ObservableObject
         Size = record.Size;
         Timestamp = record.Timestamp;
         Stared = record.Stared;
+        Tags = [.. record.Tags];
         Pinned = record.Pinned;
         SyncState = record.SyncState;
         // IsDownloading = record.IsDownloading;
@@ -397,6 +408,7 @@ public partial class HistoryRecordVM : ObservableObject
             Size = this.Size,
             Timestamp = this.Timestamp,
             Stared = this.Stared,
+            Tags = [.. this.Tags],
             Pinned = this.Pinned,
             SyncState = this.SyncState,
             IsDownloading = this.IsDownloading,

@@ -1,3 +1,5 @@
+using SyncClipboard.Core.Utilities.History;
+using SyncClipboard.WinUI3.Services;
 using Microsoft.Extensions.DependencyInjection;
 using CommunityToolkit.WinUI.Converters;
 using Microsoft.UI.Input;
@@ -44,6 +46,120 @@ namespace SyncClipboard.WinUI3.Views;
 
 public sealed partial class HistoryWindow : Window, IWindow, IDisposable
 {
+    public async void ShowTagPicker()
+    {
+        if (_viewModel.HasModalOperation || _viewModel.IsMultiSelecting || _viewModel.SelectedItem is not { } record)
+            return;
+
+        using var hold = _viewModel.HoldForModalOperation();
+        try
+        {
+            var picker = await _viewModel.CreateTagPickerAsync(record.Key);
+            if (picker is null || _viewModel.IsMultiSelecting || _viewModel.SelectedItem?.Key != record.Key
+                || _disposed || !((IWindow)this).IsVisible)
+                return;
+
+            ScrollToSelectedItem();
+            _ListView.UpdateLayout();
+            var anchor = _ListView.ContainerFromItem(_viewModel.SelectedItem) as FrameworkElement ?? _ListView;
+            var view = new HistoryTagPickerView(picker);
+            var flyout = view.ShowAt(anchor);
+            var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            void SelectionChanged(object? _, PropertyChangedEventArgs args)
+            {
+                if (_viewModel.SelectedItem?.Key != record.Key || _viewModel.IsMultiSelecting)
+                    flyout.Hide();
+            }
+            _viewModel.PropertyChanged += SelectionChanged;
+            flyout.Closed += (_, _) => closed.TrySetResult();
+            try
+            {
+                await closed.Task;
+            }
+            finally
+            {
+                _viewModel.PropertyChanged -= SelectionChanged;
+            }
+            if (view.ClosedByKeyboard && ((IWindow)this).IsVisible && ((IWindow)this).IsActive)
+                _SearchTextBox.Focus(FocusState.Keyboard);
+        }
+        catch (Exception ex)
+        {
+            await new WinUIDialog(this).ShowMessageAsync(Strings.HistoryTagsEdit, ex.Message);
+        }
+    }
+
+    public void NavigateTagFilter(bool forward) =>
+        HistoryTagNavigation.Navigate(_TagFilterItems, _TagFilterScroll, _viewModel, forward);
+
+    public void NavigateTagFilterVertically(bool down) =>
+        HistoryTagNavigation.Navigate(_TagFilterItems, _TagFilterScroll, _viewModel, down, vertical: true);
+
+    private void TagFilterScroll_PointerWheelChanged(object sender, PointerRoutedEventArgs e)
+    {
+        var properties = e.GetCurrentPoint(_TagFilterScroll).Properties;
+        if (properties.IsHorizontalMouseWheel || properties.MouseWheelDelta == 0)
+            return;
+        _tagNavigation.ScrollByWheel(_TagFilterItems, _TagFilterScroll, properties.MouseWheelDelta / 120d);
+        e.Handled = true;
+    }
+
+    private bool _tagsExpanded;
+    private readonly HistoryTagNavigation _tagNavigation = new();
+
+    private void TagFilterItems_LayoutUpdated(object? _, object __)
+    {
+        if (_TagFilterItems.ItemsPanelRoot is not { } panel)
+            return;
+
+        var rowLimit = _tagsExpanded ? 3 : 1;
+        var rows = 0;
+        var rowTop = double.NegativeInfinity;
+        var height = 0d;
+        foreach (var child in panel.Children.OfType<FrameworkElement>())
+        {
+            var bounds = LayoutInformation.GetLayoutSlot(child);
+            if (bounds.Height <= 0)
+                continue;
+            if (bounds.Y > rowTop + 0.5)
+            {
+                if (++rows > rowLimit)
+                    break;
+                rowTop = bounds.Y;
+            }
+            height = Math.Max(height, bounds.Bottom);
+        }
+
+        if (rows <= 1 && _tagsExpanded)
+            SetTagsExpanded(false);
+        _ExpandTagsButton.Visibility = rows > 1 ? Visibility.Visible : Visibility.Collapsed;
+
+        var maxHeight = rows > rowLimit ? height : double.PositiveInfinity;
+        if (Math.Abs(_TagFilterScroll.MaxHeight - maxHeight) > 0.5)
+            _TagFilterScroll.MaxHeight = maxHeight;
+
+        _tagNavigation.KeepSelectionVisible(_TagFilterItems, _TagFilterScroll);
+    }
+
+    private void ExpandTags_Click(object _, RoutedEventArgs __) => ToggleTagBarExpanded();
+
+    public void ToggleTagBarExpanded()
+    {
+        if (_ExpandTagsButton.Visibility != Visibility.Visible)
+            return;
+        SetTagsExpanded(!_tagsExpanded);
+        TagFilterItems_LayoutUpdated(this, EventArgs.Empty);
+    }
+
+    private void SetTagsExpanded(bool expanded)
+    {
+        _tagsExpanded = expanded;
+        _ExpandTagsIcon.Glyph = expanded ? "\uE70E" : "\uE70D";
+        var label = expanded ? Strings.HistoryTagsCollapse : Strings.HistoryTagsExpand;
+        ToolTipService.SetToolTip(_ExpandTagsButton, label);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(_ExpandTagsButton, label);
+    }
+
     private readonly HistoryViewModel _viewModel;
     public HistoryViewModel ViewModel => _viewModel;
     private bool _windowLoaded = false;
@@ -75,6 +191,12 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         this.ResizeDip(_viewModel.Width, _viewModel.Height);
 
         InitializeComponent();
+        _TagFilterItems.AddHandler(UIElement.PointerWheelChangedEvent, new PointerEventHandler(TagFilterScroll_PointerWheelChanged), true);
+        _TagFilterScroll.ViewChanged += (_, e) =>
+        {
+            if (!e.IsIntermediate)
+                _tagNavigation.SnapToRow(_TagFilterItems, _TagFilterScroll);
+        };
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(_TitleBar);
@@ -762,31 +884,164 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
     private async void ListViewItem_ContextRequested(UIElement sender, ContextRequestedEventArgs e)
     {
         e.Handled = true;
-        if (_viewModel.IsMultiSelecting
-            || sender is not ListViewItem { Content: HistoryRecordVM record } container)
+        if (sender is not ListViewItem { Content: HistoryRecordVM record } container)
             return;
 
         var hasPosition = e.TryGetPosition(container, out var position);
-        _viewModel.SelectSingleRecord(record);
-        var flyout = new MenuFlyout();
-        var actions = await _viewModel.BuildActionsAsync(record);
-        if (_viewModel.IsMultiSelecting || !ReferenceEquals(container.Content, record))
+        var isMultiSelecting = _viewModel.IsMultiSelecting;
+        if (!isMultiSelecting)
+            _viewModel.SelectSingleRecord(record);
+        var actions = isMultiSelecting ? [] : await _viewModel.BuildActionsAsync(record);
+        if (isMultiSelecting != _viewModel.IsMultiSelecting || !ReferenceEquals(container.Content, record))
             return;
 
-        foreach (var action in actions)
+        var flyout = new MenuFlyout();
+        AddContextActions(flyout, actions);
+        if (flyout.Items.Count > 0)
+            flyout.Items.Add(new MenuFlyoutSeparator());
+        var editTags = new MenuFlyoutItem
         {
-            var item = new MenuFlyoutItem { Text = action.Text };
-            if (action.Action is not null)
-            {
-                item.Click += (_, __) => action.Action();
-            }
-            flyout.Items.Add(item);
-        }
+            Text = Strings.HistoryTagsEdit,
+            IsEnabled = !isMultiSelecting || _viewModel.HasSelectedRecords
+        };
+        editTags.Click += async (_, _) => await EditTagsAsync(isMultiSelecting ? _viewModel.GetTagEditSelection() : [record.Key]);
+        flyout.Items.Add(editTags);
+        foreach (var (text, command, parameter) in _viewModel.BuildHistoryMenuCommands(record))
+            flyout.Items.Add(new MenuFlyoutItem { Text = text, Command = command, CommandParameter = parameter });
+        AddContextActions(flyout, _viewModel.BuildDiagnosticActions(record));
 
         if (hasPosition)
             flyout.ShowAt(container, new FlyoutShowOptions { Position = position });
         else
             flyout.ShowAt(container);
+    }
+
+    private static void AddContextActions(MenuFlyout flyout, List<SyncClipboard.Core.Interfaces.MenuItem> actions)
+    {
+        if (actions.Count == 0)
+            return;
+        if (flyout.Items.Count > 0)
+            flyout.Items.Add(new MenuFlyoutSeparator());
+        foreach (var action in actions)
+        {
+            var item = new MenuFlyoutItem { Text = action.Text };
+            if (action.Action is not null)
+                item.Click += (_, _) => action.Action();
+            flyout.Items.Add(item);
+        }
+    }
+
+    private async void EditTags_Click(object _, RoutedEventArgs __) =>
+        await EditTagsAsync(_viewModel.GetTagEditSelection());
+
+    private void TagContextFlyout_Opening(object sender, object _)
+    {
+        if (sender is not MenuFlyout flyout)
+            return;
+        flyout.Items.Clear();
+        if (flyout.Target?.DataContext is HistoryTagFilter { Name: { } name })
+        {
+            var rename = new MenuFlyoutItem { Text = Strings.HistoryTagRename };
+            rename.Click += async (_, _) => await RenameTagAsync(name);
+            flyout.Items.Add(rename);
+            var delete = new MenuFlyoutItem { Text = Strings.HistoryTagDelete };
+            delete.Click += async (_, _) => await DeleteTagAsync(name);
+            flyout.Items.Add(delete);
+            flyout.Items.Add(new MenuFlyoutSeparator());
+        }
+        var settings = new MenuFlyoutItem { Text = Strings.HistoryTagBarEditPins };
+        settings.Click += TagBarSettings_Click;
+        flyout.Items.Add(settings);
+    }
+
+    private async Task RenameTagAsync(string name)
+    {
+        using var hold = _viewModel.HoldForModalOperation();
+        try
+        {
+            var model = new HistoryTagRenameViewModel(name, (newName, merge) => _viewModel.RenameTagAsync(name, newName, merge));
+            var dialog = new HistoryTagRenameDialog(model)
+            {
+                XamlRoot = Content.XamlRoot
+            };
+            await dialog.ShowAsync();
+        }
+        catch (Exception ex)
+        {
+            await new WinUIDialog(this).ShowMessageAsync(Strings.HistoryTagRename, ex.Message);
+        }
+        finally
+        {
+            _SearchTextBox.Focus(FocusState.Programmatic);
+        }
+    }
+
+    private async Task DeleteTagAsync(string name)
+    {
+        using var hold = _viewModel.HoldForModalOperation();
+        var messages = new WinUIDialog(this);
+        try
+        {
+            if (await messages.ShowConfirmationAsync(Strings.HistoryTagDelete, string.Format(Strings.HistoryTagDeleteConfirmation, name)))
+                await _viewModel.DeleteTagAsync(name);
+        }
+        catch (Exception ex)
+        {
+            await messages.ShowMessageAsync(Strings.HistoryTagDelete, ex.Message);
+        }
+        finally
+        {
+            _SearchTextBox.Focus(FocusState.Programmatic);
+        }
+    }
+
+    private async void TagBarSettings_Click(object _, RoutedEventArgs __)
+    {
+        using var hold = _viewModel.HoldForModalOperation();
+        try
+        {
+            var manager = App.Current.Services.GetRequiredService<HistoryManager>();
+            var counts = await manager.GetTagCountsAsync();
+            var model = new HistoryTagBarSettingsViewModel(counts, _viewModel.PinnedTags, _viewModel.ShowTagCounts);
+            var dialog = new HistoryTagBarSettingsDialog(model, () => _viewModel.SetPinnedTagsAsync(model.PinnedNames)) { XamlRoot = Content.XamlRoot };
+            await dialog.ShowAsync();
+        }
+        catch (Exception ex)
+        {
+            await new WinUIDialog(this).ShowMessageAsync(Strings.HistoryTagBarSettings, ex.Message);
+        }
+    }
+
+    private async Task EditTagsAsync(HistoryRecordKey[] keys)
+    {
+        using var hold = _viewModel.HoldForModalOperation();
+        try
+        {
+            var manager = App.Current.Services.GetRequiredService<HistoryManager>();
+            var assignments = new List<string[]>();
+            foreach (var key in keys)
+            {
+                var record = await manager.GetSyncSnapshotAsync(key);
+                if (record is { IsDeleted: false })
+                    assignments.Add(record.Tags);
+            }
+            if (assignments.Count == 0)
+            {
+                await new WinUIDialog(this).ShowMessageAsync(Strings.HistoryTagsEdit, Strings.HistoryTagsNoSelection);
+                return;
+            }
+            var counts = await manager.GetTagCountsAsync();
+            var editor = new HistoryTagEditorViewModel(counts.Keys, assignments, _viewModel.PinnedTags);
+            var dialog = new HistoryTagEditorDialog(editor, () => manager.EditTagsAsync(keys, editor.Added, editor.Removed))
+            {
+                XamlRoot = Content.XamlRoot
+            };
+            await dialog.ShowAsync();
+        }
+        catch (Exception ex)
+        {
+            await new WinUIDialog(this).ShowMessageAsync(Strings.HistoryTagsEdit, ex.Message);
+        }
     }
 
     private void SelectorBar_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs _)
@@ -1125,15 +1380,30 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         border.SetBinding(UIElement.VisibilityProperty, binding);
     }
 
+    private void InlineTagsLoaded(object sender, RoutedEventArgs _)
+    {
+        var tags = (Controls.HistoryInlineTagsView)sender;
+        tags.ViewModel = _viewModel;
+        tags.SetBinding(Controls.HistoryInlineTagsView.PinnedTagsProperty, new Binding
+        {
+            Source = _viewModel,
+            Path = new PropertyPath(nameof(HistoryViewModel.PinnedTags)),
+            Mode = BindingMode.OneWay
+        });
+        BindVisibilityOutsidePreview(tags);
+    }
+
     private void RecordControlBarLoaded(object sender, RoutedEventArgs _)
     {
         if (sender is not RecordControlBar controlBar)
             return;
 
-        // 设置 ViewModel 绑定
         controlBar.ViewModel = _viewModel;
+        BindVisibilityOutsidePreview(controlBar);
+    }
 
-        // 设置 Visibility 绑定（当 ShowPreviewPanel 为 true 时隐藏）
+    private void BindVisibilityOutsidePreview(FrameworkElement control)
+    {
         var visibilityBinding = new Binding
         {
             Source = _viewModel,
@@ -1141,7 +1411,7 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
             Converter = boolToVisibilityNegateConverter,
             Mode = BindingMode.OneWay,
         };
-        controlBar.SetBinding(UIElement.VisibilityProperty, visibilityBinding);
+        control.SetBinding(UIElement.VisibilityProperty, visibilityBinding);
     }
 
     private bool _isDraggingSplitter = false;

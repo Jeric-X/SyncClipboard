@@ -8,6 +8,7 @@ public static class HistoryShortcutDescriptions
     public static string GetActionName(HistoryShortcutAction action) => action switch
     {
         HistoryShortcutAction.Search => Strings.HistoryShortcutSearch,
+        HistoryShortcutAction.EditTags => Strings.HistoryTagsEdit,
         HistoryShortcutAction.PreviousItem => Strings.HistoryShortcutPreviousItem,
         HistoryShortcutAction.NextItem => Strings.HistoryShortcutNextItem,
         HistoryShortcutAction.FirstItem => Strings.HistoryShortcutFirstItem,
@@ -19,6 +20,11 @@ public static class HistoryShortcutDescriptions
         HistoryShortcutAction.TogglePreview => Strings.HistoryShortcutTogglePreview,
         HistoryShortcutAction.NextFilter => Strings.HistoryShortcutNextFilter,
         HistoryShortcutAction.PreviousFilter => Strings.HistoryShortcutPreviousFilter,
+        HistoryShortcutAction.PreviousTag => Strings.HistoryShortcutPreviousTag,
+        HistoryShortcutAction.NextTag => Strings.HistoryShortcutNextTag,
+        HistoryShortcutAction.ToggleTagsExpanded => Strings.HistoryShortcutToggleTagsExpanded,
+        HistoryShortcutAction.TagAbove => Strings.HistoryShortcutTagAbove,
+        HistoryShortcutAction.TagBelow => Strings.HistoryShortcutTagBelow,
         HistoryShortcutAction.CopyAndPaste => Strings.HistoryShortcutCopyAndPaste,
         HistoryShortcutAction.Copy => Strings.HistoryShortcutCopy,
         HistoryShortcutAction.ExecuteRecommendedAction => Strings.ExecuteRecommendedAction,

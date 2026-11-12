@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Shared.Models;
 using SyncClipboard.Server.Core.Utilities.History;
@@ -14,6 +15,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 {
     public const string HARD_CODED_USER_ID = "default_user";
 
+    private readonly IOptions<AppSettings> _options;
     private readonly HistoryDbContext _dbContext;
     private readonly string _persistentDir;
     private readonly IHubContext<SyncClipboardHub, ISyncClipboardClient> _hubContext;
@@ -22,8 +24,10 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
     public HistoryService(HistoryDbContext dbContext,
         IProfileEnv profileEnv,
-        IHubContext<SyncClipboardHub, ISyncClipboardClient> hubContext)
+        IHubContext<SyncClipboardHub, ISyncClipboardClient> hubContext,
+        IOptions<AppSettings>? options = null)
     {
+        _options = options ?? Options.Create(new AppSettings());
         _dbContext = dbContext;
         _persistentDir = profileEnv.GetPersistentDir();
         _sem = _dbContext.Database.IsSqlite() ? _processSem : new SemaphoreSlim(1, 1);
@@ -48,26 +52,49 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             return (null, null);
         }
 
+        if (dto.Tags is not null)
+            dto.Tags = HistoryTags.Normalize(dto.Tags);
+        var backfillTags = existing.Tags is null && dto.Tags is { Length: > 0 };
+
+        var updated = ApplyMetadataUpdate(existing, dto);
+        if (updated is null)
+            return (null, null);
+
+        if (backfillTags)
+            existing.Tags = dto.Tags;
+
+        if (updated.Value || backfillTags)
+        {
+            await _dbContext.SaveChangesAsync(token);
+            await NotifyProfileChangeAsync(existing);
+            if (updated.Value)
+                await DeleteProfileDataIfNeed(existing, token);
+        }
+
+        return (updated, HistoryRecordDto.FromEntity(existing));
+    }
+
+    private static bool? ApplyMetadataUpdate(HistoryRecordEntity existing, HistoryRecordUpdateDto dto)
+    {
         dto.Version ??= existing.Version + 1;
         dto.LastModified ??= DateTimeOffset.UtcNow;
-
-        var shouldUpdate = HistoryHelper.ShouldUpdate(
-            oldVersion: existing.Version,
-            newVersion: dto.Version.Value,
-            oldLastModified: new DateTimeOffset(existing.LastModified),
-            newLastModified: dto.LastModified.Value);
-
-        if (!shouldUpdate)
-        {
-            return (false, HistoryRecordDto.FromEntity(existing));
-        }
+        if (!HistoryHelper.ShouldUpdate(existing.Version, dto.Version.Value,
+            new DateTimeOffset(existing.LastModified), dto.LastModified.Value))
+            return false;
 
         if (dto.IsDelete is false && existing.IsDeleted && !string.IsNullOrEmpty(existing.TransferDataFile))
-        {
-            return (null, null);
-        }
+            return null;
 
-        // 部分字段更新
+        ApplyOptionalUpdateFields(existing, dto);
+        existing.LastModified = dto.LastModified.Value.UtcDateTime;
+        existing.Version = dto.Version.Value;
+        return true;
+    }
+
+    private static void ApplyOptionalUpdateFields(HistoryRecordEntity existing, HistoryRecordUpdateDto dto)
+    {
+        if (dto.Tags is not null)
+            existing.Tags = dto.Tags;
         if (dto.Starred.HasValue)
             existing.Stared = dto.Starred.Value;
         if (dto.Pinned.HasValue)
@@ -75,16 +102,8 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         if (dto.IsDelete.HasValue)
             existing.IsDeleted = dto.IsDelete.Value;
 
-        existing.LastModified = dto.LastModified.Value.UtcDateTime;
         if (dto.LastAccessed.HasValue)
             existing.LastAccessed = dto.LastAccessed.Value.UtcDateTime;
-        existing.Version = dto.Version.Value;
-
-        await _dbContext.SaveChangesAsync(token);
-        await NotifyProfileChangeAsync(existing);
-        await DeleteProfileDataIfNeed(existing, token);
-
-        return (true, HistoryRecordDto.FromEntity(existing));
     }
 
     private async Task NotifyProfileChangeAsync(HistoryRecordEntity entity)
@@ -111,6 +130,8 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         bool? starred = null,
         DateTime? modifiedAfter = null,
         bool sortByLastAccessed = false,
+        bool onlyUntagged = false,
+        IReadOnlyCollection<string>? tags = null,
         CancellationToken token = default)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
@@ -121,6 +142,8 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         var query = _dbContext.HistoryRecords
             .Where(r => r.UserId == userId);
+
+        query = ApplyTagFilter(query, tags, onlyUntagged);
 
         if (after.HasValue)
         {
@@ -181,6 +204,20 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             .ToListAsync(token);
 
         return list.Select(HistoryRecordDto.FromEntity).ToList();
+    }
+
+    private static IQueryable<HistoryRecordEntity> ApplyTagFilter(
+        IQueryable<HistoryRecordEntity> query, IReadOnlyCollection<string>? tags, bool onlyUntagged)
+    {
+        var names = HistoryTags.NormalizeNames(tags ?? []);
+        if (names.Length > 0 && onlyUntagged)
+            throw new ArgumentException("Tags and untagged filter cannot be combined.");
+        if (names.Length > 0)
+            query = query.Where(r => r.Tags != null && r.Tags.Any(name => names.Contains(name)));
+        if (onlyUntagged)
+            query = query.Where(r => r.Tags == null || r.Tags.Length == 0);
+
+        return query;
     }
 
     public async Task AddProfile(string userId, Profile profile, CancellationToken token)
@@ -320,6 +357,9 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         string userId, HistoryRecordDto incoming, string? declaredTransferDataHash,
         Stream? transferFileStream, CancellationToken token = default)
     {
+        if (incoming.Tags is not null)
+            incoming.Tags = HistoryTags.Normalize(incoming.Tags);
+
         await _sem.WaitAsync(token);
         using var guard = new ScopeGuard(() => _sem.Release());
 
@@ -342,13 +382,24 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             await EnsureExistingRecordData(existing, declaredTransferDataHash, transferFileStream, token);
         }
 
-        if (ShouldUpdateExistingRecord(existing, incoming))
+        var backfillTags = existing.Tags is null && incoming.Tags is { Length: > 0 };
+        var shouldUpdate = ShouldUpdateExistingRecord(existing, incoming);
+        if (shouldUpdate)
         {
             incoming.Version = Math.Max(incoming.Version, existing.Version + 1);
-            UpdateEntityFields(incoming.ToEntity(userId), existing);
+            var updatedEntity = incoming.ToEntity(userId);
+            if (incoming.Tags is null)
+                updatedEntity.Tags = existing.Tags is null ? null : [.. existing.Tags];
+            UpdateEntityFields(updatedEntity, existing);
+        }
+        if (backfillTags)
+            existing.Tags = incoming.Tags;
+        if (shouldUpdate || backfillTags)
+        {
             await _dbContext.SaveChangesAsync(token);
             await NotifyProfileChangeAsync(existing);
-            await DeleteProfileDataIfNeed(existing, token);
+            if (shouldUpdate)
+                await DeleteProfileDataIfNeed(existing, token);
         }
 
         return HistoryRecordDto.FromEntity(existing);
@@ -412,6 +463,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         dstEntity.CreateTime = srcEntity.CreateTime;
         dstEntity.LastAccessed = srcEntity.LastAccessed;
         dstEntity.LastModified = srcEntity.LastModified;
+        dstEntity.Tags = srcEntity.Tags is null ? null : [.. srcEntity.Tags];
         dstEntity.Stared = srcEntity.Stared;
         dstEntity.Pinned = srcEntity.Pinned;
         dstEntity.Version = srcEntity.Version;
@@ -558,19 +610,9 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         }
     }
 
-    public async Task RemoveOutOfRetentionRecords(uint retentionMinutes, CancellationToken token = default)
+    public Task RemoveOutOfRetentionRecords(CancellationToken token = default)
     {
-        // 0 means no limit
-        if (retentionMinutes == 0)
-        {
-            return;
-        }
-
-        var cutoff = DateTime.UtcNow - TimeSpan.FromMinutes(retentionMinutes);
-
-        await _historyManagerHelper.RemoveExpiredInBatchesAsync(
-            r => r.UserId == HARD_CODED_USER_ID && !r.IsDeleted && !r.Stared && !r.Pinned
-                 && r.LastModified < cutoff && r.LastAccessed < cutoff, token);
+        return _historyManagerHelper.RemoveExpiredInBatchesAsync(token);
     }
 
     public async Task<int> ClearAllAsync(string userId, CancellationToken token = default)
@@ -599,8 +641,15 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
     public DbSet<HistoryRecordEntity> RecordDbSet => _dbContext.HistoryRecords;
 
-    public Expression<Func<HistoryRecordEntity, bool>> QueryCount => entity => !entity.IsDeleted;
-    public Expression<Func<HistoryRecordEntity, bool>> QueryToDeleteByOverCount => entity => !entity.Stared && !entity.Pinned && !entity.IsDeleted;
+    public Expression<Func<HistoryRecordEntity, bool>> QueryCount => entity => entity.UserId == HARD_CODED_USER_ID && !entity.IsDeleted;
+    public Expression<Func<HistoryRecordEntity, bool>> AutoDeletePredicate =>
+        entity => entity.UserId == HARD_CODED_USER_ID && !entity.Stared && !entity.Pinned && !entity.IsDeleted
+                  && (!_options.Value.ProtectTaggedRecords || entity.Tags == null || entity.Tags.Length == 0);
+    public Expression<Func<HistoryRecordEntity, DateTime>> QueryLastActivityTime => entity =>
+        entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;
+
+    public uint HistoryRetentionMinutes => _options.Value.HistoryRetentionMinutes;
+
     public Expression<Func<HistoryRecordEntity, DateTime>> QueryDeleteOrderBy => entity => entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;
 
     public async Task MarkForDeletionAsync(HistoryRecordEntity entity, CancellationToken token)

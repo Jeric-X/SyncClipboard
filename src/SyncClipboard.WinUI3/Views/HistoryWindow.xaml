@@ -1,9 +1,10 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <Window x:Class="SyncClipboard.WinUI3.Views.HistoryWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="using:SyncClipboard.WinUI3.Views"
         xmlns:controls="using:SyncClipboard.WinUI3.Controls"
+        xmlns:toolkit="using:CommunityToolkit.WinUI.Controls"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
@@ -21,7 +22,7 @@
     <Grid x:Name="_HistoryWindowGrid"
           PreviewKeyDown="Grid_KeyDown"
           KeyboardAcceleratorPlacementMode="Hidden"
-          RowDefinitions="Auto, Auto, *">
+          RowDefinitions="Auto, Auto, Auto, *">
         <Grid.Resources>
             <!--  Keep focus on the search box so history keyboard shortcuts remain available.  -->
             <Style TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">
@@ -40,13 +41,30 @@
                 <Setter Property="IsTabStop" Value="False" />
                 <Setter Property="AllowFocusOnInteraction" Value="False" />
             </Style>
-            <Style TargetType="CheckBox">
+            <Style TargetType="CheckBox" BasedOn="{StaticResource DefaultCheckBoxStyle}">
                 <Setter Property="IsTabStop" Value="False" />
                 <Setter Property="AllowFocusOnInteraction" Value="False" />
             </Style>
             <Style TargetType="FontIcon">
                 <Setter Property="FontSize" Value="12" />
             </Style>
+            <DataTemplate x:Key="HistoryTagOverflowTemplate" x:DataType="vms:HistoryRecordVM">
+                <Button Style="{StaticResource DefaultButtonStyle}"
+                        Width="28"
+                        Height="22"
+                        MinWidth="0"
+                        MinHeight="0"
+                        Margin="4,0,0,0"
+                        Padding="0"
+                        CornerRadius="5"
+                        FontSize="11"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        IsTabStop="False"
+                        AllowFocusOnInteraction="False"
+                        AutomationProperties.Name="{x:Bind i18n:Strings.HistoryTagsShowMore}"
+                        ToolTipService.ToolTip="{x:Bind i18n:Strings.HistoryTagsShowMore}" />
+            </DataTemplate>
             <DataTemplate x:Key="normalTemplate" x:DataType="vms:HistoryRecordVM">
                 <TextBlock Text="{x:Bind vc:ConvertMethod.LimitHistoryListText(Text, local:HistoryListModeProxy.Current.IsCompactListMode), Mode=OneWay}" TextTrimming="CharacterEllipsis" />
             </DataTemplate>
@@ -115,6 +133,10 @@
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.CloseHistoryWindowWhenLostFocus}" IsChecked="{x:Bind _viewModel.CloseWhenLostFocus, Mode=TwoWay}" />
                             <MenuFlyoutSeparator />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ShowSyncStatus}" IsChecked="{x:Bind _viewModel.ShowSyncState, Mode=TwoWay}" />
+                            <MenuFlyoutSeparator />
+                            <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ShowTagBar}" IsChecked="{x:Bind _viewModel.ShowTagBar, Mode=TwoWay}" />
+                            <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ShowTagCounts}" IsChecked="{x:Bind _viewModel.ShowTagCounts, Mode=TwoWay}" />
+                            <MenuFlyoutSeparator />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ShowStarredFilter}" IsChecked="{x:Bind _viewModel.ShowStarredFilter, Mode=TwoWay}" />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.SortByLastAccessed}" IsChecked="{x:Bind _viewModel.SortByLastAccessed, Mode=TwoWay}" />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.CompactListWhenPreview}" IsChecked="{x:Bind _viewModel.CompactListWhenPreview, Mode=TwoWay}" />
@@ -135,7 +157,7 @@
                 </Button>
             </StackPanel>
         </Grid>
-        <Grid Grid.Row="1" Margin="20,8,8,8" ColumnDefinitions="*, Auto">
+        <Grid Grid.Row="1" Margin="20,8,8,0" ColumnDefinitions="*, Auto">
             <TextBox x:Name="_SearchTextBox"
                      Grid.Column="0"
                      VerticalContentAlignment="Center"
@@ -165,6 +187,81 @@
             </StackPanel>
         </Grid>
         <Grid Grid.Row="2"
+              Margin="20,12,12,0"
+              ColumnDefinitions="*,Auto"
+              Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsTagBarVisible), Mode=OneWay}"
+              Background="Transparent">
+            <Grid.ContextFlyout>
+                <MenuFlyout>
+                    <MenuFlyoutItem Text="{x:Bind i18n:Strings.HistoryTagBarEditPins}" Click="TagBarSettings_Click" />
+                </MenuFlyout>
+            </Grid.ContextFlyout>
+            <ScrollViewer x:Name="_TagFilterScroll"
+                          HorizontalScrollBarVisibility="Disabled"
+                          HorizontalScrollMode="Disabled"
+                          VerticalScrollBarVisibility="Auto"
+                          VerticalScrollMode="Enabled">
+                <ScrollViewer.Resources>
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="{ThemeResource ControlStrokeColorDefault}" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrushPointerOver" Color="{ThemeResource ControlStrokeColorDefault}" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{ThemeResource ControlStrokeColorOnAccentDefault}" />
+                    <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="{ThemeResource ControlStrokeColorOnAccentDefault}" />
+                </ScrollViewer.Resources>
+                <ItemsControl x:Name="_TagFilterItems" ItemsSource="{x:Bind _viewModel.TagOptions, Mode=OneWay}" LayoutUpdated="TagFilterItems_LayoutUpdated">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <toolkit:WrapPanel VerticalSpacing="6" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:HistoryTagFilter">
+                            <ToggleButton Content="{x:Bind Text, Mode=OneWay}"
+                                          Style="{StaticResource DefaultToggleButtonStyle}"
+                                          IsTabStop="False"
+                                          AllowFocusOnInteraction="False"
+                                          IsChecked="{x:Bind IsSelected, Mode=TwoWay}"
+                                          Command="{x:Bind SelectCommand}"
+                                          CornerRadius="14"
+                                          Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                          Padding="10,4"
+                                          Margin="0,0,6,0"
+                                          MinHeight="28"
+                                          MaxWidth="220"
+                                          FontSize="12"
+                                          ToolTipService.ToolTip="{x:Bind Text, Mode=OneWay}">
+                                <ToggleButton.ContextFlyout>
+                                    <MenuFlyout Opening="TagContextFlyout_Opening" />
+                                </ToggleButton.ContextFlyout>
+                            </ToggleButton>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        Spacing="4"
+                        Margin="8,0,0,0"
+                        VerticalAlignment="Top">
+                <ToggleButton IsChecked="{x:Bind _viewModel.MultiTagFilter, Mode=TwoWay}"
+                              IsTabStop="False"
+                              AllowFocusOnInteraction="False"
+                              ToolTipService.ToolTip="{x:Bind i18n:Strings.HistoryTagsMultiSelect}"
+                              AutomationProperties.Name="{x:Bind i18n:Strings.HistoryTagsMultiSelect}">
+                    <FontIcon Glyph="&#xE762;" />
+                </ToggleButton>
+                <Button x:Name="_ExpandTagsButton"
+                        Width="28"
+                        Height="28"
+                        VerticalAlignment="Top"
+                        Visibility="Collapsed"
+                        ToolTipService.ToolTip="{x:Bind i18n:Strings.HistoryTagsExpand}"
+                        AutomationProperties.Name="{x:Bind i18n:Strings.HistoryTagsExpand}"
+                        Click="ExpandTags_Click">
+                    <FontIcon x:Name="_ExpandTagsIcon" Glyph="&#xE70D;" />
+                </Button>
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Row="3"
               x:Name="_MainContentGrid"
               ColumnDefinitions="Auto, Auto, *"
               RowDefinitions="*, Auto">
@@ -208,14 +305,18 @@
                                       StrokeThickness="1"
                                       Data="{x:Bind vc:ConvertMethod.HistoryRecordToHugeiconsGeometry(Type, FilePath), Mode=OneWay}" />
                             </Border>
-                            <StackPanel Grid.Column="2" Orientation="Vertical" VerticalAlignment="Center">
+                            <toolkit:DockPanel Grid.Column="2" LastChildFill="True">
+                                <controls:HistoryInlineTagsView toolkit:DockPanel.Dock="Right"
+                                                                Tags="{x:Bind PreviewTags, Mode=OneWay}"
+                                                                OverflowTemplate="{StaticResource HistoryTagOverflowTemplate}"
+                                                                Loaded="InlineTagsLoaded" />
                                 <ContentControl Padding="8,8,0,8"
                                                 HorizontalAlignment="Left"
                                                 VerticalAlignment="Center"
                                                 FontSize="{Binding FontSize, Source={StaticResource FontScaleProxy}}"
                                                 Content="{x:Bind}"
                                                 ContentTemplateSelector="{StaticResource clipboardTemplateSelector}" />
-                            </StackPanel>
+                            </toolkit:DockPanel>
                             <Border Grid.Column="3"
                                     Height="40"
                                     VerticalAlignment="Top"
@@ -245,6 +346,7 @@
                     Grid.Row="0"
                     Grid.Column="1"
                     Width="2"
+                    Margin="0,12,0,0"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Stretch"
                     Background="{ThemeResource SystemControlForegroundBaseLowBrush}"
@@ -265,43 +367,51 @@
                     Padding="8,4"
                     Background="{ThemeResource SystemControlBackgroundBaseLowBrush}"
                     Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsMultiSelecting), Mode=OneWay}">
-                <Grid ColumnDefinitions="*, Auto">
-                    <TextBlock Text="{x:Bind sys:String.Format(i18n:Strings.HistoryMultiSelectStatus, _viewModel.SelectedHistoryCount, _viewModel.SelectedInCurrentFilterCount), Mode=OneWay}" VerticalAlignment="Center" Margin="8,0" />
-                    <CommandBar Grid.Column="1"
-                                MinHeight="40"
-                                DefaultLabelPosition="Right"
-                                IsOpen="True"
-                                IsDynamicOverflowEnabled="False"
-                                OverflowButtonVisibility="Collapsed"
-                                Background="Transparent">
-                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectAll}" LabelPosition="Default" Command="{x:Bind _viewModel.ToggleCurrentFilterSelectionCommand}">
-                            <AppBarButton.Icon>
-                                <FontIcon x:Name="_SelectAllIcon" Glyph="&#xE739;" />
-                            </AppBarButton.Icon>
-                        </AppBarButton>
-                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectDelete}"
-                                      LabelPosition="Default"
-                                      Icon="Delete"
-                                      Command="{x:Bind _viewModel.ConfirmDeleteSelectedCommand}" />
-                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectStar}" LabelPosition="Default" Command="{x:Bind _viewModel.ConfirmToggleSelectedStarredCommand}">
-                            <AppBarButton.Icon>
-                                <SymbolIcon x:Name="_ToggleStarIcon" Symbol="OutlineStar" />
-                            </AppBarButton.Icon>
-                        </AppBarButton>
-                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryExportSelected}"
-                                      Icon="Save"
-                                      LabelPosition="Default"
-                                      Command="{x:Bind _viewModel.ExportSelectedCommand}" />
-                        <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectExit}"
-                                      LabelPosition="Default"
-                                      Icon="Cancel"
-                                      Command="{x:Bind _viewModel.ExitMultiSelectCommand}" />
-                    </CommandBar>
-                </Grid>
+                <CommandBar MinHeight="40"
+                            VerticalContentAlignment="Center"
+                            DefaultLabelPosition="Right"
+                            IsOpen="True"
+                            IsDynamicOverflowEnabled="True"
+                            OverflowButtonVisibility="Auto"
+                            Background="Transparent">
+                    <CommandBar.Content>
+                        <TextBlock Text="{x:Bind sys:String.Format(i18n:Strings.HistoryMultiSelectStatus, _viewModel.SelectedHistoryCount, _viewModel.SelectedInCurrentFilterCount), Mode=OneWay}"
+                                   VerticalAlignment="Center"
+                                   Margin="8,0"
+                                   TextTrimming="CharacterEllipsis" />
+                    </CommandBar.Content>
+                    <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectAll}" LabelPosition="Default" Command="{x:Bind _viewModel.ToggleCurrentFilterSelectionCommand}">
+                        <AppBarButton.Icon>
+                            <FontIcon x:Name="_SelectAllIcon" Glyph="&#xE739;" />
+                        </AppBarButton.Icon>
+                    </AppBarButton>
+                    <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectDelete}"
+                                  LabelPosition="Default"
+                                  Icon="Delete"
+                                  Command="{x:Bind _viewModel.ConfirmDeleteSelectedCommand}" />
+                    <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectStar}" LabelPosition="Default" Command="{x:Bind _viewModel.ConfirmToggleSelectedStarredCommand}">
+                        <AppBarButton.Icon>
+                            <SymbolIcon x:Name="_ToggleStarIcon" Symbol="OutlineStar" />
+                        </AppBarButton.Icon>
+                    </AppBarButton>
+                    <AppBarButton Label="{x:Bind i18n:Strings.HistoryTagsEdit}"
+                                  LabelPosition="Default"
+                                  Icon="Edit"
+                                  IsEnabled="{x:Bind _viewModel.HasSelectedRecords, Mode=OneWay}"
+                                  Click="EditTags_Click" />
+                    <AppBarButton Label="{x:Bind i18n:Strings.HistoryExportSelected}"
+                                  Icon="Save"
+                                  LabelPosition="Default"
+                                  Command="{x:Bind _viewModel.ExportSelectedCommand}" />
+                    <AppBarButton Label="{x:Bind i18n:Strings.HistoryMultiSelectExit}"
+                                  LabelPosition="Default"
+                                  Icon="Cancel"
+                                  Command="{x:Bind _viewModel.ExitMultiSelectCommand}" />
+                </CommandBar>
             </Border>
         </Grid>
         <InfoBar x:Name="_InfoBar"
-                 Grid.Row="2"
+                 Grid.Row="3"
                  Width="400"
                  Margin="0,0,0,100"
                  HorizontalAlignment="Center"

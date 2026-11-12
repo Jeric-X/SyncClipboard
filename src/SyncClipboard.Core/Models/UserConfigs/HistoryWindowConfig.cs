@@ -7,6 +7,8 @@ public record class HistoryWindowConfig
 {
     public const string ConfigKey = "HistoryWindow";
 
+    public string[] PinnedTags { get; init; } = [];
+
     public int Width { get; set; } = 850;
     public int Height { get; set; } = 530;
     public bool IsTopmost { get; set; } = false;
@@ -14,6 +16,9 @@ public record class HistoryWindowConfig
     public bool CloseWhenLostFocus { get; set; } = true;
     public bool ShowSyncState { get; set; } = true;
     public bool OnlyShowStarred { get; set; } = false;
+    public bool MultiTagFilter { get; init; } = false;
+    public bool ShowTagCounts { get; init; } = false;
+    public bool ShowTagBar { get; init; } = true;
     public bool ShowStarredFilter { get; set; } = false;
     public bool SortByLastAccessed { get; set; } = false;
     public int FontScalePercent { get; set; } = 100;

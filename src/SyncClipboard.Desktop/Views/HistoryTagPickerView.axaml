@@ -1,0 +1,75 @@
+﻿<UserControl x:Class="SyncClipboard.Desktop.Views.HistoryTagPickerView"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             x:DataType="vm:HistoryTagPickerViewModel"
+             KeyboardNavigation.TabNavigation="Cycle">
+    <UserControl.Resources>
+        <ControlTheme x:Key="TagPickerFlyoutTheme" TargetType="FlyoutPresenter" BasedOn="{StaticResource {x:Type FlyoutPresenter}}">
+            <Setter Property="Padding" Value="8" />
+        </ControlTheme>
+    </UserControl.Resources>
+    <UserControl.Styles>
+        <Style Selector="Button">
+            <Setter Property="Width" Value="NaN" />
+            <Setter Property="Height" Value="NaN" />
+            <Setter Property="Focusable" Value="False" />
+        </Style>
+    </UserControl.Styles>
+    <StackPanel Width="280" Spacing="8">
+        <TextBox x:Name="_TagSearch"
+                 MinWidth="0"
+                 Text="{Binding Search, Mode=TwoWay}"
+                 PlaceholderText="{x:Static i18n:Strings.HistoryTagsSearch}"
+                 AutomationProperties.Name="{x:Static i18n:Strings.HistoryTagsSearch}" />
+        <ScrollViewer MaxHeight="200"
+                      Focusable="False"
+                      VerticalAlignment="Top"
+                      VerticalContentAlignment="Top"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl x:Name="_Suggestions" Margin="0,0,12,0" ItemsSource="{Binding Suggestions}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:HistoryTagSuggestion">
+                        <Grid>
+                            <Button Theme="{StaticResource DateTimeFlyoutButtonStyle}"
+                                    HorizontalAlignment="Stretch"
+                                    HorizontalContentAlignment="Stretch"
+                                    MinHeight="32"
+                                    Padding="8,6"
+                                    Click="Suggestion_Click"
+                                    ToolTip.Tip="{Binding Name}">
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="1"
+                                               Text="✓"
+                                               Margin="8,0,0,0"
+                                               IsVisible="{Binding IsAssigned}" />
+                                    <Grid Grid.Column="1"
+                                          Margin="8,0,0,0"
+                                          VerticalAlignment="Center"
+                                          IsVisible="{Binding IsNew}">
+                                        <Border Background="{DynamicResource SystemAccentColor}" Opacity="0.12" CornerRadius="10" />
+                                        <TextBlock Text="{x:Static i18n:Strings.HistoryTagsNew}"
+                                                   Margin="8,2"
+                                                   FontSize="11"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource SystemAccentColor}" />
+                                    </Grid>
+                                </Grid>
+                            </Button>
+                            <Border BorderBrush="{DynamicResource SystemAccentColor}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    IsHitTestVisible="False"
+                                    IsVisible="{Binding IsCurrent}" />
+                        </Grid>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+        <TextBlock Text="{x:Static i18n:Strings.HistoryTagsNoMatches}" IsVisible="{Binding HasNoSuggestions}" Opacity="0.65" />
+        <TextBlock Text="{Binding ValidationMessage}" IsVisible="{Binding HasValidationMessage}" TextWrapping="Wrap" />
+    </StackPanel>
+</UserControl>

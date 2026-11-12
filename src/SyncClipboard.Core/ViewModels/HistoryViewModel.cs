@@ -168,6 +168,7 @@ public partial class HistoryViewModel : ObservableObject
         viewController = allHistoryItems.CreateView(x => x);
         HistoryItems = viewController.ToNotifyCollectionChanged();
         InitializeSelection();
+        InitializeTagRefresh();
         ApplyFilter();
 
         _relativeTimeTimer = new Timer(60000); // 1分钟
@@ -219,6 +220,7 @@ public partial class HistoryViewModel : ObservableObject
     private HistoryFilterType selectedFilter = HistoryFilterType.All;
     partial void OnSelectedFilterChanged(HistoryFilterType value)
     {
+        OnPropertyChanged(nameof(IsTagBarVisible));
         _ = Reload();
         RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
         OnPropertyChanged(nameof(SelectedFilterOption));
@@ -333,6 +335,27 @@ public partial class HistoryViewModel : ObservableObject
 
     [ObservableProperty]
     private bool serverConnected = true;
+
+    private string[] _selectedTags = [];
+
+    public string[] SelectedTags
+    {
+        get => _selectedTags;
+        set
+        {
+            var tags = HistoryTags.NormalizeNames(value);
+            if (tags.SequenceEqual(SelectedTags, StringComparer.Ordinal))
+                return;
+            _selectedTags = tags;
+            OnPropertyChanged(nameof(SelectedTags));
+            UpdateTagSelection();
+            _ = Reload();
+            RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
+        }
+    }
+
+    private bool MatchesTagFilter(IEnumerable<string> tags) =>
+        SelectedTags.Length == 0 || tags.Intersect(SelectedTags, StringComparer.Ordinal).Any();
 
     public bool OnlyShowStarred
     {
@@ -637,6 +660,7 @@ public partial class HistoryViewModel : ObservableObject
     [RelayCommand]
     public async Task Refresh()
     {
+        await RefreshTagOptionsAsync();
         await Reload();
         _ = _historyService.SyncAllAsync();
     }
@@ -715,7 +739,7 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
-    private (ProfileTypeFilter types, bool? starred, string? searchText) BuildQueryParameters()
+    private HistoryQueryPara BuildQueryParameters()
     {
         bool? starred = IsStarredScopeActive ? true : null;
         string? searchText = string.IsNullOrEmpty(SearchText) ? null : SearchText;
@@ -726,7 +750,7 @@ public partial class HistoryViewModel : ObservableObject
             HistoryFilterType.File => ProfileTypeFilter.FileAndGroup,
             _ => ProfileTypeFilter.All,
         };
-        return (types, starred, searchText);
+        return new HistoryQueryPara { TypeFilter = types, Starred = starred, SearchText = searchText, Tags = SelectedTags };
     }
 
     private int GetSelectedFilterOptionIndex()
@@ -876,6 +900,9 @@ public partial class HistoryViewModel : ObservableObject
         bool isCtrlPressed = false,
         bool isMetaPressed = false)
     {
+        if (HasModalOperation)
+            return false;
+
         if (key == Key.Esc)
         {
             if (IsMultiSelecting)
@@ -901,9 +928,19 @@ public partial class HistoryViewModel : ObservableObject
             return true;
         }
 
-        switch (_configManager.GetConfig<HistoryShortcutConfig>().Match(hotkey))
+        var action = _configManager.GetConfig<HistoryShortcutConfig>().Match(hotkey);
+        return HandleShortcut(action);
+    }
+
+    private bool HandleShortcut(HistoryShortcutAction? action)
+    {
+        switch (action)
         {
             case HistoryShortcutAction.Search: window?.FocusSearch(); break;
+            case HistoryShortcutAction.EditTags:
+                if (!IsMultiSelecting && SelectedItem is not null && SelectedFilter != HistoryFilterType.Transferring)
+                    window?.ShowTagPicker();
+                break;
             case HistoryShortcutAction.PreviousItem: NavigateUp(); break;
             case HistoryShortcutAction.NextItem: NavigateDown(); break;
             case HistoryShortcutAction.FirstItem: ScrollToTop(); break;
@@ -915,6 +952,12 @@ public partial class HistoryViewModel : ObservableObject
             case HistoryShortcutAction.TogglePreview: ShowPreviewPanel = !ShowPreviewPanel; break;
             case HistoryShortcutAction.NextFilter: NavigateToNextFilter(); break;
             case HistoryShortcutAction.PreviousFilter: NavigateToPreviousFilter(); break;
+            case HistoryShortcutAction.PreviousTag:
+            case HistoryShortcutAction.NextTag:
+            case HistoryShortcutAction.TagAbove:
+            case HistoryShortcutAction.TagBelow:
+            case HistoryShortcutAction.ToggleTagsExpanded:
+                return HandleTagShortcut(action.Value);
             case HistoryShortcutAction.CopyAndPaste: HandleEnterKey(false); break;
             case HistoryShortcutAction.Copy: HandleEnterKey(true); break;
             case HistoryShortcutAction.ExecuteRecommendedAction:
@@ -1010,6 +1053,7 @@ public partial class HistoryViewModel : ObservableObject
         historyManager.HistoryUpdated += RecordEntityUpdated;
         historyManager.HistoryRemoved += OnHistoryRemoved;
 
+        await RefreshTagOptionsAsync();
         await Reload();
 
         remoteServerFactory.CurrentServerChanged += OnCurrentServerChanged;
@@ -1017,17 +1061,21 @@ public partial class HistoryViewModel : ObservableObject
 
     private async void RecordEntityUpdated(HistoryRecord record)
     {
+        _ = RefreshTagOptionsAsync();
         var newRecordVM = new HistoryRecordVM(record) { SortByLastAccessed = SortByLastAccessed };
         await _threadDispatcher.RunOnMainThreadAsync(() =>
         {
             InitVMTransferStatus(newRecordVM);
             RecordUpdated(newRecordVM);
             RefreshSelectionSummaryForUpdatedRecord(newRecordVM);
+            if (SelectedFilter != HistoryFilterType.Transferring && SelectedTags.Length != 0)
+                RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
         });
     }
 
     private void OnHistoryRemoved(HistoryRecord record)
     {
+        _ = RefreshTagOptionsAsync();
         _threadDispatcher.RunOnMainThreadAsync(() =>
         {
             ApplyHistoryRecordRemoval(record);
@@ -1160,6 +1208,7 @@ public partial class HistoryViewModel : ObservableObject
         return MatchesSelectedFilter(vm)
             && MatchesStarredFilter(vm, ignoreStarredFilter)
             && MatchesSearchFilter(vm)
+            && MatchesTagFilter(vm.Tags)
             && IsWithinLoadedTimeRange(vm);
     }
 
@@ -1252,7 +1301,7 @@ public partial class HistoryViewModel : ObservableObject
             return;
         }
 
-        var (types, starred, searchText) = BuildQueryParameters();
+        var query = BuildQueryParameters();
 
         if (_isLocalEnd)
         {
@@ -1262,14 +1311,7 @@ public partial class HistoryViewModel : ObservableObject
         IsLoadingLocal = true;
         using var guard = new ScopeGuard(() => IsLoadingLocal = false);
 
-        var records = await historyManager.GetHistoryAsync(
-            types,
-            starred,
-            _timeCursor,
-            size,
-            string.IsNullOrEmpty(searchText) ? null : searchText,
-            SortByLastAccessed,
-            token);
+        var records = await historyManager.GetHistoryAsync(query, _timeCursor, size, SortByLastAccessed, token);
 
         _isLocalEnd = records.Count == 0;
         if (_isLocalEnd)
@@ -1373,22 +1415,6 @@ public partial class HistoryViewModel : ObservableObject
     private async Task<List<MenuItem>> BuildActionsCoreAsync(HistoryRecordVM record, CancellationToken token)
     {
         var actions = new List<MenuItem>();
-        var isDiagnoseMode = _configManager.GetConfig<ProgramConfig>().DiagnoseMode;
-        if (isDiagnoseMode)
-        {
-            actions.Add(new MenuItem($"Hash: {record.Hash}", async () =>
-            {
-                try
-                {
-                    var profile = new TextProfile(record.Hash);
-                    await RunWithOperationTimeoutAsync(
-                        "copy history hash",
-                        token => localClipboardSetter.Set(profile, token));
-                }
-                catch { }
-            }));
-        }
-
         var historyRecord = record.ToHistoryRecord();
         if (!historyRecord.IsLocalFileReady)
         {
@@ -1430,11 +1456,6 @@ public partial class HistoryViewModel : ObservableObject
             () => _ = RunWithOperationTimeoutAsync(
                 "reload local history file",
                 token => ReloadLocalHistoryFileAsync(record, token))));
-        actions.Add(new MenuItem(
-            I18n.Strings.DeleteHistory,
-            () => _ = RunWithOperationTimeoutAsync(
-                "delete history record",
-                token => historyManager.DeleteHistory(record, token))));
     }
 
     private async Task ReloadLocalHistoryFileAsync(HistoryRecord record, CancellationToken token)
@@ -1505,7 +1526,7 @@ public partial class HistoryViewModel : ObservableObject
 
     public void OnLostFocus()
     {
-        if (!HasModalOperation && !_remainWindowForViewDetail && !IsTopmost && CloseWhenLostFocus)
+        if (!_remainWindowForFolderPicker && !_remainWindowForViewDetail && !IsTopmost && CloseWhenLostFocus)
         {
             window.Hide();
         }

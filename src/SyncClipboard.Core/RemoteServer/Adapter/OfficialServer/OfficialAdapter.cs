@@ -1,4 +1,7 @@
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.DependencyInjection;
+using NativeNotification.Interface;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
@@ -15,13 +18,17 @@ using System.Net;
 using SyncClipboard.Core.Exceptions;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Utilities.Updater;
+using SyncClipboard.Core.Utilities;
 using System.Security.Cryptography;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 
 public sealed class OfficialAdapter(
     ILogger logger,
-    IAppConfig appConfig)
+    IAppConfig appConfig,
+    INotificationManager? notifications = null,
+    [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase? runtimeConfig = null,
+    IThreadDispatcher? dispatcher = null)
     : IServerAdapter<OfficialConfig>, IOfficialServerAdapter, IOfficialSyncServer, IDisposable
 {
     private const int DownloadBufferSize = 102400;
@@ -31,9 +38,12 @@ public sealed class OfficialAdapter(
     private readonly Lock _hubLock = new();
     private readonly Lock _httpClientLock = new();
     private HubConnection? _hubConnection;
+    private Task<ServerCapabilitiesDto>? _capabilitiesTask;
     private OfficialConfig _officialConfig = new OfficialConfig();
     private HttpClient _httpClient = new HttpClient();
     private IWebProxy _proxy = new WebProxy();
+    private bool _notifyCapabilitiesOnApply = true;
+    private bool _disposed;
 
     public event Action<ProfileDto>? ProfileDtoChanged;
     public event Action<HistoryRecordDto>? HistoryChanged;
@@ -42,6 +52,12 @@ public sealed class OfficialAdapter(
 
     public void SetConfig(OfficialConfig config, SyncConfig syncConfig)
     {
+        if (!Equals(_officialConfig, config))
+        {
+            lock (_hubLock)
+                _capabilitiesTask = null;
+        }
+        _notifyCapabilitiesOnApply |= !Equals(_officialConfig, config);
         _officialConfig = config;
         _webDavAdapter.SetConfig(new WebDavConfig
         {
@@ -62,9 +78,10 @@ public sealed class OfficialAdapter(
     {
         try
         {
-            ReConnectSignalR();
             _webDavAdapter.ApplyConfig();
             ReCreateHttpClient();
+            ReConnectSignalR();
+            _ = NotifyCapabilitiesOnConfigChangedAsync();
         }
         catch (Exception ex)
         {
@@ -118,6 +135,11 @@ public sealed class OfficialAdapter(
             await hubConnection.StartAsync();
             hubConnection.Closed += arg =>
             {
+                lock (_hubLock)
+                {
+                    if (ReferenceEquals(_hubConnection, hubConnection))
+                        _capabilitiesTask = null;
+                }
                 ServerDisconnected?.Invoke(arg);
                 return Task.CompletedTask;
             };
@@ -137,6 +159,7 @@ public sealed class OfficialAdapter(
         {
             old = _hubConnection;
             _hubConnection = null;
+            _capabilitiesTask = null;
         }
 
         old?.StopAsync().Wait();
@@ -144,30 +167,21 @@ public sealed class OfficialAdapter(
 
     public async Task TestConnectionAsync(CancellationToken cancellationToken = default)
     {
-        await _webDavAdapter.TestConnectionAsync(cancellationToken);
+        await TestHistoryConnectionAsync(cancellationToken);
+    }
 
-        // 验证服务器版本不能低于客户端版本
-        try
-        {
-            var serverVersion = await GetVersionAsync(cancellationToken);
-            var requestVersion = Env.RequestServerVersion;
+    public async Task<string?> TestConfigurationAsync(CancellationToken cancellationToken = default)
+    {
+        _webDavAdapter.ApplyConfig();
+        ReCreateHttpClient();
+        var capabilities = await TestHistoryConnectionAsync(cancellationToken);
+        return capabilities.HistoryTags ? null : Strings.HistoryTagsUpgrade;
+    }
 
-            if (AppVersion.TryParse(serverVersion, out var serverVer) && AppVersion.TryParse(requestVersion, out var requestVer))
-            {
-                if (serverVer < requestVer)
-                {
-                    throw new InvalidOperationException($"Server version ({serverVersion}) is lower than requested version ({requestVersion}). Please upgrade your server.");
-                }
-            }
-        }
-        catch (InvalidOperationException)
-        {
-            throw;
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException("Failed to verify server version.", ex);
-        }
+    private async Task<ServerCapabilitiesDto> TestHistoryConnectionAsync(CancellationToken token)
+    {
+        await _webDavAdapter.TestConnectionAsync(token);
+        return await GetCapabilitiesAsync(token);
     }
 
     public Task InitializeAsync(CancellationToken cancellationToken = default)
@@ -202,6 +216,7 @@ public sealed class OfficialAdapter(
 
     public void Dispose()
     {
+        _disposed = true;
         DisconnectSignalR();
         _webDavAdapter.Dispose();
         _httpClient?.Dispose();
@@ -233,6 +248,107 @@ public sealed class OfficialAdapter(
             _logger.Write($"[OFFICIAL_ADAPTER] Failed to get server time: {ex.Message}");
             throw;
         }
+    }
+
+    internal async Task NotifyCapabilitiesOnConfigChangedAsync()
+    {
+        if (!_notifyCapabilitiesOnApply || _disposed)
+            return;
+        _notifyCapabilitiesOnApply = false;
+        var client = _httpClient;
+        var config = _officialConfig;
+        try
+        {
+            var capabilities = await GetCapabilitiesAsync(CancellationToken.None);
+            if (capabilities.HistoryTags)
+                return;
+
+            void NotifyIfCurrent()
+            {
+                if (!_disposed && ReferenceEquals(client, _httpClient) && Equals(config, _officialConfig))
+                    ShowHistoryTagsNotification(config);
+            }
+
+            if (dispatcher is null)
+                NotifyIfCurrent();
+            else
+                await dispatcher.RunOnMainThreadAsync(NotifyIfCurrent);
+        }
+        catch (Exception ex)
+        {
+            _logger.Write("OfficialAdapter", $"Failed to check history capabilities: {ex.Message}");
+        }
+    }
+
+    private void ShowHistoryTagsNotification(OfficialConfig config)
+    {
+        var serverAddress = new Uri(config.RemoteURL).GetComponents(
+            UriComponents.SchemeAndServer | UriComponents.Path, UriFormat.UriEscaped).TrimEnd('/');
+        if (runtimeConfig?.GetConfig<HistoryNotificationConfig>().SuppressedTagSyncNotificationServers
+            .Contains(serverAddress, StringComparer.Ordinal) is true)
+            return;
+
+        ActionButton[] buttons = runtimeConfig is not null && dispatcher is not null
+            ? [new(Strings.HistoryTagsDontNotifyServer, () => DelegateExtention.SafeFireAndForget(
+                () => dispatcher.RunOnMainThreadAsync(() => IgnoreHistoryTagsNotification(serverAddress)), nameof(OfficialAdapter)))]
+            : [];
+        notifications?.Show(Strings.HistoryTagsSyncTitle, Strings.HistoryTagsUpgrade, buttons);
+    }
+
+    private void IgnoreHistoryTagsNotification(string serverAddress)
+    {
+        if (runtimeConfig is null)
+            return;
+        var config = runtimeConfig.GetConfig<HistoryNotificationConfig>();
+        if (!config.SuppressedTagSyncNotificationServers.Contains(serverAddress, StringComparer.Ordinal))
+            runtimeConfig.SetConfig(config with
+            {
+                SuppressedTagSyncNotificationServers = [.. config.SuppressedTagSyncNotificationServers, serverAddress]
+            });
+    }
+
+    private Task<ServerCapabilitiesDto> GetCapabilitiesAsync(CancellationToken token)
+    {
+        token.ThrowIfCancellationRequested();
+        lock (_hubLock)
+        {
+            if (_capabilitiesTask is null || _capabilitiesTask.IsFaulted || _capabilitiesTask.IsCanceled)
+                _capabilitiesTask = CheckHistorySupportAsync(_httpClient, token);
+            return _capabilitiesTask.WaitAsync(token);
+        }
+    }
+
+    internal static async Task<ServerCapabilitiesDto> CheckHistorySupportAsync(HttpClient client, CancellationToken token)
+    {
+        using var response = await client.GetAsync("api/capabilities", token);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+        {
+            var version = await ReadVersionAsync(client, token);
+            if (!AppVersion.TryParse(version, out var serverVersion) || !AppVersion.TryParse(Env.RequestServerVersion, out var requiredVersion))
+                throw new InvalidDataException("Invalid server version response.");
+            if (serverVersion < requiredVersion)
+                throw new InvalidOperationException($"Server version ({version}) is lower than requested version ({Env.RequestServerVersion}). Please upgrade your server.");
+            return new() { HistorySync = true, HistoryTags = false };
+        }
+        response.EnsureSuccessStatusCode();
+        var capabilities = await response.Content.ReadFromJsonAsync<ServerCapabilitiesDto>(JsonSerializerOptions.Web, token)
+            ?? throw new InvalidDataException("Invalid server capabilities response.");
+        if (!capabilities.HistorySync)
+            throw new InvalidOperationException(Strings.HistorySyncUnsupported);
+        return capabilities;
+    }
+
+    public async Task<bool> SupportsHistoryTagsAsync(CancellationToken cancellationToken = default)
+    {
+        var capabilities = await GetCapabilitiesAsync(cancellationToken);
+        return capabilities.HistoryTags;
+    }
+
+    private static async Task<string> ReadVersionAsync(HttpClient client, CancellationToken token)
+    {
+        using var response = await client.GetAsync("api/version", token);
+        response.EnsureSuccessStatusCode();
+        return await response.Content.ReadAsStringAsync(token);
     }
 
     public async Task<string> GetVersionAsync(CancellationToken cancellationToken = default)
@@ -318,7 +434,8 @@ public sealed class OfficialAdapter(
         }
     }
 
-    public async Task UpdateHistoryAsync(ProfileType type, string hash, HistoryRecordUpdateDto dto, CancellationToken cancellationToken = default)
+    public async Task<HistoryRecordUpdateDto?> UpdateHistoryAsync(
+        ProfileType type, string hash, HistoryRecordUpdateDto dto, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -327,7 +444,9 @@ public sealed class OfficialAdapter(
 
             if (response.IsSuccessStatusCode)
             {
-                return; // 成功不再返回 payload
+                var content = await response.Content.ReadAsStringAsync(cancellationToken);
+                return string.IsNullOrWhiteSpace(content) ? null
+                    : JsonSerializer.Deserialize<HistoryRecordUpdateDto>(content, JsonSerializerOptions.Web);
             }
             if (response.StatusCode == HttpStatusCode.Conflict)
             {
@@ -340,7 +459,7 @@ public sealed class OfficialAdapter(
             }
 
             response.EnsureSuccessStatusCode();
-            return; // unreachable
+            return null; // unreachable
         }
         catch (Exception ex)
         {
@@ -372,6 +491,9 @@ public sealed class OfficialAdapter(
                 { new StringContent(dto.Size.ToString()), "size" },
                 { new StringContent(dto.HasData.ToString()), "hasData" }
             };
+
+            if (dto.Tags is not null)
+                content.Add(new StringContent(JsonSerializer.Serialize(dto.Tags)), nameof(HistoryRecordDto.Tags));
 
             using var request = new HttpRequestMessage(HttpMethod.Post, url)
             {
@@ -597,6 +719,8 @@ public sealed class OfficialAdapter(
 
     private void ReCreateHttpClient()
     {
+        lock (_hubLock)
+            _capabilitiesTask = null;
         lock (_httpClientLock)
         {
             _httpClient.Dispose();

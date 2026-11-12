@@ -16,7 +16,7 @@
           DataContext="{Binding #_PreviewPanel.SelectedItem}"
           x:DataType="vms:HistoryRecordVM"
           Background="Transparent"
-          RowDefinitions="Auto, *">
+          RowDefinitions="Auto, Auto, *">
         <Border Grid.Row="0"
                 Background="Transparent"
                 Padding="12,4"
@@ -54,7 +54,30 @@
                                         ViewModel="{Binding #_PreviewPanel.ViewModel}" />
             </Grid>
         </Border>
-        <Grid Grid.Row="1">
+        <ScrollViewer Grid.Row="1"
+                      MaxHeight="100"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Auto">
+            <ItemsControl x:Name="_PreviewTags" Margin="12,0">
+                <ItemsControl.ItemsSource>
+                    <MultiBinding Converter="{x:Static vc:FuncConverter.OrderHistoryTags}">
+                        <Binding Path="PreviewTags" />
+                        <Binding Path="#_PreviewPanel.ViewModel.PinnedTags" />
+                    </MultiBinding>
+                </ItemsControl.ItemsSource>
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vms:HistoryPreviewTag">
+                        <controls:HistoryRecordTagChip Margin="0,4,6,0" RemoveRequested="RemoveTagRequested" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+        <Grid Grid.Row="2">
             <TextBlock x:Name="_PreviewPlaceholder"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"

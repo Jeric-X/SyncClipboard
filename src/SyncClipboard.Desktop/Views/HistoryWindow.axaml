@@ -93,6 +93,17 @@
     </Window.DataTemplates>
     <Panel x:Name="_HistoryContent">
         <Panel.Styles>
+            <Style Selector="ToggleButton.HistoryTagPill:not(:checked):not(:pointerover):not(:pressed):not(:disabled)">
+                <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+            </Style>
+            <Style Selector="Button.HistoryTagOverflow">
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="BorderThickness" Value="0" />
+                <Setter Property="Foreground" Value="{DynamicResource TextFillColorSecondaryBrush}" />
+            </Style>
+            <Style Selector="Button.HistoryTagOverflow:pointerover /template/ ContentPresenter">
+                <Setter Property="Background" Value="{DynamicResource SubtleFillColorSecondaryBrush}" />
+            </Style>
             <Style Selector="Button.HistoryAction">
                 <Setter Property="Theme" Value="{StaticResource DateTimeFlyoutButtonStyle}" />
                 <Setter Property="Height" Value="28" />
@@ -125,7 +136,7 @@
                                              MaterialOpacity="0.65" />
             </ExperimentalAcrylicBorder.Material>
         </ExperimentalAcrylicBorder>
-        <Grid RowDefinitions="Auto, Auto, *">
+        <Grid RowDefinitions="Auto, Auto, Auto, *">
             <Border Background="Transparent" WindowDecorationProperties.ElementRole="TitleBar" />
             <TabStrip x:Name="_FilterSelectorBar"
                       HorizontalAlignment="Center"
@@ -167,6 +178,10 @@
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.CloseHistoryWindowWhenLostFocus}" IsChecked="{Binding CloseWhenLostFocus, Mode=TwoWay}" />
                             <ui:FAMenuFlyoutSeparator />
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowSyncStatus}" IsChecked="{Binding ShowSyncState, Mode=TwoWay}" />
+                            <ui:FAMenuFlyoutSeparator />
+                            <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowTagBar}" IsChecked="{Binding ShowTagBar, Mode=TwoWay}" />
+                            <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowTagCounts}" IsChecked="{Binding ShowTagCounts, Mode=TwoWay}" />
+                            <ui:FAMenuFlyoutSeparator />
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ShowStarredFilter}" IsChecked="{Binding ShowStarredFilter, Mode=TwoWay}" />
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.SortByLastAccessed}" IsChecked="{Binding SortByLastAccessed, Mode=TwoWay}" />
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.CompactListWhenPreview}" IsChecked="{Binding CompactListWhenPreview, Mode=TwoWay}" />
@@ -190,7 +205,7 @@
                     <ui:FAFontIcon Glyph="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                 </Button>
             </StackPanel>
-            <Grid Grid.Row="1" Margin="20,8,8,8" ColumnDefinitions="*, Auto">
+            <Grid Grid.Row="1" Margin="20,8,8,0" ColumnDefinitions="*, Auto">
                 <TextBox x:Name="_SearchTextBox"
                          Grid.Column="0"
                          VerticalContentAlignment="Center"
@@ -221,8 +236,74 @@
                     </Button>
                 </StackPanel>
             </Grid>
+            <Grid Grid.Row="2"
+                  Margin="20,12,12,0"
+                  ColumnDefinitions="*,Auto"
+                  IsVisible="{Binding IsTagBarVisible}"
+                  Background="Transparent">
+                <Grid.ContextFlyout>
+                    <ui:FAMenuFlyout>
+                        <ui:FAMenuFlyoutItem Text="{x:Static i18n:Strings.HistoryTagBarEditPins}" Click="TagBarSettings_Click" />
+                    </ui:FAMenuFlyout>
+                </Grid.ContextFlyout>
+                <ScrollViewer x:Name="_TagFilterScroll" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <ScrollViewer.Resources>
+                        <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="{DynamicResource ControlStrokeColorDefault}" />
+                        <SolidColorBrush x:Key="ToggleButtonBorderBrushPointerOver" Color="{DynamicResource ControlStrokeColorDefault}" />
+                        <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="{DynamicResource ControlStrokeColorOnAccentDefault}" />
+                        <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="{DynamicResource ControlStrokeColorOnAccentDefault}" />
+                    </ScrollViewer.Resources>
+                    <ItemsControl x:Name="_TagFilterItems" ItemsSource="{Binding TagOptions}" LayoutUpdated="TagFilterItems_LayoutUpdated">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel LineSpacing="6" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:HistoryTagFilter">
+                                <ToggleButton Classes="HistoryTagPill"
+                                              Content="{Binding Text}"
+                                              IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                              Command="{Binding SelectCommand}"
+                                              CornerRadius="14"
+                                              Padding="10,4"
+                                              Margin="0,0,6,0"
+                                              MinHeight="28"
+                                              MaxWidth="220"
+                                              FontSize="12"
+                                              ToolTip.Tip="{Binding Text}">
+                                    <ToggleButton.ContextFlyout>
+                                        <ui:FAMenuFlyout Opening="TagContextFlyout_Opening" />
+                                    </ToggleButton.ContextFlyout>
+                                </ToggleButton>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            Spacing="4"
+                            Margin="8,0,0,0"
+                            VerticalAlignment="Top">
+                    <ToggleButton Classes="FontIcon"
+                                  IsChecked="{Binding MultiTagFilter, Mode=TwoWay}"
+                                  ToolTip.Tip="{x:Static i18n:Strings.HistoryTagsMultiSelect}"
+                                  AutomationProperties.Name="{x:Static i18n:Strings.HistoryTagsMultiSelect}">
+                        <ui:FAFontIcon Glyph="&#xE762;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    </ToggleButton>
+                    <Button x:Name="_ExpandTagsButton"
+                            Classes="HistoryAction"
+                            VerticalAlignment="Top"
+                            IsVisible="False"
+                            ToolTip.Tip="{x:Static i18n:Strings.HistoryTagsExpand}"
+                            AutomationProperties.Name="{x:Static i18n:Strings.HistoryTagsExpand}"
+                            Click="ExpandTags_Click">
+                        <ui:FAFontIcon x:Name="_ExpandTagsIcon" Glyph="&#xE70D;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+                    </Button>
+                </StackPanel>
+            </Grid>
             <Grid x:Name="_MainContentGrid"
-                  Grid.Row="2"
+                  Grid.Row="3"
                   ColumnDefinitions="*, Auto, 0"
                   RowDefinitions="*, Auto">
                 <ListBox x:Name="_ListBox"
@@ -246,7 +327,6 @@
                                   ColumnDefinitions="Auto, Auto, *, Auto, Auto"
                                   Background="Transparent"
                                   Opacity="{Binding IsLocalFileReady, Converter={x:Static vc:FuncConverter.LocalFileReadyToOpacity}}"
-                                  ContextRequested="HistoryItem_ContextRequested"
                                   IsHitTestVisible="True">
                                 <Grid.ContextFlyout>
                                     <ui:FAMenuFlyout Opening="ItemContextFlyout_Opening" />
@@ -278,12 +358,17 @@
                                         </Path.Data>
                                     </Path>
                                 </Border>
-                                <StackPanel Grid.Column="2" Orientation="Vertical" VerticalAlignment="Center">
+                                <DockPanel Grid.Column="2">
+                                    <controls:HistoryInlineTagsView DockPanel.Dock="Right"
+                                                                    Tags="{Binding PreviewTags}"
+                                                                    PinnedTags="{Binding #_HistoryWindow.ViewModel.PinnedTags}"
+                                                                    ViewModel="{Binding #_HistoryWindow.ViewModel}"
+                                                                    IsVisible="{Binding !#_HistoryWindow.ViewModel.ShowPreviewPanel}" />
                                     <ContentControl Padding="8,8,0,8"
                                                     VerticalAlignment="Center"
                                                     FontSize="{Binding #_HistoryWindow.ViewModel.ListItemFontSize}"
                                                     Content="{Binding .}" />
-                                </StackPanel>
+                                </DockPanel>
                                 <Border Grid.Column="3"
                                         Height="40"
                                         VerticalAlignment="Top"
@@ -319,6 +404,7 @@
                         Grid.Row="0"
                         Grid.Column="1"
                         Width="1"
+                        Margin="0,12,0,0"
                         HorizontalAlignment="Center"
                         VerticalAlignment="Stretch"
                         Background="LightGray"
@@ -341,11 +427,8 @@
                         Padding="8,4"
                         Background="{DynamicResource HistoryMultiSelectBarBackground}"
                         IsVisible="{Binding IsMultiSelecting}">
-                    <CommandBar MinHeight="40"
-                                Background="Transparent"
-                                DefaultLabelPosition="Right"
-                                IsDynamicOverflowEnabled="True">
-                        <CommandBar.Content>
+                    <controls:HistoryMultiSelectCommandBar MinHeight="40" Background="Transparent" DefaultLabelPosition="Right">
+                        <controls:HistoryMultiSelectCommandBar.Content>
                             <TextBlock Margin="8,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
                                 <TextBlock.Text>
                                     <MultiBinding StringFormat="{x:Static i18n:Strings.HistoryMultiSelectStatus}">
@@ -354,8 +437,8 @@
                                     </MultiBinding>
                                 </TextBlock.Text>
                             </TextBlock>
-                        </CommandBar.Content>
-                        <CommandBar.PrimaryCommands>
+                        </controls:HistoryMultiSelectCommandBar.Content>
+                        <controls:HistoryMultiSelectCommandBar.PrimaryCommands>
                             <CommandBarButton Label="{x:Static i18n:Strings.HistoryMultiSelectAll}" Command="{Binding ToggleCurrentFilterSelectionCommand}">
                                 <CommandBarButton.Icon>
                                     <TextBlock x:Name="_SelectAllIcon"
@@ -377,6 +460,11 @@
                                                FontSize="16" />
                                 </CommandBarButton.Icon>
                             </CommandBarButton>
+                            <CommandBarButton Label="{x:Static i18n:Strings.HistoryTagsEdit}" IsEnabled="{Binding HasSelectedRecords}" Click="EditTags_Click">
+                                <CommandBarButton.Icon>
+                                    <TextBlock Text="&#xE70F;" FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="16" />
+                                </CommandBarButton.Icon>
+                            </CommandBarButton>
                             <CommandBarButton Label="{x:Static i18n:Strings.HistoryExportSelected}" Command="{Binding ExportSelectedCommand}">
                                 <CommandBarButton.Icon>
                                     <TextBlock Text="&#xE74E;" FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="16" />
@@ -387,12 +475,12 @@
                                     <TextBlock Text="&#xE711;" FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="16" />
                                 </CommandBarButton.Icon>
                             </CommandBarButton>
-                        </CommandBar.PrimaryCommands>
-                    </CommandBar>
+                        </controls:HistoryMultiSelectCommandBar.PrimaryCommands>
+                    </controls:HistoryMultiSelectCommandBar>
                 </Border>
             </Grid>
             <ui:FAInfoBar x:Name="_InfoBar"
-                          Grid.Row="2"
+                          Grid.Row="3"
                           Width="400"
                           Margin="{Binding #_ListBox.Bounds.Height, Converter={x:Static vc:FuncConverter.CalculateInfoBarMargin}}"
                           HorizontalAlignment="Center"

@@ -5,6 +5,7 @@ using SyncClipboard.Core;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.ViewModels;
+using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.ViewModels.Sub;
 using SyncClipboard.WinUI3.Utilities;
 using System;
@@ -66,12 +67,15 @@ public sealed partial class PreviewPanel : UserControl
         if (e.NewValue is HistoryViewModel viewModel)
             viewModel.PropertyChanged += panel.ViewModel_PropertyChanged;
 
+        panel.UpdateTags();
         panel.UpdatePreviewImageContent();
         panel.UpdateStatusText();
     }
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(HistoryViewModel.PinnedTags))
+            UpdateTags();
         if (e.PropertyName == nameof(HistoryViewModel.EnableSyncHistory))
             UpdateStatusText();
     }
@@ -92,6 +96,7 @@ public sealed partial class PreviewPanel : UserControl
                 newRecord.PropertyChanged += panel.SelectedItem_PropertyChanged;
             }
 
+            panel.UpdateTags();
             panel.UpdatePreviewImageContent();
             panel.UpdateStatusText();
         }
@@ -99,6 +104,8 @@ public sealed partial class PreviewPanel : UserControl
 
     private void SelectedItem_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(HistoryRecordVM.PreviewTags))
+            UpdateTags();
         if (e.PropertyName == nameof(HistoryRecordVM.PreviewImage))
         {
             UpdatePreviewImageContent();
@@ -109,6 +116,9 @@ public sealed partial class PreviewPanel : UserControl
             UpdateStatusText();
         }
     }
+
+    private void UpdateTags() =>
+        _PreviewTags.ItemsSource = HistoryTagOrdering.OrderForDisplay(SelectedItem?.PreviewTags, ViewModel?.PinnedTags);
 
     internal void StatusTextLoaded(object _, RoutedEventArgs _1)
     {
@@ -129,6 +139,12 @@ public sealed partial class PreviewPanel : UserControl
 
         _StatusText.Text = isLocalFileMissing ? Strings.FileMissing : Strings.Synced;
         _StatusText.Visibility = isLocalFileMissing || isSynced ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    internal async void RemoveTag(object? _, HistoryPreviewTag tag)
+    {
+        if (SelectedItem?.Key == tag.Record)
+            await ViewModel.RemoveRecordTagAsync(tag);
     }
 
     private void UpdatePreviewImageContent()

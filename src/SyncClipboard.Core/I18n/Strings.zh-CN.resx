@@ -880,10 +880,10 @@ Shift + 左键：选中连续范围</value>
     <value>最大记录条数</value>
   </data>
   <data name="MaxItemCountDescription" xml:space="preserve">
-    <value>仅针对未同步记录，0表示不限制数量</value>
+    <value>0 表示不限制数量</value>
   </data>
   <data name="HistoryRetentionDescription" xml:space="preserve">
-    <value>仅针对未同步记录，0表示不限制时长</value>
+    <value>0 表示不限制保留时长</value>
   </data>
   <data name="HistoryRetentionMinutes" xml:space="preserve">
     <value>历史记录保存时长(分钟)</value>
@@ -898,7 +898,7 @@ Shift + 左键：选中连续范围</value>
     <value>本地文件丢失时自动删除记录</value>
   </data>
   <data name="AutoDeleteMissingLocalFilesDescription" xml:space="preserve">
-    <value>本地文件不存在或不完整时，自动删除纯本地记录</value>
+    <value>本地文件不存在或不完整时，自动删除对应记录</value>
   </data>
   <data name="HistoryPanel" xml:space="preserve">
     <value>历史记录面板</value>
@@ -1251,6 +1251,9 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryMultiSelectUnstar" xml:space="preserve">
     <value>取消收藏</value>
   </data>
+  <data name="HistoryMultiSelectEnter" xml:space="preserve">
+    <value>多选</value>
+  </data>
   <data name="HistoryMultiSelectExit" xml:space="preserve">
     <value>退出多选</value>
   </data>
@@ -1410,6 +1413,21 @@ Shift + 左键：选中连续范围</value>
   </data>
   <data name="HistoryShortcutTogglePreview" xml:space="preserve">
     <value>切换预览面板</value>
+  </data>
+  <data name="HistoryShortcutTagAbove" xml:space="preserve">
+    <value>切换到上方标签</value>
+  </data>
+  <data name="HistoryShortcutTagBelow" xml:space="preserve">
+    <value>切换到下方标签</value>
+  </data>
+  <data name="HistoryShortcutToggleTagsExpanded" xml:space="preserve">
+    <value>展开/收起标签栏</value>
+  </data>
+  <data name="HistoryShortcutPreviousTag" xml:space="preserve">
+    <value>切换到上一个标签</value>
+  </data>
+  <data name="HistoryShortcutNextTag" xml:space="preserve">
+    <value>切换到下一个标签</value>
   </data>
   <data name="HistoryShortcutNextFilter" xml:space="preserve">
     <value>下一个分类</value>
@@ -1630,5 +1648,131 @@ Shift + 左键：选中连续范围</value>
   </data>
   <data name="ExcludeFromLocalHistory" xml:space="preserve">
     <value>同时也不添加到历史记录</value>
+  </data>
+  <data name="HistoryTagsSyncTitle" xml:space="preserve">
+    <value>标签不会同步</value>
+  </data>
+  <data name="HistoryTagsUpgrade" xml:space="preserve">
+    <value>当前服务器不支持标签同步，并且未收藏的记录可能会被服务器自动清理。建议升级服务端版本，以获得完整的标签支持。</value>
+  </data>
+  <data name="HistorySyncUnsupported" xml:space="preserve">
+    <value>服务器不支持历史记录同步。</value>
+  </data>
+  <data name="HistoryTagsDontNotifyServer" xml:space="preserve">
+    <value>当前服务器不再提示</value>
+  </data>
+  <data name="ProtectTaggedRecords" xml:space="preserve">
+    <value>保护带标签的记录</value>
+  </data>
+  <data name="ServerProtectTaggedRecordsDescription" xml:space="preserve">
+    <value>带标签的记录视为收藏，不会被自动删除</value>
+  </data>
+  <data name="ProtectTaggedRecordsDescription" xml:space="preserve">
+    <value>带标签的记录视为收藏</value>
+  </data>
+  <data name="HistoryAutoDelete" xml:space="preserve">
+    <value>自动删除</value>
+  </data>
+  <data name="HistoryAutoDeleteDescription" xml:space="preserve">
+    <value>自动删除仅适用于未同步记录，已同步记录遵循服务器设置；收藏记录不会被自动删除</value>
+  </data>
+  <data name="HistoryTagsSelected" xml:space="preserve">
+    <value>编辑 {0} 条记录的标签</value>
+  </data>
+  <data name="HistoryTagsInvalid" xml:space="preserve">
+    <value>标签名称需为 1–64 个字符，不能含换行或控制字符；每条记录最多 32 个标签。</value>
+  </data>
+  <data name="HistoryTagsEdit" xml:space="preserve">
+    <value>编辑标签</value>
+  </data>
+  <data name="HistoryTagsSearch" xml:space="preserve">
+    <value>搜索或添加标签…</value>
+  </data>
+  <data name="HistoryTagsAdd" xml:space="preserve">
+    <value>添加</value>
+  </data>
+  <data name="HistoryTagsApply" xml:space="preserve">
+    <value>完成</value>
+  </data>
+  <data name="HistoryTagsNoSelection" xml:space="preserve">
+    <value>请先选择一条记录。</value>
+  </data>
+  <data name="ShowTagBar" xml:space="preserve">
+    <value>显示标签栏</value>
+  </data>
+  <data name="ShowTagCounts" xml:space="preserve">
+    <value>显示标签记录数量</value>
+  </data>
+  <data name="HistoryTagsExpand" xml:space="preserve">
+    <value>展开标签</value>
+  </data>
+  <data name="HistoryTagsCollapse" xml:space="preserve">
+    <value>收起标签</value>
+  </data>
+  <data name="HistoryTagsMultiSelect" xml:space="preserve">
+    <value>标签多选模式</value>
+  </data>
+  <data name="HistoryTagRemove" xml:space="preserve">
+    <value>移除此标签</value>
+  </data>
+  <data name="HistoryTagsShowMore" xml:space="preserve">
+    <value>显示收起的标签</value>
+  </data>
+  <data name="HistoryTagsQuickAdd" xml:space="preserve">
+    <value>添加标签</value>
+  </data>
+  <data name="HistoryTagsNew" xml:space="preserve">
+    <value>新建</value>
+  </data>
+  <data name="HistoryTagsNoMatches" xml:space="preserve">
+    <value>没有匹配的标签</value>
+  </data>
+  <data name="HistoryTagBarSettings" xml:space="preserve">
+    <value>固定标签</value>
+  </data>
+  <data name="HistoryTagBarSettingsHint" xml:space="preserve">
+    <value>上下拖动标签可固定或取消固定，拖动已固定标签可调整顺序。</value>
+  </data>
+  <data name="HistoryTagTogglePin" xml:space="preserve">
+    <value>固定 / 取消固定标签</value>
+  </data>
+  <data name="HistoryTagBarEmpty" xml:space="preserve">
+    <value>暂无标签</value>
+  </data>
+  <data name="HistoryTagBarPinned" xml:space="preserve">
+    <value>已固定</value>
+  </data>
+  <data name="HistoryTagBarUnpinned" xml:space="preserve">
+    <value>未固定</value>
+  </data>
+  <data name="HistoryTagBarDiscardTitle" xml:space="preserve">
+    <value>放弃修改？</value>
+  </data>
+  <data name="HistoryTagBarDiscardMessage" xml:space="preserve">
+    <value>标签栏设置尚未保存，是否放弃这些修改？</value>
+  </data>
+  <data name="HistoryTagBarDiscard" xml:space="preserve">
+    <value>放弃修改</value>
+  </data>
+  <data name="HistoryTagBarContinueEditing" xml:space="preserve">
+    <value>继续编辑</value>
+  </data>
+  <data name="HistoryTagBarEditPins" xml:space="preserve">
+    <value>编辑固定标签</value>
+  </data>
+  <data name="HistoryTagRename" xml:space="preserve">
+    <value>更名标签</value>
+  </data>
+  <data name="HistoryTagDelete" xml:space="preserve">
+    <value>删除标签</value>
+  </data>
+  <data name="HistoryTagDeleteConfirmation" xml:space="preserve">
+    <value>从本机已知的全部历史记录中移除“{0}”标签？</value>
+  </data>
+  <data name="HistoryTagRenameDescription" xml:space="preserve">
+    <value>更名本机已知的全部历史记录中的此标签。</value>
+  </data>
+  <data name="HistoryTagMergeConfirmation" xml:space="preserve">
+    <value>标签“{0}”已存在。确认后将合并到此标签，取消则保留原标签。</value>
   </data>
 </root>

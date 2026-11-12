@@ -93,7 +93,8 @@ public class ServerService : Service
                         _programConfig.DiagnoseMode,
                         _serverConfig.MaxHistoryCount,
                         _serverConfig.HistoryRetentionMinutes,
-                        _serviceProvider
+                        _serviceProvider,
+                        _serverConfig.ProtectTaggedRecords
                     )
                 );
                 _trayIcon.SetStatusString(SERVICE_NAME, "Running.", false);
