@@ -15,30 +15,6 @@ public class HistoryTagShortcutTests
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
-    [DataRow(false, true, false, true)]
-    [DataRow(true, true, false, false)]
-    [DataRow(false, false, false, false)]
-    [DataRow(false, true, true, false)]
-    public async Task ClosingPicker_ReappliesFocusLossPolicy(bool active, bool closeOnBlur, bool topmost, bool shouldHide)
-    {
-        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
-        var window = new Mock<IWindow>();
-        window.SetupGet(value => value.IsActive).Returns(active);
-        window.SetupGet(value => value.IsVisible).Returns(true);
-        var model = fixture.ViewModel;
-        Fixture.SetField(model, "window", window.Object);
-        model.CloseWhenLostFocus = closeOnBlur;
-        model.IsTopmost = topmost;
-        using (model.HoldForTagPicker())
-        {
-            model.OnLostFocus();
-            window.Verify(value => value.Hide(), Times.Never);
-            Assert.IsFalse(model.HandleKeyPress(Key.Enter));
-        }
-        window.Verify(value => value.Hide(), shouldHide ? Times.Once : Times.Never);
-    }
-
-    [TestMethod]
     public async Task EditShortcut_UsesConfiguredKeyAndOnlyOpensForASingleCurrentRecord()
     {
         await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);

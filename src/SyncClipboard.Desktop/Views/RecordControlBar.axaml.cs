@@ -90,7 +90,7 @@ public partial class RecordControlBar : UserControl
         if (Record is not { } record || ViewModel is null || ViewModel.HasModalOperation || TopLevel.GetTopLevel(this) is not Window owner)
             return;
 
-        using var hold = ViewModel.HoldForTagPicker();
+        using var hold = ViewModel.HoldForModalOperation();
         var key = record.Key;
         _AddTagButton.IsEnabled = false;
         try

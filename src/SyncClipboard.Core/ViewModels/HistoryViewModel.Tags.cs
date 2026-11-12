@@ -39,17 +39,6 @@ public partial class HistoryViewModel
 {
     private CoalescingTask<bool>? _tagRefresh;
 
-    public IDisposable HoldForTagPicker()
-    {
-        var modal = HoldForModalOperation();
-        return new ScopeGuard(() =>
-        {
-            modal.Dispose();
-            if (window is { IsVisible: true, IsActive: false })
-                OnLostFocus();
-        });
-    }
-
     public async Task<HistoryTagPickerViewModel?> CreateTagPickerAsync(HistoryRecordKey key)
     {
         var snapshot = await Task.Run(() => historyManager.GetSyncSnapshotAsync(key));

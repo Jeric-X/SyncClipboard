@@ -36,6 +36,7 @@ public sealed class HistoryExportDialogPresenter(IServiceProvider services, Hist
                 ((IWindow)owner).SetTopmost(false);
             async Task<string?> PickDirectory()
             {
+                using var pickerHold = history?.HoldForNativeFolderPicker();
                 var picker = new FolderPicker(owner.AppWindow.Id)
                 {
                     SuggestedStartLocation = PickerLocationId.ComputerFolder,

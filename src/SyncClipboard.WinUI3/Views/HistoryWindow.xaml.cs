@@ -51,7 +51,7 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         if (_viewModel.HasModalOperation || _viewModel.IsMultiSelecting || _viewModel.SelectedItem is not { } record)
             return;
 
-        using var hold = _viewModel.HoldForTagPicker();
+        using var hold = _viewModel.HoldForModalOperation();
         try
         {
             var picker = await _viewModel.CreateTagPickerAsync(record.Key);

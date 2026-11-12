@@ -1526,7 +1526,7 @@ public partial class HistoryViewModel : ObservableObject
 
     public void OnLostFocus()
     {
-        if (!HasModalOperation && !_remainWindowForViewDetail && !IsTopmost && CloseWhenLostFocus)
+        if (_nativeFolderPickers == 0 && !_remainWindowForViewDetail && !IsTopmost && CloseWhenLostFocus)
         {
             window.Hide();
         }

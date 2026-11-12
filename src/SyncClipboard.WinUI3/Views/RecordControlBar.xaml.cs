@@ -87,7 +87,7 @@ public sealed partial class RecordControlBar : UserControl
         if (Record is not { } record || ViewModel is null || ViewModel.HasModalOperation || !IsLoaded || XamlRoot is not { } root)
             return;
 
-        using var hold = ViewModel.HoldForTagPicker();
+        using var hold = ViewModel.HoldForModalOperation();
         var key = record.Key;
         _AddTagButton.IsEnabled = false;
         try
