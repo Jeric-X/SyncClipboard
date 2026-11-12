@@ -16,7 +16,7 @@ using SyncClipboard.Desktop.Utilities;
 using Avalonia.Threading;
 using System.Collections.ObjectModel;
 
-namespace SyncClipboard.Test.Desktop;
+namespace SyncClipboard.Test.Desktop.History;
 
 [TestClass]
 [DoNotParallelize]
@@ -644,7 +644,8 @@ public class HistoryListImageLoadingTests
                 {
                     var bitmap = CreateBitmap();
                     bitmaps.Add(bitmap);
-                    return Task.FromResult(new PreviewImageProvider.DecodedImage(bitmap, new Size(300, 80 + int.Parse(file) * 4), new PixelSize(300, 80 + int.Parse(file) * 4)));
+                    var height = 80 + (int.Parse(file) * 4);
+                    return Task.FromResult(new PreviewImageProvider.DecodedImage(bitmap, new Size(300, height), new PixelSize(300, height)));
                 })
                 { FilePath = path, SizeToImage = true })
             };

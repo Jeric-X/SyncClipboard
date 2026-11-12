@@ -18,33 +18,36 @@ internal static class HistoryListScrollAnchor
             return;
 
         list.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () =>
+            EnsureContainerAndRestorePosition(list, scroll, item, position.Y));
+    }
+
+    private static void EnsureContainerAndRestorePosition(ListView list, ScrollViewer scroll, object item, double originalY)
+    {
+        if (!ReferenceEquals(list.SelectedItem, item) || !list.IsLoaded)
+            return;
+
+        list.UpdateLayout();
+        if (list.ContainerFromItem(item) is null)
         {
-            if (!ReferenceEquals(list.SelectedItem, item) || !list.IsLoaded)
-                return;
-
-            list.UpdateLayout();
-            if (list.ContainerFromItem(item) is null)
-            {
-                list.ScrollIntoView(item, ScrollIntoViewAlignment.Leading);
-                list.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, RestorePosition);
-            }
-            else
-            {
-                RestorePosition();
-            }
-        });
-
-        void RestorePosition()
+            list.ScrollIntoView(item, ScrollIntoViewAlignment.Leading);
+            list.DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () => RestorePosition(list, scroll, item, originalY));
+        }
+        else
         {
-            if (!ReferenceEquals(list.SelectedItem, item) || !list.IsLoaded)
-                return;
+            RestorePosition(list, scroll, item, originalY);
+        }
+    }
 
-            list.UpdateLayout();
-            if (list.ContainerFromItem(item) is FrameworkElement current)
-            {
-                var currentPosition = current.TransformToVisual(scroll).TransformPoint(new Point());
-                scroll.ChangeView(null, scroll.VerticalOffset + currentPosition.Y - position.Y, null, disableAnimation: true);
-            }
+    private static void RestorePosition(ListView list, ScrollViewer scroll, object item, double originalY)
+    {
+        if (!ReferenceEquals(list.SelectedItem, item) || !list.IsLoaded)
+            return;
+
+        list.UpdateLayout();
+        if (list.ContainerFromItem(item) is FrameworkElement current)
+        {
+            var currentPosition = current.TransformToVisual(scroll).TransformPoint(new Point());
+            scroll.ChangeView(null, scroll.VerticalOffset + currentPosition.Y - originalY, null, disableAnimation: true);
         }
     }
 }

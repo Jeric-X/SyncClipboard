@@ -280,39 +280,28 @@ public class HistoryService : ClipboardHander
             return;
         }
 
-        if (profile.Type == ProfileType.Unknown || profile is GroupProfile { ContainsRootDirectory: true })
-        {
+        if (!CanRecordClipboard(clipboardMetaInfomation, profile))
             return;
-        }
-
-        if (profile is TextProfile textProfile && string.IsNullOrEmpty(textProfile.DisplayText))
-        {
-            return;
-        }
-
-        if (clipboardMetaInfomation.Effects.HasValue &&
-            clipboardMetaInfomation.Effects.Value.HasFlag(DragDropEffects.Move))
-        {
-            return;
-        }
-
-        if (!configManager.GetConfig<SyncConfig>().IgnoreExcludeForSyncSuggestion)
-        {
-            if (clipboardMetaInfomation.ExcludeForSync ?? false)
-            {
-                return;
-            }
-
-            if (clipboardMetaInfomation.ExcludeForHistory ?? false)
-            {
-                return;
-            }
-        }
 
         if (ShouldRecordLocalProfile(profile, configManager.GetConfig<FileFilterConfig>()))
         {
             await historyManager.AddLocalProfile(profile, token: token);
         }
+    }
+
+    private bool CanRecordClipboard(ClipboardMetaInfomation clipboardMetaInfomation, Profile profile)
+    {
+        if (profile.Type == ProfileType.Unknown || profile is GroupProfile { ContainsRootDirectory: true })
+            return false;
+
+        if (profile is TextProfile textProfile && string.IsNullOrEmpty(textProfile.DisplayText))
+            return false;
+
+        if (clipboardMetaInfomation.Effects?.HasFlag(DragDropEffects.Move) == true)
+            return false;
+
+        return configManager.GetConfig<SyncConfig>().IgnoreExcludeForSyncSuggestion ||
+            (clipboardMetaInfomation.ExcludeForSync != true && clipboardMetaInfomation.ExcludeForHistory != true);
     }
 
     internal static bool ShouldRecordLocalProfile(Profile profile, FileFilterConfig config)

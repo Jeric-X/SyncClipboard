@@ -118,14 +118,7 @@ public sealed class PreviewImage : Image
 
     private void UpdateImage()
     {
-        _request?.Cancel();
-        _request?.Dispose();
-        _request = null;
-        Source = null;
-        _lease?.Dispose();
-        _lease = null;
-        Width = double.NaN;
-        Height = double.NaN;
+        ResetImage();
 
         if (_cachedSize?.Path != FilePath)
             _cachedSize = null;
@@ -137,25 +130,44 @@ public sealed class PreviewImage : Image
 
         var scale = ScaleWithRenderScaling ? TopLevel.GetTopLevel(this)?.RenderScaling ?? 1 : 1;
         var options = new DecodeOptions(DecodeBounds, scale, MaxPixelWidth, Dimensions: _cachedSize?.Dimensions);
-        if (SizeToImage && _cachedSize is { } cached)
-        {
-            try
-            {
-                var (displaySize, _) = GetSizes(cached.Dimensions, options);
-                Width = displaySize.Width;
-                Height = displaySize.Height;
-            }
-            catch (InvalidDataException)
-            {
-                return;
-            }
-        }
+        if (!TryRestoreImageSize(options))
+            return;
 
         if (!IsVisible && (!SizeToImage || _cachedSize is not null))
             return;
 
         _request = new CancellationTokenSource();
         PendingLoad = ShowImageAsync(FilePath, options with { SizeOnly = !IsVisible }, _request.Token);
+    }
+
+    private void ResetImage()
+    {
+        _request?.Cancel();
+        _request?.Dispose();
+        _request = null;
+        Source = null;
+        _lease?.Dispose();
+        _lease = null;
+        Width = double.NaN;
+        Height = double.NaN;
+    }
+
+    private bool TryRestoreImageSize(DecodeOptions options)
+    {
+        if (!SizeToImage || _cachedSize is not { } cached)
+            return true;
+
+        try
+        {
+            var (displaySize, _) = GetSizes(cached.Dimensions, options);
+            Width = displaySize.Width;
+            Height = displaySize.Height;
+            return true;
+        }
+        catch (InvalidDataException)
+        {
+            return false;
+        }
     }
 
     private async Task ShowImageAsync(string path, DecodeOptions options, CancellationToken token)
