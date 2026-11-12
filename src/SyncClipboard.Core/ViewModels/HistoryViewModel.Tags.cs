@@ -195,6 +195,35 @@ public partial class HistoryViewModel
 
     public string[] PinnedTags => runtimeConfig.GetConfig<HistoryWindowConfig>().PinnedTags;
 
+    public async Task DeleteTagAsync(string name)
+    {
+        name = HistoryTags.NormalizeName(name);
+        await historyManager.DeleteTagAsync(name);
+        SelectedTags = SelectedTags.Where(tag => tag != name).ToArray();
+        await SetPinnedTagsAsync(PinnedTags.Where(tag => tag != name));
+        await RefreshTagOptionsAsync();
+    }
+
+    public async Task<bool> RenameTagAsync(string name, string newName, bool allowMerge)
+    {
+        name = HistoryTags.NormalizeName(name);
+        newName = HistoryTags.NormalizeName(newName);
+        if (name == newName)
+            return true;
+        if (!allowMerge && PinnedTags.Contains(newName, StringComparer.Ordinal))
+            return false;
+        if (!await historyManager.RenameTagAsync(name, newName, allowMerge))
+            return false;
+        SelectedTags = SelectedTags.Select(tag => tag == name ? newName : tag).Distinct(StringComparer.Ordinal).ToArray();
+        // An existing destination pin keeps its position; otherwise the new name inherits the old position.
+        var pinned = PinnedTags.Contains(newName, StringComparer.Ordinal)
+            ? PinnedTags.Where(tag => tag != name)
+            : PinnedTags.Select(tag => tag == name ? newName : tag);
+        await SetPinnedTagsAsync(pinned);
+        await RefreshTagOptionsAsync();
+        return true;
+    }
+
     public async Task SetPinnedTagsAsync(IEnumerable<string> names)
     {
         var pinned = names.Select(HistoryTags.NormalizeName).Distinct(StringComparer.Ordinal).ToArray();

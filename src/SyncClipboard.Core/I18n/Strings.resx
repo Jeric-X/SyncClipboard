@@ -1760,4 +1760,19 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryTagBarEditPins" xml:space="preserve">
     <value>Edit pinned tags</value>
   </data>
+  <data name="HistoryTagRename" xml:space="preserve">
+    <value>Rename tag</value>
+  </data>
+  <data name="HistoryTagDelete" xml:space="preserve">
+    <value>Delete tag</value>
+  </data>
+  <data name="HistoryTagDeleteConfirmation" xml:space="preserve">
+    <value>Remove “{0}” from all history records known to this device?</value>
+  </data>
+  <data name="HistoryTagRenameDescription" xml:space="preserve">
+    <value>Rename this tag in all history records known to this device.</value>
+  </data>
+  <data name="HistoryTagMergeConfirmation" xml:space="preserve">
+    <value>The tag “{0}” already exists. Confirm to merge into it, or cancel to keep the tags unchanged.</value>
+  </data>
 </root>

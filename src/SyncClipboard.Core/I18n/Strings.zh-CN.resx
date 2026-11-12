@@ -1760,4 +1760,19 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryTagBarEditPins" xml:space="preserve">
     <value>编辑固定标签</value>
   </data>
+  <data name="HistoryTagRename" xml:space="preserve">
+    <value>更名标签</value>
+  </data>
+  <data name="HistoryTagDelete" xml:space="preserve">
+    <value>删除标签</value>
+  </data>
+  <data name="HistoryTagDeleteConfirmation" xml:space="preserve">
+    <value>从本机已知的全部历史记录中移除“{0}”标签？</value>
+  </data>
+  <data name="HistoryTagRenameDescription" xml:space="preserve">
+    <value>更名本机已知的全部历史记录中的此标签。</value>
+  </data>
+  <data name="HistoryTagMergeConfirmation" xml:space="preserve">
+    <value>标签“{0}”已存在。确认后将合并到此标签，取消则保留原标签。</value>
+  </data>
 </root>

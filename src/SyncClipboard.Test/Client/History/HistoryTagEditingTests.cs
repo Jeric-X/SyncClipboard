@@ -191,6 +191,94 @@ public class HistoryTagEditingTests
         CollectionAssert.AreEqual(expected, notifications);
     }
 
+    [TestMethod]
+    public async Task DeleteTag_RemovesOnlyExactNameFromAllActiveRecordsAndPreservesContent()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var local = f.Add("local", ["old", "other"]);
+        var synced = f.Add("synced", ["old"], HistorySyncStatus.Synced);
+        var deleted = f.Add("deleted", ["old"]);
+        deleted.IsDeleted = true;
+        var differentCase = f.Add("case", ["Old"]);
+        local.Stared = true;
+        local.Pinned = true;
+        await f.Db.SaveChangesAsync(Token);
+        var notified = new List<int>();
+        f.Manager.HistoryUpdated += record => notified.Add(record.ID);
+
+        await f.Manager.DeleteTagAsync(" old ", Token);
+
+        AssertNames(local.Tags, "other");
+        Assert.IsEmpty(synced.Tags);
+        AssertNames(deleted.Tags, "old");
+        AssertNames(differentCase.Tags, "Old");
+        Assert.IsTrue(local.Stared && local.Pinned);
+        Assert.IsFalse(local.IsDeleted || synced.IsDeleted);
+        Assert.AreEqual(Fixture.OldTime, local.Timestamp);
+        Assert.AreEqual(Fixture.OldTime, local.LastAccessed);
+        Assert.AreEqual(HistorySyncStatus.LocalOnly, local.SyncStatus);
+        Assert.AreEqual(HistorySyncStatus.NeedSync, synced.SyncStatus);
+        Assert.AreEqual(8, local.Version);
+        Assert.AreEqual(8, synced.Version);
+        Assert.AreEqual(7, deleted.Version);
+        CollectionAssert.AreEquivalent(new[] { local.ID, synced.ID }, notified);
+        Assert.AreEqual(4, await f.Db.HistoryRecords.CountAsync(Token));
+    }
+
+    [TestMethod]
+    public async Task RenameTag_RequiresConfirmationBeforeMergingAndUpdatesEachSourceRecordOnce()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var source = f.Add("source", ["old", "keep"], HistorySyncStatus.Synced);
+        var overlap = f.Add("overlap", ["old", "new"], HistorySyncStatus.Synced);
+        var targetOnly = f.Add("target", ["new"]);
+        await f.Db.SaveChangesAsync(Token);
+        var notified = 0;
+        f.Manager.HistoryUpdated += _ => notified++;
+
+        Assert.IsFalse(await f.Manager.RenameTagAsync("old", "new", token: Token));
+        await f.Db.SaveChangesAsync(Token);
+        AssertNames(source.Tags, "old", "keep");
+        Assert.AreEqual(7, source.Version);
+        Assert.AreEqual(0, notified);
+
+        Assert.IsTrue(await f.Manager.RenameTagAsync("old", "new", allowMerge: true, token: Token));
+        AssertNames(source.Tags, "keep", "new");
+        AssertNames(overlap.Tags, "new");
+        Assert.AreEqual(8, source.Version);
+        Assert.AreEqual(8, overlap.Version);
+        Assert.AreEqual(7, targetOnly.Version);
+        Assert.AreEqual(HistorySyncStatus.NeedSync, source.SyncStatus);
+        Assert.AreEqual(HistorySyncStatus.NeedSync, overlap.SyncStatus);
+        Assert.AreEqual(2, notified);
+        Assert.IsFalse((await f.Manager.GetTagCountsAsync(Token)).ContainsKey("old"));
+    }
+
+    [TestMethod]
+    public async Task RenameTag_NormalizesNamesAllowsFullRecordAndSkipsDeletedRecords()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var tags = Enumerable.Range(0, HistoryTags.MaxCount).Select(i => $"tag{i}").ToArray();
+        var full = f.Add("full", tags);
+        var deleted = f.Add("deleted", ["tag0", "Café"]);
+        deleted.IsDeleted = true;
+        await f.Db.SaveChangesAsync(Token);
+
+        Assert.IsTrue(await f.Manager.RenameTagAsync("tag0", " Cafe\u0301 ", token: Token));
+        Assert.HasCount(HistoryTags.MaxCount, full.Tags);
+        Assert.Contains("Café", full.Tags);
+        Assert.DoesNotContain("tag0", full.Tags);
+        Assert.AreEqual(8, full.Version);
+        AssertNames(deleted.Tags, "tag0", "Café");
+        Assert.IsTrue(await f.Manager.RenameTagAsync("Café", " Cafe\u0301 ", token: Token));
+        Assert.AreEqual(8, full.Version);
+        await Assert.ThrowsExactlyAsync<ArgumentException>(() => f.Manager.RenameTagAsync("Café", " ", token: Token));
+        Assert.Contains("Café", full.Tags);
+    }
+
+    private static void AssertNames(IEnumerable<string> actual, params string[] expected) =>
+        CollectionAssert.AreEqual(expected, actual.ToArray());
+
     private sealed class Fixture : IAsyncDisposable
     {
         public static readonly DateTime OldTime = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
