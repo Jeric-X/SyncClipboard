@@ -7,7 +7,7 @@ namespace SyncClipboard.Core.ViewModels;
 public partial class HistoryViewModel
 {
     private int _modalOperations;
-    private int _nativeFolderPickers;
+    private bool _remainWindowForFolderPicker;
     public bool HasModalOperation => _modalOperations > 0;
 
     [RelayCommand(CanExecute = nameof(HasSelectedRecords))]
@@ -21,8 +21,8 @@ public partial class HistoryViewModel
 
     public IDisposable HoldForNativeFolderPicker()
     {
-        _nativeFolderPickers++;
-        return new ScopeGuard(() => _nativeFolderPickers--);
+        _remainWindowForFolderPicker = true;
+        return new ScopeGuard(() => _remainWindowForFolderPicker = false);
     }
 
     public IDisposable HoldForModalOperation()
