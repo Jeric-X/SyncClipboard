@@ -647,38 +647,11 @@ public class GroupProfile : Profile
     {
         var topLevelFiles = new List<string>();
         extractPath = Path.GetFullPath(extractPath + Path.DirectorySeparatorChar);
-        var comparision = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         foreach (var entry in archive.Entries)
         {
             token.ThrowIfCancellationRequested();
-            var entryName = entry.FullName;
-            if (entryName.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Any(part => part is "." or ".."))
-                throw new InvalidDataException($"Transfer data contains a dot path segment: {entryName}");
-            var isDirectory = entryName.EndsWith('/');
-            var rawDestPath = Path.Combine(extractPath, entryName.Replace('/', Path.DirectorySeparatorChar));
-            var destPath = Path.GetFullPath(rawDestPath);
-            if (!destPath.StartsWith(extractPath, comparision))
-            {
-                throw new InvalidOperationException($"Transfer data is invalid with entry: {entryName}");
-            }
-
-            if (isDirectory)
-            {
-                if (!Directory.Exists(destPath))
-                {
-                    Directory.CreateDirectory(destPath);
-                }
-            }
-            else
-            {
-                var destDir = Path.GetDirectoryName(destPath);
-                if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
-                    Directory.CreateDirectory(destDir);
-
-                await using var entryStream = entry.Open();
-                await using var destStream = new FileStream(destPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, useAsync: true);
-                await entryStream.CopyToAsync(destStream, 81920, token).ConfigureAwait(false);
-            }
+            var destPath = GetArchiveEntryDestination(entry.FullName, extractPath);
+            await ExtractArchiveEntryAsync(entry, destPath, token).ConfigureAwait(false);
 
             var trimmed = entry.FullName.TrimEnd('/');
             if (!trimmed.Contains('/'))
@@ -688,6 +661,37 @@ public class GroupProfile : Profile
         }
 
         return topLevelFiles.ToArray();
+    }
+
+    private static string GetArchiveEntryDestination(string entryName, string extractPath)
+    {
+        if (entryName.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Any(part => part is "." or ".."))
+            throw new InvalidDataException($"Transfer data contains a dot path segment: {entryName}");
+
+        var destPath = Path.GetFullPath(Path.Combine(extractPath, entryName.Replace('/', Path.DirectorySeparatorChar)));
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+        if (!destPath.StartsWith(extractPath, comparison))
+            throw new InvalidOperationException($"Transfer data is invalid with entry: {entryName}");
+
+        return destPath;
+    }
+
+    private static async Task ExtractArchiveEntryAsync(ZipArchiveEntry entry, string destPath, CancellationToken token)
+    {
+        if (entry.FullName.EndsWith('/'))
+        {
+            if (!Directory.Exists(destPath))
+                Directory.CreateDirectory(destPath);
+            return;
+        }
+
+        var destDir = Path.GetDirectoryName(destPath);
+        if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
+            Directory.CreateDirectory(destDir);
+
+        await using var entryStream = entry.Open();
+        await using var destStream = new FileStream(destPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, useAsync: true);
+        await entryStream.CopyToAsync(destStream, 81920, token).ConfigureAwait(false);
     }
 
     public override Task SetTransferData(string path, bool verify, CancellationToken token)

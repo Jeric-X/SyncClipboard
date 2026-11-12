@@ -6,7 +6,7 @@ using SkiaSharp;
 using SyncClipboard.Desktop.Controls;
 using SyncClipboard.Desktop.Utilities;
 
-namespace SyncClipboard.Test.Desktop;
+namespace SyncClipboard.Test.Desktop.History;
 
 [TestClass]
 [DoNotParallelize]

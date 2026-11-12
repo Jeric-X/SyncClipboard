@@ -8,7 +8,7 @@ using SyncClipboard.Shared.Utilities;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Client.History;
 
 [TestClass]
 public class HistoryDirectoryCleanupTests
@@ -124,5 +124,4 @@ public class HistoryDirectoryCleanupTests
         f.Manager.CleanupOrphanedHistoryFolders(Token);
         Assert.IsFalse(Directory.Exists(orphan), "Old directories without a record still need cleanup.");
     }
-
 }

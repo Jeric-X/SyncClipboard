@@ -22,13 +22,12 @@ public sealed class HistoryTagPickerKeyboard(HistoryTagPickerViewModel viewModel
         if (command)
             return false;
 
-        if (key == Key.Tab || (!shift && key is Key.Up or Key.Down))
+        if (TryMoveSelection(key, shift))
         {
-            viewModel.MoveSelection(key == Key.Tab ? !shift : key == Key.Down);
             return true;
         }
 
-        if (shift || !(key == Key.Enter || (key == Key.Space && viewModel.Search.Length == 0)))
+        if (shift || !IsActivationKey(key))
             return false;
 
         if (activationKey is null && !isRepeat)
@@ -38,4 +37,16 @@ public sealed class HistoryTagPickerKeyboard(HistoryTagPickerViewModel viewModel
         }
         return true;
     }
+
+    private bool TryMoveSelection(Key? key, bool shift)
+    {
+        if (key != Key.Tab && (shift || key is not (Key.Up or Key.Down)))
+            return false;
+
+        viewModel.MoveSelection(key == Key.Tab ? !shift : key == Key.Down);
+        return true;
+    }
+
+    private bool IsActivationKey(Key? key) =>
+        key == Key.Enter || (key == Key.Space && viewModel.Search.Length == 0);
 }

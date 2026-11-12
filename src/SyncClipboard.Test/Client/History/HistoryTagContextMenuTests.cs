@@ -107,5 +107,4 @@ public class HistoryTagContextMenuTests
     }
     private static void AssertNames(IEnumerable<string> actual, params string[] expected) =>
         CollectionAssert.AreEqual(expected, actual.ToArray());
-
 }
