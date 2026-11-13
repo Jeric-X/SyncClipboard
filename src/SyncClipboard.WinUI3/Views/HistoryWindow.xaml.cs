@@ -909,10 +909,7 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
             if (isMultiSelecting)
                 await EditTagsAsync(_viewModel.GetTagEditSelection());
             else if (_viewModel.SelectedItem?.Key == record.Key)
-            {
-                flyout.Hide();
                 ShowTagPicker();
-            }
         };
         flyout.Items.Add(editTags);
         foreach (var (text, command, parameter) in _viewModel.BuildHistoryMenuCommands(record))
