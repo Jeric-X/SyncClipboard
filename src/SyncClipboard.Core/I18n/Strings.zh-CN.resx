@@ -1674,7 +1674,7 @@ Shift + 左键：选中连续范围</value>
     <value>自动删除</value>
   </data>
   <data name="HistoryAutoDeleteDescription" xml:space="preserve">
-    <value>自动删除仅适用于未同步记录，已同步记录遵循服务器设置；收藏记录不会被自动删除</value>
+    <value>自动删除仅适用于未同步记录，已同步记录遵循服务器设置；收藏的记录不会被自动删除</value>
   </data>
   <data name="HistoryTagsSelected" xml:space="preserve">
     <value>编辑 {0} 条记录的标签</value>
