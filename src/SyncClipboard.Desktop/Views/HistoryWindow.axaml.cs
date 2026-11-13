@@ -499,7 +499,13 @@ public partial class HistoryWindow : Window, IWindow
             Text = Strings.HistoryTagsEdit,
             IsEnabled = !isMultiSelecting || _viewModel.HasSelectedRecords
         };
-        editTags.Click += async (_, _) => await EditTagsAsync(isMultiSelecting ? _viewModel.GetTagEditSelection() : [record.Key]);
+        editTags.Click += async (_, _) =>
+        {
+            if (isMultiSelecting)
+                await EditTagsAsync(_viewModel.GetTagEditSelection());
+            else if (_viewModel.SelectedItem?.Key == record.Key)
+                ShowTagPicker();
+        };
         flyout.Items.Add(editTags);
         foreach (var (text, command, parameter) in _viewModel.BuildHistoryMenuCommands(record))
             flyout.Items.Add(new FAMenuFlyoutItem { Text = text, Command = command, CommandParameter = parameter });
