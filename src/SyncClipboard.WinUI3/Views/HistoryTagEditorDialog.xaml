@@ -36,7 +36,10 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:HistoryTagChoice">
-                        <controls:HistoryTagCheckBox Content="{x:Bind Name}" IsThreeState="True" IsChecked="{x:Bind IsChecked, Mode=TwoWay}" />
+                        <controls:HistoryTagCheckBox Style="{StaticResource DefaultCheckBoxStyle}"
+                                                     Content="{x:Bind Name}"
+                                                     IsThreeState="True"
+                                                     IsChecked="{x:Bind IsChecked, Mode=TwoWay}" />
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

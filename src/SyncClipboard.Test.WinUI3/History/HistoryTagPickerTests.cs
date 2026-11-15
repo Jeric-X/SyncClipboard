@@ -95,12 +95,15 @@ public class HistoryTagPickerTests
         var search = Search(view);
         search.Text = "cod";
         await WaitUntilAsync(() => Suggestions(view).Count() == 2, token);
-        var code = Suggestions(view).Single(b => Equals(b.Tag, "code"));
-        Assert.AreEqual("code", code.Tag);
+        var code = Suggestions(view).Single(b => b.DataContext is HistoryTagSuggestion { Name: "code" });
+        Assert.IsFalse(code.IsChecked);
         await WaitUntilAsync(() => code.ActualWidth > 100, token);
-        Invoke(code);
+        Assert.AreEqual((CornerRadius)Application.Current.Resources["ControlCornerRadius"], code.CornerRadius);
+        Assert.IsGreaterThan(1d, code.TransformToVisual((UIElement)code.Parent).TransformPoint(new Point()).X);
+        Toggle(code);
         await WaitUntilAsync(() => saved.Count == 1, token);
         Assert.AreSame(search, FocusManager.GetFocusedElement(view.XamlRoot));
+        Assert.IsFalse(code.IsChecked);
         search.Text = "next";
         pending.SetException(new InvalidOperationException("save failed"));
         await WaitUntilAsync(() => view.ViewModel.Error == "save failed", token);
@@ -114,46 +117,46 @@ public class HistoryTagPickerTests
         List<(string Name, bool Add)> saved, CancellationToken token)
     {
         var search = Search(view);
-        await WaitUntilAsync(() => Suggestions(view).Any(b => Equals(b.Tag, "next")), token);
-        var candidate = Suggestions(view).Single(b => Equals(b.Tag, "next"));
+        await WaitUntilAsync(() => Suggestions(view).Any(b => b.DataContext is HistoryTagSuggestion { Name: "next" }), token);
+        var candidate = Suggestions(view).Single(b => b.DataContext is HistoryTagSuggestion { Name: "next" });
         Assert.IsTrue(view.ViewModel.Suggestions.Single().IsNew);
-        Invoke(candidate);
+        Toggle(candidate);
         await WaitUntilAsync(() => search.Text.Length == 0 && Suggestions(view).Count() == 23, token);
         Assert.AreEqual(("next", true), saved[^1]);
-        var code = Suggestions(view).Single(b => Equals(b.Tag, "code"));
+        var code = Suggestions(view).Single(b => b.DataContext is HistoryTagSuggestion { Name: "code" });
         Assert.IsFalse(view.ViewModel.Suggestions.Single(s => s.Name == "code").IsAssigned);
-        Invoke(code);
+        Toggle(code);
         await WaitUntilAsync(() => view.ViewModel.Suggestions.Single(s => s.Name == "code").IsAssigned, token);
         Assert.AreEqual(("code", true), saved[^1]);
-        var work = Suggestions(view).Single(b => Equals(b.Tag, "work"));
-        Invoke(work);
+        var work = Suggestions(view).Single(b => b.DataContext is HistoryTagSuggestion { Name: "work" });
+        Assert.IsTrue(work.IsChecked);
+        Toggle(work);
         await WaitUntilAsync(() => !view.ViewModel.Suggestions.Single(s => s.Name == "work").IsAssigned, token);
         Assert.AreEqual(("work", false), saved[^1]);
         Assert.AreSame(search, FocusManager.GetFocusedElement(view.XamlRoot));
-        await VerifyScrollAndCheckmarkAsync(view, token);
+        await VerifyScrollAndCheckBoxAsync(view, token);
     }
 
-    private static async Task VerifyScrollAndCheckmarkAsync(HistoryTagPickerView view, CancellationToken token)
+    private static async Task VerifyScrollAndCheckBoxAsync(HistoryTagPickerView view, CancellationToken token)
     {
         var scroll = Descendants<ScrollViewer>(view).Single(s => s.Content is ItemsControl);
         Assert.IsTrue(scroll.ViewportHeight <= 200 && scroll.ScrollableHeight > 0);
         scroll.ChangeView(null, scroll.ScrollableHeight, null, disableAnimation: true);
         await WaitUntilAsync(() => scroll.VerticalOffset > 0, token);
         var offset = scroll.VerticalOffset;
-        var tag = Suggestions(view).Single(b => Equals(b.Tag, "tag20"));
-        var checkmark = Descendants<TextBlock>(tag).Single(t => t.Text == "✓");
-        Assert.AreEqual(Visibility.Collapsed, checkmark.Visibility);
-        Invoke(tag);
-        await WaitUntilAsync(() => checkmark.Visibility == Visibility.Visible, token);
+        var tag = Suggestions(view).Single(b => b.DataContext is HistoryTagSuggestion { Name: "tag20" });
+        Assert.IsFalse(tag.IsChecked);
+        Toggle(tag);
+        await WaitUntilAsync(() => tag.IsChecked == true, token);
         Assert.AreEqual(offset, scroll.VerticalOffset, 1d);
-        Invoke(tag);
-        await WaitUntilAsync(() => checkmark.Visibility == Visibility.Collapsed, token);
+        Toggle(tag);
+        await WaitUntilAsync(() => tag.IsChecked == false, token);
         Assert.AreEqual(offset, scroll.VerticalOffset, 1d);
     }
 
     private static TextBox Search(HistoryTagPickerView view) => (TextBox)view.FindName("_TagSearch");
 
-    private static IEnumerable<Button> Suggestions(DependencyObject root) => Descendants<Button>(root).Where(b => b.Tag is string);
+    private static IEnumerable<CheckBox> Suggestions(DependencyObject root) => Descendants<CheckBox>(root);
 
     private static IEnumerable<T> Descendants<T>(DependencyObject root) where T : DependencyObject
     {
@@ -166,8 +169,8 @@ public class HistoryTagPickerTests
         }
     }
 
-    private static void Invoke(Button button) =>
-        ((IInvokeProvider)new ButtonAutomationPeer(button).GetPattern(PatternInterface.Invoke)).Invoke();
+    private static void Toggle(CheckBox checkBox) =>
+        ((IToggleProvider)new CheckBoxAutomationPeer(checkBox).GetPattern(PatternInterface.Toggle)).Toggle();
 
     private static async Task WaitUntilAsync(Func<bool> condition, CancellationToken token)
     {
