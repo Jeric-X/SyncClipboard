@@ -25,7 +25,7 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBox Text="{Binding Search, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{x:Bind i18n:Strings.HistoryTagsSearch}" />
+            <TextBox x:Name="_TagSearch" Text="{Binding Search, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{x:Bind i18n:Strings.HistoryTagsSearch}" />
             <Button Grid.Column="1" Content="{x:Bind i18n:Strings.HistoryTagsAdd}" Command="{Binding AddCommand}" />
         </Grid>
         <ScrollViewer Height="200">

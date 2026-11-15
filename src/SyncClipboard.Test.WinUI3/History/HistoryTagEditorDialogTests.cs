@@ -66,6 +66,7 @@ public class HistoryTagEditorDialogTests
             await WaitUntilAsync(() => Equals(dialog.Title, Strings.HistoryTagBarDiscardTitle), timeout.Token);
             InvokeButton(dialog, "CloseButton");
             await WaitUntilAsync(() => Equals(dialog.Title, vm.Title), timeout.Token);
+            await WaitUntilAsync(() => Descendants<TextBox>(dialog).Any(box => box.FocusState != FocusState.Unfocused), timeout.Token);
             Assert.AreEqual("short", vm.Search);
             Assert.IsTrue(vm.FilteredChoices.Single().IsChecked);
             InvokeButton(dialog, "CloseButton");

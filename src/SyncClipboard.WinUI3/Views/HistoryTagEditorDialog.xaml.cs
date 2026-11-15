@@ -58,5 +58,10 @@ public sealed partial class HistoryTagEditorDialog : ContentDialog
         SecondaryButtonText = confirm ? Strings.HistoryTagBarDiscard : string.Empty;
         CloseButtonText = confirm ? Strings.HistoryTagBarContinueEditing : Strings.Cancel;
         DefaultButton = confirm ? ContentDialogButton.Close : ContentDialogButton.Primary;
+        if (!confirm)
+        {
+            UpdateLayout();
+            _TagSearch.Focus(FocusState.Programmatic);
+        }
     }
 }
