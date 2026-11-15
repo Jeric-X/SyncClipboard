@@ -46,7 +46,8 @@ public class HistoryTagEditorDialogTests
             {
                 saves++;
                 return Task.CompletedTask;
-            }) { XamlRoot = root.XamlRoot };
+            })
+            { XamlRoot = root.XamlRoot };
             var result = dialog.ShowAsync();
             await WaitUntilAsync(() => Descendants<Border>(dialog).Any(b => b.Name == "BackgroundElement" && b.ActualWidth > 0), timeout.Token);
             var background = Descendants<Border>(dialog).Single(b => b.Name == "BackgroundElement");
