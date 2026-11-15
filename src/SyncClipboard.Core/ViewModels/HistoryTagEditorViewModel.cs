@@ -41,6 +41,7 @@ public partial class HistoryTagEditorViewModel : ObservableObject
     public IEnumerable<HistoryTagChoice> FilteredChoices => Choices
         .Where(t => t.Name.Contains(Search, StringComparison.OrdinalIgnoreCase));
 
+    public bool HasChanges => Choices.Any(t => t.IsChecked != t.InitialValue);
     public string[] Added => Choices.Where(t => t.IsChecked == true && t.InitialValue != true).Select(t => t.Name).ToArray();
     public string[] Removed => Choices.Where(t => t.IsChecked == false && t.InitialValue != false).Select(t => t.Name).ToArray();
 

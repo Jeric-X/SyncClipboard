@@ -6,6 +6,7 @@
                     xmlns:vm="using:SyncClipboard.Core.ViewModels"
                     xmlns:i18n="using:SyncClipboard.Core.I18n"
                     x:DataType="vm:HistoryTagEditorViewModel"
+                    Closing="OnClosing"
                     Title="{Binding Title}"
                     PrimaryButtonText="{x:Static i18n:Strings.HistoryTagsApply}"
                     CloseButtonText="{x:Static i18n:Strings.Cancel}">
@@ -18,7 +19,7 @@
             <Setter Property="Width" Value="{Binding $parent[ui:FAContentDialog].Bounds.Width}" />
         </Style>
     </ui:FAContentDialog.Styles>
-    <StackPanel Spacing="12">
+    <StackPanel x:Name="_EditorContent" Spacing="12">
         <Grid ColumnDefinitions="*,Auto">
             <TextBox x:Name="_TagSearch" Text="{Binding Search}" PlaceholderText="{x:Static i18n:Strings.HistoryTagsSearch}" />
             <Button Grid.Column="1"

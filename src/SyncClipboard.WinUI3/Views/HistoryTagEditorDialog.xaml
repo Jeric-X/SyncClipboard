@@ -7,6 +7,7 @@
                xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
                xmlns:vm="using:SyncClipboard.Core.ViewModels"
                xmlns:i18n="using:SyncClipboard.Core.I18n"
+               Closing="OnClosing"
                Title="{Binding Title}"
                PrimaryButtonText="{x:Bind i18n:Strings.HistoryTagsApply}"
                CloseButtonText="{x:Bind i18n:Strings.Cancel}"
@@ -18,13 +19,13 @@
         <vc:StringToVisibilityConverter x:Key="StringToVisibility" />
         <Style TargetType="local:HistoryTagEditorDialog" BasedOn="{StaticResource DefaultContentDialogStyle}" />
     </ContentDialog.Resources>
-    <StackPanel Spacing="10">
+    <StackPanel x:Name="_EditorContent" Spacing="10">
         <Grid ColumnSpacing="8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBox Text="{Binding Search, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{x:Bind i18n:Strings.HistoryTagsSearch}" />
+            <TextBox x:Name="_TagSearch" Text="{Binding Search, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{x:Bind i18n:Strings.HistoryTagsSearch}" />
             <Button Grid.Column="1" Content="{x:Bind i18n:Strings.HistoryTagsAdd}" Command="{Binding AddCommand}" />
         </Grid>
         <ScrollViewer Height="200">

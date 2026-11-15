@@ -170,7 +170,7 @@ public class HistoryTagPickerTests
         Assert.IsTrue(await picker.ToggleSelectedAsync());
         Assert.IsEmpty(picker.ValidationMessage);
         Assert.IsTrue(picker.Suggestions.Single().IsAssigned);
-        Assert.IsFalse(picker.Suggestions.Single().IsNew);
+        Assert.IsTrue(picker.Suggestions.Single().IsNew);
     }
 
     [TestMethod]

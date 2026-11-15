@@ -630,25 +630,7 @@ public partial class HistoryWindow : Window, IWindow
             }
             var counts = await manager.GetTagCountsAsync();
             var editor = new HistoryTagEditorViewModel(counts.Keys, assignments, _viewModel.PinnedTags);
-            var dialog = new HistoryTagEditorDialog(editor);
-            // Keep validation errors in the editor so the user can correct the selection.
-            dialog.PrimaryButtonClick += async (_, args) =>
-            {
-                var deferral = args.GetDeferral();
-                try
-                {
-                    await manager.EditTagsAsync(keys, editor.Added, editor.Removed);
-                }
-                catch (Exception ex)
-                {
-                    args.Cancel = true;
-                    editor.Error = ex is ArgumentException ? Strings.HistoryTagsInvalid : ex.Message;
-                }
-                finally
-                {
-                    deferral.Complete();
-                }
-            };
+            var dialog = new HistoryTagEditorDialog(editor, () => manager.EditTagsAsync(keys, editor.Added, editor.Removed));
             await dialog.ShowAsync(this);
         }
         catch (Exception ex)

@@ -1745,6 +1745,9 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryTagBarUnpinned" xml:space="preserve">
     <value>Unpinned</value>
   </data>
+  <data name="HistoryTagsDiscardMessage" xml:space="preserve">
+    <value>Discard the changes to the selected records’ tags?</value>
+  </data>
   <data name="HistoryTagBarDiscardTitle" xml:space="preserve">
     <value>Discard changes?</value>
   </data>

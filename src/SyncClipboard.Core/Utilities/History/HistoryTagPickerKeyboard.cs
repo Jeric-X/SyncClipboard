@@ -16,18 +16,19 @@ public sealed class HistoryTagPickerKeyboard(HistoryTagPickerViewModel viewModel
     }
 
     // Report whether the native event is handled before the view awaits the save.
-    public bool TryHandleKeyDown(Key? key, bool shift, bool command, bool isRepeat, out Task operation)
+    public bool TryHandleKeyDown(Key? key, bool hasModifiers, bool isRepeat, out Task operation)
     {
         operation = Task.CompletedTask;
-        if (command)
+        if (hasModifiers)
             return false;
 
-        if (TryMoveSelection(key, shift))
+        if (key is Key.Up or Key.Down)
         {
+            viewModel.MoveSelection(key == Key.Down);
             return true;
         }
 
-        if (shift || !IsActivationKey(key))
+        if (!IsActivationKey(key))
             return false;
 
         if (activationKey is null && !isRepeat)
@@ -38,15 +39,6 @@ public sealed class HistoryTagPickerKeyboard(HistoryTagPickerViewModel viewModel
         return true;
     }
 
-    private bool TryMoveSelection(Key? key, bool shift)
-    {
-        if (key != Key.Tab && (shift || key is not (Key.Up or Key.Down)))
-            return false;
-
-        viewModel.MoveSelection(key == Key.Tab ? !shift : key == Key.Down);
-        return true;
-    }
-
     private bool IsActivationKey(Key? key) =>
-        key == Key.Enter || (key == Key.Space && viewModel.Search.Length == 0);
+        key is Key.Enter or Key.Tab || (key == Key.Space && viewModel.Search.Length == 0);
 }

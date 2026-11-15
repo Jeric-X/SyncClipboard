@@ -163,7 +163,7 @@ public sealed partial class HistoryTagPickerViewModel : ObservableObject
         {
             var index = names.BinarySearch(pinnedCount, names.Count - pinnedCount, name, StringComparer.Ordinal);
             names.Insert(~index, name);
-            suggestion = new HistoryTagSuggestion(name, shouldAssign);
+            suggestion = new HistoryTagSuggestion(name, shouldAssign, isNew: true);
             suggestionsByName.Add(name, suggestion);
         }
         suggestion.IsAssigned = shouldAssign;
