@@ -8,8 +8,6 @@ namespace SyncClipboard.Test.Client.History;
 public class HistoryTagPickerKeyboardTests
 {
     [TestMethod]
-    [DataRow(Key.Tab, false, "beta")]
-    [DataRow(Key.Tab, true, "gamma")]
     [DataRow(Key.Down, false, "beta")]
     [DataRow(Key.Up, false, "gamma")]
     public async Task Navigation_SelectsAdjacentCandidateWithoutSaving(Key key, bool shift, string expected)
@@ -33,6 +31,7 @@ public class HistoryTagPickerKeyboardTests
     [DataRow(Key.Space, "alpha", false, false)]
     [DataRow(Key.Enter, "", true, false)]
     [DataRow(Key.Tab, "", false, true)]
+    [DataRow(Key.Tab, "", true, false)]
     [DataRow(Key.Up, "", true, false)]
     [DataRow(Key.A, "", false, false)]
     [DataRow(Key.PROCESSKEY, "", false, false)]
@@ -59,7 +58,9 @@ public class HistoryTagPickerKeyboardTests
     }
 
     [TestMethod]
-    public async Task Activation_TogglesOnceUntilTheOriginalKeyIsReleased()
+    [DataRow(Key.Space)]
+    [DataRow(Key.Tab)]
+    public async Task Activation_TogglesOnceUntilTheOriginalKeyIsReleased(Key activationKey)
     {
         var saved = new List<bool>();
         var picker = new HistoryTagPickerViewModel(["alpha"], [], (_, add) =>
@@ -73,9 +74,9 @@ public class HistoryTagPickerKeyboardTests
         await repeat;
         Assert.IsEmpty(saved);
 
-        Assert.IsTrue(keyboard.TryHandleKeyDown(Key.Space, false, false, false, out var first));
+        Assert.IsTrue(keyboard.TryHandleKeyDown(activationKey, false, false, false, out var first));
         await first;
-        Assert.IsTrue(keyboard.TryHandleKeyDown(Key.Space, false, false, true, out repeat));
+        Assert.IsTrue(keyboard.TryHandleKeyDown(activationKey, false, false, true, out repeat));
         await repeat;
         Assert.IsFalse(keyboard.HandleKeyUp(Key.Enter));
         Assert.IsTrue(keyboard.TryHandleKeyDown(Key.Enter, false, false, false, out repeat));
@@ -83,7 +84,7 @@ public class HistoryTagPickerKeyboardTests
         Assert.HasCount(1, saved);
         Assert.IsTrue(saved[0]);
 
-        Assert.IsTrue(keyboard.HandleKeyUp(Key.Space));
+        Assert.IsTrue(keyboard.HandleKeyUp(activationKey));
         Assert.IsTrue(keyboard.TryHandleKeyDown(Key.Enter, false, false, false, out var second));
         await second;
         Assert.HasCount(2, saved);

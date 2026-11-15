@@ -54,7 +54,7 @@ public class HistoryTagEditorDialogTests
                 Content = new StackPanel { Children = { historySearch, anchor } }
             };
             var editor = new HistoryTagEditorViewModel(["code"], [["code"]]);
-            var dialog = new HistoryTagEditorDialog(editor);
+            var dialog = new HistoryTagEditorDialog(editor, () => Task.CompletedTask);
             var menu = new FAMenuFlyout();
             var edit = new FAMenuFlyoutItem { Text = "Edit tags" };
             menu.Items.Add(edit);
@@ -105,7 +105,7 @@ public class HistoryTagEditorDialogTests
         {
             Application.Current!.Styles.Add(new FluentAvaloniaTheme());
             var vm = new HistoryTagEditorViewModel(["short", new string('W', 100)], [[]]);
-            var dialog = new HistoryTagEditorDialog(vm);
+            var dialog = new HistoryTagEditorDialog(vm, () => Task.CompletedTask);
             var owner = new Window { Width = 850, Height = 650, Content = new Button() };
             try
             {
@@ -156,7 +156,7 @@ public class HistoryTagEditorDialogTests
         {
             Application.Current!.Styles.Add(new FluentAvaloniaTheme());
             var vm = new HistoryTagEditorViewModel(["代码"], [["Prompt", "工作"], ["Prompt"]]);
-            var dialog = new HistoryTagEditorDialog(vm);
+            var dialog = new HistoryTagEditorDialog(vm, () => throw new AssertFailedException("Discard must not save changes."));
             var owner = new Window { Width = 850, Height = 650, Content = new Button() };
             try
             {
@@ -178,8 +178,18 @@ public class HistoryTagEditorDialogTests
                 Dispatcher.UIThread.RunJobs();
                 Assert.Contains("新标签", vm.Added);
                 Assert.IsEmpty(vm.Removed);
+                ClickControl(dialog.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "CloseButton"));
+                Assert.AreEqual(Strings.HistoryTagBarDiscardTitle, dialog.Title);
+                Assert.IsFalse(result.IsCompleted);
+                owner.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
+                owner.KeyRelease(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
+                Dispatcher.UIThread.RunJobs();
+                Assert.AreEqual(vm.Title, dialog.Title);
+                Assert.Contains("新标签", vm.Added);
                 dialog.Hide();
-                Assert.AreEqual(FAContentDialogResult.None, await result);
+                Dispatcher.UIThread.RunJobs();
+                ClickControl(dialog.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "PrimaryButton"));
+                Assert.AreEqual(FAContentDialogResult.Secondary, await result.WaitAsync(TimeSpan.FromSeconds(5)));
             }
             finally
             {

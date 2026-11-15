@@ -1,6 +1,9 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation.Peers;
+using Microsoft.UI.Xaml.Automation.Provider;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Test.WinUI3.App;
 using SyncClipboard.WinUI3.Views;
@@ -38,7 +41,12 @@ public class HistoryTagEditorDialogTests
             await WaitUntilAsync(() => root.IsLoaded, timeout.Token);
             await ResizeAsync(window, root, 850, timeout.Token);
             var vm = new HistoryTagEditorViewModel(["short", new string('W', 100)], [[]]);
-            dialog = new HistoryTagEditorDialog(vm, () => Task.CompletedTask) { XamlRoot = root.XamlRoot };
+            var saves = 0;
+            dialog = new HistoryTagEditorDialog(vm, () =>
+            {
+                saves++;
+                return Task.CompletedTask;
+            }) { XamlRoot = root.XamlRoot };
             var result = dialog.ShowAsync();
             await WaitUntilAsync(() => Descendants<Border>(dialog).Any(b => b.Name == "BackgroundElement" && b.ActualWidth > 0), timeout.Token);
             var background = Descendants<Border>(dialog).Single(b => b.Name == "BackgroundElement");
@@ -53,8 +61,18 @@ public class HistoryTagEditorDialogTests
             await VerifyNarrowWindowAsync(window, root, dialog, background, wideWidth, timeout.Token);
             await ResizeAsync(window, root, 850, timeout.Token);
             await WaitUntilAsync(() => Math.Abs(background.ActualWidth - wideWidth) <= 1, timeout.Token);
-            dialog.Hide();
-            await result;
+            vm.FilteredChoices.Single().IsChecked = true;
+            InvokeButton(dialog, "CloseButton");
+            await WaitUntilAsync(() => Equals(dialog.Title, Strings.HistoryTagBarDiscardTitle), timeout.Token);
+            InvokeButton(dialog, "CloseButton");
+            await WaitUntilAsync(() => Equals(dialog.Title, vm.Title), timeout.Token);
+            Assert.AreEqual("short", vm.Search);
+            Assert.IsTrue(vm.FilteredChoices.Single().IsChecked);
+            InvokeButton(dialog, "CloseButton");
+            await WaitUntilAsync(() => Equals(dialog.Title, Strings.HistoryTagBarDiscardTitle), timeout.Token);
+            InvokeButton(dialog, "SecondaryButton");
+            Assert.AreEqual(ContentDialogResult.Secondary, await result);
+            Assert.AreEqual(0, saves);
         }
         finally
         {
@@ -62,6 +80,12 @@ public class HistoryTagEditorDialogTests
             window.Content = null;
             window.Close();
         }
+    }
+
+    private static void InvokeButton(ContentDialog dialog, string name)
+    {
+        var button = Descendants<Button>(dialog).Single(b => b.Name == name);
+        ((IInvokeProvider)new ButtonAutomationPeer(button).GetPattern(PatternInterface.Invoke)).Invoke();
     }
 
     private static async Task VerifyNarrowWindowAsync(Window window, Grid root, HistoryTagEditorDialog dialog,

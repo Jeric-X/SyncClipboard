@@ -44,4 +44,19 @@ public sealed partial class HistoryTagEditorDialog : ContentDialog
             deferral.Complete();
         }
     }
+
+    private void OnClosing(ContentDialog sender, ContentDialogClosingEventArgs args)
+    {
+        if (args.Result != ContentDialogResult.None || !_editor.HasChanges)
+            return;
+
+        args.Cancel = true;
+        var confirm = ReferenceEquals(Content, _EditorContent);
+        Content = confirm ? new TextBlock { Text = Strings.HistoryTagsDiscardMessage, TextWrapping = TextWrapping.Wrap } : _EditorContent;
+        Title = confirm ? Strings.HistoryTagBarDiscardTitle : _editor.Title;
+        PrimaryButtonText = confirm ? string.Empty : Strings.HistoryTagsApply;
+        SecondaryButtonText = confirm ? Strings.HistoryTagBarDiscard : string.Empty;
+        CloseButtonText = confirm ? Strings.HistoryTagBarContinueEditing : Strings.Cancel;
+        DefaultButton = confirm ? ContentDialogButton.Close : ContentDialogButton.Primary;
+    }
 }

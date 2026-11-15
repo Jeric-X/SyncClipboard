@@ -101,13 +101,10 @@ public class HistoryTagPickerTests
                 Press(popup, Key.Enter);
                 CollectionAssert.AreEqual(new[] { ("code", true), ("code", false) }, saved);
                 Press(popup, Key.Tab);
-                Assert.AreEqual("tag01", picker.SelectedSuggestion?.Name);
-                Press(popup, Key.Tab, RawInputModifiers.Shift);
+                Assert.AreEqual(("code", true), saved[^1]);
                 Assert.AreEqual("code", picker.SelectedSuggestion?.Name);
-                Press(popup, Key.Tab, RawInputModifiers.Shift);
-                Assert.AreEqual("work", picker.SelectedSuggestion?.Name);
                 Press(popup, Key.Tab);
-                Assert.AreEqual("code", picker.SelectedSuggestion?.Name);
+                Assert.AreEqual(("code", false), saved[^1]);
                 Assert.IsTrue(search.IsFocused);
                 Assert.HasCount(1, picker.Suggestions.Where(tag => tag.IsCurrent));
                 Press(popup, Key.Down);
@@ -136,7 +133,7 @@ public class HistoryTagPickerTests
                 // Enter toggles the highlighted existing tag while the new input candidate stays first.
                 search.Text = "tag";
                 Dispatcher.UIThread.RunJobs();
-                Press(popup, Key.Tab);
+                Press(popup, Key.Down);
                 Assert.AreEqual("tag01", picker.SelectedSuggestion?.Name);
                 Press(popup, Key.Enter);
                 Assert.AreEqual(("tag01", true), saved[^1]);
@@ -144,7 +141,7 @@ public class HistoryTagPickerTests
                 Press(popup, Key.Enter);
                 Assert.AreEqual(("tag01", false), saved[^1]);
                 Assert.AreEqual("tag", picker.Search);
-                Press(popup, Key.Tab, RawInputModifiers.Shift);
+                Press(popup, Key.Up);
                 Assert.AreEqual("tag", picker.SelectedSuggestion?.Name);
                 Assert.IsNotNull(picker.SelectedSuggestion);
                 Assert.IsTrue(picker.SelectedSuggestion.IsNew);
@@ -161,7 +158,6 @@ public class HistoryTagPickerTests
                 Assert.IsTrue(picker.SelectedSuggestion.IsNew);
                 Press(popup, Key.Tab);
                 Assert.IsTrue(search.IsFocused);
-                Press(popup, Key.Enter);
                 Assert.AreEqual(("新标签", true), saved[^1]);
                 Assert.IsEmpty(search.Text!);
                 Assert.AreEqual("新标签", picker.SelectedSuggestion?.Name);

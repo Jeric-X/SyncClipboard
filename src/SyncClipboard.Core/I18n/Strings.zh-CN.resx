@@ -1745,6 +1745,9 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryTagBarUnpinned" xml:space="preserve">
     <value>未固定</value>
   </data>
+  <data name="HistoryTagsDiscardMessage" xml:space="preserve">
+    <value>是否放弃对所选记录标签的修改？</value>
+  </data>
   <data name="HistoryTagBarDiscardTitle" xml:space="preserve">
     <value>放弃修改？</value>
   </data>
