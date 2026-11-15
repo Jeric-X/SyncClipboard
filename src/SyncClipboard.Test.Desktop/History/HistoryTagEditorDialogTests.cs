@@ -156,7 +156,12 @@ public class HistoryTagEditorDialogTests
         {
             Application.Current!.Styles.Add(new FluentAvaloniaTheme());
             var vm = new HistoryTagEditorViewModel(["代码"], [["Prompt", "工作"], ["Prompt"]]);
-            var dialog = new HistoryTagEditorDialog(vm, () => throw new AssertFailedException("Discard must not save changes."));
+            var saves = 0;
+            var dialog = new HistoryTagEditorDialog(vm, () =>
+            {
+                saves++;
+                return Task.CompletedTask;
+            });
             var owner = new Window { Width = 850, Height = 650, Content = new Button() };
             try
             {
@@ -194,6 +199,7 @@ public class HistoryTagEditorDialogTests
                 Dispatcher.UIThread.RunJobs();
                 ClickControl(dialog.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "PrimaryButton"));
                 Assert.AreEqual(FAContentDialogResult.Secondary, await result.WaitAsync(TimeSpan.FromSeconds(5)));
+                Assert.AreEqual(0, saves);
             }
             finally
             {
