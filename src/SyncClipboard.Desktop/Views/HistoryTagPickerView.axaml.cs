@@ -1,3 +1,4 @@
+using System;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.VisualTree;
@@ -102,15 +103,14 @@ public partial class HistoryTagPickerView : UserControl
         if (_flyout is null)
             return;
         UpdateLayout();
-        _Suggestions.GetVisualDescendants().OfType<Button>().FirstOrDefault(button =>
-            ReferenceEquals(button.DataContext, ViewModel.SelectedSuggestion))?.BringIntoView();
+        if (ViewModel.SelectedSuggestion is { } selected)
+            _Suggestions.ContainerFromItem(selected)?.BringIntoView();
     }
 
-    private async void Suggestion_Click(object? sender, RoutedEventArgs e)
+    private async void Suggestion_ToggleRequested(object? sender, EventArgs e)
     {
-        e.Handled = true;
         _TagSearch.Focus();
-        if (sender is Button { DataContext: HistoryTagSuggestion suggestion })
+        if (sender is CheckBox { DataContext: HistoryTagSuggestion suggestion })
             await ViewModel.ToggleAsync(suggestion.Name);
     }
 }

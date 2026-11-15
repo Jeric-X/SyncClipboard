@@ -1,4 +1,6 @@
 using Avalonia;
+using Avalonia.Automation.Peers;
+using Avalonia.Automation.Provider;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
 using Avalonia.Headless;
@@ -116,11 +118,11 @@ public class HistoryTagPickerTests
                 // Existing tags keep the filter for both pointer and keyboard assignment.
                 search.Text = "co";
                 Dispatcher.UIThread.RunJobs();
-                Suggestion(view, "code").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Toggle(Suggestion(view, "code"));
                 Dispatcher.UIThread.RunJobs();
                 Assert.AreEqual(("code", true), saved[^1]);
                 Assert.AreEqual("co", search.Text);
-                Suggestion(view, "code").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Toggle(Suggestion(view, "code"));
                 Dispatcher.UIThread.RunJobs();
                 Assert.AreEqual(("code", false), saved[^1]);
                 Assert.AreEqual("co", search.Text);
@@ -306,9 +308,11 @@ public class HistoryTagPickerTests
         }, CancellationToken.None);
     }
 
-    private static Button Suggestion(HistoryTagPickerView view, string name) =>
-        view.GetVisualDescendants().OfType<Button>().Single(button =>
+    private static CheckBox Suggestion(HistoryTagPickerView view, string name) =>
+        view.GetVisualDescendants().OfType<CheckBox>().Single(button =>
             button.DataContext is HistoryTagSuggestion suggestion && suggestion.Name == name);
+
+    private static void Toggle(CheckBox checkBox) => ((IToggleProvider)new ToggleButtonAutomationPeer(checkBox)).Toggle();
 
     private static void Press(TopLevel root, Key key, RawInputModifiers modifiers = RawInputModifiers.None)
     {
@@ -329,17 +333,17 @@ public class HistoryTagPickerTests
         Assert.IsTrue(search.IsFocused, $"open={flyout.IsOpen}, visible={search.IsEffectivelyVisible}, enabled={search.IsEffectivelyEnabled}");
         search.Text = "cod";
         Dispatcher.UIThread.RunJobs();
-        var suggestion = view.GetVisualDescendants().OfType<Button>()
-            .Single(b => b.DataContext is HistoryTagSuggestion { Name: "code" });
+        var suggestion = Suggestion(view, "code");
         Assert.AreEqual("code", ((HistoryTagSuggestion)suggestion.DataContext!).Name);
         Assert.IsGreaterThan(100, suggestion.Bounds.Width);
         Assert.IsLessThan(fullHeight, view.Bounds.Height);
         Assert.AreEqual(suggestion.Bounds.Height * 2, scroll.Bounds.Height, 1);
         Assert.IsGreaterThanOrEqualTo(12d, scroll.Bounds.Width - list.Bounds.Width);
         suggestion.Focus();
-        suggestion.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Toggle(suggestion);
         Dispatcher.UIThread.RunJobs();
         Assert.IsTrue(search.IsFocused);
+        Assert.IsFalse(suggestion.IsChecked);
         search.Text = "next";
         Dispatcher.UIThread.RunJobs();
         var lostFocus = 0;
@@ -363,14 +367,14 @@ public class HistoryTagPickerTests
         var candidate = Suggestion(view, "新标签");
         var badge = candidate.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == Strings.HistoryTagsNew);
         Assert.IsTrue(badge.IsEffectivelyVisible);
-        candidate.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        Toggle(candidate);
         Dispatcher.UIThread.RunJobs();
         CollectionAssert.AreEqual(new[] { ("code", true), ("新标签", true) }, saved);
         Assert.IsTrue(flyout.IsOpen);
-        var assigned = view.GetVisualDescendants().OfType<Button>()
-            .Single(b => b.DataContext is HistoryTagSuggestion { Name: "work" });
+        var assigned = Suggestion(view, "work");
         Assert.IsTrue(assigned.IsEnabled);
-        assigned.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Assert.IsTrue(assigned.IsChecked);
+        Toggle(assigned);
         Dispatcher.UIThread.RunJobs();
         Assert.AreEqual(("work", false), saved[^1]);
         Assert.IsFalse(picker.Suggestions.Single(t => t.Name == "work").IsAssigned);
@@ -379,17 +383,15 @@ public class HistoryTagPickerTests
         scroll.Offset = new Vector(0, scroll.Extent.Height);
         Dispatcher.UIThread.RunJobs();
         var offset = scroll.Offset;
-        var lastTag = view.GetVisualDescendants().OfType<Button>()
-            .Single(b => b.DataContext is HistoryTagSuggestion { Name: "tag20" });
-        var checkmark = lastTag.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Text == "✓");
-        Assert.IsFalse(checkmark.IsVisible);
-        lastTag.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        var lastTag = Suggestion(view, "tag20");
+        Assert.IsFalse(lastTag.IsChecked);
+        Toggle(lastTag);
         Dispatcher.UIThread.RunJobs();
-        Assert.IsTrue(checkmark.IsVisible);
+        Assert.IsTrue(lastTag.IsChecked);
         Assert.AreEqual(offset, scroll.Offset);
-        lastTag.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        Toggle(lastTag);
         Dispatcher.UIThread.RunJobs();
-        Assert.IsFalse(checkmark.IsVisible);
+        Assert.IsFalse(lastTag.IsChecked);
         Assert.AreEqual(offset, scroll.Offset);
     }
 }

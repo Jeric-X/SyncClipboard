@@ -1,10 +1,8 @@
+using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Input;
-using System.Collections.Generic;
-using System.Linq;
 using System.ComponentModel;
 using Windows.System;
 using Windows.UI.Core;
@@ -106,35 +104,14 @@ public sealed partial class HistoryTagPickerView : UserControl
         if (_flyout is null)
             return;
         UpdateLayout();
-        SuggestionButtons().FirstOrDefault(button => Equals(button.Tag, ViewModel.SelectedSuggestion?.Name))
-            ?.StartBringIntoView();
+        if (ViewModel.SelectedSuggestion is { } selected)
+            (_Suggestions.ContainerFromItem(selected) as FrameworkElement)?.StartBringIntoView();
     }
 
-    private IEnumerable<Button> SuggestionButtons()
-    {
-        for (var i = 0; i < _Suggestions.Items.Count; i++)
-        {
-            if (_Suggestions.ContainerFromIndex(i) is DependencyObject container && FindButton(container) is { } button)
-                yield return button;
-        }
-    }
-
-    private static Button? FindButton(DependencyObject root)
-    {
-        if (root is Button button)
-            return button;
-        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
-        {
-            if (FindButton(VisualTreeHelper.GetChild(root, i)) is { } child)
-                return child;
-        }
-        return null;
-    }
-
-    private async void Suggestion_Click(object sender, RoutedEventArgs _)
+    private async void Suggestion_ToggleRequested(object? sender, EventArgs e)
     {
         _TagSearch.Focus(FocusState.Programmatic);
-        if (sender is Button { Tag: string name })
-            await ViewModel.ToggleAsync(name);
+        if (sender is CheckBox { DataContext: HistoryTagSuggestion suggestion })
+            await ViewModel.ToggleAsync(suggestion.Name);
     }
 }
