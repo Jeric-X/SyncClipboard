@@ -1,8 +1,9 @@
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Media;
-using SyncClipboard.Core.I18n;
 using Avalonia.Threading;
 using FluentAvalonia.UI.Controls;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.ViewModels;
 using System;
 using System.Threading.Tasks;
@@ -11,6 +12,7 @@ namespace SyncClipboard.Desktop.Views;
 
 public partial class HistoryTagEditorDialog : FAContentDialog
 {
+    private Button? closeButton;
     protected override Type StyleKeyOverride => typeof(FAContentDialog);
 
     public HistoryTagEditorDialog() => InitializeComponent();
@@ -44,6 +46,12 @@ public partial class HistoryTagEditorDialog : FAContentDialog
         };
     }
 
+    protected override void OnApplyTemplate(TemplateAppliedEventArgs e)
+    {
+        base.OnApplyTemplate(e);
+        closeButton = e.NameScope.Find<Button>("CloseButton");
+    }
+
     protected override void OnOpened()
     {
         base.OnOpened();
@@ -62,5 +70,12 @@ public partial class HistoryTagEditorDialog : FAContentDialog
         PrimaryButtonText = confirm ? Strings.HistoryTagBarDiscard : Strings.HistoryTagsApply;
         CloseButtonText = confirm ? Strings.HistoryTagBarContinueEditing : Strings.Cancel;
         DefaultButton = confirm ? FAContentDialogButton.Close : FAContentDialogButton.None;
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (ReferenceEquals(Content, _EditorContent))
+                _TagSearch.Focus();
+            else
+                closeButton?.Focus();
+        }, DispatcherPriority.Input);
     }
 }

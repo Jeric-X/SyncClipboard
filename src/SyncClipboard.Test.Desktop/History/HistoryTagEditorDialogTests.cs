@@ -178,13 +178,17 @@ public class HistoryTagEditorDialogTests
                 Dispatcher.UIThread.RunJobs();
                 Assert.Contains("新标签", vm.Added);
                 Assert.IsEmpty(vm.Removed);
-                ClickControl(dialog.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "CloseButton"));
+                Assert.IsTrue(search.Focus());
+                owner.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
+                owner.KeyRelease(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
+                Dispatcher.UIThread.RunJobs();
                 Assert.AreEqual(Strings.HistoryTagBarDiscardTitle, dialog.Title);
                 Assert.IsFalse(result.IsCompleted);
                 owner.KeyPress(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
                 owner.KeyRelease(Key.Escape, RawInputModifiers.None, PhysicalKey.Escape, null);
                 Dispatcher.UIThread.RunJobs();
                 Assert.AreEqual(vm.Title, dialog.Title);
+                Assert.IsTrue(search.IsFocused);
                 Assert.Contains("新标签", vm.Added);
                 dialog.Hide();
                 Dispatcher.UIThread.RunJobs();
