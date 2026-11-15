@@ -43,6 +43,8 @@ public class HistoryTagEditorDialogTests
             await WaitUntilAsync(() => Descendants<Border>(dialog).Any(b => b.Name == "BackgroundElement" && b.ActualWidth > 0), timeout.Token);
             var background = Descendants<Border>(dialog).Single(b => b.Name == "BackgroundElement");
             await Task.Delay(300, timeout.Token);
+            var tagCheckBox = Descendants<CheckBox>(dialog).First();
+            Assert.AreEqual((CornerRadius)Application.Current.Resources["ControlCornerRadius"], tagCheckBox.CornerRadius);
             var wideWidth = background.ActualWidth;
             Assert.IsLessThanOrEqualTo(400, wideWidth);
             vm.Search = "short";

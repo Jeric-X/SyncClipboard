@@ -28,6 +28,7 @@
                     <DataTemplate x:DataType="vm:HistoryTagSuggestion">
                         <Grid>
                             <controls:HistoryTagPickerCheckBox Focusable="False"
+                                                               Margin="8,0"
                                                                HorizontalAlignment="Stretch"
                                                                HorizontalContentAlignment="Stretch"
                                                                MinHeight="32"

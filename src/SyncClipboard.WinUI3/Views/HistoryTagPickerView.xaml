@@ -30,6 +30,8 @@
                         <DataTemplate x:DataType="vm:HistoryTagSuggestion">
                             <Grid>
                                 <controls:HistoryTagPickerCheckBox IsTabStop="False"
+                                                                   Style="{StaticResource DefaultCheckBoxStyle}"
+                                                                   Margin="8,0"
                                                                    AllowFocusOnInteraction="False"
                                                                    HorizontalAlignment="Stretch"
                                                                    HorizontalContentAlignment="Stretch"

@@ -336,6 +336,7 @@ public class HistoryTagPickerTests
         var suggestion = Suggestion(view, "code");
         Assert.AreEqual("code", ((HistoryTagSuggestion)suggestion.DataContext!).Name);
         Assert.IsGreaterThan(100, suggestion.Bounds.Width);
+        Assert.IsGreaterThan(1d, suggestion.Bounds.X);
         Assert.IsLessThan(fullHeight, view.Bounds.Height);
         Assert.AreEqual(suggestion.Bounds.Height * 2, scroll.Bounds.Height, 1);
         Assert.IsGreaterThanOrEqualTo(12d, scroll.Bounds.Width - list.Bounds.Width);

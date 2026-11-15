@@ -98,6 +98,8 @@ public class HistoryTagPickerTests
         var code = Suggestions(view).Single(b => b.DataContext is HistoryTagSuggestion { Name: "code" });
         Assert.IsFalse(code.IsChecked);
         await WaitUntilAsync(() => code.ActualWidth > 100, token);
+        Assert.AreEqual((CornerRadius)Application.Current.Resources["ControlCornerRadius"], code.CornerRadius);
+        Assert.IsGreaterThan(1d, code.TransformToVisual((UIElement)code.Parent).TransformPoint(new Point()).X);
         Toggle(code);
         await WaitUntilAsync(() => saved.Count == 1, token);
         Assert.AreSame(search, FocusManager.GetFocusedElement(view.XamlRoot));
