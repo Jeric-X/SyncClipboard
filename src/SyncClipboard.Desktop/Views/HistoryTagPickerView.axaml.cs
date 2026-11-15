@@ -83,9 +83,8 @@ public partial class HistoryTagPickerView : UserControl
             return;
         // macOS masks printable keys for composing input sources before preedit starts.
         var key = e.Key == Key.ImeProcessed && e.PhysicalKey == PhysicalKey.Space ? Key.Space : e.Key;
-        var shift = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
-        var command = (e.KeyModifiers & ~KeyModifiers.Shift) != KeyModifiers.None;
-        if (_keyboard.TryHandleKeyDown(KeyboardMap.ConvertFromAvalonia(key), shift, command, false, out var operation))
+        var hasModifiers = e.KeyModifiers != KeyModifiers.None;
+        if (_keyboard.TryHandleKeyDown(KeyboardMap.ConvertFromAvalonia(key), hasModifiers, false, out var operation))
         {
             e.Handled = true;
             await operation;

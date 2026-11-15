@@ -16,10 +16,10 @@ public sealed class HistoryTagPickerKeyboard(HistoryTagPickerViewModel viewModel
     }
 
     // Report whether the native event is handled before the view awaits the save.
-    public bool TryHandleKeyDown(Key? key, bool shift, bool command, bool isRepeat, out Task operation)
+    public bool TryHandleKeyDown(Key? key, bool hasModifiers, bool isRepeat, out Task operation)
     {
         operation = Task.CompletedTask;
-        if (command || shift)
+        if (hasModifiers)
             return false;
 
         if (key is Key.Up or Key.Down)

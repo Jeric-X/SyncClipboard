@@ -79,8 +79,7 @@ public sealed partial class HistoryTagPickerView : UserControl
     {
         if (_isComposing || _keyboard is null)
             return;
-        if (_keyboard.TryHandleKeyDown(KeyboardMap.ConvertFromVirtualKey(e.Key), IsKeyDown(VirtualKey.Shift),
-            HasCommandModifier(), e.KeyStatus.WasKeyDown, out var operation))
+        if (_keyboard.TryHandleKeyDown(KeyboardMap.ConvertFromVirtualKey(e.Key), HasModifiers(), e.KeyStatus.WasKeyDown, out var operation))
         {
             e.Handled = true;
             await operation;
@@ -90,7 +89,7 @@ public sealed partial class HistoryTagPickerView : UserControl
     private static bool IsKeyDown(VirtualKey key) =>
         InputKeyboardSource.GetKeyStateForCurrentThread(key).HasFlag(CoreVirtualKeyStates.Down);
 
-    private static bool HasCommandModifier() => IsKeyDown(VirtualKey.Control) || IsKeyDown(VirtualKey.Menu)
+    private static bool HasModifiers() => IsKeyDown(VirtualKey.Shift) || IsKeyDown(VirtualKey.Control) || IsKeyDown(VirtualKey.Menu)
         || IsKeyDown(VirtualKey.LeftWindows) || IsKeyDown(VirtualKey.RightWindows);
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
