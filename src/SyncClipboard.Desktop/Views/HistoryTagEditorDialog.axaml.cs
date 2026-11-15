@@ -58,7 +58,7 @@ public partial class HistoryTagEditorDialog : FAContentDialog
         Dispatcher.UIThread.Post(() => _TagSearch.Focus(), DispatcherPriority.Input);
     }
 
-    private void OnClosing(FAContentDialog sender, FAContentDialogClosingEventArgs args)
+    private void OnClosing(FAContentDialog _, FAContentDialogClosingEventArgs args)
     {
         if (args.Result != FAContentDialogResult.None || DataContext is not HistoryTagEditorViewModel editor || !editor.HasChanges)
             return;
