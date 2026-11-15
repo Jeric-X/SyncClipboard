@@ -151,6 +151,7 @@ public class HistoryTagEditorDialogTests
     [TestMethod]
     public async Task Editor_SearchesCreatesAndPreservesMixedSelectionUntilCommitted()
     {
+        var token = TestContext.CancellationTokenSource.Token;
         await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryTagEditorDialogTests));
         await session.Dispatch(async () =>
         {
@@ -198,7 +199,7 @@ public class HistoryTagEditorDialogTests
                 dialog.Hide();
                 Dispatcher.UIThread.RunJobs();
                 ClickControl(dialog.GetVisualDescendants().OfType<Button>().Single(b => b.Name == "PrimaryButton"));
-                Assert.AreEqual(FAContentDialogResult.Secondary, await result.WaitAsync(TimeSpan.FromSeconds(5)));
+                Assert.AreEqual(FAContentDialogResult.Secondary, await result.WaitAsync(TimeSpan.FromSeconds(5), token));
                 Assert.AreEqual(0, saves);
             }
             finally
@@ -207,6 +208,6 @@ public class HistoryTagEditorDialogTests
                 owner.Close();
             }
             return true;
-        }, CancellationToken.None);
+        }, token);
     }
 }
