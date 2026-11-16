@@ -3,7 +3,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Media.Imaging;
-using Avalonia.Threading;
 using FluentAvalonia.Styling;
 using SkiaSharp;
 using SyncClipboard.Core.Commons;
@@ -14,7 +13,7 @@ using SyncClipboard.Shared.Profiles;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-namespace SyncClipboard.Test.Desktop;
+namespace SyncClipboard.Test.Desktop.History;
 
 [TestClass]
 [DoNotParallelize]
@@ -41,7 +40,9 @@ public class PreviewPanelImageTests
             var path = CreateImage(width, height, format);
             try
             {
-                using var bitmap = PreviewImageProvider.Decode(path, new PreviewImageProvider.DecodeOptions(new Size(2048, 2048))).Bitmap;
+                using var source = PreviewImageProvider.Decode(path, new PreviewImageProvider.DecodeOptions(new Size(2048, 2048)),
+                    token: TestContext.CancellationTokenSource.Token).Source;
+                var bitmap = source?.Frames.Single();
                 Assert.IsNotNull(bitmap);
                 Assert.AreEqual(new PixelSize(expectedWidth, expectedHeight), bitmap.PixelSize);
                 Assert.IsLessThanOrEqualTo(16L * 1024 * 1024, (long)bitmap.PixelSize.Width * bitmap.PixelSize.Height * 4);
@@ -76,7 +77,7 @@ public class PreviewPanelImageTests
             record.PreviewImage = path;
             record.Text = string.Empty;
             var panel = new PreviewPanel { ViewModel = viewModel, SelectedItem = record };
-            var image = panel.FindControl<Image>("_PreviewImage")!;
+            var image = panel.FindControl<PreviewImage>("_PreviewImage")!;
             var window = new Window { Content = panel, Width = 850, Height = 530 };
             try
             {
@@ -85,17 +86,20 @@ public class PreviewPanelImageTests
                 var large = await WaitForImageAsync(image);
                 Assert.AreEqual(new PixelSize(2048, 2048), large.PixelSize);
                 record.PreviewImage = smallPath;
+                await image.PendingRelease;
                 Assert.ThrowsExactly<ObjectDisposedException>(() => _ = large.PixelSize);
                 var small = await WaitForImageAsync(image);
                 Assert.AreEqual(new PixelSize(32, 16), small.PixelSize);
                 viewModel.ShowPreviewPanel = false;
                 Assert.IsNull(image.Source);
+                await image.PendingRelease;
                 Assert.ThrowsExactly<ObjectDisposedException>(() => _ = small.PixelSize);
                 viewModel.ShowPreviewPanel = true;
                 var reopened = await WaitForImageAsync(image);
                 Assert.AreEqual(new PixelSize(32, 16), reopened.PixelSize);
                 window.Content = null;
                 Assert.IsNull(image.Source);
+                await image.PendingRelease;
                 Assert.ThrowsExactly<ObjectDisposedException>(() => _ = reopened.PixelSize);
             }
             finally
@@ -127,14 +131,15 @@ public class PreviewPanelImageTests
                 window.SetRenderScaling(2);
                 window.Show();
                 await image.PendingLoad;
-                var preview = (Bitmap)image.Source!;
+                var preview = image.Source!.Frames.Single();
                 Assert.AreEqual(new PixelSize(2048, 2048), preview.PixelSize);
                 image.DecodeBounds = new Size(400, 200);
                 image.ScaleWithRenderScaling = true;
                 image.SizeToImage = true;
+                await image.PendingRelease;
                 Assert.ThrowsExactly<ObjectDisposedException>(() => _ = preview.PixelSize);
                 await image.PendingLoad;
-                var thumbnail = (Bitmap)image.Source!;
+                var thumbnail = image.Source!.Frames.Single();
                 Assert.AreEqual(new PixelSize(400, 400), thumbnail.PixelSize);
                 Assert.AreEqual(200, image.Width);
                 Assert.AreEqual(200, image.Height);
@@ -148,16 +153,10 @@ public class PreviewPanelImageTests
         }, TestContext.CancellationTokenSource.Token);
     }
 
-    private async Task<Bitmap> WaitForImageAsync(Image image)
+    private static async Task<Bitmap> WaitForImageAsync(PreviewImage image)
     {
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.CancellationTokenSource.Token);
-        timeout.CancelAfter(TimeSpan.FromSeconds(10));
-        while (image.Source is not Bitmap)
-        {
-            await Task.Delay(10, timeout.Token);
-            Dispatcher.UIThread.RunJobs();
-        }
-        return (Bitmap)image.Source;
+        await image.PendingLoad;
+        return image.Source!.Frames.Single();
     }
 
     private static string CreateImage(int width, int height, SKEncodedImageFormat format)

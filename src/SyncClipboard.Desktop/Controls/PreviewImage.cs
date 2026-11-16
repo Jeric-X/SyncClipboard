@@ -1,6 +1,10 @@
 using Avalonia;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
+using Avalonia.Labs.AnimatedImage;
+using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Rendering.Composition;
 using SyncClipboard.Core;
 using SyncClipboard.Core.Utilities.Images;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,12 +19,14 @@ namespace SyncClipboard.Desktop.Controls;
 /// <summary>
 /// Displays a leased preview. Hiding or detaching returns the lease; hiding its window does not.
 /// </summary>
-public sealed class PreviewImage : Image
+public sealed class PreviewImage : AnimatedImage
 {
     private readonly PreviewImageCache<PreviewImageKey, DecodedImage> _cache;
     private readonly bool _checkFileVersion;
     private CancellationTokenSource? _request;
     private PreviewImageLease<DecodedImage>? _lease;
+    private TopLevel? _playbackWindow;
+    private bool _inViewport;
     private bool _attached;
     private (string Path, PixelSize Dimensions)? _cachedSize;
 
@@ -70,6 +76,7 @@ public sealed class PreviewImage : Image
 
     internal event EventHandler? FileMissing;
 
+    internal Task PendingRelease { get; private set; } = Task.CompletedTask;
     internal Task PendingLoad { get; private set; } = Task.CompletedTask;
 
     public PreviewImage() : this(AppCore.TryGetCurrent()?.Services
@@ -89,6 +96,13 @@ public sealed class PreviewImage : Image
             new DecodeOptions(new Size(key.Width, key.Height), key.Scale, key.MaxPixelWidth, key.SizeOnly,
                 _cachedSize?.Path == key.Path ? _cachedSize?.Dimensions : null), token));
         Stretch = Stretch.Uniform;
+    }
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new PreviewAutomationPeer(this);
+
+    private sealed class PreviewAutomationPeer(PreviewImage owner) : ControlAutomationPeer(owner)
+    {
+        protected override AutomationControlType GetAutomationControlTypeCore() => AutomationControlType.Image;
     }
 
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -150,11 +164,40 @@ public sealed class PreviewImage : Image
         _request?.Cancel();
         _request?.Dispose();
         _request = null;
+        if (_playbackWindow is { } window)
+        {
+            window.PropertyChanged -= OnPlaybackWindowChanged;
+            EffectiveViewportChanged -= OnEffectiveViewportChanged;
+            _playbackWindow = null;
+        }
         Source = null;
-        _lease?.Dispose();
+        if (_lease is { } lease)
+            PendingRelease = ReleaseAfterRenderAsync(lease);
         _lease = null;
         Width = double.NaN;
         Height = double.NaN;
+    }
+
+    private void OnEffectiveViewportChanged(object? sender, EffectiveViewportChangedEventArgs e)
+    {
+        _inViewport = e.EffectiveViewport.Intersects(new Rect(Bounds.Size));
+        IsPlaying = _inViewport && _playbackWindow?.IsVisible == true;
+    }
+
+    private void OnPlaybackWindowChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == IsVisibleProperty)
+            IsPlaying = _inViewport && _playbackWindow?.IsVisible == true;
+    }
+
+    private async Task ReleaseAfterRenderAsync(PreviewImageLease<DecodedImage> lease)
+    {
+        // The render thread may still be drawing the old source until it receives the reset.
+        using (lease)
+        {
+            if (lease.Image.Source is not null && ElementComposition.GetElementVisual(this)?.Compositor is { } compositor)
+                await compositor.RequestCommitAsync();
+        }
     }
 
     private bool TryRestoreImageSize(DecodeOptions options)
@@ -199,8 +242,17 @@ public sealed class PreviewImage : Image
                 Height = decoded.DisplaySize.Height;
             }
             _lease = lease;
-            Source = decoded.Bitmap;
             lease = null;
+            Source = decoded.Source;
+            if (Source is { FrameCount: > 1 } && TopLevel.GetTopLevel(this) is { } window)
+            {
+                _inViewport = false;
+                IsPlaying = false;
+                _playbackWindow = window;
+                window.PropertyChanged += OnPlaybackWindowChanged;
+                EffectiveViewportChanged += OnEffectiveViewportChanged;
+                InvalidateArrange();
+            }
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         catch (Exception ex) when (ex is FileNotFoundException or DirectoryNotFoundException)
