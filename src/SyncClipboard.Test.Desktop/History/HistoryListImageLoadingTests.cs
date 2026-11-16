@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Data;
 using Avalonia.Headless;
+using Avalonia.Labs.AnimatedImage;
 using Avalonia.Media.Imaging;
 using Avalonia.Themes.Fluent;
 using Avalonia.VisualTree;
@@ -58,7 +59,7 @@ public class HistoryListImageLoadingTests
             var image = new PreviewImage((file, options, token) =>
             {
                 if (options.SizeOnly)
-                    return Task.Run(() => PreviewImageProvider.Decode(file, options), token);
+                    return Task.Run(() => PreviewImageProvider.Decode(file, options, token: token), token);
 
                 requests++;
                 return completion.Task;
@@ -90,7 +91,8 @@ public class HistoryListImageLoadingTests
                 Assert.IsNull(image.Source);
                 var beforeDecode = image.DesiredSize;
                 Assert.IsGreaterThan(0, beforeDecode.Height);
-                completion.SetResult(PreviewImageProvider.Decode(path, new PreviewImageProvider.DecodeOptions(new Size(5120, 200))));
+                completion.SetResult(PreviewImageProvider.Decode(path, new PreviewImageProvider.DecodeOptions(new Size(5120, 200)),
+                    token: TestContext.CancellationTokenSource.Token));
                 await image.PendingLoad;
                 window.UpdateLayout();
                 Assert.AreEqual(beforeDecode, image.DesiredSize);
@@ -135,7 +137,7 @@ public class HistoryListImageLoadingTests
             {
                 Interlocked.Increment(ref headerReads);
                 return new PixelSize(600, 300);
-            }), token))
+            }, token), token))
             { FilePath = paths[0], DecodeBounds = new Size(400, 200), SizeToImage = true, IsVisible = false };
             var window = new Window { Content = image };
             try
@@ -151,8 +153,8 @@ public class HistoryListImageLoadingTests
 
                 image.IsVisible = true;
                 await image.PendingLoad;
-                Assert.IsInstanceOfType<Bitmap>(image.Source);
-                Assert.AreEqual(new PixelSize(150, 75), ((Bitmap)image.Source).PixelSize);
+                Assert.IsNotNull(image.Source);
+                Assert.AreEqual(new PixelSize(150, 75), image.Source.Frames.Single().PixelSize);
                 image.MaxPixelWidth = 1;
                 await image.PendingLoad;
                 Assert.IsNull(image.Source);
@@ -209,7 +211,7 @@ public class HistoryListImageLoadingTests
 
                 image.IsVisible = true;
                 Assert.AreEqual(16, image.Height);
-                requests[2].SetResult(new(CreateBitmap(), new Size(32, 16), new PixelSize(32, 16)));
+                requests[2].SetResult(new(IAnimatedBitmap.Load([CreateBitmap()], [0]), new Size(32, 16), new PixelSize(32, 16)));
                 await image.PendingLoad;
                 Assert.IsNotNull(image.Source);
                 Assert.AreEqual(16, image.Height);
@@ -247,11 +249,11 @@ public class HistoryListImageLoadingTests
                 ItemsPanel = new FuncTemplate<Panel?>(() => virtualized ? new VirtualizingStackPanel() : new StackPanel()),
                 ItemTemplate = new FuncDataTemplate<string>((text, _) =>
                 {
-                    var image = new PreviewImage((file, options, _) =>
+                    var image = new PreviewImage((file, options, token) =>
                     {
                         // Complete size reads immediately to isolate layout anchoring from I/O timing.
                         if (options.SizeOnly)
-                            return Task.FromResult(PreviewImageProvider.Decode(file, options));
+                            return Task.FromResult(PreviewImageProvider.Decode(file, options, token: token));
 
                         var completion = new TaskCompletionSource<PreviewImageProvider.DecodedImage>();
                         requests.Add(completion);
@@ -290,7 +292,7 @@ public class HistoryListImageLoadingTests
                 var extent = scroll.Extent.Height;
                 var offset = scroll.Offset.Y;
                 foreach (var request in requests)
-                    request.SetResult(new PreviewImageProvider.DecodedImage(CreateBitmap(), new Size(400, 200), new PixelSize(600, 300)));
+                    request.SetResult(new PreviewImageProvider.DecodedImage(IAnimatedBitmap.Load([CreateBitmap()], [0]), new Size(400, 200), new PixelSize(600, 300)));
                 await Task.WhenAll(images.Select(image => image.PendingLoad));
                 window.UpdateLayout();
                 if (!virtualized)
@@ -333,7 +335,7 @@ public class HistoryListImageLoadingTests
                 requested.Add(path);
                 var bitmap = CreateBitmap();
                 bitmaps.Add(bitmap);
-                return Task.FromResult(new PreviewImageProvider.DecodedImage(bitmap, new Size(1, 1), new PixelSize(1, 1)));
+                return Task.FromResult(new PreviewImageProvider.DecodedImage(IAnimatedBitmap.Load([bitmap], [0]), new Size(1, 1), new PixelSize(1, 1)));
             });
             var state = new ImageState { PreviewImage = "first.png" };
             using var visibleBinding = image.Bind(PreviewImage.IsVisibleProperty, new Binding(nameof(ImageState.IsCompactListMode))
@@ -362,6 +364,7 @@ public class HistoryListImageLoadingTests
                 state.IsCompactListMode = true;
                 state.PreviewImage = "next.png";
                 Assert.IsNull(image.Source);
+                await image.PendingRelease;
                 Assert.AreEqual(1, bitmaps[0].DisposeCount);
                 Assert.HasCount(1, requested);
 
@@ -372,6 +375,7 @@ public class HistoryListImageLoadingTests
                 window.Hide();
                 state.IsCompactListMode = true;
                 Assert.IsNull(image.Source);
+                await image.PendingRelease;
                 Assert.AreEqual(1, bitmaps[1].DisposeCount);
                 state.PreviewImage = "hidden-window.png";
                 window.Show();
@@ -393,8 +397,9 @@ public class HistoryListImageLoadingTests
     public async Task RefreshingItemsReleasesOldBitmapsAndLoadsFreshThumbnails()
     {
         await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryListImageLoadingTests));
-        await session.Dispatch(() =>
+        await session.Dispatch(async () =>
         {
+            var previews = new List<PreviewImage>();
             var bitmaps = new List<TrackingBitmap>();
             Application.Current!.Styles.Add(new FluentTheme());
             var items = new ObservableCollection<string> { "one.png", "two.png" };
@@ -406,7 +411,7 @@ public class HistoryListImageLoadingTests
                 {
                     var bitmap = CreateBitmap();
                     bitmaps.Add(bitmap);
-                    return Task.FromResult(new PreviewImageProvider.DecodedImage(bitmap, new Size(1, 1), new PixelSize(1, 1)));
+                    return Task.FromResult(new PreviewImageProvider.DecodedImage(IAnimatedBitmap.Load([bitmap], [0]), new Size(1, 1), new PixelSize(1, 1)));
                 })
                 { FilePath = path })
             };
@@ -416,19 +421,24 @@ public class HistoryListImageLoadingTests
                 window.Show();
                 window.UpdateLayout();
                 Assert.HasCount(2, bitmaps);
+                previews.AddRange(list.GetVisualDescendants().OfType<PreviewImage>());
                 items.Clear();
                 window.UpdateLayout();
+                await Task.WhenAll(previews.Select(preview => preview.PendingRelease));
                 Assert.IsTrue(bitmaps.All(bitmap => bitmap.DisposeCount == 1));
                 items.Add("one.png");
                 window.UpdateLayout();
                 Assert.HasCount(3, bitmaps);
+                previews.AddRange(list.GetVisualDescendants().OfType<PreviewImage>());
                 Assert.AreEqual(0, bitmaps[2].DisposeCount);
             }
             finally
             {
                 window.Close();
             }
+            await Task.WhenAll(previews.Select(preview => preview.PendingRelease));
             Assert.IsTrue(bitmaps.All(bitmap => bitmap.DisposeCount == 1));
+            return true;
         }, TestContext.CancellationTokenSource.Token);
     }
 
@@ -455,23 +465,24 @@ public class HistoryListImageLoadingTests
                 var newLoad = image.PendingLoad;
                 window.Hide();
                 var current = CreateBitmap();
-                requests[1].SetResult(new(current, new Size(1, 1), new PixelSize(1, 1)));
+                requests[1].SetResult(new(IAnimatedBitmap.Load([current], [0]), new Size(1, 1), new PixelSize(1, 1)));
                 await newLoad;
                 var stale = CreateBitmap();
-                requests[0].SetResult(new(stale, new Size(1, 1), new PixelSize(1, 1)));
+                requests[0].SetResult(new(IAnimatedBitmap.Load([stale], [0]), new Size(1, 1), new PixelSize(1, 1)));
                 await oldLoad;
-                Assert.AreSame(current, image.Source);
+                Assert.AreSame(current, image.Source?.Frames.Single());
                 window.Show();
-                Assert.AreSame(current, image.Source);
+                Assert.AreSame(current, image.Source?.Frames.Single());
                 Assert.HasCount(2, requests);
                 Assert.AreEqual(1, stale.DisposeCount);
 
                 image.FilePath = "pending.png";
                 var pendingLoad = image.PendingLoad;
+                await image.PendingRelease;
                 Assert.AreEqual(1, current.DisposeCount);
                 image.IsVisible = false;
                 var hidden = CreateBitmap();
-                requests[2].SetResult(new(hidden, new Size(1, 1), new PixelSize(1, 1)));
+                requests[2].SetResult(new(IAnimatedBitmap.Load([hidden], [0]), new Size(1, 1), new PixelSize(1, 1)));
                 await pendingLoad;
                 Assert.IsNull(image.Source);
                 Assert.AreEqual(1, hidden.DisposeCount);
@@ -506,8 +517,10 @@ public class HistoryListImageLoadingTests
                 {
                     data.SaveTo(stream);
                 }
-                var thumbnail = PreviewImageProvider.Decode(path, new PreviewImageProvider.DecodeOptions(new Size(5120, 200), scale, 5120));
-                using var bitmap = thumbnail.Bitmap;
+                var thumbnail = PreviewImageProvider.Decode(path, new PreviewImageProvider.DecodeOptions(new Size(5120, 200), scale, 5120),
+                    token: TestContext.CancellationTokenSource.Token);
+                using var sourceImage = thumbnail.Source;
+                var bitmap = sourceImage?.Frames.Single();
                 Assert.IsNotNull(bitmap);
                 Assert.IsLessThanOrEqualTo(5120, bitmap.PixelSize.Width);
                 Assert.IsLessThanOrEqualTo((int)(200 * scale), bitmap.PixelSize.Height);
@@ -593,9 +606,10 @@ public class HistoryListImageLoadingTests
                     window.UpdateLayout();
                     records.AddRange(paths);
                     var images = await LoadImagesAsync(12);
-                    var oldBitmaps = images.Select(image => (Bitmap)image.Source!).ToArray();
+                    var oldBitmaps = images.Select(image => image.Source!.Frames.Single()).ToArray();
                     records.Clear();
                     window.UpdateLayout();
+                    await Task.WhenAll(images.Select(image => image.PendingRelease));
                     // Retain managed references deliberately: native pixels must be released
                     // by removing the rows, without relying on collection/finalization.
                     foreach (var bitmap in oldBitmaps)
@@ -605,7 +619,7 @@ public class HistoryListImageLoadingTests
                     Assert.IsTrue(images.All(image => image.Source is null));
                     records.AddRange(paths.Take(3));
                     var reloaded = await LoadImagesAsync(3);
-                    Assert.IsTrue(reloaded.All(image => !oldBitmaps.Contains(image.Source)));
+                    Assert.IsTrue(reloaded.All(image => !oldBitmaps.Contains(image.Source!.Frames.Single())));
                 }
             }
             finally
@@ -621,7 +635,7 @@ public class HistoryListImageLoadingTests
                 var images = list.GetVisualDescendants().OfType<PreviewImage>().ToArray();
                 Assert.HasCount(count, images);
                 await Task.WhenAll(images.Select(image => image.PendingLoad));
-                Assert.IsTrue(images.All(image => image.Source is Bitmap));
+                Assert.IsTrue(images.All(image => image.Source?.FrameCount == 1));
                 return images;
             }
         }, TestContext.CancellationTokenSource.Token);
@@ -645,7 +659,7 @@ public class HistoryListImageLoadingTests
                     var bitmap = CreateBitmap();
                     bitmaps.Add(bitmap);
                     var height = 80 + (int.Parse(file) * 4);
-                    return Task.FromResult(new PreviewImageProvider.DecodedImage(bitmap, new Size(300, height), new PixelSize(300, height)));
+                    return Task.FromResult(new PreviewImageProvider.DecodedImage(IAnimatedBitmap.Load([bitmap], [0]), new Size(300, height), new PixelSize(300, height)));
                 })
                 { FilePath = path, SizeToImage = true })
             };
@@ -678,6 +692,7 @@ public class HistoryListImageLoadingTests
                     Assert.AreEqual(offset, scroll.Offset.Y, 0.01);
                 }
                 window.Content = null;
+                await Task.WhenAll(images.Select(image => image.PendingRelease));
                 Assert.IsTrue(bitmaps.All(bitmap => bitmap.DisposeCount == 1));
             }
             finally

@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Labs.AnimatedImage;
 using Avalonia.Media.Imaging;
 using SkiaSharp;
 using SyncClipboard.Core.Commons;
@@ -24,7 +25,7 @@ internal static class PreviewImageProvider
                 key.Scale, key.MaxPixelWidth, key.SizeOnly, dimensions.Get(key)), limiter, token);
             dimensions.Set(key, image.Dimensions);
             return image;
-        }, Measure, image => image.Bitmap?.Dispose());
+        }, Measure, image => image.Source?.Dispose());
         if (config is not null)
             cache.FollowPerformanceConfiguration(config);
         return cache;
@@ -32,10 +33,10 @@ internal static class PreviewImageProvider
 
     internal static PreviewImageCache<PreviewImageKey, DecodedImage> CreateUncached(
         Func<PreviewImageKey, CancellationToken, Task<DecodedImage>> load) =>
-        new(0, load, Measure, image => image.Bitmap?.Dispose());
+        new(0, load, Measure, image => image.Source?.Dispose());
 
-    private static long Measure(DecodedImage image) => image.Bitmap is { } bitmap
-        ? (long)bitmap.PixelSize.Width * bitmap.PixelSize.Height * 4 : 256;
+    private static long Measure(DecodedImage image) => image.Source is { } source
+        ? (long)source.Frames[0].PixelSize.Width * source.Frames[0].PixelSize.Height * 4 * source.FrameCount : 256;
 
     private static async Task<DecodedImage> LoadAsync(string path, DecodeOptions options, PreviewImageLoadLimiter limiter, CancellationToken token)
     {
@@ -43,24 +44,28 @@ internal static class PreviewImageProvider
         return await Task.Run(() =>
         {
             token.ThrowIfCancellationRequested();
-            return Decode(path, options);
+            return Decode(path, options, token: token);
         }, token).ConfigureAwait(false);
     }
 
-    internal static DecodedImage Decode(string path, DecodeOptions options, Func<Stream, PixelSize?>? readHeader = null)
+    internal static DecodedImage Decode(string path, DecodeOptions options, Func<Stream, PixelSize?>? readHeader = null,
+        CancellationToken token = default)
     {
         using var stream = File.OpenRead(path);
-        PixelSize? dimensions;
-        try
+        var dimensions = options.Dimensions ?? readHeader?.Invoke(stream);
+        var animated = false;
+        if (dimensions is null || !options.SizeOnly)
         {
-            dimensions = options.Dimensions ?? (readHeader ?? ReadDimensions)(stream);
-        }
-        catch (Exception ex) when (ex is not OutOfMemoryException)
-        {
-            dimensions = null;
+            stream.Position = 0;
+            using var managedStream = new SKManagedStream(stream, false);
+            using var codec = SKCodec.Create(managedStream);
+            if (codec is not null)
+            {
+                dimensions ??= new PixelSize(codec.Info.Width, codec.Info.Height);
+                animated = !options.SizeOnly && codec.FrameCount > 1;
+            }
         }
 
-        stream.Position = 0;
         if (dimensions is not { Width: > 0, Height: > 0 } size)
             throw new InvalidDataException("Image dimensions are unavailable.");
 
@@ -68,17 +73,31 @@ internal static class PreviewImageProvider
         if (options.SizeOnly)
             return new DecodedImage(null, displaySize, size);
 
+        stream.Position = 0;
+        if (animated)
+        {
+            var animation = IAnimatedBitmap.Load(stream, disposeStream: false);
+            try
+            {
+                using var cancellation = token.Register(animation.Dispose);
+                animation.Init();
+                token.ThrowIfCancellationRequested();
+                if (!animation.IsInitialized)
+                    throw new InvalidDataException("Could not load animated preview.");
+
+                return new DecodedImage(animation, displaySize, size);
+            }
+            catch
+            {
+                animation.Dispose();
+                throw;
+            }
+        }
+
         var bitmap = (double)size.Width * pixelSize.Height >= (double)size.Height * pixelSize.Width
             ? Bitmap.DecodeToWidth(stream, pixelSize.Width)
             : Bitmap.DecodeToHeight(stream, pixelSize.Height);
-        return new DecodedImage(bitmap, displaySize, size);
-    }
-
-    private static PixelSize? ReadDimensions(Stream stream)
-    {
-        using var managedStream = new SKManagedStream(stream, false);
-        using var codec = SKCodec.Create(managedStream);
-        return codec is null ? null : new PixelSize(codec.Info.Width, codec.Info.Height);
+        return new DecodedImage(IAnimatedBitmap.Load([bitmap], [0]), displaySize, size);
     }
 
     internal static (Size DisplaySize, PixelSize PixelSize) GetSizes(PixelSize size, DecodeOptions options)
@@ -95,5 +114,5 @@ internal static class PreviewImageProvider
 
     internal readonly record struct DecodeOptions(
         Size Bounds, double Scale = 1, int MaxPixelWidth = int.MaxValue, bool SizeOnly = false, PixelSize? Dimensions = null);
-    internal sealed record DecodedImage(Bitmap? Bitmap, Size DisplaySize, PixelSize Dimensions);
+    internal sealed record DecodedImage(IAnimatedBitmap? Source, Size DisplaySize, PixelSize Dimensions);
 }

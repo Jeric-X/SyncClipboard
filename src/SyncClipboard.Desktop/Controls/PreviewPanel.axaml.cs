@@ -183,7 +183,7 @@ public sealed partial class PreviewPanel : UserControl
         // 鼠标左键：记录起始位置，等待拖拽阈值
         if (e.Pointer.Type == PointerType.Mouse)
         {
-            var properties = e.GetCurrentPoint((Image?)sender!).Properties;
+            var properties = e.GetCurrentPoint(sender as Control).Properties;
             if (properties.IsLeftButtonPressed)
             {
                 ResetPendingDrag();

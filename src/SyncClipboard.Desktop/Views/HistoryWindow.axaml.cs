@@ -847,8 +847,7 @@ public partial class HistoryWindow : Window, IWindow
     private void Image_DoubleTapped(object? sender, TappedEventArgs e)
     {
         e.Handled = true;
-        var history = ((Image?)sender)?.DataContext;
-        if (history is not HistoryRecordVM record)
+        if (sender is not Control { DataContext: HistoryRecordVM record })
         {
             return;
         }
