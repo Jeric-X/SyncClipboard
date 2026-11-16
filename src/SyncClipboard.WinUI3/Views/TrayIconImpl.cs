@@ -1,5 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.WinUI;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Imaging;
 using SyncClipboard.Core.AbstractClasses;
 using SyncClipboard.Core.ViewModels;
@@ -11,6 +11,7 @@ namespace SyncClipboard.WinUI3.Views;
 internal class TrayIconImpl : TrayIconBase<BitmapImage>
 {
     private readonly TrayIcon _trayIcon;
+    private readonly DispatcherTimer _animationTimer = new() { Interval = AnimationInterval };
     private readonly ServiceStatusViewModel _serviceStatusViewModel;
     protected override ServiceStatusViewModel? ServiceStatusViewModel => _serviceStatusViewModel;
 
@@ -27,6 +28,7 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
     public TrayIconImpl(TrayIcon trayIcon, ServiceStatusViewModel serviceStatusViewModel)
     {
         _trayIcon = trayIcon;
+        _animationTimer.Tick += (_, _) => ShowNextFrame();
         _trayIcon.NoLeftClickDelay = true;
         _trayIcon.LeftClickCommand = new RelayCommand(OnRawLeftClicked);
         _trayIcon.DoubleClickCommand = new RelayCommand(OnRawLeftClicked);
@@ -46,30 +48,13 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
         }
     }
 
-    protected override void SetIcon(BitmapImage icon)
-    {
-        if (_trayIcon.DispatcherQueue.HasThreadAccess)
-        {
-            _trayIcon.IconSource = icon;
-        }
-        else
-        {
-            _trayIcon.DispatcherQueue.EnqueueAsync(() => _trayIcon.IconSource = icon);
-        }
-    }
+    protected override void PostToUIThread(Action action) => _trayIcon.DispatcherQueue.TryEnqueue(action.Invoke);
+    protected override void StartAnimationTimer() => _animationTimer.Start();
+    protected override void StopAnimationTimer() => _animationTimer.Stop();
+    protected override void SetIcon(BitmapImage icon) => _trayIcon.IconSource = icon;
+    protected override void SetToolTip(string text) => _trayIcon.ToolTipText = text;
 
     protected override BitmapImage[] UploadIcons()
-    {
-        if (_trayIcon.DispatcherQueue.HasThreadAccess)
-        {
-            return CreateUploadIcons();
-        }
-        BitmapImage[]? icons = null;
-        _trayIcon.DispatcherQueue.EnqueueAsync(() => icons = CreateUploadIcons()).Wait();
-        return icons!;
-    }
-
-    private BitmapImage[] CreateUploadIcons()
     {
         return Enumerable.Range(1, 17)
             .Select(x => $"ms-appx:///Assets/upload{x:d3}.ico")
@@ -79,32 +64,9 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
 
     protected override BitmapImage[] DownloadIcons()
     {
-        if (_trayIcon.DispatcherQueue.HasThreadAccess)
-        {
-            return CreateDownloadIcons();
-        }
-        BitmapImage[]? icons = null;
-        _trayIcon.DispatcherQueue.EnqueueAsync(() => icons = CreateDownloadIcons()).Wait();
-        return icons!;
-    }
-
-    private BitmapImage[] CreateDownloadIcons()
-    {
         return Enumerable.Range(1, 17)
             .Select(x => $"ms-appx:///Assets/download{x:d3}.ico")
             .Select(x => new BitmapImage(new Uri(x)))
             .ToArray();
-    }
-
-    protected override void SetToolTip(string text)
-    {
-        if (_trayIcon.DispatcherQueue.HasThreadAccess)
-        {
-            _trayIcon.ToolTipText = text;
-        }
-        else
-        {
-            _ = _trayIcon.DispatcherQueue.EnqueueAsync(() => _trayIcon.ToolTipText = text);
-        }
     }
 }
