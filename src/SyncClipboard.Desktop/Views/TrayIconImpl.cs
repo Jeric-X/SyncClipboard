@@ -21,6 +21,7 @@ public abstract class TrayIconImpl : TrayIconBase<WindowIcon>
     protected override ServiceStatusViewModel? ServiceStatusViewModel => _serviceStatusViewModel;
 
     private readonly TrayIcon _trayIcon;
+    private readonly DispatcherTimer _animationTimer = new() { Interval = AnimationInterval };
 
     public TrayIconImpl(ServiceStatusViewModel serviceStatusViewModel)
     {
@@ -28,6 +29,7 @@ public abstract class TrayIconImpl : TrayIconBase<WindowIcon>
         var trayIcon = icons?[0];
         ArgumentNullException.ThrowIfNull(trayIcon, nameof(trayIcon));
         _trayIcon = trayIcon;
+        _animationTimer.Tick += (_, _) => ShowNextFrame();
         _trayIcon.Command = new RelayCommand(OnRawLeftClicked);
         _trayIcon.ToolTipText = string.Empty;
         _serviceStatusViewModel = serviceStatusViewModel;
@@ -37,39 +39,18 @@ public abstract class TrayIconImpl : TrayIconBase<WindowIcon>
     {
     }
 
+    protected override void PostToUIThread(Action action) => Dispatcher.UIThread.Post(action, DispatcherPriority.Send);
+    protected override void StartAnimationTimer() => _animationTimer.Start();
+    protected override void StopAnimationTimer() => _animationTimer.Stop();
+
     protected override void SetIcon(WindowIcon icon)
     {
-        ActionInUIThread(() =>
+        if (OperatingSystem.IsMacOS())
         {
-            if (OperatingSystem.IsMacOS())
-            {
-                if (icon == DefaultInactiveIcon || icon == ErrorInactiveIcon)
-                {
-                    _trayIcon.SetValue(MacOSProperties.IsTemplateIconProperty, false);
-                }
-                else
-                {
-                    _trayIcon.SetValue(MacOSProperties.IsTemplateIconProperty, true);
-                }
-            }
-            _trayIcon.Icon = icon;
-        });
+            _trayIcon.SetValue(MacOSProperties.IsTemplateIconProperty, icon != DefaultInactiveIcon && icon != ErrorInactiveIcon);
+        }
+        _trayIcon.Icon = icon;
     }
 
-    protected override void SetToolTip(string text)
-    {
-        ActionInUIThread(() => _trayIcon.ToolTipText = text);
-    }
-
-    private static void ActionInUIThread(Action action)
-    {
-        if (Dispatcher.UIThread.CheckAccess())
-        {
-            action.Invoke();
-        }
-        else
-        {
-            Dispatcher.UIThread.Post(action, DispatcherPriority.Send);
-        }
-    }
+    protected override void SetToolTip(string text) => _trayIcon.ToolTipText = text;
 }

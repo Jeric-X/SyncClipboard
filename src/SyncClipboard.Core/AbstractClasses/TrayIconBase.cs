@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using SyncClipboard.Core.Interfaces;
+﻿using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Core.ViewModels;
 
@@ -22,17 +21,13 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
 
     public abstract void Create();
 
-    #region Icon Animatinon
-    private const int ANIMATED_ICON_DELAY_TIME = 150;
-    private readonly Lock _animationLock = new();
-    private Timer? _iconTimer;
-    private bool _isShowingDanamicIcon;
+    protected static readonly TimeSpan AnimationInterval = TimeSpan.FromMilliseconds(150);
+    private IconType[]? _uploadFrames;
+    private IconType[]? _downloadFrames;
+    private IconType[]? _animationFrames;
+    private int _nextFrame;
     private bool _isActive = true;
-    private bool _isError = false;
-    private IEnumerable<IconType>? _dynamicIcons;
-    private IEnumerator<IconType>? _dynamicIconEnumerator;
-    private IconType? @staticIcon = null;
-    private IconType StaticIcon { get => @staticIcon ?? DefaultIcon; set => @staticIcon = value; }
+    private bool _isError;
     private readonly Dictionary<string, string> _statusList = [];
 
     protected abstract IconType DefaultIcon { get; }
@@ -41,123 +36,83 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
     protected abstract IconType ErrorInactiveIcon { get; }
     protected abstract int MaxToolTipLenth { get; }
 
+    // Always enqueue, including on the UI thread, so starts, stops and status changes keep their order.
+    protected abstract void PostToUIThread(Action action);
+    protected abstract void StartAnimationTimer();
+    protected abstract void StopAnimationTimer();
     protected abstract void SetIcon(IconType icon);
     protected abstract void SetToolTip(string text);
     protected abstract IEnumerable<IconType> UploadIcons();
     protected abstract IEnumerable<IconType> DownloadIcons();
     protected virtual ServiceStatusViewModel? ServiceStatusViewModel { get; }
-    #endregion
 
-    public void ShowDownloadAnimation()
-    {
-        SetDynamicNotifyIcon(DownloadIcons(), ANIMATED_ICON_DELAY_TIME);
-    }
+    public void ShowDownloadAnimation() => PostToUIThread(() => StartAnimation(_downloadFrames ??= [.. DownloadIcons()]));
 
-    public void ShowUploadAnimation()
-    {
-        SetDynamicNotifyIcon(UploadIcons(), ANIMATED_ICON_DELAY_TIME);
-    }
+    public void ShowUploadAnimation() => PostToUIThread(() => StartAnimation(_uploadFrames ??= [.. UploadIcons()]));
 
-    private void SetDynamicNotifyIcon(IEnumerable<IconType> icons, int delayTime)
+    private void StartAnimation(IconType[] frames)
     {
-        if (!icons.Any())
+        if (frames.Length == 0)
         {
             return;
         }
 
-        StopAnimation();
-
-        lock (_animationLock)
-        {
-            _dynamicIcons = icons;
-            _dynamicIconEnumerator = icons.GetEnumerator();
-            _isShowingDanamicIcon = true;
-            _iconTimer = new Timer(SetNextDynamicNotifyIcon, null, 0, delayTime);
-        }
+        StopAnimationTimer();
+        _animationFrames = frames;
+        _nextFrame = 0;
+        ShowNextFrame();
+        StartAnimationTimer();
     }
 
-    public void StopAnimation()
+    protected void ShowNextFrame()
     {
-        lock (_animationLock)
+        if (_animationFrames is null)
         {
-            _iconTimer?.Dispose();
-            _iconTimer = null;
-
-            _dynamicIcons = null;
-            _dynamicIconEnumerator = null;
-            _isShowingDanamicIcon = false;
+            return;
         }
+
+        SetIcon(_animationFrames[_nextFrame]);
+        _nextFrame = (_nextFrame + 1) % _animationFrames.Length;
+    }
+
+    public void StopAnimation() => PostToUIThread(() =>
+    {
+        StopAnimationTimer();
+        _animationFrames = null;
         SetStaticIcon();
-    }
+    });
 
-    private void SetNextDynamicNotifyIcon(object? _)
+    public virtual void SetStatusString(string key, string statusStr, bool error) => PostToUIThread(() =>
     {
-        IconType icon;
-        lock (_animationLock)
-        {
-            if (_dynamicIcons is null || _dynamicIconEnumerator is null)
-            {
-                return;
-            }
-
-            if (!_dynamicIconEnumerator.MoveNext())
-            {
-                _dynamicIconEnumerator = _dynamicIcons.GetEnumerator();
-                _dynamicIconEnumerator.MoveNext();
-            }
-            icon = _dynamicIconEnumerator.Current;
-        }
-        SetIcon(icon);
-
-        // 在设置Icon的过程中其他线程可能会停止动态图标
-        SetStaticIcon();
-    }
-
-    public virtual void SetStatusString(string key, string statusStr, bool error)
-    {
-        SetStatusString(key, statusStr);
-        ServiceStatusViewModel?.SetStatusString(key, statusStr, error);
-
+        UpdateStatusString(key, statusStr, error);
         _isError = error;
-        ChooseStaticIcon();
         SetStaticIcon();
-    }
+    });
 
-    private void ChooseStaticIcon()
-    {
-        switch (_isError, _isActive)
-        {
-            case (true, true):
-                StaticIcon = ErrorIcon;
-                break;
-            case (true, false):
-                StaticIcon = ErrorInactiveIcon;
-                break;
-            case (false, true):
-                StaticIcon = DefaultIcon;
-                break;
-            case (false, false):
-                StaticIcon = DefaultInactiveIcon;
-                break;
-        }
-    }
+    public virtual void SetStatusString(string key, string statusStr) => PostToUIThread(() => UpdateStatusString(key, statusStr));
 
-    public virtual void SetStatusString(string key, string statusStr)
+    private void UpdateStatusString(string key, string statusStr, bool? error = null)
     {
-        ServiceStatusViewModel?.SetStatusString(key, statusStr);
+        ServiceStatusViewModel?.SetStatusString(key, statusStr, error);
 
         if (!string.IsNullOrEmpty(key))
         {
             _statusList[key] = statusStr;
+            ActiveStatusString();
         }
-        ActiveStatusString();
     }
 
     private void SetStaticIcon()
     {
-        if (!_isShowingDanamicIcon)
+        if (_animationFrames is null)
         {
-            SetIcon(StaticIcon);
+            SetIcon((_isError, _isActive) switch
+            {
+                (true, true) => ErrorIcon,
+                (true, false) => ErrorInactiveIcon,
+                (false, true) => DefaultIcon,
+                (false, false) => DefaultInactiveIcon
+            });
         }
     }
 
@@ -179,16 +134,11 @@ public abstract class TrayIconBase<IconType> : ITrayIcon where IconType : class
         SetToolTip(string.Join(Environment.NewLine, ajustedList));
     }
 
-    public void SetActiveStatus(bool active)
+    public void SetActiveStatus(bool active) => PostToUIThread(() =>
     {
         _isActive = active;
-        ChooseStaticIcon();
         SetStaticIcon();
-    }
+    });
 
-    public void RefreshIcon()
-    {
-        ChooseStaticIcon();
-        SetStaticIcon();
-    }
+    public void RefreshIcon() => PostToUIThread(SetStaticIcon);
 }
