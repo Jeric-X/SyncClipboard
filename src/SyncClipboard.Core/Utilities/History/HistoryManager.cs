@@ -160,15 +160,15 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             CopyLocalTransferDataBinding(record, entity);
             entity.IsLocalFileReady = true;
             entity.IsDeleted = false;
-            if ((restored || entity.LastModified == DateTime.MaxValue) && entity.Version < int.MaxValue)
-                entity.Version++;
             if (restored)
+            {
+                entity.Version++;
                 entity.SyncStatus = HistorySyncStatus.LocalOnly;
-            var now = DateTime.UtcNow;
-            entity.LastModified = NextModificationTime(entity.LastModified, now);
+            }
+            entity.LastModified = DateTime.UtcNow;
             if (updateLastAccessed)
             {
-                entity.LastAccessed = now;
+                entity.LastAccessed = DateTime.UtcNow;
             }
             await _dbContext.SaveChangesAsync(token);
             if (restored)
@@ -275,13 +275,6 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         return CreateSyncSnapshot(entity);
     }
 
-    private static DateTime NextModificationTime(DateTime previous, DateTime now)
-    {
-        if (now > previous)
-            return now;
-        return previous == DateTime.MaxValue ? previous : previous.AddTicks(1);
-    }
-
     public async Task<bool> SetNameAsync(
         HistoryRecordKey key, string name, bool supportsHistoryName, CancellationToken token = default)
     {
@@ -302,7 +295,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         {
             if (record.Version < int.MaxValue)
                 record.Version++;
-            record.LastModified = NextModificationTime(record.LastModified, DateTime.UtcNow);
+            record.LastModified = DateTime.UtcNow;
             if (record.SyncStatus != HistorySyncStatus.LocalOnly)
                 record.SyncStatus = HistorySyncStatus.NeedSync;
         }
