@@ -162,14 +162,12 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             CopyLocalTransferDataBinding(record, entity);
             entity.IsLocalFileReady = true;
             entity.IsDeleted = false;
-            if (restored)
-            {
+            if ((restored || entity.LastModified == DateTime.MaxValue) && entity.Version < int.MaxValue)
                 entity.Version++;
+            if (restored)
                 entity.SyncStatus = HistorySyncStatus.LocalOnly;
-            }
             var now = DateTime.UtcNow;
-            entity.LastModified = entity.SyncStatus == HistorySyncStatus.NeedSync
-                ? NextModificationTime(entity.LastModified, now) : now;
+            entity.LastModified = NextModificationTime(entity.LastModified, now);
             if (updateLastAccessed)
             {
                 entity.LastAccessed = now;

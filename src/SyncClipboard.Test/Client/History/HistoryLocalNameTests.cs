@@ -140,13 +140,14 @@ public class HistoryLocalNameTests
         record.SyncStatus = HistorySyncStatus.Synced;
         await fixture.Db.SaveChangesAsync(Token);
 
+        await fixture.Manager.AddLocalProfile(profile, token: Token);
         await fixture.Manager.SetNameAsync(HistoryRecordKey.From(record), "note", true, Token);
         var saved = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
         await fixture.Manager.AddLocalProfile(profile, token: Token);
-        var recopied = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
-        Assert.IsGreaterThan(saved.LastModified, recopied.LastModified);
         saved.SyncStatus = HistorySyncStatus.Synced;
         Assert.IsFalse(await fixture.Manager.TryApplySyncResponseAsync(saved, saved.Version, saved.LastModified, Token));
+        var recopied = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        Assert.IsGreaterThan(saved.LastModified, recopied.LastModified);
         Assert.AreEqual("note", recopied.Name);
         Assert.AreEqual(HistorySyncStatus.NeedSync, recopied.SyncStatus);
         Assert.AreEqual(int.MaxValue, saved.Version);
