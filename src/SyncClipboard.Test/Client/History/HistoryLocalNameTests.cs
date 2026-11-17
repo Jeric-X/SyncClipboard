@@ -127,26 +127,29 @@ public class HistoryLocalNameTests
     }
 
     [TestMethod]
-    public async Task EditingAtMaximumVersion_AdvancesPastTheKnownServerTime()
+    public async Task RecopyAfterRename_PreservesPendingEditAheadOfLocalClock()
     {
         await using var fixture = await HistoryRetentionTests.Fixture.CreateAsync(Token);
         fixture.RuntimeConfig.EnableSyncHistory = true;
         var serverTime = DateTime.UtcNow.AddMinutes(10);
-        var record = new HistoryRecord
-        {
-            Type = ProfileType.Text,
-            Hash = "ABC",
-            Version = int.MaxValue,
-            LastModified = serverTime,
-            SyncStatus = HistorySyncStatus.Synced
-        };
-        fixture.Db.Add(record);
+        var profile = new TextProfile("copy again");
+        await fixture.Manager.AddLocalProfile(profile, token: Token);
+        var record = await fixture.Db.HistoryRecords.SingleAsync(Token);
+        record.Version = int.MaxValue;
+        record.LastModified = serverTime;
+        record.SyncStatus = HistorySyncStatus.Synced;
         await fixture.Db.SaveChangesAsync(Token);
 
         await fixture.Manager.SetNameAsync(HistoryRecordKey.From(record), "note", true, Token);
         var saved = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        await fixture.Manager.AddLocalProfile(profile, token: Token);
+        var recopied = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        Assert.IsGreaterThan(saved.LastModified, recopied.LastModified);
+        saved.SyncStatus = HistorySyncStatus.Synced;
+        Assert.IsFalse(await fixture.Manager.TryApplySyncResponseAsync(saved, saved.Version, saved.LastModified, Token));
+        Assert.AreEqual("note", recopied.Name);
+        Assert.AreEqual(HistorySyncStatus.NeedSync, recopied.SyncStatus);
         Assert.AreEqual(int.MaxValue, saved.Version);
         Assert.IsGreaterThan(serverTime, saved.LastModified);
-        Assert.AreEqual(HistorySyncStatus.NeedSync, saved.SyncStatus);
     }
 }
