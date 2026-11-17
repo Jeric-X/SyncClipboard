@@ -9,8 +9,8 @@ public partial class HistoryManager
     {
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
-        var tags = await _dbContext.HistoryRecords.AsNoTracking().Where(r => !r.IsDeleted && r.Tags.Length > 0)
-            .Select(r => r.Tags).ToListAsync(token).ConfigureAwait(false);
+        var tags = await _dbContext.HistoryRecords.AsNoTracking().Where(r => !r.IsDeleted && r.Tags != null && r.Tags.Length > 0)
+            .Select(r => r.Tags!).ToListAsync(token).ConfigureAwait(false);
         return tags.SelectMany(t => t.Distinct(StringComparer.Ordinal))
             .GroupBy(t => t, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
     }
@@ -21,6 +21,8 @@ public partial class HistoryManager
     {
         var additions = HistoryTags.NormalizeNames(added);
         var removals = HistoryTags.NormalizeNames(removed);
+        if (additions.Length == 0 && removals.Length == 0)
+            return 0;
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
         // Validate every target before applying any changes, including the resulting tag count.
@@ -33,9 +35,9 @@ public partial class HistoryManager
         name = HistoryTags.NormalizeName(name);
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
-        var records = await _dbContext.HistoryRecords.Where(r => !r.IsDeleted && r.Tags.Contains(name))
+        var records = await _dbContext.HistoryRecords.Where(r => !r.IsDeleted && r.Tags != null && r.Tags.Contains(name))
             .ToListAsync(token).ConfigureAwait(false);
-        var updates = records.Select(record => (record, HistoryTags.Apply(record.Tags, [], [name]))).ToList();
+        var updates = records.Select(record => (record, HistoryTags.Apply(record.Tags ?? [], [], [name]))).ToList();
         await SaveTagUpdatesAsync(updates, token).ConfigureAwait(false);
     }
 
@@ -50,11 +52,11 @@ public partial class HistoryManager
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
         if (!allowMerge && await _dbContext.HistoryRecords.AnyAsync(
-            r => !r.IsDeleted && r.Tags.Contains(newName), token).ConfigureAwait(false))
+            r => !r.IsDeleted && r.Tags != null && r.Tags.Contains(newName), token).ConfigureAwait(false))
             return false;
-        var records = await _dbContext.HistoryRecords.Where(r => !r.IsDeleted && r.Tags.Contains(name))
+        var records = await _dbContext.HistoryRecords.Where(r => !r.IsDeleted && r.Tags != null && r.Tags.Contains(name))
             .ToListAsync(token).ConfigureAwait(false);
-        var updates = records.Select(record => (record, HistoryTags.Apply(record.Tags, [newName], [name]))).ToList();
+        var updates = records.Select(record => (record, HistoryTags.Apply(record.Tags ?? [], [newName], [name]))).ToList();
         await SaveTagUpdatesAsync(updates, token).ConfigureAwait(false);
         return true;
     }
@@ -90,8 +92,10 @@ public partial class HistoryManager
             var record = await Query(key.Type, key.Hash, token).ConfigureAwait(false);
             if (record is null || record.IsDeleted || !visited.Add(record.ID))
                 continue;
-            var tags = HistoryTags.Apply(record.Tags, additions, removals);
-            if (!record.Tags.SequenceEqual(tags))
+            // An explicit edit replaces the local tag set, even when its previous value was unknown.
+            var current = record.Tags ?? [];
+            var tags = HistoryTags.Apply(current, additions, removals);
+            if (record.Tags is null || !current.SequenceEqual(tags))
                 updates.Add((record, tags));
         }
         return updates;

@@ -23,7 +23,7 @@ public partial class HistoryRecordVM : ObservableObject
         Size = record.Size;
         timestamp = record.Timestamp;
         lastAccessed = record.LastAccessed;
-        tags = [.. record.Tags];
+        tags = record.Tags?.ToArray();
         stared = record.Stared;
         pinned = record.Pinned;
         syncState = record.SyncStatus == HistorySyncStatus.LocalOnly ? SyncStatus.LocalOnly :
@@ -49,7 +49,7 @@ public partial class HistoryRecordVM : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PreviewTags))]
-    private string[] tags = [];
+    private string[]? tags;
 
     public IEnumerable<HistoryPreviewTag> PreviewTags => (Tags ?? []).Select(tag => new HistoryPreviewTag(Key, tag));
 
@@ -308,7 +308,7 @@ public partial class HistoryRecordVM : ObservableObject
             TransferDataHash = TransferDataHash,
             Timestamp = Timestamp,
             Stared = Stared,
-            Tags = [.. Tags],
+            Tags = Tags?.ToArray(),
             Pinned = Pinned,
             IsLocalFileReady = IsLocalFileReady,
             Size = Size
@@ -326,7 +326,7 @@ public partial class HistoryRecordVM : ObservableObject
         Size = record.Size;
         Timestamp = record.Timestamp;
         Stared = record.Stared;
-        Tags = [.. record.Tags];
+        Tags = record.Tags?.ToArray();
         Pinned = record.Pinned;
         SyncState = record.SyncState;
         // IsDownloading = record.IsDownloading;
@@ -408,7 +408,7 @@ public partial class HistoryRecordVM : ObservableObject
             Size = this.Size,
             Timestamp = this.Timestamp,
             Stared = this.Stared,
-            Tags = [.. this.Tags],
+            Tags = this.Tags?.ToArray(),
             Pinned = this.Pinned,
             SyncState = this.SyncState,
             IsDownloading = this.IsDownloading,

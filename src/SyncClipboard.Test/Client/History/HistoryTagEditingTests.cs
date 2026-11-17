@@ -123,8 +123,10 @@ public class HistoryTagEditingTests
         f.Db.ChangeTracker.Clear();
         var savedFirst = await f.Db.HistoryRecords.SingleAsync(r => r.ID == first.ID, Token);
         var savedFull = await f.Db.HistoryRecords.SingleAsync(r => r.ID == full.ID, Token);
+        Assert.IsNotNull(savedFirst.Tags);
         Assert.IsEmpty(savedFirst.Tags);
         Assert.AreEqual(7, savedFirst.Version);
+        Assert.IsNotNull(savedFull.Tags);
         Assert.HasCount(HistoryTags.MaxCount, savedFull.Tags);
         Assert.AreEqual(7, savedFull.Version);
         Assert.AreEqual(0, notified);
@@ -142,7 +144,7 @@ public class HistoryTagEditingTests
             records.Select(HistoryRecordKey.From).ToArray(), [], names, Token));
 
         f.Db.ChangeTracker.Clear();
-        Assert.IsTrue(await f.Db.HistoryRecords.AllAsync(r => r.Tags.Length == 0, Token));
+        Assert.IsTrue(await f.Db.HistoryRecords.AllAsync(r => r.Tags != null && r.Tags.Length == 0, Token));
         Assert.IsEmpty(await f.Manager.GetTagCountsAsync(Token));
     }
 
@@ -209,6 +211,7 @@ public class HistoryTagEditingTests
         await f.Manager.DeleteTagAsync(" old ", Token);
 
         AssertNames(local.Tags, "other");
+        Assert.IsNotNull(synced.Tags);
         Assert.IsEmpty(synced.Tags);
         AssertNames(deleted.Tags, "old");
         AssertNames(differentCase.Tags, "Old");
@@ -265,6 +268,7 @@ public class HistoryTagEditingTests
         await f.Db.SaveChangesAsync(Token);
 
         Assert.IsTrue(await f.Manager.RenameTagAsync("tag0", " Cafe\u0301 ", token: Token));
+        Assert.IsNotNull(full.Tags);
         Assert.HasCount(HistoryTags.MaxCount, full.Tags);
         Assert.Contains("Café", full.Tags);
         Assert.DoesNotContain("tag0", full.Tags);
@@ -276,8 +280,8 @@ public class HistoryTagEditingTests
         Assert.Contains("Café", full.Tags);
     }
 
-    private static void AssertNames(IEnumerable<string> actual, params string[] expected) =>
-        CollectionAssert.AreEqual(expected, actual.ToArray());
+    private static void AssertNames(IEnumerable<string>? actual, params string[] expected) =>
+        CollectionAssert.AreEqual(expected, actual?.ToArray());
 
     private sealed class Fixture : IAsyncDisposable
     {

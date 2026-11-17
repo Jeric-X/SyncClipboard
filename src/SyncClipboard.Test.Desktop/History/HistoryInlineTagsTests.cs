@@ -204,7 +204,9 @@ public class HistoryInlineTagsTests
                 var firstChip = VisibleTags(tags).First();
                 var visibleTag = ((HistoryPreviewTag)firstChip.DataContext!).Name;
                 await RemoveAndRefresh(fixture, firstChip.GetVisualDescendants().OfType<Button>().Single(), window, token);
-                Assert.DoesNotContain(visibleTag, (await fixture.ReadStoredRecordAsync(record)).Tags);
+                var storedTags = (await fixture.ReadStoredRecordAsync(record)).Tags;
+                Assert.IsNotNull(storedTags);
+                Assert.DoesNotContain(visibleTag, storedTags);
                 CollectionAssert.AreEqual(names, (await fixture.ReadStoredRecordAsync(other)).Tags);
                 window.Width = 200;
                 Layout(window);

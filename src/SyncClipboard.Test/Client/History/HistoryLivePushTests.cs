@@ -89,7 +89,9 @@ public class HistoryLivePushTests
         Assert.IsEmpty(cleared.Tags);
         await fixture.Manager.SyncRemoteHistoryAsync([cleared], Token);
         fixture.Db.ChangeTracker.Clear();
-        Assert.IsEmpty((await fixture.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token))!.Tags);
+        var localTags = (await fixture.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token))!.Tags;
+        Assert.IsNotNull(localTags);
+        Assert.IsEmpty(localTags);
     }
 
     [TestMethod]
@@ -128,11 +130,13 @@ public class HistoryLivePushTests
     }
 
     [TestMethod]
-    [DataRow(false, false)]
-    [DataRow(false, true)]
-    [DataRow(true, false)]
-    [DataRow(true, true)]
-    public async Task TagBackfill_PushAndFullSyncPreservePendingMetadata(bool livePush, bool pendingEdit)
+    [DataRow(false, false, false)]
+    [DataRow(true, false, false)]
+    [DataRow(false, true, false)]
+    [DataRow(true, true, false)]
+    [DataRow(false, true, true)]
+    [DataRow(true, true, true)]
+    public async Task TagBackfill_PushAndFullSyncPreservePendingMetadata(bool livePush, bool pendingEdit, bool emptyTags)
     {
         await using var fixture = await Fixture.CreateAsync(Token);
         var modified = DateTime.UtcNow.AddHours(-2);
@@ -146,7 +150,7 @@ public class HistoryLivePushTests
             SyncStatus = HistorySyncStatus.Synced
         };
         var notification = record.ToHistoryRecordDto();
-        notification.Tags = ["new"];
+        notification.Tags = emptyTags ? [] : [.. ExpectedNewTags];
         if (pendingEdit)
         {
             record.Stared = true;
@@ -176,8 +180,10 @@ public class HistoryLivePushTests
         Assert.AreEqual(pendingEdit ? 11 : 10, saved.Version);
         Assert.AreEqual(pendingEdit ? modified.AddHours(1) : modified, saved.LastModified);
         Assert.AreEqual(pendingEdit ? HistorySyncStatus.NeedSync : HistorySyncStatus.Synced, saved.SyncStatus);
-        if (!pendingEdit)
-            CollectionAssert.AreEqual(ExpectedNewTags, saved.Tags);
+        if (pendingEdit)
+            Assert.IsNull(saved.Tags);
+        else
+            CollectionAssert.AreEqual(notification.Tags, saved.Tags);
     }
 
     [TestMethod]
@@ -195,6 +201,7 @@ public class HistoryLivePushTests
         fixture.Db.Add(record);
         await fixture.Db.SaveChangesAsync(Token);
         var delayed = record.ToHistoryRecordDto();
+        delayed.Tags = [];
         await fixture.Manager.EditTagsAsync([HistoryRecordKey.From(record)], ["new"], [], Token);
         var version = record.Version;
         var service = (ClientHistoryService)RuntimeHelpers.GetUninitializedObject(typeof(ClientHistoryService));

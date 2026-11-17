@@ -63,7 +63,6 @@ namespace SyncClipboard.Core.Migrations
                         .HasColumnType("INTEGER");
 
                     b.PrimitiveCollection<string>("Tags")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Text")

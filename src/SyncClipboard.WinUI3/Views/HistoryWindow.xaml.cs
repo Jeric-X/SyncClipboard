@@ -1029,7 +1029,7 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
             {
                 var record = await manager.GetSyncSnapshotAsync(key);
                 if (record is { IsDeleted: false })
-                    assignments.Add(record.Tags);
+                    assignments.Add(record.Tags ?? []);
             }
             if (assignments.Count == 0)
             {

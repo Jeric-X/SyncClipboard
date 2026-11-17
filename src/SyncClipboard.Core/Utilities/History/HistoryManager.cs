@@ -252,7 +252,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     private HistoryRecord CreateSyncSnapshot(HistoryRecord entity)
     {
         var snapshot = (HistoryRecord)_dbContext.Entry(entity).CurrentValues.ToObject();
-        snapshot.Tags = [.. entity.Tags];
+        snapshot.Tags = entity.Tags?.ToArray();
         snapshot.FilePath = [.. entity.FilePath];
         return snapshot;
     }
@@ -383,7 +383,8 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         if (entity is null || entity.ID != record.ID || entity.Version != expectedVersion || entity.LastModified != expectedModified)
             return false;
 
-        entity.Tags = [.. record.Tags];
+        if (record.Tags is not null)
+            entity.Tags = [.. record.Tags];
         ApplyServerSyncedProperties(record, entity);
         await _dbContext.SaveChangesAsync(token);
         TriggleUpdateOrDeleteEvent(entity);
@@ -469,7 +470,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
                 else
                 {
                     ApplyRemoteHistory(entity, dto);
-                    if (supportsHistoryTags && dto.Tags is null && entity.Tags.Length > 0
+                    if (supportsHistoryTags && dto.Tags is null && entity.Tags is { Length: > 0 }
                         && !entity.IsDeleted && entity.SyncStatus == HistorySyncStatus.Synced)
                     {
                         entity.SyncStatus = HistorySyncStatus.NeedSync;
@@ -492,6 +493,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         }
         else if (entity.IsLocalNewerThanRemote(dto))
         {
+            // The pending PATCH omits unknown tags; its response supplies the current server value.
             entity.SyncStatus = HistorySyncStatus.NeedSync;
         }
         else
@@ -618,7 +620,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     {
         return record.SyncStatus == HistorySyncStatus.LocalOnly &&
                (record.IsDeleted || (cleanupConfig.AutoDeleteMissingLocalFiles && !record.Stared && !record.Pinned
-                   && (!cleanupConfig.ProtectTaggedRecords || record.Tags.Length == 0) && !record.IsLocalFileReady));
+                   && (!cleanupConfig.ProtectTaggedRecords || record.Tags == null || record.Tags.Length == 0) && !record.IsLocalFileReady));
     }
 
     public async Task CleanupExpiredHistory(CancellationToken token = default)
@@ -748,9 +750,9 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             query = query.Where(record => EF.Functions.Like(record.Text, $"%{queryPara.SearchText}%"));
 
         if (names.Length > 0)
-            query = query.Where(record => record.Tags.Any(name => names.Contains(name)));
+            query = query.Where(record => record.Tags != null && record.Tags.Any(name => names.Contains(name)));
         if (queryPara.OnlyUntagged)
-            query = query.Where(record => record.Tags.Length == 0);
+            query = query.Where(record => record.Tags == null || record.Tags.Length == 0);
 
         return query;
     }
@@ -1004,7 +1006,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     }
 
     public Expression<Func<HistoryRecord, bool>> AutoDeletePredicate => entity => !entity.Stared &&
-        !entity.Pinned && (!_historyConfig.ProtectTaggedRecords || entity.Tags.Length == 0)
+        !entity.Pinned && (!_historyConfig.ProtectTaggedRecords || entity.Tags == null || entity.Tags.Length == 0)
         && entity.SyncStatus == HistorySyncStatus.LocalOnly;
 
     public Expression<Func<HistoryRecord, DateTime>> QueryLastActivityTime => entity =>

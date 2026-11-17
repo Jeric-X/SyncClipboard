@@ -1208,7 +1208,7 @@ public partial class HistoryViewModel : ObservableObject
         return MatchesSelectedFilter(vm)
             && MatchesStarredFilter(vm, ignoreStarredFilter)
             && MatchesSearchFilter(vm)
-            && MatchesTagFilter(vm.Tags)
+            && MatchesTagFilter(vm.Tags ?? [])
             && IsWithinLoadedTimeRange(vm);
     }
 
