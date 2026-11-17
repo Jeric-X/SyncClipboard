@@ -676,12 +676,12 @@ public class HistoryRetentionTests
         protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlite("Data Source=:memory:");
     }
 
-    private sealed class Fixture : IProfileEnv, IAsyncDisposable
+    internal sealed class Fixture : IProfileEnv, IAsyncDisposable
     {
         private readonly DirectoryInfo root = Directory.CreateTempSubdirectory("SyncClipboard-Retention-");
         private readonly SemaphoreSlim semaphore = new(1, 1);
         public SemaphoreSlim DbSemaphore => semaphore;
-        public MemoryHistoryDbContext Db { get; } = new();
+        public HistoryDbContext Db { get; } = new MemoryHistoryDbContext();
         public HistoryConfig Config { get; } = new() { HistoryRetentionMinutes = 60, MaxItemCount = 0 };
         public HistoryManager Manager { get; }
         public RuntimeHistoryConfig RuntimeConfig { get; } = new();
