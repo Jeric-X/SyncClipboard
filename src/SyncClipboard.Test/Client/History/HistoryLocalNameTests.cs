@@ -13,6 +13,7 @@ public class HistoryLocalNameTests
     [TestMethod]
     [DataRow(false, true, HistorySyncStatus.Synced, HistorySyncStatus.Synced)]
     [DataRow(true, false, HistorySyncStatus.Synced, HistorySyncStatus.Synced)]
+    [DataRow(true, false, HistorySyncStatus.NeedSync, HistorySyncStatus.NeedSync)]
     [DataRow(true, true, HistorySyncStatus.Synced, HistorySyncStatus.NeedSync)]
     [DataRow(true, true, HistorySyncStatus.LocalOnly, HistorySyncStatus.LocalOnly)]
     public async Task EditAndClear_OnlyQueueChangesWhenNameSyncIsAvailable(
@@ -33,8 +34,10 @@ public class HistoryLocalNameTests
         fixture.Db.Add(record);
         await fixture.Db.SaveChangesAsync(Token);
         var key = new HistoryRecordKey(record.Type, "abc");
-        var notifications = 0;
-        fixture.Manager.HistoryUpdated += _ => notifications++;
+        var syncNotifications = 0;
+        var localNotifications = 0;
+        fixture.Manager.HistoryUpdated += _ => syncNotifications++;
+        fixture.Manager.HistoryUpdatedLocally += _ => localNotifications++;
 
         Assert.IsFalse(await fixture.Manager.SetNameAsync(key, "", supportsName, Token));
         Assert.IsNull((await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(Token)).Name);
@@ -58,7 +61,8 @@ public class HistoryLocalNameTests
         Assert.AreEqual(string.Empty, cleared.Name);
         Assert.AreEqual(syncEdit ? 9 : 7, cleared.Version);
         Assert.AreEqual("clipboard content", cleared.Text);
-        Assert.AreEqual(2, notifications);
+        Assert.AreEqual(2, syncNotifications + localNotifications);
+        Assert.AreEqual(syncEdit ? 2 : 0, syncNotifications);
     }
 
     [TestMethod]
@@ -123,15 +127,17 @@ public class HistoryLocalNameTests
     }
 
     [TestMethod]
-    public async Task EditingAtMaximumVersion_LeavesAnUploadableVersion()
+    public async Task EditingAtMaximumVersion_AdvancesPastTheKnownServerTime()
     {
         await using var fixture = await HistoryRetentionTests.Fixture.CreateAsync(Token);
         fixture.RuntimeConfig.EnableSyncHistory = true;
+        var serverTime = DateTime.UtcNow.AddMinutes(10);
         var record = new HistoryRecord
         {
             Type = ProfileType.Text,
             Hash = "ABC",
             Version = int.MaxValue,
+            LastModified = serverTime,
             SyncStatus = HistorySyncStatus.Synced
         };
         fixture.Db.Add(record);
@@ -140,6 +146,7 @@ public class HistoryLocalNameTests
         await fixture.Manager.SetNameAsync(HistoryRecordKey.From(record), "note", true, Token);
         var saved = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
         Assert.AreEqual(int.MaxValue, saved.Version);
+        Assert.IsGreaterThan(serverTime, saved.LastModified);
         Assert.AreEqual(HistorySyncStatus.NeedSync, saved.SyncStatus);
     }
 }

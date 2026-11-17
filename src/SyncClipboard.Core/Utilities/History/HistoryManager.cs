@@ -17,6 +17,8 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     public event Action<HistoryRecord>? HistoryAdded;
     public event Action<HistoryRecord>? HistoryRemoved;
     public event Action<HistoryRecord>? HistoryUpdated;
+    /// <summary>Refresh local observers without scheduling a metadata upload.</summary>
+    public event Action<HistoryRecord>? HistoryUpdatedLocally;
 
     private HistoryConfig _historyConfig = new();
     private RuntimeHistoryConfig _runtimeHistoryConfig = new();
@@ -275,7 +277,8 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         return CreateSyncSnapshot(entity);
     }
 
-    public async Task<bool> SetNameAsync(HistoryRecordKey key, string name, bool supportsHistoryName, CancellationToken token = default)
+    public async Task<bool> SetNameAsync(
+        HistoryRecordKey key, string name, bool supportsHistoryName, CancellationToken token = default)
     {
         var normalized = name.Trim();
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
@@ -290,11 +293,16 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         var previouslyModified = entry.Properties.Where(p => p.IsModified).Select(p => p.Metadata.Name).ToHashSet();
         var previous = (record.Name, record.Version, record.LastModified, record.SyncStatus);
         record.Name = normalized;
-        if (_runtimeHistoryConfig.EnableSyncHistory && supportsHistoryName)
+        var syncName = _runtimeHistoryConfig.EnableSyncHistory && supportsHistoryName;
+        if (syncName)
         {
             if (record.Version < int.MaxValue)
                 record.Version++;
-            record.LastModified = DateTime.UtcNow;
+            var now = DateTime.UtcNow;
+            if (now > record.LastModified)
+                record.LastModified = now;
+            else if (record.LastModified < DateTime.MaxValue)
+                record.LastModified = record.LastModified.AddTicks(1);
             if (record.SyncStatus != HistorySyncStatus.LocalOnly)
                 record.SyncStatus = HistorySyncStatus.NeedSync;
         }
@@ -309,7 +317,8 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             (record.Name, record.Version, record.LastModified, record.SyncStatus) = previous;
             throw;
         }
-        HistoryUpdated?.Invoke(record);
+        var notify = syncName ? HistoryUpdated : HistoryUpdatedLocally;
+        notify?.Invoke(record);
         return true;
     }
 
