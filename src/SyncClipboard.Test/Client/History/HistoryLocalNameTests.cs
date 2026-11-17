@@ -34,10 +34,8 @@ public class HistoryLocalNameTests
         fixture.Db.Add(record);
         await fixture.Db.SaveChangesAsync(Token);
         var key = new HistoryRecordKey(record.Type, "abc");
-        var syncNotifications = 0;
-        var localNotifications = 0;
-        fixture.Manager.HistoryUpdated += _ => syncNotifications++;
-        fixture.Manager.HistoryUpdatedLocally += _ => localNotifications++;
+        var notifications = 0;
+        fixture.Manager.HistoryUpdated += _ => notifications++;
 
         Assert.IsFalse(await fixture.Manager.SetNameAsync(key, "", supportsName, Token));
         Assert.IsNull((await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(Token)).Name);
@@ -61,8 +59,7 @@ public class HistoryLocalNameTests
         Assert.AreEqual(string.Empty, cleared.Name);
         Assert.AreEqual(syncEdit ? 9 : 7, cleared.Version);
         Assert.AreEqual("clipboard content", cleared.Text);
-        Assert.AreEqual(2, syncNotifications + localNotifications);
-        Assert.AreEqual(syncEdit ? 2 : 0, syncNotifications);
+        Assert.AreEqual(2, notifications);
     }
 
     [TestMethod]

@@ -17,8 +17,6 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     public event Action<HistoryRecord>? HistoryAdded;
     public event Action<HistoryRecord>? HistoryRemoved;
     public event Action<HistoryRecord>? HistoryUpdated;
-    /// <summary>Refresh local observers without scheduling a metadata upload.</summary>
-    public event Action<HistoryRecord>? HistoryUpdatedLocally;
 
     private HistoryConfig _historyConfig = new();
     private RuntimeHistoryConfig _runtimeHistoryConfig = new();
@@ -300,8 +298,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         var previouslyModified = entry.Properties.Where(p => p.IsModified).Select(p => p.Metadata.Name).ToHashSet();
         var previous = (record.Name, record.Version, record.LastModified, record.SyncStatus);
         record.Name = normalized;
-        var syncName = _runtimeHistoryConfig.EnableSyncHistory && supportsHistoryName;
-        if (syncName)
+        if (_runtimeHistoryConfig.EnableSyncHistory && supportsHistoryName)
         {
             if (record.Version < int.MaxValue)
                 record.Version++;
@@ -320,8 +317,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             (record.Name, record.Version, record.LastModified, record.SyncStatus) = previous;
             throw;
         }
-        var notify = syncName ? HistoryUpdated : HistoryUpdatedLocally;
-        notify?.Invoke(record);
+        HistoryUpdated?.Invoke(record);
         return true;
     }
 
