@@ -35,6 +35,7 @@ public class HistoryDatabaseMigrationTests
         await db.Database.MigrateAsync(token);
         Assert.IsFalse(db.Database.HasPendingModelChanges());
         var record = await db.HistoryRecords.SingleAsync(token);
+        Assert.IsNull(record.Name);
         Assert.IsNull(record.Tags);
         Assert.AreEqual("legacy", record.Hash);
         Assert.AreEqual("keep", record.Text);
@@ -90,6 +91,7 @@ public class HistoryDatabaseMigrationTests
         await db.Database.MigrateAsync(token);
         Assert.IsFalse(db.Database.HasPendingModelChanges());
         var empty = await db.HistoryRecords.SingleAsync(r => r.Hash == "legacy", token);
+        Assert.IsNull(empty.Name);
         Assert.IsNotNull(empty.Tags);
         Assert.IsEmpty(empty.Tags);
         var tagged = await db.HistoryRecords.SingleAsync(r => r.Hash == "tagged", token);
@@ -108,20 +110,52 @@ public class HistoryDatabaseMigrationTests
         await db.Database.OpenConnectionAsync(token);
         await db.Database.MigrateAsync(token);
         await InsertHistoryWithoutTags(db, "unknown", token);
+        var named = await db.HistoryRecords.SingleAsync(token);
+        named.Name = "保留名称";
+        await db.SaveChangesAsync(token);
 
         var migrator = db.GetService<IMigrator>();
         await Assert.ThrowsExactlyAsync<SqliteException>(() => migrator.MigrateAsync("20261027010000_AddHistoryTags", token));
-        Assert.IsNull((await db.HistoryRecords.AsNoTracking().SingleAsync(token)).Tags);
+        var restored = await db.HistoryRecords.AsNoTracking().SingleAsync(token);
+        Assert.IsNull(restored.Tags);
+        Assert.AreEqual(named.Name, restored.Name);
         Assert.IsEmpty(await db.Database.GetPendingMigrationsAsync(token));
 
         await db.Database.ExecuteSqlRawAsync("""UPDATE HistoryRecords SET Tags = '["工作"]' WHERE Hash = 'unknown'""", token);
         await migrator.MigrateAsync("20261027010000_AddHistoryTags", token);
         await InsertHistoryWithoutTags(db, "beta", token);
 
-        Assert.AreEqual("工作", (await db.HistoryRecords.SingleAsync(r => r.Hash == "unknown", token)).Tags!.Single());
-        var added = await db.HistoryRecords.SingleAsync(r => r.Hash == "beta", token);
-        Assert.IsNotNull(added.Tags);
-        Assert.IsEmpty(added.Tags);
+        var tags = await db.HistoryRecords.Where(r => r.Hash == "unknown").Select(r => r.Tags).SingleAsync(token);
+        Assert.AreEqual("工作", tags!.Single());
+        var addedTags = await db.HistoryRecords.Where(r => r.Hash == "beta").Select(r => r.Tags).SingleAsync(token);
+        Assert.IsNotNull(addedTags);
+        Assert.IsEmpty(addedTags);
+    }
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("")]
+    [DataRow("应用图标")]
+    public async Task UpgradeFromNullableTags_RoundTripsHistoryName(string? name)
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        await using var db = new HistoryDbContext();
+        db.Database.SetConnectionString("Data Source=:memory:");
+        await db.Database.OpenConnectionAsync(token);
+        await db.GetService<IMigrator>().MigrateAsync("20261116093554_PreserveUnknownHistoryTags", token);
+        await InsertHistoryWithoutTags(db, "legacy", token);
+
+        await db.Database.MigrateAsync(token);
+        var record = await db.HistoryRecords.SingleAsync(token);
+        Assert.IsNull(record.Name);
+        record.Name = name;
+        await db.SaveChangesAsync(token);
+        db.ChangeTracker.Clear();
+
+        var saved = await db.HistoryRecords.SingleAsync(token);
+        Assert.AreEqual(name, saved.Name);
+        Assert.AreEqual("keep", saved.Text);
+        Assert.IsNull(saved.Tags);
     }
 
     public TestContext TestContext { get; set; } = null!;
