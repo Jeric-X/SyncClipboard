@@ -47,6 +47,7 @@ public static class Mapper
         return new HistoryRecordUpdateDto
         {
             Tags = s.Tags is null ? null : [.. s.Tags],
+            Name = s.Name,
             Starred = s.Starred,
             Pinned = s.Pinned,
             IsDelete = s.IsDeleted,
