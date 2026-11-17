@@ -213,6 +213,26 @@ public class ServerHistoryTagQueryTests
         Assert.HasCount(2, await f.QueryAsync(multiple));
     }
 
+    [TestMethod]
+    public async Task Query_SearchNamesMatchesImageTitleOrOriginalFilename()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var image = f.Add("image", ["A"]);
+        image.Type = ProfileType.Image;
+        image.Text = "icon.png";
+        image.Name = "应用图标";
+        image.Stared = true;
+        f.Add("other", ["B"]).Name = image.Name;
+        await f.Db.SaveChangesAsync(Token);
+
+        var query = new HistoryQueryDto { SearchText = "图标", Starred = true, Tags = ["A"], Types = ProfileTypeFilter.Image };
+        Assert.IsEmpty(await f.QueryAsync(query));
+        query.SearchNames = true;
+        Assert.AreEqual("image", (await f.QueryAsync(query)).Single().Hash);
+        query.SearchText = "icon";
+        Assert.AreEqual("image", (await f.QueryAsync(query)).Single().Hash);
+    }
+
     private static async Task<(HistoryQueryDto Query, ModelStateDictionary State)> BindFormAsync(
         Dictionary<string, StringValues> form)
     {

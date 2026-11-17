@@ -54,16 +54,13 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         if (dto.Tags is not null)
             dto.Tags = HistoryTags.Normalize(dto.Tags);
-        var backfillTags = existing.Tags is null && dto.Tags is { Length: > 0 };
+        dto.Name = dto.Name?.Trim();
 
         var updated = ApplyMetadataUpdate(existing, dto);
         if (updated is null)
             return (null, null);
 
-        if (backfillTags)
-            existing.Tags = dto.Tags;
-
-        if (updated.Value || backfillTags)
+        if (updated.Value || BackfillMissingMetadata(existing, dto.Tags, dto.Name))
         {
             await _dbContext.SaveChangesAsync(token);
             await NotifyProfileChangeAsync(existing);
@@ -95,6 +92,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
     {
         if (dto.Tags is not null)
             existing.Tags = dto.Tags;
+        existing.Name = dto.Name ?? existing.Name;
         if (dto.Starred.HasValue)
             existing.Stared = dto.Starred.Value;
         if (dto.Pinned.HasValue)
@@ -132,6 +130,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         bool sortByLastAccessed = false,
         bool onlyUntagged = false,
         IReadOnlyCollection<string>? tags = null,
+        bool searchNames = false,
         CancellationToken token = default)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
@@ -177,7 +176,8 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         if (!string.IsNullOrEmpty(searchText))
         {
-            query = query.Where(r => EF.Functions.Like(r.Text, $"%{searchText}%"));
+            var pattern = $"%{searchText}%";
+            query = query.Where(r => EF.Functions.Like(r.Text, pattern) || (searchNames && EF.Functions.Like(r.Name, pattern)));
         }
 
         if (starred.HasValue)
@@ -382,7 +382,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             await EnsureExistingRecordData(existing, declaredTransferDataHash, transferFileStream, token);
         }
 
-        var backfillTags = existing.Tags is null && incoming.Tags is { Length: > 0 };
+        incoming.Name = incoming.Name?.Trim();
         var shouldUpdate = ShouldUpdateExistingRecord(existing, incoming);
         if (shouldUpdate)
         {
@@ -392,9 +392,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
                 updatedEntity.Tags = existing.Tags is null ? null : [.. existing.Tags];
             UpdateEntityFields(updatedEntity, existing);
         }
-        if (backfillTags)
-            existing.Tags = incoming.Tags;
-        if (shouldUpdate || backfillTags)
+        if (shouldUpdate || BackfillMissingMetadata(existing, incoming.Tags, incoming.Name))
         {
             await _dbContext.SaveChangesAsync(token);
             await NotifyProfileChangeAsync(existing);
@@ -403,6 +401,17 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         }
 
         return HistoryRecordDto.FromEntity(existing);
+    }
+
+    private static bool BackfillMissingMetadata(HistoryRecordEntity existing, string[]? tags, string? name)
+    {
+        var backfillTags = existing.Tags is null && tags is { Length: > 0 };
+        var backfillName = existing.Name is null && name is { Length: > 0 };
+        if (backfillTags)
+            existing.Tags = tags;
+        if (backfillName)
+            existing.Name = name;
+        return backfillTags || backfillName;
     }
 
     private async Task EnsureExistingRecordData(
@@ -464,6 +473,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         dstEntity.LastAccessed = srcEntity.LastAccessed;
         dstEntity.LastModified = srcEntity.LastModified;
         dstEntity.Tags = srcEntity.Tags is null ? null : [.. srcEntity.Tags];
+        dstEntity.Name = srcEntity.Name ?? dstEntity.Name;
         dstEntity.Stared = srcEntity.Stared;
         dstEntity.Pinned = srcEntity.Pinned;
         dstEntity.Version = srcEntity.Version;

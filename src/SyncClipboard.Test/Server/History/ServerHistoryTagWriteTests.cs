@@ -224,6 +224,60 @@ public class ServerHistoryTagWriteTests
         Assert.IsEmpty(f.Notifications);
     }
 
+    [TestMethod]
+    [DataRow(null, null)]
+    [DataRow("", "")]
+    [DataRow(" null ", "null")]
+    public async Task Post_NewRecordPreservesNameStates(string? name, string? expected)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var result = await f.PostAsync(null, Token, name: name);
+        Assert.IsInstanceOfType<OkObjectResult>(result);
+        Assert.AreEqual(expected, ((HistoryRecordDto)((OkObjectResult)result).Value!).Name);
+        Assert.AreEqual(expected, (await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token)).Name);
+        Assert.AreEqual(expected, f.Notifications.Single().Name);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task PostAndPatch_BackfillOnlyUnknownNamesAndRespectClears(bool patch)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var original = await f.SeedAsync(Token);
+        var originalTime = original.LastModified;
+
+        async Task<HistoryRecordUpdateDto> WriteAsync(string? name, int version, bool stale = false)
+        {
+            if (patch)
+            {
+                var result = await f.PatchAsync(null, Token, version, name);
+                Assert.AreEqual(stale ? typeof(ConflictObjectResult) : typeof(OkObjectResult), result.GetType());
+                return (HistoryRecordUpdateDto)((ObjectResult)result).Value!;
+            }
+            var post = await f.PostAsync(null, Token, version, name);
+            Assert.IsInstanceOfType<OkObjectResult>(post);
+            return ((HistoryRecordDto)((OkObjectResult)post).Value!).ToUpdateDto();
+        }
+
+        Assert.IsNull((await WriteAsync(" ", 1, stale: true)).Name);
+        Assert.IsEmpty(f.Notifications);
+        var backfilled = await WriteAsync("  应用图标  ", 1, stale: true);
+        Assert.AreEqual("应用图标", backfilled.Name);
+        Assert.AreEqual(originalTime, backfilled.LastModified!.Value.UtcDateTime);
+        Assert.AreEqual(10, backfilled.Version);
+        Assert.IsFalse(backfilled.Starred);
+        Assert.AreEqual("kept", backfilled.Tags!.Single());
+        Assert.AreEqual("应用图标", (await WriteAsync(null, 11)).Name);
+        Assert.AreEqual("新名称", (await WriteAsync(" 新名称 ", 12)).Name);
+        Assert.AreEqual("", (await WriteAsync("   ", 13)).Name);
+        Assert.AreEqual("", (await WriteAsync(null, 14)).Name);
+        Assert.AreEqual("", (await WriteAsync("旧名称", 1, stale: true)).Name);
+        string[] expectedNames = ["应用图标", "应用图标", "新名称", "", ""];
+        CollectionAssert.AreEqual(expectedNames, f.Notifications.Select(dto => dto.Name).ToArray());
+        Assert.AreEqual("", (await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token)).Name);
+    }
+
     private async Task AssertSavedAndNotifiedAsync(Fixture f, string[]? expected)
     {
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
@@ -283,7 +337,7 @@ public class ServerHistoryTagWriteTests
             return entity;
         }
 
-        public async Task<IActionResult> PostAsync(string? tagsJson, CancellationToken token, int version = 11)
+        public async Task<IActionResult> PostAsync(string? tagsJson, CancellationToken token, int version = 11, string? name = null)
         {
             using var content = new MultipartFormDataContent();
             content.Add(new StringContent(Hash), "hash");
@@ -292,6 +346,8 @@ public class ServerHistoryTagWriteTests
             content.Add(new StringContent(version.ToString(System.Globalization.CultureInfo.InvariantCulture)), "version");
             content.Add(new StringContent(Timestamp.ToString("O")), "lastModified");
             content.Add(new StringContent("true"), "starred");
+            if (name is not null)
+                content.Add(new StringContent(name), "name");
             if (tagsJson is not null)
                 content.Add(new StringContent(tagsJson), "tags");
             await using var body = new MemoryStream(await content.ReadAsByteArrayAsync(token));
@@ -300,10 +356,11 @@ public class ServerHistoryTagWriteTests
             return await Controller.Put(token);
         }
 
-        public Task<IActionResult> PatchAsync(string? tagsJson, CancellationToken token, int version = 11)
+        public Task<IActionResult> PatchAsync(string? tagsJson, CancellationToken token, int version = 11, string? name = null)
         {
             var json = tagsJson is null ? "{}" : $"{{\"tags\":{tagsJson}}}";
             var dto = JsonSerializer.Deserialize<HistoryRecordUpdateDto>(json, JsonSerializerOptions.Web)!;
+            dto.Name = name;
             dto.Starred = true;
             dto.Version = version;
             dto.LastModified = Timestamp;
