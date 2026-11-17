@@ -62,7 +62,7 @@ public class SyncClipboardController(
     [HttpGet("api/capabilities")]
     public ActionResult<ServerCapabilitiesDto> GetCapabilities()
     {
-        return Ok(new ServerCapabilitiesDto { HistorySync = true, HistoryTags = true });
+        return Ok(new ServerCapabilitiesDto { HistorySync = true, HistoryTags = true, HistoryName = true });
     }
 
     [AcceptVerbs("PROPFIND")]

@@ -18,6 +18,26 @@ public class OfficialServerCapabilitiesTests
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
+    [DataRow(null, false, false)]
+    [DataRow("""{"historySync":true}""", false, false)]
+    [DataRow("""{"historySync":true,"historyTags":true}""", true, false)]
+    [DataRow("""{"historySync":true,"historyTags":true,"historyName":false}""", true, false)]
+    [DataRow("""{"historySync":true,"historyName":true}""", false, true)]
+    [DataRow("""{"historySync":true,"historyTags":true,"historyName":true}""", true, true)]
+    public async Task Probe_ReadsTagAndNameSupportIndependently(string? json, bool supportsTags, bool supportsName)
+    {
+        using var handler = new CapabilityHandler { Capabilities = json };
+        using var client = new HttpClient(handler) { BaseAddress = new Uri("https://history.test/") };
+
+        var capabilities = await OfficialAdapter.CheckHistorySupportAsync(client, TestContext.CancellationTokenSource.Token);
+
+        Assert.IsTrue(capabilities.HistorySync);
+        Assert.AreEqual(supportsTags, capabilities.HistoryTags);
+        Assert.AreEqual(supportsName, capabilities.HistoryName);
+        Assert.AreEqual(json is null ? 1 : 0, handler.VersionRequests);
+    }
+
+    [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
     public async Task ConnectedCapabilities_AreSharedBySyncAndHealthChecks(bool supportsTags)
