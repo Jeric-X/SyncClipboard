@@ -1,7 +1,7 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
-using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities.History;
 
 namespace SyncClipboard.Test.Client.DatabaseMigrations;
@@ -12,9 +12,12 @@ public class HistoryDatabaseMigrationTests
     private const string LegacyInsert = """
         INSERT INTO HistoryRecords (Type, Hash, Text, FilePath, Timestamp, Stared, Pinned,
             SyncStatus, LastModified, LastAccessed, Version, IsDeleted, IsLocalFileReady, Size, "From")
-        VALUES (1, 'legacy', 'keep', '["legacy.txt"]', '2026-01-01', 1, 0, 0,
+        VALUES (1, {0}, 'keep', '["legacy.txt"]', '2026-01-01', 1, 0, 0,
             '2026-01-02', '2026-01-03', 7, 0, 1, 4, 'old-device')
         """;
+
+    private static Task<int> InsertHistoryWithoutTags(HistoryDbContext db, string hash, CancellationToken token) =>
+        db.Database.ExecuteSqlRawAsync(LegacyInsert, [hash], token);
 
     private static readonly string[] expected = ["legacy.txt"];
 
@@ -27,7 +30,7 @@ public class HistoryDatabaseMigrationTests
         await db.Database.OpenConnectionAsync(token);
         var migrator = db.GetService<IMigrator>();
         await migrator.MigrateAsync("20261010151000_IndexHistoryIdentity", token);
-        await db.Database.ExecuteSqlRawAsync(LegacyInsert, token);
+        await InsertHistoryWithoutTags(db, "legacy", token);
 
         await db.Database.MigrateAsync(token);
         Assert.IsFalse(db.Database.HasPendingModelChanges());
@@ -80,9 +83,9 @@ public class HistoryDatabaseMigrationTests
             INSERT INTO __EFMigrationsHistory (MigrationId, ProductVersion)
                 VALUES ('20261027010000_AddHistoryTags', '9.0.20');
             """, token);
-        await db.Database.ExecuteSqlRawAsync(LegacyInsert, token);
-        await db.Database.ExecuteSqlRawAsync("""UPDATE HistoryRecords SET Hash = 'tagged', Tags = '["工作"]'""", token);
-        await db.Database.ExecuteSqlRawAsync(LegacyInsert, token);
+        await InsertHistoryWithoutTags(db, "tagged", token);
+        await db.Database.ExecuteSqlRawAsync("""UPDATE HistoryRecords SET Tags = '["工作"]' WHERE Hash = 'tagged'""", token);
+        await InsertHistoryWithoutTags(db, "legacy", token);
 
         await db.Database.MigrateAsync(token);
         Assert.IsFalse(db.Database.HasPendingModelChanges());
@@ -92,40 +95,33 @@ public class HistoryDatabaseMigrationTests
         var tagged = await db.HistoryRecords.SingleAsync(r => r.Hash == "tagged", token);
         Assert.AreEqual("工作", tagged.Tags!.Single());
 
-        db.HistoryRecords.Add(new HistoryRecord { Hash = "new" });
-        await db.SaveChangesAsync(token);
-        db.ChangeTracker.Clear();
+        await InsertHistoryWithoutTags(db, "new", token);
         Assert.IsNull((await db.HistoryRecords.SingleAsync(r => r.Hash == "new", token)).Tags);
     }
 
     [TestMethod]
-    public async Task RollbackToBeta1_PreservesTagEditsOnNextUpgrade()
+    public async Task RollbackToBeta1_PreservesUnknownTagsOnFailureAndRestoresLegacyDefaultForKnownTags()
     {
         var token = TestContext.CancellationTokenSource.Token;
         await using var db = new HistoryDbContext();
         db.Database.SetConnectionString("Data Source=:memory:");
         await db.Database.OpenConnectionAsync(token);
         await db.Database.MigrateAsync(token);
-        await db.Database.ExecuteSqlRawAsync(LegacyInsert, token);
-        await db.Database.ExecuteSqlRawAsync("UPDATE HistoryRecords SET Hash = 'unknown'", token);
-        await db.Database.ExecuteSqlRawAsync(LegacyInsert, token);
-        await db.Database.ExecuteSqlRawAsync("UPDATE HistoryRecords SET Hash = 'edited' WHERE Hash = 'legacy'", token);
-        await db.GetService<IMigrator>().MigrateAsync("20261027010000_AddHistoryTags", token);
-        await db.Database.ExecuteSqlRawAsync("UPDATE HistoryRecords SET Stared = 0, Version = Version + 1", token);
-        await db.Database.ExecuteSqlRawAsync("""UPDATE HistoryRecords SET Tags = '["工作"]' WHERE Hash = 'edited'""", token);
-        await db.Database.ExecuteSqlRawAsync("UPDATE HistoryRecords SET Tags = '[]' WHERE Hash = 'edited'", token);
+        await InsertHistoryWithoutTags(db, "unknown", token);
 
-        await db.Database.ExecuteSqlRawAsync(LegacyInsert, token);
-        await db.Database.MigrateAsync(token);
-        var unknown = await db.HistoryRecords.SingleAsync(r => r.Hash == "unknown", token);
-        Assert.IsNull(unknown.Tags);
-        Assert.IsFalse(unknown.Stared);
-        var edited = await db.HistoryRecords.SingleAsync(r => r.Hash == "edited", token);
-        Assert.IsNotNull(edited.Tags);
-        Assert.IsEmpty(edited.Tags);
-        var record = await db.HistoryRecords.SingleAsync(r => r.Hash == "legacy", token);
-        Assert.IsNotNull(record.Tags);
-        Assert.IsEmpty(record.Tags);
+        var migrator = db.GetService<IMigrator>();
+        await Assert.ThrowsExactlyAsync<SqliteException>(() => migrator.MigrateAsync("20261027010000_AddHistoryTags", token));
+        Assert.IsNull((await db.HistoryRecords.AsNoTracking().SingleAsync(token)).Tags);
+        Assert.IsEmpty(await db.Database.GetPendingMigrationsAsync(token));
+
+        await db.Database.ExecuteSqlRawAsync("""UPDATE HistoryRecords SET Tags = '["工作"]' WHERE Hash = 'unknown'""", token);
+        await migrator.MigrateAsync("20261027010000_AddHistoryTags", token);
+        await InsertHistoryWithoutTags(db, "beta", token);
+
+        Assert.AreEqual("工作", (await db.HistoryRecords.SingleAsync(r => r.Hash == "unknown", token)).Tags!.Single());
+        var added = await db.HistoryRecords.SingleAsync(r => r.Hash == "beta", token);
+        Assert.IsNotNull(added.Tags);
+        Assert.IsEmpty(added.Tags);
     }
 
     public TestContext TestContext { get; set; } = null!;
