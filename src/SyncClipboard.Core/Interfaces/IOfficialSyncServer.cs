@@ -19,6 +19,11 @@ public interface IOfficialSyncServer
     Task<bool> SupportsHistoryTagsAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets whether the current connection supports history record names, using its cached capabilities.
+    /// </summary>
+    Task<bool> SupportsHistoryNameAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets a specific history record by profileId (format: "Type-Hash").
     /// </summary>
     /// <param name="profileId">The profile identifier in format "Type-Hash".</param>

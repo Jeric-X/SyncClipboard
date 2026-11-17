@@ -344,6 +344,12 @@ public sealed class OfficialAdapter(
         return capabilities.HistoryTags;
     }
 
+    public async Task<bool> SupportsHistoryNameAsync(CancellationToken cancellationToken = default)
+    {
+        var capabilities = await GetCapabilitiesAsync(cancellationToken);
+        return capabilities.HistoryName;
+    }
+
     private static async Task<string> ReadVersionAsync(HttpClient client, CancellationToken token)
     {
         using var response = await client.GetAsync("api/version", token);
