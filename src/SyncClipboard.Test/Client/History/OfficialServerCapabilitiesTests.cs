@@ -79,6 +79,23 @@ public class OfficialServerCapabilitiesTests
     }
 
     [TestMethod]
+    public async Task Reconnect_RefreshesNameSupportWhenTagsStayEnabled()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        using var handler = new CapabilityHandler { Capabilities = """{"historySync":true,"historyTags":true}""" };
+        using var adapter = CreateAdapter(handler);
+        Assert.IsTrue(await adapter.SupportsHistoryTagsAsync(token));
+        Assert.IsFalse(await adapter.SupportsHistoryNameAsync(token));
+        Assert.AreEqual(1, handler.CapabilityRequests);
+
+        adapter.StopListening();
+        handler.Capabilities = """{"historySync":true,"historyTags":true,"historyName":true}""";
+        Assert.IsTrue(await adapter.SupportsHistoryNameAsync(token));
+        Assert.IsTrue(await adapter.SupportsHistoryTagsAsync(token));
+        Assert.AreEqual(2, handler.CapabilityRequests);
+    }
+
+    [TestMethod]
     public async Task Disconnect_DiscardsPendingCapabilityRequest()
     {
         var token = TestContext.CancellationTokenSource.Token;
@@ -86,19 +103,22 @@ public class OfficialServerCapabilitiesTests
         using var handler = new CapabilityHandler { CapabilityResponse = response.Task };
         using var adapter = CreateAdapter(handler);
         var loading = adapter.TestConnectionAsync(token);
-        var concurrentRead = adapter.SupportsHistoryTagsAsync(token);
+        var tagRead = adapter.SupportsHistoryTagsAsync(token);
+        var nameRead = adapter.SupportsHistoryNameAsync(token);
         Assert.AreEqual(1, handler.CapabilityRequests);
         adapter.StopListening();
         handler.CapabilityResponse = null;
-        handler.Capabilities = "{\"historySync\":true}";
+        handler.Capabilities = """{"historySync":true,"historyName":true}""";
         await adapter.TestConnectionAsync(token);
         response.SetResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new StringContent("{\"historySync\":true,\"historyTags\":true}")
         });
         await loading;
-        await concurrentRead;
+        Assert.IsTrue(await tagRead);
+        Assert.IsFalse(await nameRead);
         Assert.IsFalse(await adapter.SupportsHistoryTagsAsync(token));
+        Assert.IsTrue(await adapter.SupportsHistoryNameAsync(token));
         Assert.AreEqual(2, handler.CapabilityRequests);
     }
 
