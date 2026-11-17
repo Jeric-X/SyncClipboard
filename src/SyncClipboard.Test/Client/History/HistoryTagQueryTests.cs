@@ -135,17 +135,17 @@ public class HistoryTagQueryTests
     {
         await using var f = await Fixture.CreateAsync(Token);
         var empty = f.Add("empty", []);
+        var unknown = f.Add("unknown", null);
         var tagged = f.Add("tagged", ["A"]);
         f.Add("deleted-empty", []).IsDeleted = true;
         await f.Db.SaveChangesAsync(Token);
 
         var query = new HistoryQueryPara { OnlyUntagged = true };
         var records = await f.Manager.GetHistoryAsync(query, token: Token);
-        Assert.HasCount(1, records);
-        Assert.AreEqual("empty", records[0].Hash);
+        CollectionAssert.AreEquivalent(new[] { empty.Hash, unknown.Hash }, records.Select(r => r.Hash).ToArray());
         var counts = await f.Manager.GetHistorySelectionCountsAsync(query with { Tags = [] },
             [HistoryRecordKey.From(empty), HistoryRecordKey.From(tagged)], token: Token);
-        Assert.AreEqual((1, 1), counts);
+        Assert.AreEqual((2, 1), counts);
     }
 
     [TestMethod]
@@ -199,7 +199,7 @@ public class HistoryTagQueryTests
             return f;
         }
 
-        public HistoryRecord Add(string hash, string[] tags)
+        public HistoryRecord Add(string hash, string[]? tags)
         {
             var record = new HistoryRecord
             {

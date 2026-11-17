@@ -199,7 +199,7 @@ public class HistorySyncer
 
     private static HistoryRecordUpdateDto CreateUpdateDto(HistoryRecord record) => new()
     {
-        Tags = [.. record.Tags],
+        Tags = record.Tags?.ToArray(),
         Starred = record.Stared,
         Pinned = record.Pinned,
         IsDelete = record.IsDeleted,

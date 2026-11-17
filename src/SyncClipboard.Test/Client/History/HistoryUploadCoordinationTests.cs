@@ -39,6 +39,44 @@ public class HistoryUploadCoordinationTests
         target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(target, value);
 
     [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task StarUpdate_PreservesRemoteTagsUnlessLocalTagsAreKnownEmpty(bool knownEmpty)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var record = new HistoryRecord
+        {
+            Hash = "STARRED",
+            Type = ProfileType.Text,
+            Stared = true,
+            Version = 2,
+            Tags = knownEmpty ? [] : null,
+            SyncStatus = HistorySyncStatus.NeedSync
+        };
+        f.Db.Add(record);
+        await f.Db.SaveChangesAsync(Token);
+        f.RemoteRecord = record.ToHistoryRecordDto();
+        f.RemoteRecord.Starred = false;
+        f.RemoteRecord.Tags = [.. ExpectedRemoteTags];
+
+        // A delayed notification predates both the remote tags and the pending local star.
+        var delayed = record.ToHistoryRecordDto();
+        delayed.Version--;
+        delayed.Starred = false;
+        delayed.Tags = ["outdated"];
+        await f.Manager.SyncRemoteHistoryAsync([delayed], Token);
+
+        await f.CreateSyncer().SyncOneAsync(record, Token);
+
+        Assert.IsTrue(f.RemoteRecord.Starred);
+        var expected = knownEmpty ? [] : ExpectedRemoteTags;
+        CollectionAssert.AreEqual(expected, f.RemoteRecord.Tags);
+        var saved = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
+        Assert.IsNotNull(saved);
+        CollectionAssert.AreEqual(expected, saved.Tags);
+    }
+
+    [TestMethod]
     [DataRow("full", true)]
     [DataRow("incremental", true)]
     [DataRow("range", true)]
@@ -511,18 +549,21 @@ public class HistoryUploadCoordinationTests
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task TagEdit_SynchronizesReplacementOrClearBeforeMarkingSynced(bool clear)
+    [DataRow(false, false)]
+    [DataRow(true, false)]
+    [DataRow(false, true)]
+    [DataRow(true, true)]
+    public async Task TagEdit_SynchronizesReplacementOrClearBeforeMarkingSynced(bool clear, bool unknownLocalTags)
     {
         await using var f = await Fixture.CreateAsync(Token);
         var profile = new TextProfile("tag editing");
         await f.Manager.AddLocalProfile(profile, token: Token);
         var record = await f.Db.HistoryRecords.SingleAsync(Token);
-        record.Tags = ["old"];
+        record.Tags = unknownLocalTags ? null : ["old"];
         record.SyncStatus = HistorySyncStatus.Synced;
         await f.Db.SaveChangesAsync(Token);
         f.RemoteRecord = record.ToHistoryRecordDto();
+        f.RemoteRecord.Tags = ["old"];
         _ = f.CreateSyncer();
         var synced = Signal();
         f.Manager.HistoryUpdated += updated =>
@@ -532,7 +573,7 @@ public class HistoryUploadCoordinationTests
                 synced.TrySetResult(true);
         };
 
-        await f.Manager.EditTagsAsync([HistoryRecordKey.From(record)], clear ? [] : ["new"], ["old"], Token);
+        await f.Manager.EditTagsAsync([HistoryRecordKey.From(record)], clear ? [] : ["new"], clear || !unknownLocalTags ? ["old"] : [], Token);
         await synced.Task.WaitAsync(TimeSpan.FromSeconds(5), Token);
 
         string[] expected = clear ? [] : ["new"];

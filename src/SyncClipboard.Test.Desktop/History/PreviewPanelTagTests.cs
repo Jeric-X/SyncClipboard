@@ -34,6 +34,7 @@ public class PreviewPanelTagTests
             var matches = fixture.Records.Where(record => record.Tags is ["Red", "Blue"]).Take(2).ToArray();
             var first = matches[0];
             var second = matches[1];
+            Assert.IsNotNull(first.Tags);
             var originalTags = first.Tags.ToArray();
             string[] displayOrder = ["Blue", "Red"];
             string[] pinnedOrder = ["Red", "Blue"];

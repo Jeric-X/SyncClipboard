@@ -13,8 +13,8 @@ public class HistoryTagOrderTests
 {
     public TestContext TestContext { get; set; } = null!;
 
-    private static void AssertNames(IEnumerable<string?> actual, params string?[] expected) =>
-        CollectionAssert.AreEqual(expected, actual.ToArray());
+    private static void AssertNames(IEnumerable<string?>? actual, params string?[] expected) =>
+        CollectionAssert.AreEqual(expected, actual?.ToArray());
 
     [TestMethod]
     public void Order_PreservesPinnedPreferenceAndSortsOthersOrdinally()

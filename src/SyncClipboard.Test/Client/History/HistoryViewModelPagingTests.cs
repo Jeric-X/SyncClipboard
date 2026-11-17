@@ -507,7 +507,7 @@ public class HistoryViewModelPagingTests
         public async Task ReplaceTagsAsync(string oldTag, string newTag)
         {
             foreach (var record in db.HistoryRecords.Local)
-                record.Tags = record.Tags.Select(tag => tag == oldTag ? newTag : tag).ToArray();
+                record.Tags = record.Tags?.Select(tag => tag == oldTag ? newTag : tag).ToArray();
             await db.SaveChangesAsync();
         }
 

@@ -1,7 +1,7 @@
 using SyncClipboard.Core.Models;
 using SyncClipboard.Server.Core.Models;
 
-namespace SyncClipboard.Test.Client;
+namespace SyncClipboard.Test.Client.History;
 
 [TestClass]
 public class HistoryTagMappingTests
@@ -62,7 +62,8 @@ public class HistoryTagMappingTests
 
         string[] expected = ["é", "工作"];
         CollectionAssert.AreEqual(expected, local.Tags);
-        Assert.IsEmpty(new HistoryRecordDto().ToHistoryRecord().Tags);
+        Assert.IsNull(new HistoryRecordDto().ToHistoryRecord().Tags);
+        Assert.IsNull(new HistoryRecord().ToHistoryRecordDto().Tags);
     }
 
     [TestMethod]
@@ -84,9 +85,9 @@ public class HistoryTagMappingTests
         patched.ApplyFromServerUpdateDto(partialUpdate);
         outgoing.Tags[0] = "later-remote-edit";
 
-        Assert.AreEqual("outgoing-edit", created.Tags.Single());
-        Assert.AreEqual("outgoing-edit", updated.Tags.Single());
-        Assert.AreEqual("outgoing-edit", patched.Tags.Single());
+        Assert.AreEqual("outgoing-edit", created.Tags!.Single());
+        Assert.AreEqual("outgoing-edit", updated.Tags!.Single());
+        Assert.AreEqual("outgoing-edit", patched.Tags!.Single());
     }
 
     private static void ApplyRemote(HistoryRecord local, string[]? tags, bool partial)
