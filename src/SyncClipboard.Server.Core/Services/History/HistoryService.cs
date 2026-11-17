@@ -54,16 +54,13 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         if (dto.Tags is not null)
             dto.Tags = HistoryTags.Normalize(dto.Tags);
-        var backfillTags = existing.Tags is null && dto.Tags is { Length: > 0 };
+        dto.Name = dto.Name?.Trim();
 
         var updated = ApplyMetadataUpdate(existing, dto);
         if (updated is null)
             return (null, null);
 
-        if (backfillTags)
-            existing.Tags = dto.Tags;
-
-        if (updated.Value || backfillTags)
+        if (updated.Value || BackfillMissingMetadata(existing, dto.Tags, dto.Name))
         {
             await _dbContext.SaveChangesAsync(token);
             await NotifyProfileChangeAsync(existing);
@@ -76,7 +73,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
     private static bool? ApplyMetadataUpdate(HistoryRecordEntity existing, HistoryRecordUpdateDto dto)
     {
-        dto.Version ??= existing.Version + 1;
+        dto.Version ??= NextVersion(existing.Version);
         dto.LastModified ??= DateTimeOffset.UtcNow;
         if (!HistoryHelper.ShouldUpdate(existing.Version, dto.Version.Value,
             new DateTimeOffset(existing.LastModified), dto.LastModified.Value))
@@ -85,16 +82,29 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         if (dto.IsDelete is false && existing.IsDeleted && !string.IsNullOrEmpty(existing.TransferDataFile))
             return null;
 
+        existing.LastModified = ResolveModificationTime(existing, dto.IsDelete, dto.LastModified.Value.UtcDateTime);
         ApplyOptionalUpdateFields(existing, dto);
-        existing.LastModified = dto.LastModified.Value.UtcDateTime;
         existing.Version = dto.Version.Value;
         return true;
+    }
+
+    private static int NextVersion(int version) => version == int.MaxValue ? version : version + 1;
+
+    private static DateTime ResolveModificationTime(HistoryRecordEntity existing, bool? incomingDeleted, DateTime incomingTime)
+    {
+        var latest = existing.LastModified > incomingTime ? existing.LastModified : incomingTime;
+        if (!existing.IsDeleted || incomingDeleted != false)
+            return latest;
+
+        var now = DateTime.UtcNow;
+        return now > latest ? now : latest;
     }
 
     private static void ApplyOptionalUpdateFields(HistoryRecordEntity existing, HistoryRecordUpdateDto dto)
     {
         if (dto.Tags is not null)
             existing.Tags = dto.Tags;
+        existing.Name = dto.Name ?? existing.Name;
         if (dto.Starred.HasValue)
             existing.Stared = dto.Starred.Value;
         if (dto.Pinned.HasValue)
@@ -132,6 +142,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         bool sortByLastAccessed = false,
         bool onlyUntagged = false,
         IReadOnlyCollection<string>? tags = null,
+        bool searchNames = false,
         CancellationToken token = default)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
@@ -177,7 +188,8 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         if (!string.IsNullOrEmpty(searchText))
         {
-            query = query.Where(r => EF.Functions.Like(r.Text, $"%{searchText}%"));
+            var pattern = $"%{searchText}%";
+            query = query.Where(r => EF.Functions.Like(r.Text, pattern) || (searchNames && EF.Functions.Like(r.Name, pattern)));
         }
 
         if (starred.HasValue)
@@ -239,7 +251,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             existing.TransferDataFile = entity.TransferDataFile;
             existing.TransferDataHash = entity.TransferDataHash;
             existing.FilePaths = entity.FilePaths;
-            existing.Version++;
+            existing.Version = NextVersion(existing.Version);
             await _dbContext.SaveChangesAsync(token);
             await NotifyProfileChangeAsync(existing);
             return;
@@ -346,7 +358,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         entity.LastModified = DateTime.UtcNow;
         entity.LastAccessed = DateTime.UtcNow;
-        entity.Version++;
+        entity.Version = NextVersion(entity.Version);
         await _dbContext.SaveChangesAsync(token);
         await NotifyProfileChangeAsync(entity);
 
@@ -377,24 +389,32 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         string userId, HistoryRecordDto incoming, HistoryRecordEntity existing,
         string? declaredTransferDataHash, Stream? transferFileStream, CancellationToken token)
     {
-        if (existing.IsDeleted)
+        var restoring = existing.IsDeleted && !incoming.IsDeleted;
+        if (restoring)
         {
             await EnsureExistingRecordData(existing, declaredTransferDataHash, transferFileStream, token);
         }
 
-        var backfillTags = existing.Tags is null && incoming.Tags is { Length: > 0 };
-        var shouldUpdate = ShouldUpdateExistingRecord(existing, incoming);
+        incoming.Name = incoming.Name?.Trim();
+        var metadataWins = HistoryHelper.ShouldUpdate(existing.Version, incoming.Version,
+            new DateTimeOffset(existing.LastModified), incoming.LastModified);
+        var shouldUpdate = restoring || metadataWins;
         if (shouldUpdate)
         {
-            incoming.Version = Math.Max(incoming.Version, existing.Version + 1);
             var updatedEntity = incoming.ToEntity(userId);
-            if (incoming.Tags is null)
-                updatedEntity.Tags = existing.Tags is null ? null : [.. existing.Tags];
+            var nextVersion = NextVersion(existing.Version);
+            updatedEntity.Version = metadataWins ? Math.Max(incoming.Version, nextVersion) : nextVersion;
+            updatedEntity.LastModified = ResolveModificationTime(existing, incoming.IsDeleted, updatedEntity.LastModified);
             UpdateEntityFields(updatedEntity, existing);
         }
-        if (backfillTags)
-            existing.Tags = incoming.Tags;
-        if (shouldUpdate || backfillTags)
+        if (metadataWins)
+        {
+            existing.Name = incoming.Name ?? existing.Name;
+            if (incoming.Tags is not null)
+                existing.Tags = [.. incoming.Tags];
+        }
+        var backfilled = !metadataWins && BackfillMissingMetadata(existing, incoming.Tags, incoming.Name);
+        if (shouldUpdate || backfilled)
         {
             await _dbContext.SaveChangesAsync(token);
             await NotifyProfileChangeAsync(existing);
@@ -403,6 +423,17 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         }
 
         return HistoryRecordDto.FromEntity(existing);
+    }
+
+    private static bool BackfillMissingMetadata(HistoryRecordEntity existing, string[]? tags, string? name)
+    {
+        var backfillTags = existing.Tags is null && tags is { Length: > 0 };
+        var backfillName = existing.Name is null && name is { Length: > 0 };
+        if (backfillTags)
+            existing.Tags = tags;
+        if (backfillName)
+            existing.Name = name;
+        return backfillTags || backfillName;
     }
 
     private async Task EnsureExistingRecordData(
@@ -420,15 +451,6 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         {
             throw new ArgumentException("Needs tranfer data.");
         }
-    }
-
-    private static bool ShouldUpdateExistingRecord(HistoryRecordEntity existing, HistoryRecordDto incoming)
-    {
-        return existing.IsDeleted || HistoryHelper.ShouldUpdate(
-            oldVersion: existing.Version,
-            newVersion: incoming.Version,
-            oldLastModified: new DateTimeOffset(existing.LastModified),
-            newLastModified: incoming.LastModified);
     }
 
     private async Task<HistoryRecordDto> AddNewRecordDto(
@@ -463,7 +485,6 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         dstEntity.CreateTime = srcEntity.CreateTime;
         dstEntity.LastAccessed = srcEntity.LastAccessed;
         dstEntity.LastModified = srcEntity.LastModified;
-        dstEntity.Tags = srcEntity.Tags is null ? null : [.. srcEntity.Tags];
         dstEntity.Stared = srcEntity.Stared;
         dstEntity.Pinned = srcEntity.Pinned;
         dstEntity.Version = srcEntity.Version;
@@ -664,7 +685,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             }
             existing.IsDeleted = true;
             existing.LastModified = DateTime.UtcNow;
-            existing.Version++;
+            existing.Version = NextVersion(existing.Version);
             // 同步到原 entity 用于后续 OnRecordDeletedAsync 的广播/删文件
             entity.IsDeleted = existing.IsDeleted;
             entity.LastModified = existing.LastModified;
@@ -675,7 +696,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         // helper 路径：entity 已被 ToListAsync 跟踪，直接改字段
         entity.IsDeleted = true;
         entity.LastModified = DateTime.UtcNow;
-        entity.Version++;
+        entity.Version = NextVersion(entity.Version);
     }
 
     public Task<int> SaveChangesAsync(CancellationToken token)

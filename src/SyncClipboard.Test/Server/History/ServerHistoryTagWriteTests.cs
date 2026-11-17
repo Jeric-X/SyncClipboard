@@ -224,6 +224,192 @@ public class ServerHistoryTagWriteTests
         Assert.IsEmpty(f.Notifications);
     }
 
+    [TestMethod]
+    [DataRow(null, null)]
+    [DataRow("", "")]
+    [DataRow(" null ", "null")]
+    public async Task Post_NewRecordPreservesNameStates(string? name, string? expected)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var result = await f.PostAsync(null, Token, name: name);
+        Assert.IsInstanceOfType<OkObjectResult>(result);
+        Assert.AreEqual(expected, ((HistoryRecordDto)((OkObjectResult)result).Value!).Name);
+        Assert.AreEqual(expected, (await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token)).Name);
+        Assert.AreEqual(expected, f.Notifications.Single().Name);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task PostAndPatch_BackfillOnlyUnknownNamesAndRespectClears(bool patch)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var original = await f.SeedAsync(Token);
+        var originalTime = original.LastModified;
+
+        async Task<HistoryRecordUpdateDto> WriteAsync(string? name, int version, bool stale = false)
+        {
+            if (patch)
+            {
+                var result = await f.PatchAsync(null, Token, version, name);
+                Assert.AreEqual(stale ? typeof(ConflictObjectResult) : typeof(OkObjectResult), result.GetType());
+                return (HistoryRecordUpdateDto)((ObjectResult)result).Value!;
+            }
+            var post = await f.PostAsync(null, Token, version, name);
+            Assert.IsInstanceOfType<OkObjectResult>(post);
+            return ((HistoryRecordDto)((OkObjectResult)post).Value!).ToUpdateDto();
+        }
+
+        Assert.IsNull((await WriteAsync(" ", 1, stale: true)).Name);
+        Assert.IsEmpty(f.Notifications);
+        var backfilled = await WriteAsync("  应用图标  ", 1, stale: true);
+        Assert.AreEqual("应用图标", backfilled.Name);
+        Assert.AreEqual(originalTime, backfilled.LastModified!.Value.UtcDateTime);
+        Assert.AreEqual(10, backfilled.Version);
+        Assert.IsFalse(backfilled.Starred);
+        Assert.AreEqual("kept", backfilled.Tags!.Single());
+        Assert.AreEqual("应用图标", (await WriteAsync(null, 11)).Name);
+        Assert.AreEqual("新名称", (await WriteAsync(" 新名称 ", 12)).Name);
+        Assert.AreEqual("", (await WriteAsync("   ", 13)).Name);
+        Assert.AreEqual("", (await WriteAsync(null, 14)).Name);
+        Assert.AreEqual("", (await WriteAsync("旧名称", 1, stale: true)).Name);
+        string[] expectedNames = ["应用图标", "应用图标", "新名称", "", ""];
+        CollectionAssert.AreEqual(expectedNames, f.Notifications.Select(dto => dto.Name).ToArray());
+        Assert.AreEqual("", (await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token)).Name);
+    }
+
+    [TestMethod]
+    [DataRow("current", "old", 1, "current")]
+    [DataRow("", "old", 1, "")]
+    [DataRow(null, " old ", 1, "old")]
+    [DataRow(null, " ", 1, null)]
+    [DataRow("current", " new ", 11, "new")]
+    public async Task Post_RestoresDeletedRecordWhileResolvingNameByFreshness(
+        string? currentName, string incomingName, int version, string? expectedName)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var entity = await f.SeedAsync(Token);
+        entity.IsDeleted = true;
+        entity.Name = currentName;
+        await f.Db.SaveChangesAsync(Token);
+
+        var result = await f.PostAsync(null, Token, version, incomingName);
+        Assert.IsInstanceOfType<OkObjectResult>(result);
+        var restored = (HistoryRecordDto)((OkObjectResult)result).Value!;
+        Assert.IsFalse(restored.IsDeleted);
+        Assert.AreEqual(expectedName, restored.Name);
+        Assert.AreEqual(expectedName, f.Notifications.Single().Name);
+        Assert.AreEqual(expectedName, (await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token)).Name);
+    }
+
+    [TestMethod]
+    [DataRow(null, "current", 1, "uploaded", "current")]
+    [DataRow("current", null, 1, "current", "uploaded")]
+    [DataRow("", "", 1, "", "")]
+    [DataRow("current", "current", 11, "uploaded", "uploaded")]
+    public async Task Post_RestoreResolvesTagsAndNameIndependently(
+        string? currentTag, string? currentName, int version, string expectedTag, string expectedName)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var entity = await f.SeedAsync(Token);
+        entity.IsDeleted = true;
+        entity.Tags = currentTag switch { null => null, "" => [], _ => [currentTag] };
+        entity.Name = currentName;
+        await f.Db.SaveChangesAsync(Token);
+
+        var result = await f.PostAsync("""["uploaded"]""", Token, version, "uploaded");
+        Assert.IsInstanceOfType<OkObjectResult>(result);
+        var restored = (HistoryRecordDto)((OkObjectResult)result).Value!;
+        Assert.IsFalse(restored.IsDeleted);
+        string[] expectedTags = expectedTag.Length == 0 ? [] : [expectedTag];
+        CollectionAssert.AreEqual(expectedTags, restored.Tags);
+        Assert.AreEqual(expectedName, restored.Name);
+        CollectionAssert.AreEqual(expectedTags, f.Notifications.Single().Tags);
+        var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        CollectionAssert.AreEqual(expectedTags, saved.Tags);
+        Assert.AreEqual(expectedName, saved.Name);
+    }
+
+    [TestMethod]
+    public async Task Post_RetryOfOlderHighVersionRestorePreservesClearedMetadata()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var entity = await f.SeedAsync(Token);
+        entity.IsDeleted = true;
+        entity.Tags = [];
+        entity.Name = "";
+        await f.Db.SaveChangesAsync(Token);
+        var uploadedAt = entity.LastModified.AddHours(-1);
+
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var result = await f.PostAsync("""["old"]""", Token, 20, "old", uploadedAt);
+            Assert.IsInstanceOfType<OkObjectResult>(result);
+            var restored = (HistoryRecordDto)((OkObjectResult)result).Value!;
+            Assert.IsFalse(restored.IsDeleted);
+            Assert.AreEqual("", restored.Name);
+            Assert.IsNotNull(restored.Tags);
+            Assert.IsEmpty(restored.Tags);
+        }
+        Assert.HasCount(1, f.Notifications);
+        var renamed = await f.PatchAsync(null, Token, 11, "pending rename");
+        Assert.IsInstanceOfType<OkObjectResult>(renamed);
+        Assert.AreEqual("pending rename", ((HistoryRecordUpdateDto)((OkObjectResult)renamed).Value!).Name);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task Query_ModifiedAfterIncludesOfflineRestoreAtServerTime(bool patch)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var entity = await f.SeedAsync(Token);
+        entity.IsDeleted = true;
+        entity.Name = "current";
+        entity.LastModified = DateTime.UtcNow.AddDays(-1);
+        await f.Db.SaveChangesAsync(Token);
+        var since = DateTime.UtcNow;
+        if (patch)
+        {
+            var dto = new HistoryRecordUpdateDto { IsDelete = false, Version = 11, LastModified = entity.LastModified };
+            await f.Service.Update(entity.UserId, entity.Type, entity.Hash, dto, Token);
+            await f.Service.Update(entity.UserId, entity.Type, entity.Hash, dto, Token);
+        }
+        else
+            await f.PostAsync(null, Token, 1, "old", entity.LastModified);
+        var changes = await f.Service.GetListAsync(HistoryService.HARD_CODED_USER_ID, 1, 50, modifiedAfter: since, token: Token);
+        var restored = changes.Single();
+        Assert.IsFalse(restored.IsDeleted);
+        Assert.AreEqual("current", restored.Name);
+        Assert.IsTrue(restored.LastModified.UtcDateTime >= since);
+    }
+
+    [TestMethod]
+    public async Task Post_RetryAtMaximumVersionPreservesInitializedMetadata()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var entity = await f.SeedAsync(Token);
+        entity.IsDeleted = true;
+        entity.Version = int.MaxValue;
+        entity.Name = "";
+        await f.Db.SaveChangesAsync(Token);
+
+        for (var attempt = 0; attempt < 2; attempt++)
+        {
+            var result = await f.PostAsync("[]", Token, 1, "old");
+            Assert.IsInstanceOfType<OkObjectResult>(result);
+            var restored = (HistoryRecordDto)((OkObjectResult)result).Value!;
+            Assert.AreEqual(int.MaxValue, restored.Version);
+            Assert.AreEqual("", restored.Name);
+            Assert.AreEqual("kept", restored.Tags!.Single());
+        }
+        Assert.HasCount(1, f.Notifications);
+        var (updated, server) = await f.Service.Update(entity.UserId, entity.Type, entity.Hash,
+            new HistoryRecordUpdateDto { Name = "edited" }, Token);
+        Assert.IsTrue(updated);
+        Assert.AreEqual("edited", server?.Name);
+    }
+
     private async Task AssertSavedAndNotifiedAsync(Fixture f, string[]? expected)
     {
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
@@ -283,15 +469,18 @@ public class ServerHistoryTagWriteTests
             return entity;
         }
 
-        public async Task<IActionResult> PostAsync(string? tagsJson, CancellationToken token, int version = 11)
+        public async Task<IActionResult> PostAsync(string? tagsJson, CancellationToken token,
+            int version = 11, string? name = null, DateTime? modified = null)
         {
             using var content = new MultipartFormDataContent();
             content.Add(new StringContent(Hash), "hash");
             content.Add(new StringContent("Text"), "type");
             content.Add(new StringContent(Text), "text");
             content.Add(new StringContent(version.ToString(System.Globalization.CultureInfo.InvariantCulture)), "version");
-            content.Add(new StringContent(Timestamp.ToString("O")), "lastModified");
+            content.Add(new StringContent((modified ?? Timestamp).ToString("O")), "lastModified");
             content.Add(new StringContent("true"), "starred");
+            if (name is not null)
+                content.Add(new StringContent(name), "name");
             if (tagsJson is not null)
                 content.Add(new StringContent(tagsJson), "tags");
             await using var body = new MemoryStream(await content.ReadAsByteArrayAsync(token));
@@ -300,10 +489,11 @@ public class ServerHistoryTagWriteTests
             return await Controller.Put(token);
         }
 
-        public Task<IActionResult> PatchAsync(string? tagsJson, CancellationToken token, int version = 11)
+        public Task<IActionResult> PatchAsync(string? tagsJson, CancellationToken token, int version = 11, string? name = null)
         {
             var json = tagsJson is null ? "{}" : $"{{\"tags\":{tagsJson}}}";
             var dto = JsonSerializer.Deserialize<HistoryRecordUpdateDto>(json, JsonSerializerOptions.Web)!;
+            dto.Name = name;
             dto.Starred = true;
             dto.Version = version;
             dto.LastModified = Timestamp;
