@@ -6,6 +6,8 @@ public class HistoryRecordUpdateDto
 {
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string[]? Tags { get; set; }
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Name { get; set; }
     public bool? Starred { get; set; }
     public bool? Pinned { get; set; }
     public bool? IsDelete { get; set; }
