@@ -275,6 +275,45 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         return CreateSyncSnapshot(entity);
     }
 
+    public async Task<bool> SetNameAsync(
+        HistoryRecordKey key, string name, bool supportsHistoryName, CancellationToken token = default)
+    {
+        var normalized = name.Trim();
+        await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        var record = await _dbContext.HistoryRecords.FirstOrDefaultAsync(
+            r => r.Type == key.Type && r.Hash == key.Hash && !r.IsDeleted, token).ConfigureAwait(false);
+        // Confirming an empty editor on an unnamed record leaves its name unknown.
+        if (record is null || (record.Name ?? string.Empty) == normalized)
+            return false;
+
+        var entry = _dbContext.Entry(record);
+        var previouslyModified = entry.Properties.Where(p => p.IsModified).Select(p => p.Metadata.Name).ToHashSet();
+        var previous = (record.Name, record.Version, record.LastModified, record.SyncStatus);
+        record.Name = normalized;
+        if (_runtimeHistoryConfig.EnableSyncHistory && supportsHistoryName)
+        {
+            if (record.Version < int.MaxValue)
+                record.Version++;
+            record.LastModified = DateTime.UtcNow;
+            if (record.SyncStatus != HistorySyncStatus.LocalOnly)
+                record.SyncStatus = HistorySyncStatus.NeedSync;
+        }
+        try
+        {
+            await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
+        }
+        catch
+        {
+            foreach (var property in entry.Properties.Where(p => p.IsModified && !previouslyModified.Contains(p.Metadata.Name)))
+                property.IsModified = false;
+            (record.Name, record.Version, record.LastModified, record.SyncStatus) = previous;
+            throw;
+        }
+        HistoryUpdated?.Invoke(record);
+        return true;
+    }
+
     public async Task UpdateHistoryProperty(HistoryRecord record, CancellationToken token = default)
     {
         await _dbSemaphore.WaitAsync(token);
@@ -747,7 +786,11 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             query = query.Where(record => record.Stared == queryPara.Starred.Value);
 
         if (!string.IsNullOrEmpty(queryPara.SearchText))
-            query = query.Where(record => EF.Functions.Like(record.Text, $"%{queryPara.SearchText}%"));
+        {
+            var pattern = $"%{queryPara.SearchText}%";
+            query = query.Where(record => EF.Functions.Like(record.Text, pattern)
+                || (queryPara.SearchNames && EF.Functions.Like(record.Name, pattern)));
+        }
 
         if (names.Length > 0)
             query = query.Where(record => record.Tags != null && record.Tags.Any(name => names.Contains(name)));
