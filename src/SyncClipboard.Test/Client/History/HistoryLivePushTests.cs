@@ -39,16 +39,19 @@ public class HistoryLivePushTests
         await fixture.Manager.EditTagsAsync([HistoryRecordKey.From(record)], ["local"], [], Token);
 
         // The legacy server accepts the version/time update but ignores the unsupported Tags field.
-        var serverRecord = record.ToHistoryRecordDto().ToEntity("user");
-        serverRecord.Tags = [];
+        var legacyResponse = record.ToHistoryRecordDto();
+        legacyResponse.Tags = null;
         await using var serverDb = new ServerHistoryDbContext();
         serverDb.Database.SetConnectionString("Data Source=:memory:");
         await serverDb.Database.OpenConnectionAsync(Token);
         await serverDb.GetService<IMigrator>().MigrateAsync("20260901065719_AddHistoryTransferDataHash", Token);
-        serverDb.Add(serverRecord);
-        await serverDb.SaveChangesAsync(Token);
-        var legacyResponse = HistoryRecordDto.FromEntity(serverRecord);
-        legacyResponse.Tags = null;
+        await serverDb.Database.ExecuteSqlAsync($"""
+            INSERT INTO HistoryRecords (UserId, Type, Hash, Text, Size, CreateTime, LastAccessed, LastModified, Version,
+                Stared, Pinned, IsDeleted, TransferDataFile, TransferDataSha256, TransferDataMd5, FilePaths, "From", Tags)
+            VALUES ('user', {(int)record.Type}, {record.Hash}, {record.Text}, {record.Size}, {legacyResponse.CreateTime.UtcDateTime},
+                {legacyResponse.LastAccessed.UtcDateTime}, {legacyResponse.LastModified.UtcDateTime}, {record.Version},
+                0, 0, 0, '', '', '', '[]', '', '[]')
+            """, Token);
         await fixture.Manager.SyncRemoteHistoryAsync([legacyResponse], Token);
         fixture.Db.ChangeTracker.Clear();
         var beforeUpgrade = await fixture.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
