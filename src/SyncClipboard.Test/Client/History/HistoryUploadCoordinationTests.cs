@@ -39,6 +39,214 @@ public class HistoryUploadCoordinationTests
         target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(target, value);
 
     [TestMethod]
+    [DataRow(true, true, false, false, false)]
+    [DataRow(true, false, false, false, false)]
+    [DataRow(false, true, false, false, false)]
+    [DataRow(false, false, false, false, false)]
+    [DataRow(true, true, true, true, false)]
+    [DataRow(true, true, true, false, false)]
+    [DataRow(true, true, false, true, false)]
+    [DataRow(true, true, false, false, true)]
+    public async Task LivePush_BackfillsMissingMetadataByCapability(
+        bool supportsTags, bool supportsName, bool clearedTags, bool clearedName, bool deleted)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var record = new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = "PUSH-BACKFILL",
+            Text = "content",
+            Name = "应用图标",
+            Tags = [.. ExpectedLocalTags],
+            Version = 3,
+            SyncStatus = HistorySyncStatus.Synced
+        };
+        f.Db.Add(record);
+        await f.Db.SaveChangesAsync(Token);
+        f.RemoteRecord = record.ToHistoryRecordDto();
+        f.RemoteRecord.Version++;
+        f.RemoteRecord.Name = clearedName ? "" : null;
+        f.RemoteRecord.Tags = clearedTags ? [] : null;
+        f.RemoteRecord.IsDeleted = deleted;
+        f.Server.Setup(x => x.SupportsHistoryTagsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(supportsTags);
+        f.Server.Setup(x => x.SupportsHistoryNameAsync(It.IsAny<CancellationToken>())).ReturnsAsync(supportsName);
+        f.Server.Setup(x => x.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
+            It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
+            .Returns<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) =>
+            {
+                Interlocked.Increment(ref f.Updates);
+                if (supportsTags)
+                    f.RemoteRecord.Tags = dto.Tags;
+                if (supportsName)
+                    f.RemoteRecord.Name = dto.Name;
+                return Task.FromResult<HistoryRecordUpdateDto?>(f.RemoteRecord.ToUpdateDto());
+            });
+        _ = f.CreateSyncer();
+        var saved = Signal();
+        f.Manager.HistoryUpdated += updated =>
+        {
+            if (updated.SyncStatus == HistorySyncStatus.Synced)
+                saved.TrySetResult(true);
+        };
+        var service = (SyncClipboard.Core.UserServices.ClipboardService.HistoryService)RuntimeHelpers.GetUninitializedObject(
+            typeof(SyncClipboard.Core.UserServices.ClipboardService.HistoryService));
+        SetObjectField(service, "historyManager", f.Manager);
+        SetObjectField(service, "_historySyncServer", f.Server.Object);
+
+        await service.ApplyRemoteHistoryChangeAsync(f.RemoteRecord, Token);
+        if (!deleted)
+            await saved.Task.WaitAsync(TimeSpan.FromSeconds(5), Token);
+
+        var shouldBackfill = !deleted && ((supportsTags && !clearedTags) || (supportsName && !clearedName));
+        Assert.AreEqual(shouldBackfill ? 1 : 0, f.Updates);
+        var snapshot = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
+        Assert.IsNotNull(snapshot);
+        Assert.AreEqual(clearedName ? "" : "应用图标", snapshot.Name);
+        CollectionAssert.AreEqual(clearedTags ? [] : ExpectedLocalTags, snapshot.Tags);
+        Assert.AreEqual(deleted, snapshot.IsDeleted);
+        Assert.AreEqual(clearedName ? "" : shouldBackfill && supportsName ? "应用图标" : null, f.RemoteRecord.Name);
+        if (clearedTags)
+            Assert.IsEmpty(f.RemoteRecord.Tags!);
+        else if (shouldBackfill && supportsTags)
+            CollectionAssert.AreEqual(ExpectedLocalTags, f.RemoteRecord.Tags);
+        else
+            Assert.IsNull(f.RemoteRecord.Tags);
+        Assert.AreEqual(0, f.Uploads);
+    }
+
+    [TestMethod]
+    [DataRow("full", true)]
+    [DataRow("incremental", true)]
+    [DataRow("range", true)]
+    [DataRow("full", false)]
+    public async Task NameBackfill_SynchronizesUnchangedRecordsOnlyWhenSupported(string mode, bool supportsName)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var record = new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = "NAME",
+            Text = "content",
+            Name = "应用图标",
+            Version = 3,
+            SyncStatus = HistorySyncStatus.Synced,
+            LastModified = DateTime.UtcNow.AddDays(-1)
+        };
+        f.Db.Add(record);
+        await f.Db.SaveChangesAsync(Token);
+        f.RemoteRecord = record.ToHistoryRecordDto();
+        f.RemoteRecord.Name = null;
+        f.Server.Setup(x => x.SupportsHistoryNameAsync(It.IsAny<CancellationToken>())).ReturnsAsync(supportsName);
+        f.SetupHistoryQuery();
+        var syncer = f.CreateSyncer();
+
+        if (mode == "range")
+            await syncer.SyncRangeAsync(token: Token);
+        else
+            await syncer.SyncAllAsync(mode == "incremental" ? record.LastModified.AddMinutes(-1) : null, Token);
+
+        Assert.AreEqual(supportsName ? record.Name : null, f.RemoteRecord.Name);
+        Assert.IsTrue(supportsName ? f.Updates > 0 : f.Updates == 0);
+        Assert.AreEqual(0, f.Uploads);
+        Assert.AreEqual(HistorySyncStatus.Synced, record.SyncStatus);
+        Assert.AreEqual("应用图标", record.Name);
+    }
+
+    [TestMethod]
+    public async Task NameBackfill_ClearOnAnotherClientSurvivesLegacyStarUpdateAndReconnect()
+    {
+        await using var a = await Fixture.CreateAsync(Token);
+        await using var b = await Fixture.CreateAsync(Token);
+        var record = new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = "TWO-CLIENTS",
+            Text = "content",
+            Version = 3,
+            SyncStatus = HistorySyncStatus.Synced
+        };
+        a.Db.Add(record);
+        await a.Db.SaveChangesAsync(Token);
+        a.RemoteRecord = record.ToHistoryRecordDto();
+        await a.Manager.SetNameAsync(HistoryRecordKey.From(record), "应用图标", supportsHistoryName: false, Token);
+        await using var serverDb = new ServerHistoryDbContext();
+        serverDb.Database.SetConnectionString("Data Source=:memory:");
+        await serverDb.Database.OpenConnectionAsync(Token);
+        await serverDb.Database.EnsureCreatedAsync(Token);
+        serverDb.Add(a.RemoteRecord.ToEntity(ServerHistoryService.HARD_CODED_USER_ID));
+        await serverDb.SaveChangesAsync(Token);
+        var server = new ServerHistoryService(serverDb, a, null!);
+        a.Server.Setup(x => x.SupportsHistoryNameAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        a.Server.Setup(x => x.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
+            It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
+            .Returns<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>(async (type, hash, dto, ct) =>
+            {
+                Interlocked.Increment(ref a.Updates);
+                var (updated, saved) = await server.Update(ServerHistoryService.HARD_CODED_USER_ID, type, hash, dto, ct);
+                a.RemoteRecord = saved!;
+                if (updated is false)
+                    throw new RemoteHistoryConflictException("server metadata retained", saved!.ToUpdateDto());
+                return saved!.ToUpdateDto();
+            });
+        a.SetupHistoryQuery();
+        var syncer = a.CreateSyncer();
+        await syncer.SyncAllAsync(null, Token);
+        Assert.AreEqual("应用图标", a.RemoteRecord.Name);
+        await b.Manager.SyncRemoteHistoryAsync([a.RemoteRecord], Token);
+        var second = await b.Db.HistoryRecords.SingleAsync(Token);
+        Assert.AreEqual("应用图标", second.Name);
+        await b.Manager.SetNameAsync(HistoryRecordKey.From(second), "", supportsHistoryName: true, Token);
+        var (_, cleared) = await server.Update(ServerHistoryService.HARD_CODED_USER_ID, second.Type, second.Hash,
+            new HistoryRecordUpdateDto { Name = second.Name, Version = second.Version, LastModified = second.LastModified }, Token);
+        Assert.AreEqual("", cleared!.Name);
+        var (_, starred) = await server.Update(ServerHistoryService.HARD_CODED_USER_ID, second.Type, second.Hash,
+            new HistoryRecordUpdateDto { Starred = true, Version = cleared.Version + 1, LastModified = DateTimeOffset.Now }, Token);
+        a.RemoteRecord = starred!;
+        await syncer.SyncAllAsync(null, Token);
+        await b.Manager.SyncRemoteHistoryAsync([starred!], Token);
+        Assert.AreEqual("", record.Name);
+        Assert.AreEqual("", second.Name);
+        Assert.IsTrue(record.Stared);
+        Assert.IsTrue(second.Stared);
+        var updates = a.Updates;
+        await syncer.SyncAllAsync(null, Token);
+        Assert.AreEqual(updates, a.Updates);
+        Assert.AreEqual(HistorySyncStatus.Synced, record.SyncStatus);
+        Assert.AreEqual(HistorySyncStatus.Synced, second.SyncStatus);
+        Assert.AreEqual(0, a.Uploads);
+    }
+
+    [TestMethod]
+    [DataRow("")]
+    [DataRow("远端名称")]
+    public async Task NameBackfill_PreservesKnownServerName(string name)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var record = new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = "KNOWN",
+            Text = "content",
+            Name = "旧名称",
+            Version = 3,
+            SyncStatus = HistorySyncStatus.Synced
+        };
+        f.Db.Add(record);
+        await f.Db.SaveChangesAsync(Token);
+        f.RemoteRecord = record.ToHistoryRecordDto();
+        f.RemoteRecord.Name = name;
+        f.Server.Setup(x => x.SupportsHistoryNameAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        f.SetupHistoryQuery();
+
+        await f.CreateSyncer().SyncAllAsync(null, Token);
+
+        Assert.AreEqual(name, record.Name);
+        Assert.AreEqual(name, f.RemoteRecord.Name);
+        Assert.AreEqual(0, f.Updates);
+        Assert.AreEqual(0, f.Uploads);
+    }
+
+    [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
     public async Task StarUpdate_PreservesRemoteTagsUnlessLocalTagsAreKnownEmpty(bool knownEmpty)

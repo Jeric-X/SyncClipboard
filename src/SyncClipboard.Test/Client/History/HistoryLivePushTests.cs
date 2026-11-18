@@ -219,6 +219,42 @@ public class HistoryLivePushTests
         Assert.AreEqual(HistorySyncStatus.NeedSync, saved.SyncStatus);
     }
 
+    [TestMethod]
+    [DataRow(null, false)]
+    [DataRow("", false)]
+    [DataRow("新名称", false)]
+    [DataRow(null, true)]
+    public async Task NamePush_PreservesUnknownAndClearedValuesWithoutRestoringDeletedRecords(
+        string? remoteName, bool deleted)
+    {
+        await using var fixture = await Fixture.CreateAsync(Token);
+        var record = new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = "NAME-PUSH",
+            Text = "content",
+            Name = "本地名称",
+            Version = 3,
+            SyncStatus = HistorySyncStatus.Synced
+        };
+        fixture.Db.Add(record);
+        await fixture.Db.SaveChangesAsync(Token);
+        var dto = record.ToHistoryRecordDto();
+        dto.Name = remoteName;
+        dto.Version++;
+        dto.IsDeleted = deleted;
+        var service = (ClientHistoryService)RuntimeHelpers.GetUninitializedObject(typeof(ClientHistoryService));
+        typeof(ClientHistoryService).GetField("historyManager", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(service, fixture.Manager);
+
+        await service.ApplyRemoteHistoryChangeAsync(dto, Token);
+
+        fixture.Db.ChangeTracker.Clear();
+        var saved = await fixture.Db.HistoryRecords.SingleAsync(Token);
+        Assert.AreEqual(remoteName ?? "本地名称", saved.Name);
+        Assert.AreEqual(deleted, saved.IsDeleted);
+    }
+
     private sealed class Fixture : IAsyncDisposable
     {
         public HistoryDbContext Db { get; } = new();
