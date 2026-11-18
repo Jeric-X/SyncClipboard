@@ -1,4 +1,4 @@
-﻿<Window x:Class="SyncClipboard.Desktop.Views.HistoryWindow"
+<Window x:Class="SyncClipboard.Desktop.Views.HistoryWindow"
         xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -364,10 +364,24 @@
                                                                     PinnedTags="{Binding #_HistoryWindow.ViewModel.PinnedTags}"
                                                                     ViewModel="{Binding #_HistoryWindow.ViewModel}"
                                                                     IsVisible="{Binding !#_HistoryWindow.ViewModel.ShowPreviewPanel}" />
-                                    <ContentControl Padding="8,8,0,8"
-                                                    VerticalAlignment="Center"
-                                                    FontSize="{Binding #_HistoryWindow.ViewModel.ListItemFontSize}"
-                                                    Content="{Binding .}" />
+                                    <StackPanel Margin="8,8,0,8" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}"
+                                                   IsVisible="{Binding HasName}"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="{Binding #_HistoryWindow.ViewModel.ListItemFontSize}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <ContentControl Padding="0"
+                                                        VerticalAlignment="Center"
+                                                        FontSize="{Binding #_HistoryWindow.ViewModel.ListItemFontSize}"
+                                                        Content="{Binding .}">
+                                            <ContentControl.IsVisible>
+                                                <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                                    <Binding Path="!HasName" />
+                                                    <Binding Path="!#_HistoryWindow.ViewModel.IsCompactListMode" />
+                                                </MultiBinding>
+                                            </ContentControl.IsVisible>
+                                        </ContentControl>
+                                    </StackPanel>
                                 </DockPanel>
                                 <Border Grid.Column="3"
                                         Height="40"

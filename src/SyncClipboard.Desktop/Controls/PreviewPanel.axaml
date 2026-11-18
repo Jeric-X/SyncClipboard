@@ -16,7 +16,7 @@
           DataContext="{Binding #_PreviewPanel.SelectedItem}"
           x:DataType="vms:HistoryRecordVM"
           Background="Transparent"
-          RowDefinitions="Auto, Auto, *">
+          RowDefinitions="Auto, Auto, Auto, *">
         <Border Grid.Row="0"
                 Background="Transparent"
                 Padding="12,4"
@@ -54,7 +54,27 @@
                                         ViewModel="{Binding #_PreviewPanel.ViewModel}" />
             </Grid>
         </Border>
-        <ScrollViewer Grid.Row="1"
+        <Grid Grid.Row="1"
+              ColumnDefinitions="*,Auto"
+              Margin="12,0,12,4"
+              IsVisible="{Binding #_PreviewPanel.SelectedItem, Converter={x:Static vc:FuncConverter.NotNullToVisible}}">
+            <TextBlock Text="{Binding Name}"
+                       FontWeight="SemiBold"
+                       IsVisible="{Binding HasName}"
+                       TextTrimming="CharacterEllipsis"
+                       ToolTip.Tip="{Binding Name}"
+                       VerticalAlignment="Center" />
+            <Button Grid.Column="1"
+                    Padding="6,2"
+                    MinWidth="0"
+                    MinHeight="0"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    IsVisible="{Binding !#_PreviewPanel.ViewModel.IsMultiSelecting}"
+                    Content="{Binding NameActionText}"
+                    Click="EditName_Click" />
+        </Grid>
+        <ScrollViewer Grid.Row="2"
                       MaxHeight="100"
                       HorizontalScrollBarVisibility="Disabled"
                       VerticalScrollBarVisibility="Auto">
@@ -77,7 +97,7 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="3">
             <TextBlock x:Name="_PreviewPlaceholder"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"

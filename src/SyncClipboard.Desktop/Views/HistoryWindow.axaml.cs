@@ -160,6 +160,7 @@ public partial class HistoryWindow : Window, IWindow
             this.WindowDecorations = WindowDecorations.BorderOnly;
 
         InitializeComponent();
+        _PreviewPanel.NameEditRequested += async record => await EditNameAsync(record);
         _TagFilterScroll.AddHandler(PointerWheelChangedEvent, TagFilterScroll_PointerWheelChanged, RoutingStrategies.Tunnel);
         _TagFilterScroll.ScrollChanged += (_, _) => _tagNavigation.SnapToRow(_TagFilterItems, _TagFilterScroll);
         // Handle configured keys before the search box, without intercepting modal dialog input.
@@ -494,6 +495,12 @@ public partial class HistoryWindow : Window, IWindow
     {
         if (flyout.Items.Count > 0)
             flyout.Items.Add(new FAMenuFlyoutSeparator());
+        if (!isMultiSelecting)
+        {
+            var editName = new FAMenuFlyoutItem { Text = record.NameActionText };
+            editName.Click += async (_, _) => await EditNameAsync(record);
+            flyout.Items.Add(editName);
+        }
         var editTags = new FAMenuFlyoutItem
         {
             Text = Strings.HistoryTagsEdit,
@@ -547,6 +554,41 @@ public partial class HistoryWindow : Window, IWindow
         var settings = new FAMenuFlyoutItem { Text = Strings.HistoryTagBarEditPins };
         settings.Click += TagBarSettings_Click;
         flyout.Items.Add(settings);
+    }
+
+    private async Task EditNameAsync(HistoryRecordVM record)
+    {
+        if (_viewModel.HasModalOperation || _viewModel.IsMultiSelecting)
+            return;
+        using var hold = _viewModel.HoldForModalOperation();
+        var title = record.NameActionText;
+        try
+        {
+            var input = new TextBox { Text = record.Name ?? string.Empty };
+            var dialog = new FAContentDialog
+            {
+                Title = title,
+                Content = input,
+                PrimaryButtonText = Strings.Confirm,
+                CloseButtonText = Strings.Cancel,
+                DefaultButton = FAContentDialogButton.Primary
+            };
+            dialog.Opened += (_, _) => Dispatcher.UIThread.Post(() =>
+            {
+                input.Focus();
+                input.SelectAll();
+            });
+            if (await dialog.ShowAsync(this) == FAContentDialogResult.Primary)
+                await _viewModel.SetNameAsync(record.Key, input.Text ?? string.Empty);
+        }
+        catch (Exception ex)
+        {
+            await new AvaloniaDialog(this).ShowMessageAsync(title, ex.Message);
+        }
+        finally
+        {
+            _SearchTextBox.Focus();
+        }
     }
 
     private async Task RenameTagAsync(string name)
