@@ -54,13 +54,13 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         if (dto.Tags is not null)
             dto.Tags = HistoryTags.Normalize(dto.Tags);
-        dto.Name = dto.Name?.Trim();
+        dto.Title = dto.Title?.Trim();
 
         var updated = ApplyMetadataUpdate(existing, dto);
         if (updated is null)
             return (null, null);
 
-        if (updated.Value || BackfillMissingMetadata(existing, dto.Tags, dto.Name))
+        if (updated.Value || BackfillMissingMetadata(existing, dto.Tags, dto.Title))
         {
             await _dbContext.SaveChangesAsync(token);
             await NotifyProfileChangeAsync(existing);
@@ -104,7 +104,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
     {
         if (dto.Tags is not null)
             existing.Tags = dto.Tags;
-        existing.Name = dto.Name ?? existing.Name;
+        existing.Title = dto.Title ?? existing.Title;
         if (dto.Starred.HasValue)
             existing.Stared = dto.Starred.Value;
         if (dto.Pinned.HasValue)
@@ -142,7 +142,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         bool sortByLastAccessed = false,
         bool onlyUntagged = false,
         IReadOnlyCollection<string>? tags = null,
-        bool searchNames = false,
+        bool searchTitles = false,
         CancellationToken token = default)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(page, 1);
@@ -189,7 +189,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         if (!string.IsNullOrEmpty(searchText))
         {
             var pattern = $"%{searchText}%";
-            query = query.Where(r => EF.Functions.Like(r.Text, pattern) || (searchNames && EF.Functions.Like(r.Name, pattern)));
+            query = query.Where(r => EF.Functions.Like(r.Text, pattern) || (searchTitles && EF.Functions.Like(r.Title, pattern)));
         }
 
         if (starred.HasValue)
@@ -395,7 +395,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             await EnsureExistingRecordData(existing, declaredTransferDataHash, transferFileStream, token);
         }
 
-        incoming.Name = incoming.Name?.Trim();
+        incoming.Title = incoming.Title?.Trim();
         var metadataWins = HistoryHelper.ShouldUpdate(existing.Version, incoming.Version,
             new DateTimeOffset(existing.LastModified), incoming.LastModified);
         var shouldUpdate = restoring || metadataWins;
@@ -409,11 +409,11 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         }
         if (metadataWins)
         {
-            existing.Name = incoming.Name ?? existing.Name;
+            existing.Title = incoming.Title ?? existing.Title;
             if (incoming.Tags is not null)
                 existing.Tags = [.. incoming.Tags];
         }
-        var backfilled = !metadataWins && BackfillMissingMetadata(existing, incoming.Tags, incoming.Name);
+        var backfilled = !metadataWins && BackfillMissingMetadata(existing, incoming.Tags, incoming.Title);
         if (shouldUpdate || backfilled)
         {
             await _dbContext.SaveChangesAsync(token);
@@ -425,15 +425,15 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         return HistoryRecordDto.FromEntity(existing);
     }
 
-    private static bool BackfillMissingMetadata(HistoryRecordEntity existing, string[]? tags, string? name)
+    private static bool BackfillMissingMetadata(HistoryRecordEntity existing, string[]? tags, string? title)
     {
         var backfillTags = existing.Tags is null && tags is { Length: > 0 };
-        var backfillName = existing.Name is null && name is { Length: > 0 };
+        var backfillTitle = existing.Title is null && title is { Length: > 0 };
         if (backfillTags)
             existing.Tags = tags;
-        if (backfillName)
-            existing.Name = name;
-        return backfillTags || backfillName;
+        if (backfillTitle)
+            existing.Title = title;
+        return backfillTags || backfillTitle;
     }
 
     private async Task EnsureExistingRecordData(

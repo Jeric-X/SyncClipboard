@@ -16,11 +16,11 @@
               ColumnDefinitions="*,Auto"
               HorizontalAlignment="Left"
               Margin="12,4,12,0"
-              Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(SelectedItem.HasName), Mode=OneWay, FallbackValue=Collapsed}">
-            <TextBlock Text="{x:Bind SelectedItem.Name, Mode=OneWay}"
+              Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(SelectedItem.HasTitle), Mode=OneWay, FallbackValue=Collapsed}">
+            <TextBlock Text="{x:Bind SelectedItem.Title, Mode=OneWay}"
                        FontWeight="SemiBold"
                        TextTrimming="CharacterEllipsis"
-                       ToolTipService.ToolTip="{x:Bind SelectedItem.Name, Mode=OneWay}"
+                       ToolTipService.ToolTip="{x:Bind SelectedItem.Title, Mode=OneWay}"
                        VerticalAlignment="Center" />
             <Button Grid.Column="1"
                     Width="28"
@@ -32,9 +32,9 @@
                     Background="Transparent"
                     BorderThickness="0"
                     Visibility="{x:Bind vc:ConvertMethod.BoolToVisibilityNegate(ViewModel.IsMultiSelecting), Mode=OneWay}"
-                    ToolTipService.ToolTip="{x:Bind i18n:Strings.HistoryEditName}"
-                    AutomationProperties.Name="{x:Bind i18n:Strings.HistoryEditName}"
-                    Click="EditName_Click">
+                    ToolTipService.ToolTip="{x:Bind i18n:Strings.HistoryEditTitle}"
+                    AutomationProperties.Name="{x:Bind i18n:Strings.HistoryEditTitle}"
+                    Click="EditTitle_Click">
                 <FontIcon Glyph="&#xE70F;" FontSize="14" />
             </Button>
         </Grid>

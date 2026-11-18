@@ -286,7 +286,7 @@ public sealed class OfficialAdapter(
         (bool Supported, string Name)[] optionalCapabilities =
         [
             (capabilities.HistoryTags, Strings.HistoryCapabilityTags),
-            (capabilities.HistoryName, Strings.HistoryCapabilityName)
+            (capabilities.HistoryTitle, Strings.HistoryCapabilityTitle)
         ];
         var missing = optionalCapabilities.Where(capability => !capability.Supported)
             .Select(capability => capability.Name).ToArray();
@@ -361,10 +361,10 @@ public sealed class OfficialAdapter(
         return capabilities.HistoryTags;
     }
 
-    public async Task<bool> SupportsHistoryNameAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> SupportsHistoryTitleAsync(CancellationToken cancellationToken = default)
     {
         var capabilities = await GetCapabilitiesAsync(cancellationToken);
-        return capabilities.HistoryName;
+        return capabilities.HistoryTitle;
     }
 
     private static async Task<string> ReadVersionAsync(HttpClient client, CancellationToken token)
@@ -515,8 +515,8 @@ public sealed class OfficialAdapter(
                 { new StringContent(dto.HasData.ToString()), "hasData" }
             };
 
-            if (dto.Name is not null)
-                content.Add(new StringContent(dto.Name), "name");
+            if (dto.Title is not null)
+                content.Add(new StringContent(dto.Title), "title");
             if (dto.Tags is not null)
                 content.Add(new StringContent(JsonSerializer.Serialize(dto.Tags)), "tags");
 

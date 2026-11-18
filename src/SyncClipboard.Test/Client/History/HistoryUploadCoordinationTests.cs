@@ -48,7 +48,7 @@ public class HistoryUploadCoordinationTests
     [DataRow(true, true, false, true, false)]
     [DataRow(true, true, false, false, true)]
     public async Task LivePush_BackfillsMissingMetadataByCapability(
-        bool supportsTags, bool supportsName, bool clearedTags, bool clearedName, bool deleted)
+        bool supportsTags, bool supportsTitle, bool clearedTags, bool clearedTitle, bool deleted)
     {
         await using var f = await Fixture.CreateAsync(Token);
         var record = new HistoryRecord
@@ -56,7 +56,7 @@ public class HistoryUploadCoordinationTests
             Type = ProfileType.Text,
             Hash = "PUSH-BACKFILL",
             Text = "content",
-            Name = "应用图标",
+            Title = "应用图标",
             Tags = [.. ExpectedLocalTags],
             Version = 3,
             SyncStatus = HistorySyncStatus.Synced
@@ -65,11 +65,11 @@ public class HistoryUploadCoordinationTests
         await f.Db.SaveChangesAsync(Token);
         f.RemoteRecord = record.ToHistoryRecordDto();
         f.RemoteRecord.Version++;
-        f.RemoteRecord.Name = clearedName ? "" : null;
+        f.RemoteRecord.Title = clearedTitle ? "" : null;
         f.RemoteRecord.Tags = clearedTags ? [] : null;
         f.RemoteRecord.IsDeleted = deleted;
         f.Server.Setup(x => x.SupportsHistoryTagsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(supportsTags);
-        f.Server.Setup(x => x.SupportsHistoryNameAsync(It.IsAny<CancellationToken>())).ReturnsAsync(supportsName);
+        f.Server.Setup(x => x.SupportsHistoryTitleAsync(It.IsAny<CancellationToken>())).ReturnsAsync(supportsTitle);
         f.Server.Setup(x => x.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
             It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
             .Returns<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) =>
@@ -77,8 +77,8 @@ public class HistoryUploadCoordinationTests
                 Interlocked.Increment(ref f.Updates);
                 if (supportsTags)
                     f.RemoteRecord.Tags = dto.Tags;
-                if (supportsName)
-                    f.RemoteRecord.Name = dto.Name;
+                if (supportsTitle)
+                    f.RemoteRecord.Title = dto.Title;
                 return Task.FromResult<HistoryRecordUpdateDto?>(f.RemoteRecord.ToUpdateDto());
             });
         _ = f.CreateSyncer();
@@ -97,14 +97,14 @@ public class HistoryUploadCoordinationTests
         if (!deleted)
             await saved.Task.WaitAsync(TimeSpan.FromSeconds(5), Token);
 
-        var shouldBackfill = !deleted && ((supportsTags && !clearedTags) || (supportsName && !clearedName));
+        var shouldBackfill = !deleted && ((supportsTags && !clearedTags) || (supportsTitle && !clearedTitle));
         Assert.AreEqual(shouldBackfill ? 1 : 0, f.Updates);
         var snapshot = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
         Assert.IsNotNull(snapshot);
-        Assert.AreEqual(clearedName ? "" : "应用图标", snapshot.Name);
+        Assert.AreEqual(clearedTitle ? "" : "应用图标", snapshot.Title);
         CollectionAssert.AreEqual(clearedTags ? [] : ExpectedLocalTags, snapshot.Tags);
         Assert.AreEqual(deleted, snapshot.IsDeleted);
-        Assert.AreEqual(clearedName ? "" : shouldBackfill && supportsName ? "应用图标" : null, f.RemoteRecord.Name);
+        Assert.AreEqual(clearedTitle ? "" : shouldBackfill && supportsTitle ? "应用图标" : null, f.RemoteRecord.Title);
         if (clearedTags)
             Assert.IsEmpty(f.RemoteRecord.Tags!);
         else if (shouldBackfill && supportsTags)
@@ -119,7 +119,7 @@ public class HistoryUploadCoordinationTests
     [DataRow("incremental", true)]
     [DataRow("range", true)]
     [DataRow("full", false)]
-    public async Task NameBackfill_SynchronizesUnchangedRecordsOnlyWhenSupported(string mode, bool supportsName)
+    public async Task TitleBackfill_SynchronizesUnchangedRecordsOnlyWhenSupported(string mode, bool supportsTitle)
     {
         await using var f = await Fixture.CreateAsync(Token);
         var record = new HistoryRecord
@@ -127,7 +127,7 @@ public class HistoryUploadCoordinationTests
             Type = ProfileType.Text,
             Hash = "NAME",
             Text = "content",
-            Name = "应用图标",
+            Title = "应用图标",
             Version = 3,
             SyncStatus = HistorySyncStatus.Synced,
             LastModified = DateTime.UtcNow.AddDays(-1)
@@ -135,8 +135,8 @@ public class HistoryUploadCoordinationTests
         f.Db.Add(record);
         await f.Db.SaveChangesAsync(Token);
         f.RemoteRecord = record.ToHistoryRecordDto();
-        f.RemoteRecord.Name = null;
-        f.Server.Setup(x => x.SupportsHistoryNameAsync(It.IsAny<CancellationToken>())).ReturnsAsync(supportsName);
+        f.RemoteRecord.Title = null;
+        f.Server.Setup(x => x.SupportsHistoryTitleAsync(It.IsAny<CancellationToken>())).ReturnsAsync(supportsTitle);
         f.SetupHistoryQuery();
         var syncer = f.CreateSyncer();
 
@@ -145,15 +145,15 @@ public class HistoryUploadCoordinationTests
         else
             await syncer.SyncAllAsync(mode == "incremental" ? record.LastModified.AddMinutes(-1) : null, Token);
 
-        Assert.AreEqual(supportsName ? record.Name : null, f.RemoteRecord.Name);
-        Assert.IsTrue(supportsName ? f.Updates > 0 : f.Updates == 0);
+        Assert.AreEqual(supportsTitle ? record.Title : null, f.RemoteRecord.Title);
+        Assert.IsTrue(supportsTitle ? f.Updates > 0 : f.Updates == 0);
         Assert.AreEqual(0, f.Uploads);
         Assert.AreEqual(HistorySyncStatus.Synced, record.SyncStatus);
-        Assert.AreEqual("应用图标", record.Name);
+        Assert.AreEqual("应用图标", record.Title);
     }
 
     [TestMethod]
-    public async Task NameBackfill_ClearOnAnotherClientSurvivesLegacyStarUpdateAndReconnect()
+    public async Task TitleBackfill_ClearOnAnotherClientSurvivesLegacyStarUpdateAndReconnect()
     {
         await using var a = await Fixture.CreateAsync(Token);
         await using var b = await Fixture.CreateAsync(Token);
@@ -168,7 +168,7 @@ public class HistoryUploadCoordinationTests
         a.Db.Add(record);
         await a.Db.SaveChangesAsync(Token);
         a.RemoteRecord = record.ToHistoryRecordDto();
-        await a.Manager.SetNameAsync(HistoryRecordKey.From(record), "应用图标", supportsHistoryName: false, Token);
+        await a.Manager.SetTitleAsync(HistoryRecordKey.From(record), "应用图标", supportsHistoryTitle: false, Token);
         await using var serverDb = new ServerHistoryDbContext();
         serverDb.Database.SetConnectionString("Data Source=:memory:");
         await serverDb.Database.OpenConnectionAsync(Token);
@@ -176,7 +176,7 @@ public class HistoryUploadCoordinationTests
         serverDb.Add(a.RemoteRecord.ToEntity(ServerHistoryService.HARD_CODED_USER_ID));
         await serverDb.SaveChangesAsync(Token);
         var server = new ServerHistoryService(serverDb, a, null!);
-        a.Server.Setup(x => x.SupportsHistoryNameAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        a.Server.Setup(x => x.SupportsHistoryTitleAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
         a.Server.Setup(x => x.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
             It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
             .Returns<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>(async (type, hash, dto, ct) =>
@@ -191,21 +191,21 @@ public class HistoryUploadCoordinationTests
         a.SetupHistoryQuery();
         var syncer = a.CreateSyncer();
         await syncer.SyncAllAsync(null, Token);
-        Assert.AreEqual("应用图标", a.RemoteRecord.Name);
+        Assert.AreEqual("应用图标", a.RemoteRecord.Title);
         await b.Manager.SyncRemoteHistoryAsync([a.RemoteRecord], Token);
         var second = await b.Db.HistoryRecords.SingleAsync(Token);
-        Assert.AreEqual("应用图标", second.Name);
-        await b.Manager.SetNameAsync(HistoryRecordKey.From(second), "", supportsHistoryName: true, Token);
+        Assert.AreEqual("应用图标", second.Title);
+        await b.Manager.SetTitleAsync(HistoryRecordKey.From(second), "", supportsHistoryTitle: true, Token);
         var (_, cleared) = await server.Update(ServerHistoryService.HARD_CODED_USER_ID, second.Type, second.Hash,
-            new HistoryRecordUpdateDto { Name = second.Name, Version = second.Version, LastModified = second.LastModified }, Token);
-        Assert.AreEqual("", cleared!.Name);
+            new HistoryRecordUpdateDto { Title = second.Title, Version = second.Version, LastModified = second.LastModified }, Token);
+        Assert.AreEqual("", cleared!.Title);
         var (_, starred) = await server.Update(ServerHistoryService.HARD_CODED_USER_ID, second.Type, second.Hash,
             new HistoryRecordUpdateDto { Starred = true, Version = cleared.Version + 1, LastModified = DateTimeOffset.Now }, Token);
         a.RemoteRecord = starred!;
         await syncer.SyncAllAsync(null, Token);
         await b.Manager.SyncRemoteHistoryAsync([starred!], Token);
-        Assert.AreEqual("", record.Name);
-        Assert.AreEqual("", second.Name);
+        Assert.AreEqual("", record.Title);
+        Assert.AreEqual("", second.Title);
         Assert.IsTrue(record.Stared);
         Assert.IsTrue(second.Stared);
         var updates = a.Updates;
@@ -218,8 +218,8 @@ public class HistoryUploadCoordinationTests
 
     [TestMethod]
     [DataRow("")]
-    [DataRow("远端名称")]
-    public async Task NameBackfill_PreservesKnownServerName(string name)
+    [DataRow("远端标题")]
+    public async Task TitleBackfill_PreservesKnownServerTitle(string title)
     {
         await using var f = await Fixture.CreateAsync(Token);
         var record = new HistoryRecord
@@ -227,21 +227,21 @@ public class HistoryUploadCoordinationTests
             Type = ProfileType.Text,
             Hash = "KNOWN",
             Text = "content",
-            Name = "旧名称",
+            Title = "旧标题",
             Version = 3,
             SyncStatus = HistorySyncStatus.Synced
         };
         f.Db.Add(record);
         await f.Db.SaveChangesAsync(Token);
         f.RemoteRecord = record.ToHistoryRecordDto();
-        f.RemoteRecord.Name = name;
-        f.Server.Setup(x => x.SupportsHistoryNameAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        f.RemoteRecord.Title = title;
+        f.Server.Setup(x => x.SupportsHistoryTitleAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
         f.SetupHistoryQuery();
 
         await f.CreateSyncer().SyncAllAsync(null, Token);
 
-        Assert.AreEqual(name, record.Name);
-        Assert.AreEqual(name, f.RemoteRecord.Name);
+        Assert.AreEqual(title, record.Title);
+        Assert.AreEqual(title, f.RemoteRecord.Title);
         Assert.AreEqual(0, f.Updates);
         Assert.AreEqual(0, f.Uploads);
     }
@@ -492,7 +492,7 @@ public class HistoryUploadCoordinationTests
         await f.Manager.AddLocalProfile(profile, token: Token);
         var record = await f.Db.HistoryRecords.SingleAsync(Token);
         record.Tags = ["local"];
-        record.Name = "local";
+        record.Title = "local";
         record.Version = 2;
         await f.Db.SaveChangesAsync(Token);
         var tags = tagsJson is null ? null : System.Text.Json.JsonSerializer.Deserialize<string[]>(tagsJson);
@@ -501,7 +501,7 @@ public class HistoryUploadCoordinationTests
             .ThrowsAsync(new RemoteHistoryConflictException("conflict", new HistoryRecordUpdateDto
             {
                 Tags = tags,
-                Name = tags is null ? null : tags.Length == 0 ? "" : "server",
+                Title = tags is null ? null : tags.Length == 0 ? "" : "server",
                 Version = 3,
                 Starred = true,
                 LastModified = new DateTimeOffset(record.LastModified.AddSeconds(1))
@@ -512,7 +512,7 @@ public class HistoryUploadCoordinationTests
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
         var expectedTags = tagsJson is null ? ExpectedLocalTags : tagsJson == "[]" ? [] : ExpectedRemoteTags;
         CollectionAssert.AreEqual(expectedTags, saved.Tags);
-        Assert.AreEqual(tagsJson is null ? "local" : tagsJson == "[]" ? "" : "server", saved.Name);
+        Assert.AreEqual(tagsJson is null ? "local" : tagsJson == "[]" ? "" : "server", saved.Title);
         Assert.AreEqual(3, saved.Version);
         Assert.IsTrue(saved.Stared);
         Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
@@ -522,28 +522,28 @@ public class HistoryUploadCoordinationTests
     [DataRow(null)]
     [DataRow("")]
     [DataRow("应用图标")]
-    public async Task ContentUpload_TransmitsTheStoredName(string? name)
+    public async Task ContentUpload_TransmitsTheStoredTitle(string? title)
     {
         await using var f = await Fixture.CreateAsync(Token);
-        var profile = new TextProfile("named upload");
+        var profile = new TextProfile("titled upload");
         await f.Manager.AddLocalProfile(profile, token: Token);
         var record = await f.Db.HistoryRecords.SingleAsync(Token);
-        record.Name = name;
+        record.Title = title;
         await f.Db.SaveChangesAsync(Token);
 
         await f.Queue.Upload(profile, ct: Token);
 
         Assert.IsNotNull(f.RemoteRecord);
-        Assert.AreEqual(name, f.RemoteRecord.Name);
+        Assert.AreEqual(title, f.RemoteRecord.Title);
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
-        Assert.AreEqual(name, saved.Name);
+        Assert.AreEqual(title, saved.Title);
         Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
     }
 
     [TestMethod]
     [DataRow("")]
-    [DataRow("新名称")]
-    public async Task NameEdit_SynchronizesTheFinalNameThroughPatch(string name)
+    [DataRow("新标题")]
+    public async Task TitleEdit_SynchronizesTheFinalTitleThroughPatch(string title)
     {
         await using var f = await Fixture.CreateAsync(Token);
         f.RuntimeConfig.EnableSyncHistory = true;
@@ -551,19 +551,19 @@ public class HistoryUploadCoordinationTests
         {
             Type = ProfileType.Text,
             Hash = "NAME",
-            Name = "original",
+            Title = "original",
             SyncStatus = HistorySyncStatus.Synced
         };
         f.Db.Add(record);
         await f.Db.SaveChangesAsync(Token);
         f.RemoteRecord = record.ToHistoryRecordDto();
-        await f.Manager.SetNameAsync(HistoryRecordKey.From(record), name, true, Token);
+        await f.Manager.SetTitleAsync(HistoryRecordKey.From(record), title, true, Token);
 
         await f.CreateSyncer().SyncNeedUpdateAsync(Token);
 
-        Assert.AreEqual(name, f.RemoteRecord.Name);
+        Assert.AreEqual(title, f.RemoteRecord.Title);
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
-        Assert.AreEqual(name, saved.Name);
+        Assert.AreEqual(title, saved.Title);
         Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
         Assert.AreEqual(0, f.Uploads);
     }
@@ -575,13 +575,13 @@ public class HistoryUploadCoordinationTests
     [DataRow(null, true)]
     [DataRow("", true)]
     [DataRow("  server  ", true)]
-    public async Task PatchResponse_MergesNameUsingTheExistingMetadataRules(string? name, bool conflict)
+    public async Task PatchResponse_MergesTitleUsingTheExistingMetadataRules(string? title, bool conflict)
     {
         await using var f = await Fixture.CreateAsync(Token);
-        var record = new HistoryRecord { Type = ProfileType.Text, Hash = "NAME", Name = "local", SyncStatus = HistorySyncStatus.NeedSync };
+        var record = new HistoryRecord { Type = ProfileType.Text, Hash = "NAME", Title = "local", SyncStatus = HistorySyncStatus.NeedSync };
         f.Db.Add(record);
         await f.Db.SaveChangesAsync(Token);
-        var response = new HistoryRecordUpdateDto { Name = name, Version = 7, Starred = true };
+        var response = new HistoryRecordUpdateDto { Title = title, Version = 7, Starred = true };
         f.Server.Setup(x => x.UpdateHistoryAsync(record.Type, record.Hash,
             It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
             .Returns(() => conflict ? Task.FromException<HistoryRecordUpdateDto?>(
@@ -590,7 +590,7 @@ public class HistoryUploadCoordinationTests
         await f.CreateSyncer().SyncOneAsync(record, Token);
 
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
-        Assert.AreEqual(name?.Trim() ?? "local", saved.Name);
+        Assert.AreEqual(title?.Trim() ?? "local", saved.Title);
         Assert.AreEqual(7, saved.Version);
         Assert.IsTrue(saved.Stared);
         Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
@@ -599,22 +599,22 @@ public class HistoryUploadCoordinationTests
     [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task LateAcknowledgement_PreservesANewerNameEdit(bool supportsName)
+    public async Task LateAcknowledgement_PreservesANewerTitleEdit(bool supportsTitle)
     {
         await using var f = await Fixture.CreateAsync(Token);
         f.RuntimeConfig.EnableSyncHistory = true;
-        var record = new HistoryRecord { Type = ProfileType.Text, Hash = "NAME", Name = "first", SyncStatus = HistorySyncStatus.NeedSync };
+        var record = new HistoryRecord { Type = ProfileType.Text, Hash = "NAME", Title = "first", SyncStatus = HistorySyncStatus.NeedSync };
         f.Db.Add(record);
         await f.Db.SaveChangesAsync(Token);
         var sent = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
         Assert.IsNotNull(sent);
-        await f.Manager.SetNameAsync(HistoryRecordKey.From(record), "second", supportsName, Token);
+        await f.Manager.SetTitleAsync(HistoryRecordKey.From(record), "second", supportsTitle, Token);
         sent.SyncStatus = HistorySyncStatus.Synced;
 
         Assert.IsFalse(await f.Manager.TryApplySyncResponseAsync(sent, sent.Version, sent.LastModified, Token));
 
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
-        Assert.AreEqual("second", saved.Name);
+        Assert.AreEqual("second", saved.Title);
         Assert.AreEqual(HistorySyncStatus.NeedSync, saved.SyncStatus);
     }
 
@@ -1547,8 +1547,8 @@ public class HistoryUploadCoordinationTests
                     if (RemoteRecord is null)
                         throw new RemoteHistoryNotFoundException("missing");
                     Interlocked.Increment(ref Updates);
-                    if (dto.Name is not null)
-                        RemoteRecord.Name = dto.Name;
+                    if (dto.Title is not null)
+                        RemoteRecord.Title = dto.Title;
                     if (dto.Tags is not null)
                         RemoteRecord.Tags = [.. dto.Tags];
                     RemoteRecord.Version = dto.Version!.Value;

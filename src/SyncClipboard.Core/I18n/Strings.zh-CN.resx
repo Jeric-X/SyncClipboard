@@ -943,7 +943,7 @@ Shift + 左键：选中连续范围</value>
     <value>传输中</value>
   </data>
   <data name="HistorySearchPlaceholder" xml:space="preserve">
-    <value>搜索名称、文字或文件名…</value>
+    <value>搜索标题、文字或文件名…</value>
   </data>
   <data name="ScrollToTop" xml:space="preserve">
     <value>回到顶部</value>
@@ -1658,8 +1658,8 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryCapabilityTags" xml:space="preserve">
     <value>标签</value>
   </data>
-  <data name="HistoryCapabilityName" xml:space="preserve">
-    <value>历史记录名称</value>
+  <data name="HistoryCapabilityTitle" xml:space="preserve">
+    <value>历史记录标题</value>
   </data>
   <data name="HistoryCapabilitySeparator" xml:space="preserve">
     <value>、</value>
@@ -1787,10 +1787,10 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryTagMergeConfirmation" xml:space="preserve">
     <value>标签“{0}”已存在。确认后将合并到此标签，取消则保留原标签。</value>
   </data>
-  <data name="HistoryAddName" xml:space="preserve">
-    <value>添加名称</value>
+  <data name="HistoryAddTitle" xml:space="preserve">
+    <value>添加标题</value>
   </data>
-  <data name="HistoryEditName" xml:space="preserve">
-    <value>编辑名称</value>
+  <data name="HistoryEditTitle" xml:space="preserve">
+    <value>编辑标题</value>
   </data>
 </root>

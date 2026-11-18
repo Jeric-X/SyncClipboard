@@ -22,11 +22,11 @@
               ColumnDefinitions="*,Auto"
               HorizontalAlignment="Left"
               Margin="12,4,12,0"
-              IsVisible="{Binding HasName, FallbackValue=False}">
-            <TextBlock Text="{Binding Name}"
+              IsVisible="{Binding HasTitle, FallbackValue=False}">
+            <TextBlock Text="{Binding Title}"
                        FontWeight="SemiBold"
                        TextTrimming="CharacterEllipsis"
-                       ToolTip.Tip="{Binding Name}"
+                       ToolTip.Tip="{Binding Title}"
                        VerticalAlignment="Center" />
             <Button Grid.Column="1"
                     Theme="{StaticResource DateTimeFlyoutButtonStyle}"
@@ -35,9 +35,9 @@
                     Margin="4,0,0,0"
                     FontSize="14"
                     IsVisible="{Binding !#_PreviewPanel.ViewModel.IsMultiSelecting}"
-                    ToolTip.Tip="{x:Static i18n:Strings.HistoryEditName}"
-                    AutomationProperties.Name="{x:Static i18n:Strings.HistoryEditName}"
-                    Click="EditName_Click">
+                    ToolTip.Tip="{x:Static i18n:Strings.HistoryEditTitle}"
+                    AutomationProperties.Name="{x:Static i18n:Strings.HistoryEditTitle}"
+                    Click="EditTitle_Click">
                 <ui:FAFontIcon Glyph="&#xE70F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </Button>
         </Grid>

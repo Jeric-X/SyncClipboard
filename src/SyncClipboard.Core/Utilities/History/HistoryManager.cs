@@ -275,26 +275,26 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         return CreateSyncSnapshot(entity);
     }
 
-    public async Task<bool> SetNameAsync(
-        HistoryRecordKey key, string name, bool supportsHistoryName, CancellationToken token = default)
+    public async Task<bool> SetTitleAsync(
+        HistoryRecordKey key, string title, bool supportsHistoryTitle, CancellationToken token = default)
     {
-        var normalized = name.Trim();
+        var normalized = title.Trim();
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
         var record = await _dbContext.HistoryRecords.FirstOrDefaultAsync(
             r => r.Type == key.Type && r.Hash == key.Hash && !r.IsDeleted, token).ConfigureAwait(false);
-        // Confirming an empty editor on an unnamed record leaves its name unknown.
-        if (record is null || (record.Name ?? string.Empty) == normalized)
+        // Confirming an empty editor on an untitled record leaves its title unknown.
+        if (record is null || (record.Title ?? string.Empty) == normalized)
             return false;
 
         var entry = _dbContext.Entry(record);
         var previouslyModified = entry.Properties.Where(p => p.IsModified).Select(p => p.Metadata.Name).ToHashSet();
-        var previous = (record.Name, record.Version, record.LastModified, record.SyncStatus);
-        record.Name = normalized;
+        var previous = (record.Title, record.Version, record.LastModified, record.SyncStatus);
+        record.Title = normalized;
         if (record.Version < int.MaxValue)
             record.Version++;
         record.LastModified = DateTime.UtcNow;
-        if (_runtimeHistoryConfig.EnableSyncHistory && supportsHistoryName && record.SyncStatus != HistorySyncStatus.LocalOnly)
+        if (_runtimeHistoryConfig.EnableSyncHistory && supportsHistoryTitle && record.SyncStatus != HistorySyncStatus.LocalOnly)
             record.SyncStatus = HistorySyncStatus.NeedSync;
         try
         {
@@ -304,7 +304,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         {
             foreach (var property in entry.Properties.Where(p => p.IsModified && !previouslyModified.Contains(p.Metadata.Name)))
                 property.IsModified = false;
-            (record.Name, record.Version, record.LastModified, record.SyncStatus) = previous;
+            (record.Title, record.Version, record.LastModified, record.SyncStatus) = previous;
             throw;
         }
         HistoryUpdated?.Invoke(record);
@@ -419,8 +419,8 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         if (entity is null || entity.ID != record.ID || entity.Version != expectedVersion || entity.LastModified != expectedModified)
             return false;
 
-        if (record.Name is not null)
-            entity.Name = record.Name;
+        if (record.Title is not null)
+            entity.Title = record.Title;
         if (record.Tags is not null)
             entity.Tags = [.. record.Tags];
         ApplyServerSyncedProperties(record, entity);
@@ -482,10 +482,10 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
 
     internal Task<List<HistoryRecord>> SyncRemoteHistoryAsync(
         IEnumerable<HistoryRecordDto> remoteRecords, bool supportsHistoryTags, CancellationToken token = default)
-        => SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, supportsHistoryName: false, token);
+        => SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, supportsHistoryTitle: false, token);
 
     internal async Task<List<HistoryRecord>> SyncRemoteHistoryAsync(
-        IEnumerable<HistoryRecordDto> remoteRecords, bool supportsHistoryTags, bool supportsHistoryName,
+        IEnumerable<HistoryRecordDto> remoteRecords, bool supportsHistoryTags, bool supportsHistoryTitle,
         CancellationToken token = default)
     {
         List<HistoryRecord> addedRecords = [];
@@ -514,8 +514,8 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
                 {
                     ApplyRemoteHistory(entity, dto);
                     var missingTags = supportsHistoryTags && dto.Tags is null && entity.Tags is { Length: > 0 };
-                    var missingName = supportsHistoryName && dto.Name is null && !string.IsNullOrEmpty(entity.Name);
-                    if ((missingTags || missingName) && !entity.IsDeleted && entity.SyncStatus == HistorySyncStatus.Synced)
+                    var missingTitle = supportsHistoryTitle && dto.Title is null && !string.IsNullOrEmpty(entity.Title);
+                    if ((missingTags || missingTitle) && !entity.IsDeleted && entity.SyncStatus == HistorySyncStatus.Synced)
                     {
                         entity.SyncStatus = HistorySyncStatus.NeedSync;
                     }
@@ -794,7 +794,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         {
             var pattern = $"%{queryPara.SearchText}%";
             query = query.Where(record => EF.Functions.Like(record.Text, pattern)
-                || (queryPara.SearchNames && EF.Functions.Like(record.Name, pattern)));
+                || (queryPara.SearchTitles && EF.Functions.Like(record.Title, pattern)));
         }
 
         if (names.Length > 0)

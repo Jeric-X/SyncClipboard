@@ -191,7 +191,7 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         this.ResizeDip(_viewModel.Width, _viewModel.Height);
 
         InitializeComponent();
-        _PreviewPanel.NameEditRequested += async record => await EditNameAsync(record);
+        _PreviewPanel.TitleEditRequested += async record => await EditTitleAsync(record);
         _TagFilterItems.AddHandler(UIElement.PointerWheelChangedEvent, new PointerEventHandler(TagFilterScroll_PointerWheelChanged), true);
         _TagFilterScroll.ViewChanged += (_, e) =>
         {
@@ -902,9 +902,9 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
             flyout.Items.Add(new MenuFlyoutSeparator());
         if (!isMultiSelecting)
         {
-            var editName = new MenuFlyoutItem { Text = record.NameActionText };
-            editName.Click += async (_, _) => await EditNameAsync(record);
-            flyout.Items.Add(editName);
+            var editTitle = new MenuFlyoutItem { Text = record.TitleActionText };
+            editTitle.Click += async (_, _) => await EditTitleAsync(record);
+            flyout.Items.Add(editTitle);
         }
         var editTags = new MenuFlyoutItem
         {
@@ -967,15 +967,15 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         flyout.Items.Add(settings);
     }
 
-    private async Task EditNameAsync(HistoryRecordVM record)
+    private async Task EditTitleAsync(HistoryRecordVM record)
     {
         if (_viewModel.HasModalOperation || _viewModel.IsMultiSelecting)
             return;
         using var hold = _viewModel.HoldForModalOperation();
-        var title = record.NameActionText;
+        var title = record.TitleActionText;
         try
         {
-            var input = new TextBox { Text = record.Name ?? string.Empty };
+            var input = new TextBox { Text = record.Title ?? string.Empty };
             var dialog = new ContentDialog
             {
                 XamlRoot = Content.XamlRoot,
@@ -991,7 +991,7 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
                 input.SelectAll();
             };
             if (await dialog.ShowAsync() == ContentDialogResult.Primary)
-                await _viewModel.SetNameAsync(record.Key, input.Text);
+                await _viewModel.SetTitleAsync(record.Key, input.Text);
         }
         catch (Exception ex)
         {

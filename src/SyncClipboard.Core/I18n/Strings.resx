@@ -943,7 +943,7 @@ Shift + left click: Select a continuous range</value>
     <value>Transferring</value>
   </data>
   <data name="HistorySearchPlaceholder" xml:space="preserve">
-    <value>Search names, text or filenames…</value>
+    <value>Search titles, text or filenames…</value>
   </data>
   <data name="ScrollToTop" xml:space="preserve">
     <value>Scroll to top</value>
@@ -1658,8 +1658,8 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryCapabilityTags" xml:space="preserve">
     <value>tags</value>
   </data>
-  <data name="HistoryCapabilityName" xml:space="preserve">
-    <value>history names</value>
+  <data name="HistoryCapabilityTitle" xml:space="preserve">
+    <value>history titles</value>
   </data>
   <data name="HistoryCapabilitySeparator" xml:space="preserve">
     <value>, </value>
@@ -1787,10 +1787,10 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryTagMergeConfirmation" xml:space="preserve">
     <value>The tag “{0}” already exists. Confirm to merge into it, or cancel to keep the tags unchanged.</value>
   </data>
-  <data name="HistoryAddName" xml:space="preserve">
-    <value>Add name</value>
+  <data name="HistoryAddTitle" xml:space="preserve">
+    <value>Add title</value>
   </data>
-  <data name="HistoryEditName" xml:space="preserve">
-    <value>Edit name</value>
+  <data name="HistoryEditTitle" xml:space="preserve">
+    <value>Edit title</value>
   </data>
 </root>

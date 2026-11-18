@@ -11,8 +11,8 @@ using SyncClipboard.Server.Core.Utilities.History;
 namespace SyncClipboard.Server.Core.Migrations
 {
     [DbContext(typeof(HistoryDbContext))]
-    [Migration("20261117053700_AddHistoryName")]
-    partial class AddHistoryName
+    [Migration("20261117053700_AddHistoryTitle")]
+    partial class AddHistoryTitle
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -53,9 +53,6 @@ namespace SyncClipboard.Server.Core.Migrations
                     b.Property<DateTime>("LastModified")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Name")
-                        .HasColumnType("TEXT");
-
                     b.Property<bool>("Pinned")
                         .HasColumnType("INTEGER");
 
@@ -70,6 +67,9 @@ namespace SyncClipboard.Server.Core.Migrations
 
                     b.Property<string>("Text")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("TransferDataFile")

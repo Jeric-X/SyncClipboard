@@ -8,7 +8,7 @@ namespace SyncClipboard.Test.Server.History;
 public class ServerHistoryCapabilitiesTests
 {
     [TestMethod]
-    public void GetCapabilities_AdvertisesHistorySyncTagsAndName()
+    public void GetCapabilities_AdvertisesHistorySyncTagsAndTitle()
     {
         var controller = new SyncClipboardController(null!, null!, null!, null!);
         var ok = controller.GetCapabilities().Result as OkObjectResult;
@@ -17,6 +17,6 @@ public class ServerHistoryCapabilitiesTests
 
         Assert.IsTrue(json.GetProperty("historySync").GetBoolean());
         Assert.IsTrue(json.GetProperty("historyTags").GetBoolean());
-        Assert.IsTrue(json.GetProperty("historyName").GetBoolean());
+        Assert.IsTrue(json.GetProperty("historyTitle").GetBoolean());
     }
 }

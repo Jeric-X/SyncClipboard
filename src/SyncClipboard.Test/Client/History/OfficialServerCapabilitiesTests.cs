@@ -23,10 +23,10 @@ public class OfficialServerCapabilitiesTests
     [DataRow(null, false, false)]
     [DataRow("""{"historySync":true}""", false, false)]
     [DataRow("""{"historySync":true,"historyTags":true}""", true, false)]
-    [DataRow("""{"historySync":true,"historyTags":true,"historyName":false}""", true, false)]
-    [DataRow("""{"historySync":true,"historyName":true}""", false, true)]
-    [DataRow("""{"historySync":true,"historyTags":true,"historyName":true}""", true, true)]
-    public async Task Probe_ReadsTagAndNameSupportIndependently(string? json, bool supportsTags, bool supportsName)
+    [DataRow("""{"historySync":true,"historyTags":true,"historyTitle":false}""", true, false)]
+    [DataRow("""{"historySync":true,"historyTitle":true}""", false, true)]
+    [DataRow("""{"historySync":true,"historyTags":true,"historyTitle":true}""", true, true)]
+    public async Task Probe_ReadsTagAndTitleSupportIndependently(string? json, bool supportsTags, bool supportsTitle)
     {
         using var handler = new CapabilityHandler { Capabilities = json };
         using var client = new HttpClient(handler) { BaseAddress = new Uri("https://history.test/") };
@@ -35,7 +35,7 @@ public class OfficialServerCapabilitiesTests
 
         Assert.IsTrue(capabilities.HistorySync);
         Assert.AreEqual(supportsTags, capabilities.HistoryTags);
-        Assert.AreEqual(supportsName, capabilities.HistoryName);
+        Assert.AreEqual(supportsTitle, capabilities.HistoryTitle);
         Assert.AreEqual(json is null ? 1 : 0, handler.VersionRequests);
     }
 
@@ -81,18 +81,18 @@ public class OfficialServerCapabilitiesTests
     }
 
     [TestMethod]
-    public async Task Reconnect_RefreshesNameSupportWhenTagsStayEnabled()
+    public async Task Reconnect_RefreshesTitleSupportWhenTagsStayEnabled()
     {
         var token = TestContext.CancellationTokenSource.Token;
         using var handler = new CapabilityHandler { Capabilities = """{"historySync":true,"historyTags":true}""" };
         using var adapter = CreateAdapter(handler);
         Assert.IsTrue(await adapter.SupportsHistoryTagsAsync(token));
-        Assert.IsFalse(await adapter.SupportsHistoryNameAsync(token));
+        Assert.IsFalse(await adapter.SupportsHistoryTitleAsync(token));
         Assert.AreEqual(1, handler.CapabilityRequests);
 
         adapter.StopListening();
-        handler.Capabilities = """{"historySync":true,"historyTags":true,"historyName":true}""";
-        Assert.IsTrue(await adapter.SupportsHistoryNameAsync(token));
+        handler.Capabilities = """{"historySync":true,"historyTags":true,"historyTitle":true}""";
+        Assert.IsTrue(await adapter.SupportsHistoryTitleAsync(token));
         Assert.IsTrue(await adapter.SupportsHistoryTagsAsync(token));
         Assert.AreEqual(2, handler.CapabilityRequests);
     }
@@ -106,11 +106,11 @@ public class OfficialServerCapabilitiesTests
         using var adapter = CreateAdapter(handler);
         var loading = adapter.TestConnectionAsync(token);
         var tagRead = adapter.SupportsHistoryTagsAsync(token);
-        var nameRead = adapter.SupportsHistoryNameAsync(token);
+        var titleRead = adapter.SupportsHistoryTitleAsync(token);
         Assert.AreEqual(1, handler.CapabilityRequests);
         adapter.StopListening();
         handler.CapabilityResponse = null;
-        handler.Capabilities = """{"historySync":true,"historyName":true}""";
+        handler.Capabilities = """{"historySync":true,"historyTitle":true}""";
         await adapter.TestConnectionAsync(token);
         response.SetResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -118,16 +118,16 @@ public class OfficialServerCapabilitiesTests
         });
         await loading;
         Assert.IsTrue(await tagRead);
-        Assert.IsFalse(await nameRead);
+        Assert.IsFalse(await titleRead);
         Assert.IsFalse(await adapter.SupportsHistoryTagsAsync(token));
-        Assert.IsTrue(await adapter.SupportsHistoryNameAsync(token));
+        Assert.IsTrue(await adapter.SupportsHistoryTitleAsync(token));
         Assert.AreEqual(2, handler.CapabilityRequests);
     }
 
     [TestMethod]
     [DataRow("""{"historySync":true}""")]
     [DataRow("""{"historySync":true,"historyTags":true}""")]
-    [DataRow("""{"historySync":true,"historyName":true}""")]
+    [DataRow("""{"historySync":true,"historyTitle":true}""")]
     public async Task IgnoreCapabilityNotice_PersistsForOriginalServerAfterSwitch(string capabilities)
     {
         var directory = Path.Combine(Path.GetTempPath(), $"history-notification-{Guid.NewGuid():N}");
@@ -191,14 +191,14 @@ public class OfficialServerCapabilitiesTests
     }
 
     [TestMethod]
-    [DataRow(null, "en", "tags, history names")]
-    [DataRow("""{"historySync":true}""", "en", "tags, history names")]
-    [DataRow("""{"historySync":true,"historyTags":false,"historyName":false}""", "en", "tags, history names")]
-    [DataRow("""{"historySync":true,"historyTags":true}""", "en", "history names")]
-    [DataRow("""{"historySync":true,"historyName":true}""", "en", "tags")]
-    [DataRow("""{"historySync":true}""", "zh-CN", "标签、历史记录名称")]
-    [DataRow("""{"historySync":true,"historyTags":true}""", "zh-CN", "历史记录名称")]
-    [DataRow("""{"historySync":true,"historyName":true}""", "zh-CN", "标签")]
+    [DataRow(null, "en", "tags, history titles")]
+    [DataRow("""{"historySync":true}""", "en", "tags, history titles")]
+    [DataRow("""{"historySync":true,"historyTags":false,"historyTitle":false}""", "en", "tags, history titles")]
+    [DataRow("""{"historySync":true,"historyTags":true}""", "en", "history titles")]
+    [DataRow("""{"historySync":true,"historyTitle":true}""", "en", "tags")]
+    [DataRow("""{"historySync":true}""", "zh-CN", "标签、历史记录标题")]
+    [DataRow("""{"historySync":true,"historyTags":true}""", "zh-CN", "历史记录标题")]
+    [DataRow("""{"historySync":true,"historyTitle":true}""", "zh-CN", "标签")]
     public async Task MissingCapabilities_NotifyWithLocalizedList(
         string? capabilities, string language, string missingNames)
     {
@@ -242,7 +242,7 @@ public class OfficialServerCapabilitiesTests
     {
         using var handler = new CapabilityHandler
         {
-            Capabilities = """{"historySync":true,"historyTags":true,"historyName":true}""",
+            Capabilities = """{"historySync":true,"historyTags":true,"historyTitle":true}""",
             Version = "1.0.0"
         };
         var notifications = new Mock<INotificationManager>();

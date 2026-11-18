@@ -8,12 +8,12 @@ using SyncClipboard.Shared.Profiles;
 namespace SyncClipboard.Test.Server.History;
 
 [TestClass]
-public class ServerHistoryNameMigrationTests
+public class ServerHistoryTitleMigrationTests
 {
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
-    public async Task Upgrade_PreservesExistingHistoryWithUnknownName()
+    public async Task Upgrade_PreservesExistingHistoryWithUnknownTitle()
     {
         var token = TestContext.CancellationTokenSource.Token;
         await using var db = new HistoryDbContext();
@@ -30,7 +30,7 @@ public class ServerHistoryNameMigrationTests
         await db.Database.MigrateAsync(token);
 
         var record = await db.HistoryRecords.SingleAsync(token);
-        Assert.IsNull(record.Name);
+        Assert.IsNull(record.Title);
         Assert.AreEqual("user", record.UserId);
         Assert.AreEqual(ProfileType.File, record.Type);
         Assert.AreEqual("ABC", record.Hash);
@@ -45,7 +45,7 @@ public class ServerHistoryNameMigrationTests
     }
 
     [TestMethod]
-    public async Task FreshDatabase_RoundTripsUnknownSetAndClearedName()
+    public async Task FreshDatabase_RoundTripsUnknownSetAndClearedTitle()
     {
         var token = TestContext.CancellationTokenSource.Token;
         await using var db = new HistoryDbContext();
@@ -59,15 +59,15 @@ public class ServerHistoryNameMigrationTests
         await db.SaveChangesAsync(token);
         db.ChangeTracker.Clear();
         record = await db.HistoryRecords.SingleAsync(token);
-        Assert.IsNull(record.Name);
+        Assert.IsNull(record.Title);
 
-        foreach (var name in new[] { "应用图标", string.Empty })
+        foreach (var title in new[] { "应用图标", string.Empty })
         {
-            record.Name = name;
+            record.Title = title;
             await db.SaveChangesAsync(token);
             db.ChangeTracker.Clear();
             record = await db.HistoryRecords.SingleAsync(token);
-            Assert.AreEqual(name, record.Name);
+            Assert.AreEqual(title, record.Title);
             Assert.AreEqual("icon.png", record.Text);
         }
     }
