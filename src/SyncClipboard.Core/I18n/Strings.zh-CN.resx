@@ -1655,6 +1655,18 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryTagsUpgrade" xml:space="preserve">
     <value>当前服务器不支持标签同步，并且未收藏的记录可能会被服务器自动清理。建议升级服务端版本，以获得完整的标签支持。</value>
   </data>
+  <data name="HistoryNameSyncTitle" xml:space="preserve">
+    <value>名称不会同步</value>
+  </data>
+  <data name="HistoryNameUpgrade" xml:space="preserve">
+    <value>当前服务器不支持历史记录名称同步。请升级服务端版本，以便在设备间同步名称。</value>
+  </data>
+  <data name="HistoryTagsAndNameSyncTitle" xml:space="preserve">
+    <value>标签和名称不会同步</value>
+  </data>
+  <data name="HistoryTagsAndNameUpgrade" xml:space="preserve">
+    <value>当前服务器不支持标签和历史记录名称同步，并且未收藏的记录可能会被服务器自动清理。建议升级服务端版本，以获得完整的标签和名称支持。</value>
+  </data>
   <data name="HistorySyncUnsupported" xml:space="preserve">
     <value>服务器不支持历史记录同步。</value>
   </data>

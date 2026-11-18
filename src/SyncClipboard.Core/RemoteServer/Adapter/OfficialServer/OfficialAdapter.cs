@@ -175,7 +175,7 @@ public sealed class OfficialAdapter(
         _webDavAdapter.ApplyConfig();
         ReCreateHttpClient();
         var capabilities = await TestHistoryConnectionAsync(cancellationToken);
-        return capabilities.HistoryTags ? null : Strings.HistoryTagsUpgrade;
+        return GetHistoryCapabilityWarning(capabilities)?.Message;
     }
 
     private async Task<ServerCapabilitiesDto> TestHistoryConnectionAsync(CancellationToken token)
@@ -260,13 +260,14 @@ public sealed class OfficialAdapter(
         try
         {
             var capabilities = await GetCapabilitiesAsync(CancellationToken.None);
-            if (capabilities.HistoryTags)
+            var warning = GetHistoryCapabilityWarning(capabilities);
+            if (warning is null)
                 return;
 
             void NotifyIfCurrent()
             {
                 if (!_disposed && ReferenceEquals(client, _httpClient) && Equals(config, _officialConfig))
-                    ShowHistoryTagsNotification(config);
+                    ShowHistoryCapabilityNotification(config, warning.Value.Title, warning.Value.Message);
             }
 
             if (dispatcher is null)
@@ -280,7 +281,16 @@ public sealed class OfficialAdapter(
         }
     }
 
-    private void ShowHistoryTagsNotification(OfficialConfig config)
+    private static (string Title, string Message)? GetHistoryCapabilityWarning(ServerCapabilitiesDto capabilities)
+        => (capabilities.HistoryTags, capabilities.HistoryName) switch
+        {
+            (false, false) => (Strings.HistoryTagsAndNameSyncTitle, Strings.HistoryTagsAndNameUpgrade),
+            (false, true) => (Strings.HistoryTagsSyncTitle, Strings.HistoryTagsUpgrade),
+            (true, false) => (Strings.HistoryNameSyncTitle, Strings.HistoryNameUpgrade),
+            _ => null
+        };
+
+    private void ShowHistoryCapabilityNotification(OfficialConfig config, string title, string message)
     {
         var serverAddress = new Uri(config.RemoteURL).GetComponents(
             UriComponents.SchemeAndServer | UriComponents.Path, UriFormat.UriEscaped).TrimEnd('/');
@@ -290,12 +300,12 @@ public sealed class OfficialAdapter(
 
         ActionButton[] buttons = runtimeConfig is not null && dispatcher is not null
             ? [new(Strings.HistoryTagsDontNotifyServer, () => DelegateExtention.SafeFireAndForget(
-                () => dispatcher.RunOnMainThreadAsync(() => IgnoreHistoryTagsNotification(serverAddress)), nameof(OfficialAdapter)))]
+                () => dispatcher.RunOnMainThreadAsync(() => IgnoreHistoryCapabilityNotification(serverAddress)), nameof(OfficialAdapter)))]
             : [];
-        notifications?.Show(Strings.HistoryTagsSyncTitle, Strings.HistoryTagsUpgrade, buttons);
+        notifications?.Show(title, message, buttons);
     }
 
-    private void IgnoreHistoryTagsNotification(string serverAddress)
+    private void IgnoreHistoryCapabilityNotification(string serverAddress)
     {
         if (runtimeConfig is null)
             return;

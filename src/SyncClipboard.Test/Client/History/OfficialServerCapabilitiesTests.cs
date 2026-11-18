@@ -1,6 +1,7 @@
 using Moq;
 using NativeNotification.Interface;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
@@ -123,7 +124,10 @@ public class OfficialServerCapabilitiesTests
     }
 
     [TestMethod]
-    public async Task IgnoreTagNotice_PersistsForOriginalServerAfterSwitch()
+    [DataRow("""{"historySync":true}""")]
+    [DataRow("""{"historySync":true,"historyTags":true}""")]
+    [DataRow("""{"historySync":true,"historyName":true}""")]
+    public async Task IgnoreCapabilityNotice_PersistsForOriginalServerAfterSwitch(string capabilities)
     {
         var directory = Path.Combine(Path.GetTempPath(), $"history-notification-{Guid.NewGuid():N}");
         Directory.CreateDirectory(directory);
@@ -131,7 +135,7 @@ public class OfficialServerCapabilitiesTests
         {
             var path = Path.Combine(directory, Env.RuntimeConfigName);
             var config = new ConfigBase(path);
-            using var handler = new CapabilityHandler { Capabilities = "{\"historySync\":true}" };
+            using var handler = new CapabilityHandler { Capabilities = capabilities };
             var notifications = new Mock<INotificationManager>();
             var dispatcher = new Mock<IThreadDispatcher>();
             dispatcher.Setup(d => d.RunOnMainThreadAsync(It.IsAny<Action>()))
@@ -153,7 +157,7 @@ public class OfficialServerCapabilitiesTests
 
             var reloadedConfig = new ConfigBase(path);
             var reloadedNotifications = new Mock<INotificationManager>();
-            using var reloadedHandler = new CapabilityHandler { Capabilities = "{\"historySync\":true}" };
+            using var reloadedHandler = new CapabilityHandler { Capabilities = capabilities };
             using var reloadedAdapter = CreateAdapter(reloadedHandler, reloadedNotifications.Object, reloadedConfig, dispatcher.Object);
             reloadedAdapter.SetConfig(new OfficialConfig { RemoteURL = "https://HISTORY.test:443/" }, new SyncConfig());
             await reloadedAdapter.NotifyCapabilitiesOnConfigChangedAsync();
@@ -186,6 +190,27 @@ public class OfficialServerCapabilitiesTests
     }
 
     [TestMethod]
+    [DataRow(null, "HistoryTagsAndNameSyncTitle", "HistoryTagsAndNameUpgrade")]
+    [DataRow("""{"historySync":true}""", "HistoryTagsAndNameSyncTitle", "HistoryTagsAndNameUpgrade")]
+    [DataRow("""{"historySync":true,"historyTags":false,"historyName":false}""", "HistoryTagsAndNameSyncTitle", "HistoryTagsAndNameUpgrade")]
+    [DataRow("""{"historySync":true,"historyTags":true}""", "HistoryNameSyncTitle", "HistoryNameUpgrade")]
+    [DataRow("""{"historySync":true,"historyName":true}""", "HistoryTagsSyncTitle", "HistoryTagsUpgrade")]
+    public async Task MissingCapabilities_NotifyWithSpecificTitleAndMessage(
+        string? capabilities, string titleResource, string messageResource)
+    {
+        using var handler = new CapabilityHandler { Capabilities = capabilities };
+        var notifications = new Mock<INotificationManager>();
+        using var adapter = CreateAdapter(handler, notifications.Object);
+
+        await adapter.NotifyCapabilitiesOnConfigChangedAsync();
+
+        var notice = notifications.Invocations.Single(i => i.Method.Name == "Show");
+        Assert.AreEqual(Strings.ResourceManager.GetString(titleResource, Strings.Culture), notice.Arguments[0]);
+        Assert.AreEqual(Strings.ResourceManager.GetString(messageResource, Strings.Culture), notice.Arguments[1]);
+        Assert.AreEqual(1, handler.CapabilityRequests);
+    }
+
+    [TestMethod]
     public async Task FailedCapabilityProbe_DoesNotReportAnUnsupportedServer()
     {
         using var handler = new CapabilityHandler { FailProbe = true };
@@ -204,7 +229,7 @@ public class OfficialServerCapabilitiesTests
     {
         using var handler = new CapabilityHandler
         {
-            Capabilities = "{\"historySync\":true,\"historyTags\":true}",
+            Capabilities = """{"historySync":true,"historyTags":true,"historyName":true}""",
             Version = "1.0.0"
         };
         var notifications = new Mock<INotificationManager>();
