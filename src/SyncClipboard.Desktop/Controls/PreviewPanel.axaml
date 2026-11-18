@@ -2,6 +2,7 @@
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:views="using:SyncClipboard.Desktop.Views"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:vc="using:SyncClipboard.Desktop.ValueConverters"
              xmlns:i18n="using:SyncClipboard.Core.I18n"
              xmlns:vm="using:SyncClipboard.Core.ViewModels"
@@ -16,8 +17,31 @@
           DataContext="{Binding #_PreviewPanel.SelectedItem}"
           x:DataType="vms:HistoryRecordVM"
           Background="Transparent"
-          RowDefinitions="Auto, Auto, *">
-        <Border Grid.Row="0"
+          RowDefinitions="Auto, Auto, Auto, *">
+        <Grid Grid.Row="0"
+              ColumnDefinitions="*,Auto"
+              HorizontalAlignment="Left"
+              Margin="12,4,12,0"
+              IsVisible="{Binding HasName, FallbackValue=False}">
+            <TextBlock Text="{Binding Name}"
+                       FontWeight="SemiBold"
+                       TextTrimming="CharacterEllipsis"
+                       ToolTip.Tip="{Binding Name}"
+                       VerticalAlignment="Center" />
+            <Button Grid.Column="1"
+                    Theme="{StaticResource DateTimeFlyoutButtonStyle}"
+                    Width="28"
+                    Height="28"
+                    Margin="4,0,0,0"
+                    FontSize="14"
+                    IsVisible="{Binding !#_PreviewPanel.ViewModel.IsMultiSelecting}"
+                    ToolTip.Tip="{x:Static i18n:Strings.HistoryEditName}"
+                    AutomationProperties.Name="{x:Static i18n:Strings.HistoryEditName}"
+                    Click="EditName_Click">
+                <ui:FAFontIcon Glyph="&#xE70F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </Button>
+        </Grid>
+        <Border Grid.Row="1"
                 Background="Transparent"
                 Padding="12,4"
                 IsVisible="{Binding #_PreviewPanel.SelectedItem, Converter={x:Static vc:FuncConverter.NotNullToVisible}}">
@@ -54,7 +78,7 @@
                                         ViewModel="{Binding #_PreviewPanel.ViewModel}" />
             </Grid>
         </Border>
-        <ScrollViewer Grid.Row="1"
+        <ScrollViewer Grid.Row="2"
                       MaxHeight="100"
                       HorizontalScrollBarVisibility="Disabled"
                       VerticalScrollBarVisibility="Auto">
@@ -72,12 +96,12 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vms:HistoryPreviewTag">
-                        <controls:HistoryRecordTagChip Margin="0,4,6,0" RemoveRequested="RemoveTagRequested" />
+                        <controls:HistoryRecordTagChip Margin="0,0,6,4" RemoveRequested="RemoveTagRequested" />
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="3" Margin="0,8,0,0">
             <TextBlock x:Name="_PreviewPlaceholder"
                        HorizontalAlignment="Center"
                        VerticalAlignment="Center"
