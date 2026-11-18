@@ -1788,7 +1788,7 @@ Shift + 左键：选中连续范围</value>
     <value>标签“{0}”已存在。确认后将合并到此标签，取消则保留原标签。</value>
   </data>
   <data name="HistoryAddName" xml:space="preserve">
-    <value>添加名称…</value>
+    <value>添加名称</value>
   </data>
   <data name="HistoryEditName" xml:space="preserve">
     <value>编辑名称</value>

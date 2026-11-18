@@ -1788,7 +1788,7 @@ Choose whether to use the default location or select another folder.</value>
     <value>The tag “{0}” already exists. Confirm to merge into it, or cancel to keep the tags unchanged.</value>
   </data>
   <data name="HistoryAddName" xml:space="preserve">
-    <value>Add name…</value>
+    <value>Add name</value>
   </data>
   <data name="HistoryEditName" xml:space="preserve">
     <value>Edit name</value>
