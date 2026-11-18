@@ -945,12 +945,8 @@ public partial class HistoryViewModel : ObservableObject
         {
             case HistoryShortcutAction.Search: window?.FocusSearch(); break;
             case HistoryShortcutAction.EditTitle:
-                if (!IsMultiSelecting && SelectedItem is not null && SelectedFilter != HistoryFilterType.Transferring)
-                    window?.ShowTitleEditor();
-                break;
             case HistoryShortcutAction.EditTags:
-                if (!IsMultiSelecting && SelectedItem is not null && SelectedFilter != HistoryFilterType.Transferring)
-                    window?.ShowTagPicker();
+                HandleEditShortcut(action.Value);
                 break;
             case HistoryShortcutAction.PreviousItem: NavigateUp(); break;
             case HistoryShortcutAction.NextItem: NavigateDown(); break;
@@ -978,6 +974,17 @@ public partial class HistoryViewModel : ObservableObject
             default: return false;
         }
         return true;
+    }
+
+    private void HandleEditShortcut(HistoryShortcutAction action)
+    {
+        if (IsMultiSelecting || SelectedItem is null || SelectedFilter == HistoryFilterType.Transferring)
+            return;
+
+        if (action == HistoryShortcutAction.EditTitle)
+            window?.ShowTitleEditor();
+        else
+            window?.ShowTagPicker();
     }
 
     private async void HandleToggleStarShortcut()
