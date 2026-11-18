@@ -1649,11 +1649,20 @@ Shift + 左键：选中连续范围</value>
   <data name="ExcludeFromLocalHistory" xml:space="preserve">
     <value>同时也不添加到历史记录</value>
   </data>
-  <data name="HistoryTagsSyncTitle" xml:space="preserve">
-    <value>标签不会同步</value>
+  <data name="HistoryCapabilitiesSyncTitle" xml:space="preserve">
+    <value>服务端不支持部分同步功能</value>
   </data>
-  <data name="HistoryTagsUpgrade" xml:space="preserve">
-    <value>当前服务器不支持标签同步，并且未收藏的记录可能会被服务器自动清理。建议升级服务端版本，以获得完整的标签支持。</value>
+  <data name="HistoryCapabilitiesUpgrade" xml:space="preserve">
+    <value>当前服务器不支持同步：{0}。建议升级服务端版本，以获得最佳同步体验。</value>
+  </data>
+  <data name="HistoryCapabilityTags" xml:space="preserve">
+    <value>标签</value>
+  </data>
+  <data name="HistoryCapabilityName" xml:space="preserve">
+    <value>历史记录名称</value>
+  </data>
+  <data name="HistoryCapabilitySeparator" xml:space="preserve">
+    <value>、</value>
   </data>
   <data name="HistorySyncUnsupported" xml:space="preserve">
     <value>服务器不支持历史记录同步。</value>

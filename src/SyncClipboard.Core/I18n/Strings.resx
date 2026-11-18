@@ -1649,11 +1649,20 @@ Choose whether to use the default location or select another folder.</value>
   <data name="ExcludeFromLocalHistory" xml:space="preserve">
     <value>Do not add to local history</value>
   </data>
-  <data name="HistoryTagsSyncTitle" xml:space="preserve">
-    <value>Tags will not sync</value>
+  <data name="HistoryCapabilitiesSyncTitle" xml:space="preserve">
+    <value>Some sync features are not supported by this server</value>
   </data>
-  <data name="HistoryTagsUpgrade" xml:space="preserve">
-    <value>The current server does not support tag sync, and unstarred records may be automatically deleted by the server. Upgrade the server for full tag support.</value>
+  <data name="HistoryCapabilitiesUpgrade" xml:space="preserve">
+    <value>The current server does not support syncing {0}. Consider upgrading the server for the best sync experience.</value>
+  </data>
+  <data name="HistoryCapabilityTags" xml:space="preserve">
+    <value>tags</value>
+  </data>
+  <data name="HistoryCapabilityName" xml:space="preserve">
+    <value>history names</value>
+  </data>
+  <data name="HistoryCapabilitySeparator" xml:space="preserve">
+    <value>, </value>
   </data>
   <data name="HistorySyncUnsupported" xml:space="preserve">
     <value>This server does not support history sync.</value>
