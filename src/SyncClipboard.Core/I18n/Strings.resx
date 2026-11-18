@@ -1649,23 +1649,20 @@ Choose whether to use the default location or select another folder.</value>
   <data name="ExcludeFromLocalHistory" xml:space="preserve">
     <value>Do not add to local history</value>
   </data>
-  <data name="HistoryTagsSyncTitle" xml:space="preserve">
-    <value>Tags will not sync</value>
+  <data name="HistoryCapabilitiesSyncTitle" xml:space="preserve">
+    <value>Some history features will not sync</value>
   </data>
-  <data name="HistoryTagsUpgrade" xml:space="preserve">
-    <value>The current server does not support tag sync, and unstarred records may be automatically deleted by the server. Upgrade the server for full tag support.</value>
+  <data name="HistoryCapabilitiesUpgrade" xml:space="preserve">
+    <value>The current server does not support syncing {0}. Upgrade the server to enable these features.</value>
   </data>
-  <data name="HistoryNameSyncTitle" xml:space="preserve">
-    <value>Names will not sync</value>
+  <data name="HistoryCapabilityTags" xml:space="preserve">
+    <value>tags</value>
   </data>
-  <data name="HistoryNameUpgrade" xml:space="preserve">
-    <value>The current server does not support history name sync. Upgrade the server to sync names across devices.</value>
+  <data name="HistoryCapabilityName" xml:space="preserve">
+    <value>history names</value>
   </data>
-  <data name="HistoryTagsAndNameSyncTitle" xml:space="preserve">
-    <value>Tags and names will not sync</value>
-  </data>
-  <data name="HistoryTagsAndNameUpgrade" xml:space="preserve">
-    <value>The current server does not support tag or history name sync, and unstarred records may be automatically deleted by the server. Upgrade the server for full tag and name support.</value>
+  <data name="HistoryCapabilitySeparator" xml:space="preserve">
+    <value>, </value>
   </data>
   <data name="HistorySyncUnsupported" xml:space="preserve">
     <value>This server does not support history sync.</value>

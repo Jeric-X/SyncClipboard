@@ -282,13 +282,20 @@ public sealed class OfficialAdapter(
     }
 
     private static (string Title, string Message)? GetHistoryCapabilityWarning(ServerCapabilitiesDto capabilities)
-        => (capabilities.HistoryTags, capabilities.HistoryName) switch
-        {
-            (false, false) => (Strings.HistoryTagsAndNameSyncTitle, Strings.HistoryTagsAndNameUpgrade),
-            (false, true) => (Strings.HistoryTagsSyncTitle, Strings.HistoryTagsUpgrade),
-            (true, false) => (Strings.HistoryNameSyncTitle, Strings.HistoryNameUpgrade),
-            _ => null
-        };
+    {
+        (bool Supported, string Name)[] optionalCapabilities =
+        [
+            (capabilities.HistoryTags, Strings.HistoryCapabilityTags),
+            (capabilities.HistoryName, Strings.HistoryCapabilityName)
+        ];
+        var missing = optionalCapabilities.Where(capability => !capability.Supported)
+            .Select(capability => capability.Name).ToArray();
+        if (missing.Length == 0)
+            return null;
+
+        var names = string.Join(Strings.HistoryCapabilitySeparator, missing);
+        return (Strings.HistoryCapabilitiesSyncTitle, string.Format(Strings.HistoryCapabilitiesUpgrade, names));
+    }
 
     private void ShowHistoryCapabilityNotification(OfficialConfig config, string title, string message)
     {

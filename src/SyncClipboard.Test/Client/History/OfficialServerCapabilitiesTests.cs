@@ -7,6 +7,7 @@ using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 using SyncClipboard.Core.RemoteServer.Adapter.WebDavServer;
 using SyncClipboard.Core.Utilities.Web;
+using System.Globalization;
 using System.Net;
 using System.Reflection;
 using System.Text.Json;
@@ -190,24 +191,36 @@ public class OfficialServerCapabilitiesTests
     }
 
     [TestMethod]
-    [DataRow(null, "HistoryTagsAndNameSyncTitle", "HistoryTagsAndNameUpgrade")]
-    [DataRow("""{"historySync":true}""", "HistoryTagsAndNameSyncTitle", "HistoryTagsAndNameUpgrade")]
-    [DataRow("""{"historySync":true,"historyTags":false,"historyName":false}""", "HistoryTagsAndNameSyncTitle", "HistoryTagsAndNameUpgrade")]
-    [DataRow("""{"historySync":true,"historyTags":true}""", "HistoryNameSyncTitle", "HistoryNameUpgrade")]
-    [DataRow("""{"historySync":true,"historyName":true}""", "HistoryTagsSyncTitle", "HistoryTagsUpgrade")]
-    public async Task MissingCapabilities_NotifyWithSpecificTitleAndMessage(
-        string? capabilities, string titleResource, string messageResource)
+    [DataRow(null, "en", "tags, history names")]
+    [DataRow("""{"historySync":true}""", "en", "tags, history names")]
+    [DataRow("""{"historySync":true,"historyTags":false,"historyName":false}""", "en", "tags, history names")]
+    [DataRow("""{"historySync":true,"historyTags":true}""", "en", "history names")]
+    [DataRow("""{"historySync":true,"historyName":true}""", "en", "tags")]
+    [DataRow("""{"historySync":true}""", "zh-CN", "标签、历史记录名称")]
+    [DataRow("""{"historySync":true,"historyTags":true}""", "zh-CN", "历史记录名称")]
+    [DataRow("""{"historySync":true,"historyName":true}""", "zh-CN", "标签")]
+    public async Task MissingCapabilities_NotifyWithLocalizedList(
+        string? capabilities, string language, string missingNames)
     {
-        using var handler = new CapabilityHandler { Capabilities = capabilities };
-        var notifications = new Mock<INotificationManager>();
-        using var adapter = CreateAdapter(handler, notifications.Object);
+        var previousCulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(language);
+            using var handler = new CapabilityHandler { Capabilities = capabilities };
+            var notifications = new Mock<INotificationManager>();
+            using var adapter = CreateAdapter(handler, notifications.Object);
 
-        await adapter.NotifyCapabilitiesOnConfigChangedAsync();
+            await adapter.NotifyCapabilitiesOnConfigChangedAsync();
 
-        var notice = notifications.Invocations.Single(i => i.Method.Name == "Show");
-        Assert.AreEqual(Strings.ResourceManager.GetString(titleResource, Strings.Culture), notice.Arguments[0]);
-        Assert.AreEqual(Strings.ResourceManager.GetString(messageResource, Strings.Culture), notice.Arguments[1]);
-        Assert.AreEqual(1, handler.CapabilityRequests);
+            var notice = notifications.Invocations.Single(i => i.Method.Name == "Show");
+            Assert.AreEqual(Strings.HistoryCapabilitiesSyncTitle, notice.Arguments[0]);
+            Assert.AreEqual(string.Format(Strings.HistoryCapabilitiesUpgrade, missingNames), notice.Arguments[1]);
+            Assert.AreEqual(1, handler.CapabilityRequests);
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previousCulture;
+        }
     }
 
     [TestMethod]
