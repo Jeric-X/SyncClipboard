@@ -46,6 +46,8 @@ public class Web
         {
             options.OperationFilter<MultipartFormDataOperationFilter>();
             options.OperationFilter<QueryHistoryOperationFilter>();
+            options.SchemaFilter<HistoryMetadataDocumentationFilter>();
+            options.OperationFilter<HistoryMetadataDocumentationFilter>();
         });
 
         services.AddServerProfileEnvProvider();

@@ -302,6 +302,8 @@ When adding an account, choose `S3` and configure:
 
 ## API
 
+For history endpoints and the name/tag protocol, see the [API reference](docs/API_EN.md).
+
 In a standalone server environment, set the environment variable ASPNETCORE_ENVIRONMENT to Development before running the server, or open the server in the desktop client and enable diagnostic mode in settings.
 Then visit `http://ip:port/swagger/index.html` to access the API description page.
 

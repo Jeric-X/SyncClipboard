@@ -328,6 +328,8 @@ sudo systemctl enable --now syncclipboard.service
 
 ## API
 
+历史接口及名称、标签协议见 [API 说明](docs/API.md)。
+
 在独立服务器运行环境下设定环境变量ASPNETCORE_ENVIRONMENT为Development后运行服务器，或桌面客户端打开服务器并打开设置里的诊断模式后，
 访问`http://ip:端口/swagger/index.html`可以打开API描述页面
 

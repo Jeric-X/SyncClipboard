@@ -1,3 +1,4 @@
+using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
@@ -45,7 +46,20 @@ public class MultipartFormDataOperationFilter : IOperationFilter
                 ["version"] = context.SchemaGenerator.GenerateSchema(typeof(int), context.SchemaRepository),
                 ["isDeleted"] = context.SchemaGenerator.GenerateSchema(typeof(bool), context.SchemaRepository),
                 ["text"] = context.SchemaGenerator.GenerateSchema(typeof(string), context.SchemaRepository),
-                ["name"] = new OpenApiSchema { Type = "string", Description = "Omit to preserve the name, or send an empty value to clear it." },
+                ["name"] = new OpenApiSchema
+                {
+                    Type = "string",
+                    Description = "Optional plain text before data. Omit to preserve an existing name (unknown for a new record). "
+                        + "An empty or whitespace-only value clears it; surrounding whitespace is trimmed. The text null is a literal name.",
+                    Example = new OpenApiString("应用图标"),
+                },
+                ["tags"] = new OpenApiSchema
+                {
+                    Type = "string",
+                    Description = "Optional JSON array encoded as a text part before data, e.g. [\"工作\",\"Work\"]. "
+                        + "Omit or send JSON null to preserve existing tags (unknown for a new record); [] clears them.",
+                    Example = new OpenApiString("[\"工作\",\"Work\"]"),
+                },
                 ["size"] = context.SchemaGenerator.GenerateSchema(typeof(long), context.SchemaRepository),
                 ["data"] = new OpenApiSchema
                 {
