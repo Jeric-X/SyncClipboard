@@ -396,6 +396,29 @@ public class HistoryViewModelPagingTests
         fixture.Logger.VerifyNoOtherCalls();
     }
 
+    [TestMethod]
+    [DataRow(0)]
+    [DataRow(1)]
+    [DataRow(19)]
+    public async Task RecentlyUsedRecord_KeepsSelectionWhenMovedToTop(int selectedIndex)
+    {
+        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
+        fixture.RuntimeConfig.SetConfig(new HistoryWindowConfig { SortByLastAccessed = true });
+        await fixture.LoadAsync();
+        var selected = fixture.Records[selectedIndex];
+        fixture.ViewModel.SelectSingleRecord(selected);
+        var updated = selected.DeepCopy();
+        updated.LastAccessed = DateTime.UtcNow.AddMinutes(1);
+
+        fixture.Publish(updated);
+
+        Assert.AreEqual(selected.Key, fixture.Records[0].Key);
+        Assert.AreSame(fixture.Records[0], fixture.ViewModel.SelectedItem);
+        Assert.AreSame(fixture.Records[0], fixture.ViewModel.PreviewedHistoryItem);
+        Assert.HasCount(20, fixture.Records);
+        fixture.Logger.VerifyNoOtherCalls();
+    }
+
     public sealed class Fixture : IAsyncDisposable
     {
         private readonly HistoryDbContext db = new();

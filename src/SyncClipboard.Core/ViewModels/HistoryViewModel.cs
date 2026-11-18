@@ -836,7 +836,7 @@ public partial class HistoryViewModel : ObservableObject
         {
             _foregroundWindowTrackingService.SetHistoryWindow(window.GetNativeWindowInfo());
         }
-        if (ScrollToTopOnReopen || (!IsMultiSelecting && SelectedItem is null))
+        if (ScrollToTopOnReopen)
         {
             ScrollToTop();
         }
@@ -1157,9 +1157,9 @@ public partial class HistoryViewModel : ObservableObject
     {
         try
         {
-            var wasPreviewedInMultiSelect = IsMultiSelecting && ReferenceEquals(SelectedItem, oldR);
+            var wasSelected = ReferenceEquals(SelectedItem, oldR);
             var selectionAfterReplacement = PrepareSelectionForRecordRemoval(oldR);
-            if (wasPreviewedInMultiSelect)
+            if (wasSelected && newR is not null && IsMatchUiFilter(newR))
                 selectionAfterReplacement = newR;
             ClearVisibleRecordSelection(oldR);
             allHistoryItems.Remove(oldR);

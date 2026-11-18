@@ -4,10 +4,13 @@ using Avalonia.Data;
 using Avalonia.Headless;
 using Avalonia.Threading;
 using Moq;
+using SharpHook.Simulation;
 using ObservableCollections;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Models.Permissions;
+using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.UserServices;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
@@ -26,28 +29,41 @@ public class HistoryWindowSelectionTests
         .UseHeadless(new AvaloniaHeadlessPlatformOptions());
 
     [TestMethod]
-    [DataRow(0)]
-    [DataRow(1)]
-    public async Task ReopenAfterCopy_SelectsFirstRecordWithoutCollectionChanges(int copiedIndex)
+    [DataRow(0, false, false)]
+    [DataRow(1, false, false)]
+    [DataRow(0, true, false)]
+    [DataRow(1, true, false)]
+    [DataRow(0, false, true)]
+    [DataRow(1, false, true)]
+    [DataRow(0, true, true)]
+    [DataRow(1, true, true)]
+    public async Task CopyOrPaste_KeepsSelectionAndOnlyScrollsOnReopenWhenEnabled(
+        int copiedIndex, bool paste, bool scrollToTop)
     {
         await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryWindowSelectionTests));
-        await session.Dispatch(() =>
+        await session.Dispatch(async () =>
         {
-            using var fixture = new Fixture();
+            using var fixture = new Fixture(scrollToTop);
             fixture.Show();
-            fixture.ViewModel.SelectedItem = fixture.Records[copiedIndex];
-            Assert.AreSame(fixture.Records[copiedIndex], fixture.List.SelectedItem);
+            var copied = fixture.Records[copiedIndex];
+            fixture.ViewModel.SelectedItem = copied;
+            fixture.WindowApi.Invocations.Clear();
 
-            // Copy and paste both clear the selection before hiding. The first record
-            // stays in place, so no collection-change callback will restore selection.
-            fixture.ViewModel.SelectedItem = null;
-            fixture.Window.Hide();
-            Assert.IsNull(fixture.List.SelectedItem);
+            await fixture.HideAfterCopyAsync(paste, TestContext.CancellationTokenSource.Token);
+
+            Assert.IsFalse(fixture.Window.IsVisible);
+            Assert.AreSame(copied, fixture.ViewModel.SelectedItem);
+            Assert.AreSame(copied, fixture.List.SelectedItem);
+            fixture.WindowApi.Verify(window => window.ScrollToTop(), Times.Never);
+            fixture.WindowApi.Verify(window => window.ScrollToSelectedItem(), Times.Never);
             fixture.Show();
 
-            Assert.AreSame(fixture.Records[0], fixture.ViewModel.SelectedItem);
-            Assert.AreSame(fixture.Records[0], fixture.List.SelectedItem);
-            Assert.AreSame(fixture.Records[0], fixture.ViewModel.PreviewedHistoryItem);
+            var expected = scrollToTop ? fixture.Records[0] : copied;
+            Assert.AreSame(expected, fixture.ViewModel.SelectedItem);
+            Assert.AreSame(expected, fixture.List.SelectedItem);
+            Assert.AreSame(expected, fixture.ViewModel.PreviewedHistoryItem);
+            fixture.WindowApi.Verify(window => window.ScrollToSelectedItem(), scrollToTop ? Times.Once : Times.Never);
+            fixture.WindowApi.Verify(window => window.ScrollToTop(), Times.Never);
         }, TestContext.CancellationTokenSource.Token);
     }
 
@@ -69,25 +85,6 @@ public class HistoryWindowSelectionTests
         }, TestContext.CancellationTokenSource.Token);
     }
 
-    [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task ReopenWithoutSingleSelection_LeavesEmptyListAndMultiSelectUnselected(bool multiSelect)
-    {
-        await using var session = HeadlessUnitTestSession.StartNew(typeof(HistoryWindowSelectionTests));
-        await session.Dispatch(() =>
-        {
-            using var fixture = new Fixture();
-            if (multiSelect)
-                SetField(fixture.ViewModel, "isMultiSelecting", true);
-            else
-                fixture.Records.Clear();
-            fixture.Show();
-            Assert.IsNull(fixture.ViewModel.SelectedItem);
-            Assert.IsNull(fixture.List.SelectedItem);
-        }, TestContext.CancellationTokenSource.Token);
-    }
-
     private static void SetField(object target, string name, object value) => target.GetType()
         .GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(target, value);
 
@@ -103,6 +100,8 @@ public class HistoryWindowSelectionTests
         public ObservableList<HistoryRecordVM> Records { get; } = [];
         public ListBox List { get; } = new();
         public Window Window { get; }
+        public Mock<IWindow> WindowApi { get; } = new();
+        private readonly VirtualKeyboard keyboard;
         private readonly IDisposable view;
         private readonly NotifyCollectionChangedSynchronizedViewList<HistoryRecordVM> items;
         private readonly BindingExpressionBase binding;
@@ -120,10 +119,16 @@ public class HistoryWindowSelectionTests
             view = synchronizedView;
             items = historyItems;
             var config = new MemoryConfig();
-            config.SetConfig(new HistoryWindowConfig { ScrollToTopOnReopen = scrollToTop });
+            config.SetConfig(new HistoryWindowConfig { ScrollToTopOnReopen = scrollToTop, PasteDelayAfterWindowHiddenMilliseconds = 0 });
             SetField(ViewModel, "runtimeConfig", config);
             SetField(ViewModel, "<HistoryItems>k__BackingField", historyItems);
-            SetField(ViewModel, "window", Mock.Of<IWindow>());
+            SetField(ViewModel, "window", WindowApi.Object);
+            SetField(ViewModel, "logger", Mock.Of<ILogger>());
+            var permissions = new Mock<IPermissionProvider>();
+            permissions.Setup(value => value.GetState(PermissionCapability.SimulateInput)).Returns(PermissionState.Available);
+            keyboard = new VirtualKeyboard(permissions.Object);
+            SetField(keyboard, "_simulator", Mock.Of<IEventSimulator>());
+            SetField(ViewModel, "keyboard", keyboard);
             SetField(ViewModel, "_foregroundWindowTrackingService", new ForegroundWindowTrackingService(
                 Mock.Of<IForegroundWindowMonitor>(), Mock.Of<INativeWindowController>(), Mock.Of<ILogger>()));
             List.ItemsSource = historyItems;
@@ -133,6 +138,20 @@ public class HistoryWindowSelectionTests
                 Mode = BindingMode.TwoWay
             });
             Window = new Window { Content = List };
+            WindowApi.Setup(window => window.Hide()).Callback(Window.Hide);
+        }
+
+        public Task HideAfterCopyAsync(bool paste, CancellationToken token)
+        {
+            if (paste)
+                return (Task)typeof(HistoryViewModel)
+                    .GetMethod("PasteToLastExternalWindowAsync", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(ViewModel, [token])!;
+
+            typeof(HistoryViewModel)
+                .GetMethod("CloseHistoryWindowAfterCopyIfNeeded", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .Invoke(ViewModel, null);
+            return Task.CompletedTask;
         }
 
         public void Show()
@@ -145,6 +164,7 @@ public class HistoryWindowSelectionTests
         public void Dispose()
         {
             Window.Close();
+            keyboard.Dispose();
             binding.Dispose();
             items.Dispose();
             view.Dispose();
