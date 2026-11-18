@@ -96,6 +96,11 @@
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding ProtectTaggedRecords, Mode=TwoWay}" />
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ProtectTitledRecords}" Description="{x:Static i18n:Strings.ProtectTitledRecordsDescription}">
+                    <ui:FASettingsExpanderItem.Footer>
+                        <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding ProtectTitledRecords, Mode=TwoWay}" />
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
             </ui:FASettingsExpander.Items>
         </ui:FASettingsExpander>
         <ui:FASettingsExpander Header="{x:Static i18n:Strings.HistoryShortcutSettings}" IsExpanded="True" ItemsSource="{Binding ShortcutSettings}">

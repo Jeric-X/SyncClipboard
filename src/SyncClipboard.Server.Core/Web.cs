@@ -122,6 +122,7 @@ public class Web
             option.MaxSavedHistoryCount = serverConfig.MaxSavedHistoryCount;
             option.HistoryRetentionMinutes = serverConfig.HistoryRetentionMinutes;
             option.ProtectTaggedRecords = serverConfig.ProtectTaggedRecords;
+            option.ProtectTitledRecords = serverConfig.ProtectTitledRecords;
         });
         builder.Services.AddSingleton<ICredentialChecker, StaticCredentialChecker>(_ => new StaticCredentialChecker(serverConfig.UserName, serverConfig.Password));
         var app = Configure(builder, serverConfig.DiagnoseMode);

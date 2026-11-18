@@ -14,5 +14,6 @@ public record class ServerPara(
     uint MaxSavedHistoryCount,
     uint HistoryRetentionMinutes,
     IServiceProvider Services,
-    bool ProtectTaggedRecords = true
+    bool ProtectTaggedRecords = true,
+    bool ProtectTitledRecords = true
 );

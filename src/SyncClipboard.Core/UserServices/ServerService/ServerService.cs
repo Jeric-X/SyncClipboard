@@ -94,7 +94,8 @@ public class ServerService : Service
                         _serverConfig.MaxHistoryCount,
                         _serverConfig.HistoryRetentionMinutes,
                         _serviceProvider,
-                        _serverConfig.ProtectTaggedRecords
+                        _serverConfig.ProtectTaggedRecords,
+                        _serverConfig.ProtectTitledRecords
                     )
                 );
                 _trayIcon.SetStatusString(SERVICE_NAME, "Running.", false);

@@ -1793,4 +1793,10 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryEditTitle" xml:space="preserve">
     <value>编辑标题</value>
   </data>
+  <data name="ProtectTitledRecords" xml:space="preserve">
+    <value>保护带标题的记录</value>
+  </data>
+  <data name="ProtectTitledRecordsDescription" xml:space="preserve">
+    <value>带标题的记录不会被自动删除</value>
+  </data>
 </root>
