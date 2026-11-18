@@ -43,12 +43,8 @@ public class HistoryLocalNameTests
         var named = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
         Assert.AreEqual("Release notes", named.Name);
         Assert.AreEqual(expectedStatus, named.SyncStatus);
-        var syncEdit = syncEnabled && supportsName;
-        Assert.AreEqual(syncEdit ? 8 : 7, named.Version);
-        if (syncEdit)
-            Assert.IsGreaterThan(modified, named.LastModified);
-        else
-            Assert.AreEqual(modified, named.LastModified);
+        Assert.AreEqual(8, named.Version);
+        Assert.IsGreaterThan(modified, named.LastModified);
 
         Assert.IsFalse(await fixture.Manager.SetNameAsync(key, "Release notes ", supportsName, Token));
         var unchanged = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
@@ -57,7 +53,7 @@ public class HistoryLocalNameTests
         Assert.IsTrue(await fixture.Manager.SetNameAsync(key, "  ", supportsName, Token));
         var cleared = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
         Assert.AreEqual(string.Empty, cleared.Name);
-        Assert.AreEqual(syncEdit ? 9 : 7, cleared.Version);
+        Assert.AreEqual(9, cleared.Version);
         Assert.AreEqual("clipboard content", cleared.Text);
         Assert.AreEqual(2, notifications);
     }

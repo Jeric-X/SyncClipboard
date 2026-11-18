@@ -498,8 +498,10 @@ public sealed class OfficialAdapter(
                 { new StringContent(dto.HasData.ToString()), "hasData" }
             };
 
+            if (dto.Name is not null)
+                content.Add(new StringContent(dto.Name), "name");
             if (dto.Tags is not null)
-                content.Add(new StringContent(JsonSerializer.Serialize(dto.Tags)), nameof(HistoryRecordDto.Tags));
+                content.Add(new StringContent(JsonSerializer.Serialize(dto.Tags)), "tags");
 
             using var request = new HttpRequestMessage(HttpMethod.Post, url)
             {

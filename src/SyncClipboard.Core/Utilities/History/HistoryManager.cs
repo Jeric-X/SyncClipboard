@@ -291,14 +291,11 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         var previouslyModified = entry.Properties.Where(p => p.IsModified).Select(p => p.Metadata.Name).ToHashSet();
         var previous = (record.Name, record.Version, record.LastModified, record.SyncStatus);
         record.Name = normalized;
-        if (_runtimeHistoryConfig.EnableSyncHistory && supportsHistoryName)
-        {
-            if (record.Version < int.MaxValue)
-                record.Version++;
-            record.LastModified = DateTime.UtcNow;
-            if (record.SyncStatus != HistorySyncStatus.LocalOnly)
-                record.SyncStatus = HistorySyncStatus.NeedSync;
-        }
+        if (record.Version < int.MaxValue)
+            record.Version++;
+        record.LastModified = DateTime.UtcNow;
+        if (_runtimeHistoryConfig.EnableSyncHistory && supportsHistoryName && record.SyncStatus != HistorySyncStatus.LocalOnly)
+            record.SyncStatus = HistorySyncStatus.NeedSync;
         try
         {
             await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
@@ -422,6 +419,8 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         if (entity is null || entity.ID != record.ID || entity.Version != expectedVersion || entity.LastModified != expectedModified)
             return false;
 
+        if (record.Name is not null)
+            entity.Name = record.Name;
         if (record.Tags is not null)
             entity.Tags = [.. record.Tags];
         ApplyServerSyncedProperties(record, entity);

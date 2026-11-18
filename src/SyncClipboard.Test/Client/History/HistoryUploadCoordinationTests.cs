@@ -284,6 +284,7 @@ public class HistoryUploadCoordinationTests
         await f.Manager.AddLocalProfile(profile, token: Token);
         var record = await f.Db.HistoryRecords.SingleAsync(Token);
         record.Tags = ["local"];
+        record.Name = "local";
         record.Version = 2;
         await f.Db.SaveChangesAsync(Token);
         var tags = tagsJson is null ? null : System.Text.Json.JsonSerializer.Deserialize<string[]>(tagsJson);
@@ -292,6 +293,7 @@ public class HistoryUploadCoordinationTests
             .ThrowsAsync(new RemoteHistoryConflictException("conflict", new HistoryRecordUpdateDto
             {
                 Tags = tags,
+                Name = tags is null ? null : tags.Length == 0 ? "" : "server",
                 Version = 3,
                 Starred = true,
                 LastModified = new DateTimeOffset(record.LastModified.AddSeconds(1))
@@ -302,9 +304,110 @@ public class HistoryUploadCoordinationTests
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
         var expectedTags = tagsJson is null ? ExpectedLocalTags : tagsJson == "[]" ? [] : ExpectedRemoteTags;
         CollectionAssert.AreEqual(expectedTags, saved.Tags);
+        Assert.AreEqual(tagsJson is null ? "local" : tagsJson == "[]" ? "" : "server", saved.Name);
         Assert.AreEqual(3, saved.Version);
         Assert.IsTrue(saved.Stared);
         Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
+    }
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("")]
+    [DataRow("应用图标")]
+    public async Task ContentUpload_TransmitsTheStoredName(string? name)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var profile = new TextProfile("named upload");
+        await f.Manager.AddLocalProfile(profile, token: Token);
+        var record = await f.Db.HistoryRecords.SingleAsync(Token);
+        record.Name = name;
+        await f.Db.SaveChangesAsync(Token);
+
+        await f.Queue.Upload(profile, ct: Token);
+
+        Assert.IsNotNull(f.RemoteRecord);
+        Assert.AreEqual(name, f.RemoteRecord.Name);
+        var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        Assert.AreEqual(name, saved.Name);
+        Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
+    }
+
+    [TestMethod]
+    [DataRow("")]
+    [DataRow("新名称")]
+    public async Task NameEdit_SynchronizesTheFinalNameThroughPatch(string name)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        f.RuntimeConfig.EnableSyncHistory = true;
+        var record = new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = "NAME",
+            Name = "original",
+            SyncStatus = HistorySyncStatus.Synced
+        };
+        f.Db.Add(record);
+        await f.Db.SaveChangesAsync(Token);
+        f.RemoteRecord = record.ToHistoryRecordDto();
+        await f.Manager.SetNameAsync(HistoryRecordKey.From(record), name, true, Token);
+
+        await f.CreateSyncer().SyncNeedUpdateAsync(Token);
+
+        Assert.AreEqual(name, f.RemoteRecord.Name);
+        var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        Assert.AreEqual(name, saved.Name);
+        Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
+        Assert.AreEqual(0, f.Uploads);
+    }
+
+    [TestMethod]
+    [DataRow(null, false)]
+    [DataRow("", false)]
+    [DataRow("  server  ", false)]
+    [DataRow(null, true)]
+    [DataRow("", true)]
+    [DataRow("  server  ", true)]
+    public async Task PatchResponse_MergesNameUsingTheExistingMetadataRules(string? name, bool conflict)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var record = new HistoryRecord { Type = ProfileType.Text, Hash = "NAME", Name = "local", SyncStatus = HistorySyncStatus.NeedSync };
+        f.Db.Add(record);
+        await f.Db.SaveChangesAsync(Token);
+        var response = new HistoryRecordUpdateDto { Name = name, Version = 7, Starred = true };
+        f.Server.Setup(x => x.UpdateHistoryAsync(record.Type, record.Hash,
+            It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
+            .Returns(() => conflict ? Task.FromException<HistoryRecordUpdateDto?>(
+                new RemoteHistoryConflictException("conflict", response)) : Task.FromResult<HistoryRecordUpdateDto?>(response));
+
+        await f.CreateSyncer().SyncOneAsync(record, Token);
+
+        var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        Assert.AreEqual(name?.Trim() ?? "local", saved.Name);
+        Assert.AreEqual(7, saved.Version);
+        Assert.IsTrue(saved.Stared);
+        Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task LateAcknowledgement_PreservesANewerNameEdit(bool supportsName)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        f.RuntimeConfig.EnableSyncHistory = true;
+        var record = new HistoryRecord { Type = ProfileType.Text, Hash = "NAME", Name = "first", SyncStatus = HistorySyncStatus.NeedSync };
+        f.Db.Add(record);
+        await f.Db.SaveChangesAsync(Token);
+        var sent = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
+        Assert.IsNotNull(sent);
+        await f.Manager.SetNameAsync(HistoryRecordKey.From(record), "second", supportsName, Token);
+        sent.SyncStatus = HistorySyncStatus.Synced;
+
+        Assert.IsFalse(await f.Manager.TryApplySyncResponseAsync(sent, sent.Version, sent.LastModified, Token));
+
+        var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+        Assert.AreEqual("second", saved.Name);
+        Assert.AreEqual(HistorySyncStatus.NeedSync, saved.SyncStatus);
     }
 
     [TestMethod]
@@ -1236,6 +1339,8 @@ public class HistoryUploadCoordinationTests
                     if (RemoteRecord is null)
                         throw new RemoteHistoryNotFoundException("missing");
                     Interlocked.Increment(ref Updates);
+                    if (dto.Name is not null)
+                        RemoteRecord.Name = dto.Name;
                     if (dto.Tags is not null)
                         RemoteRecord.Tags = [.. dto.Tags];
                     RemoteRecord.Version = dto.Version!.Value;
