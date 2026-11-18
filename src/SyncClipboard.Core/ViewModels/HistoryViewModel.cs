@@ -750,7 +750,14 @@ public partial class HistoryViewModel : ObservableObject
             HistoryFilterType.File => ProfileTypeFilter.FileAndGroup,
             _ => ProfileTypeFilter.All,
         };
-        return new HistoryQueryPara { TypeFilter = types, Starred = starred, SearchText = searchText, Tags = SelectedTags };
+        return new HistoryQueryPara
+        {
+            TypeFilter = types,
+            Starred = starred,
+            SearchText = searchText,
+            SearchNames = true,
+            Tags = SelectedTags
+        };
     }
 
     private int GetSelectedFilterOptionIndex()
@@ -1068,7 +1075,8 @@ public partial class HistoryViewModel : ObservableObject
             InitVMTransferStatus(newRecordVM);
             RecordUpdated(newRecordVM);
             RefreshSelectionSummaryForUpdatedRecord(newRecordVM);
-            if (SelectedFilter != HistoryFilterType.Transferring && SelectedTags.Length != 0)
+            if (SelectedFilter != HistoryFilterType.Transferring
+                && (SelectedTags.Length != 0 || !string.IsNullOrEmpty(SearchText)))
                 RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
         });
     }
@@ -1229,10 +1237,29 @@ public partial class HistoryViewModel : ObservableObject
         return ignoreStarredFilter || !IsStarredScopeActive || vm.Stared;
     }
 
+    public async Task SetNameAsync(HistoryRecordKey key, string name)
+    {
+        var server = historySyncServer;
+        var supportsHistoryName = false;
+        try
+        {
+            if (server is not null)
+                supportsHistoryName = await server.SupportsHistoryNameAsync();
+        }
+        catch (Exception ex)
+        {
+            logger.Write(nameof(HistoryViewModel), $"Failed to query history name support; saving locally: {ex.Message}");
+        }
+        await historyManager.SetNameAsync(key, name, supportsHistoryName);
+        if (await historyManager.GetSyncSnapshotAsync(key) is not { IsDeleted: false })
+            throw new InvalidOperationException(I18n.Strings.HistoryExportRemoved);
+    }
+
     private bool MatchesSearchFilter(HistoryRecordVM vm)
     {
         return string.IsNullOrEmpty(SearchText)
-            || vm.Text.Contains(SearchText, StringComparison.OrdinalIgnoreCase);
+            || vm.Text.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
+            || vm.Name?.Contains(SearchText, StringComparison.OrdinalIgnoreCase) == true;
     }
 
     // 已加载范围是 >= _timeCursor 的记录，< _timeCursor 的记录还未加载

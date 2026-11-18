@@ -15,6 +15,7 @@ public partial class HistoryRecordVM : ObservableObject
     {
         id = record.ID;
         text = record.Text;
+        name = record.Name;
         Type = record.Type;
         filePath = RestoreFilePath(record.FilePath, record.Type, record.Hash);
         Hash = record.Hash;
@@ -42,6 +43,14 @@ public partial class HistoryRecordVM : ObservableObject
 
     [ObservableProperty]
     private string text;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasName))]
+    [NotifyPropertyChangedFor(nameof(NameActionText))]
+    private string? name;
+
+    public bool HasName => !string.IsNullOrEmpty(Name);
+    public string NameActionText => HasName ? Strings.HistoryEditName : Strings.HistoryAddName;
+
     public ProfileType Type { get; set; }
     [ObservableProperty]
     private string[] filePath;
@@ -301,6 +310,7 @@ public partial class HistoryRecordVM : ObservableObject
         {
             ID = id,
             Text = Text,
+            Name = Name,
             Type = Type,
             FilePath = FilePath,
             Hash = Hash,
@@ -318,6 +328,7 @@ public partial class HistoryRecordVM : ObservableObject
     public void Update(HistoryRecordVM record)
     {
         Text = record.Text;
+        Name = record.Name;
         Type = record.Type;
         FilePath = RestoreFilePath(record.FilePath, record.Type, record.Hash);
         TransferDataFile = record.TransferDataFile;
@@ -400,6 +411,7 @@ public partial class HistoryRecordVM : ObservableObject
         var copy = new HistoryRecordVM
         {
             Text = this.Text,
+            Name = this.Name,
             Type = this.Type,
             FilePath = this.FilePath,
             Hash = this.Hash,
