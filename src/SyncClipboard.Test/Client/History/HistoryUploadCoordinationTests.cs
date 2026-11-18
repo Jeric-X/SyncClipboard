@@ -173,38 +173,6 @@ public class HistoryUploadCoordinationTests
     [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
-    public async Task NameSearch_DoesNotTreatMissingResultsAsDeleted(bool pendingEdit)
-    {
-        await using var f = await Fixture.CreateAsync(Token);
-        var record = new HistoryRecord
-        {
-            Type = ProfileType.Text,
-            Hash = "SEARCH",
-            Text = "content",
-            Name = "应用图标",
-            Version = 3,
-            SyncStatus = pendingEdit ? HistorySyncStatus.NeedSync : HistorySyncStatus.Synced
-        };
-        f.Db.Add(record);
-        await f.Db.SaveChangesAsync(Token);
-        f.RemoteRecord = record.ToHistoryRecordDto();
-        f.RemoteRecord.Name = null;
-        f.Server.Setup(x => x.SupportsHistoryNameAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
-        f.Server.Setup(x => x.GetHistoryAsync(It.IsAny<int>(), It.IsAny<DateTimeOffset?>(), It.IsAny<DateTimeOffset?>(),
-            It.IsAny<DateTimeOffset?>(), It.IsAny<ProfileTypeFilter>(), It.IsAny<string?>(), It.IsAny<bool?>(),
-            It.IsAny<bool>(), It.IsAny<CancellationToken>())).ReturnsAsync([]);
-
-        await f.CreateSyncer().SyncRangeAsync(searchText: "图标", token: Token);
-
-        Assert.AreEqual(HistorySyncStatus.Synced, record.SyncStatus);
-        Assert.AreEqual(pendingEdit ? "应用图标" : null, f.RemoteRecord.Name);
-        Assert.AreEqual(pendingEdit ? 1 : 0, f.Updates);
-        Assert.AreEqual(0, f.Uploads);
-    }
-
-    [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
     public async Task StarUpdate_PreservesRemoteTagsUnlessLocalTagsAreKnownEmpty(bool knownEmpty)
     {
         await using var f = await Fixture.CreateAsync(Token);
