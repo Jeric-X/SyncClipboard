@@ -109,7 +109,7 @@ public class HistoryUploadResponseTests
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
         {
             var form = (MultipartFormDataContent)request.Content!;
-            var tagField = form.SingleOrDefault(part => part.Headers.ContentDisposition?.Name?.Trim('"') == "Tags");
+            var tagField = form.SingleOrDefault(part => part.Headers.ContentDisposition?.Name?.Trim('"') == "tags");
             // Mirror the server's omitted/null-preserves, explicit-array-replaces contract.
             string[] savedTags = ["server"];
             if (tagField is not null)
