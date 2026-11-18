@@ -160,7 +160,7 @@ public partial class HistoryWindow : Window, IWindow
             this.WindowDecorations = WindowDecorations.BorderOnly;
 
         InitializeComponent();
-        _PreviewPanel.NameEditRequested += async record => await EditNameAsync(record);
+        _PreviewPanel.TitleEditRequested += async record => await EditTitleAsync(record);
         _TagFilterScroll.AddHandler(PointerWheelChangedEvent, TagFilterScroll_PointerWheelChanged, RoutingStrategies.Tunnel);
         _TagFilterScroll.ScrollChanged += (_, _) => _tagNavigation.SnapToRow(_TagFilterItems, _TagFilterScroll);
         // Handle configured keys before the search box, without intercepting modal dialog input.
@@ -497,9 +497,9 @@ public partial class HistoryWindow : Window, IWindow
             flyout.Items.Add(new FAMenuFlyoutSeparator());
         if (!isMultiSelecting)
         {
-            var editName = new FAMenuFlyoutItem { Text = record.NameActionText };
-            editName.Click += async (_, _) => await EditNameAsync(record);
-            flyout.Items.Add(editName);
+            var editTitle = new FAMenuFlyoutItem { Text = record.TitleActionText };
+            editTitle.Click += async (_, _) => await EditTitleAsync(record);
+            flyout.Items.Add(editTitle);
         }
         var editTags = new FAMenuFlyoutItem
         {
@@ -556,15 +556,15 @@ public partial class HistoryWindow : Window, IWindow
         flyout.Items.Add(settings);
     }
 
-    private async Task EditNameAsync(HistoryRecordVM record)
+    private async Task EditTitleAsync(HistoryRecordVM record)
     {
         if (_viewModel.HasModalOperation || _viewModel.IsMultiSelecting)
             return;
         using var hold = _viewModel.HoldForModalOperation();
-        var title = record.NameActionText;
+        var title = record.TitleActionText;
         try
         {
-            var input = new TextBox { Text = record.Name ?? string.Empty };
+            var input = new TextBox { Text = record.Title ?? string.Empty };
             var dialog = new FAContentDialog
             {
                 Title = title,
@@ -579,7 +579,7 @@ public partial class HistoryWindow : Window, IWindow
                 input.SelectAll();
             });
             if (await dialog.ShowAsync(this) == FAContentDialogResult.Primary)
-                await _viewModel.SetNameAsync(record.Key, input.Text ?? string.Empty);
+                await _viewModel.SetTitleAsync(record.Key, input.Text ?? string.Empty);
         }
         catch (Exception ex)
         {

@@ -214,20 +214,20 @@ public class ServerHistoryTagQueryTests
     }
 
     [TestMethod]
-    public async Task Query_SearchNamesMatchesImageTitleOrOriginalFilename()
+    public async Task Query_SearchTitlesMatchesImageTitleOrOriginalFilename()
     {
         await using var f = await Fixture.CreateAsync(Token);
         var image = f.Add("image", ["A"]);
         image.Type = ProfileType.Image;
         image.Text = "icon.png";
-        image.Name = "应用图标";
+        image.Title = "应用图标";
         image.Stared = true;
-        f.Add("other", ["B"]).Name = image.Name;
+        f.Add("other", ["B"]).Title = image.Title;
         await f.Db.SaveChangesAsync(Token);
 
         var query = new HistoryQueryDto { SearchText = "图标", Starred = true, Tags = ["A"], Types = ProfileTypeFilter.Image };
         Assert.IsEmpty(await f.QueryAsync(query));
-        query.SearchNames = true;
+        query.SearchTitles = true;
         Assert.AreEqual("image", (await f.QueryAsync(query)).Single().Hash);
         query.SearchText = "icon";
         Assert.AreEqual("image", (await f.QueryAsync(query)).Single().Hash);

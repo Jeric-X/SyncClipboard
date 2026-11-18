@@ -45,7 +45,7 @@ public class HistoryRecordEntity
     public string From { get; set; } = string.Empty;
     // Null means tags have never been supplied; an empty array means they were explicitly cleared.
     public string[]? Tags { get; set; }
-    public string? Name { get; set; }
+    public string? Title { get; set; }
     public string? ExtraData { get; set; }
     public int Version { get; set; } = 0;
     public bool IsDeleted { get; set; } = false;

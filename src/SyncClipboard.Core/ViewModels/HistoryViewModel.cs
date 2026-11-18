@@ -755,7 +755,7 @@ public partial class HistoryViewModel : ObservableObject
             TypeFilter = types,
             Starred = starred,
             SearchText = searchText,
-            SearchNames = true,
+            SearchTitles = true,
             Tags = SelectedTags
         };
     }
@@ -1237,20 +1237,20 @@ public partial class HistoryViewModel : ObservableObject
         return ignoreStarredFilter || !IsStarredScopeActive || vm.Stared;
     }
 
-    public async Task SetNameAsync(HistoryRecordKey key, string name)
+    public async Task SetTitleAsync(HistoryRecordKey key, string title)
     {
         var server = historySyncServer;
-        var supportsHistoryName = false;
+        var supportsHistoryTitle = false;
         try
         {
             if (server is not null)
-                supportsHistoryName = await server.SupportsHistoryNameAsync();
+                supportsHistoryTitle = await server.SupportsHistoryTitleAsync();
         }
         catch (Exception ex)
         {
-            logger.Write(nameof(HistoryViewModel), $"Failed to query history name support; saving locally: {ex.Message}");
+            logger.Write(nameof(HistoryViewModel), $"Failed to query history title support; saving locally: {ex.Message}");
         }
-        await historyManager.SetNameAsync(key, name, supportsHistoryName);
+        await historyManager.SetTitleAsync(key, title, supportsHistoryTitle);
         if (await historyManager.GetSyncSnapshotAsync(key) is not { IsDeleted: false })
             throw new InvalidOperationException(I18n.Strings.HistoryExportRemoved);
     }
@@ -1259,7 +1259,7 @@ public partial class HistoryViewModel : ObservableObject
     {
         return string.IsNullOrEmpty(SearchText)
             || vm.Text.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
-            || vm.Name?.Contains(SearchText, StringComparison.OrdinalIgnoreCase) == true;
+            || vm.Title?.Contains(SearchText, StringComparison.OrdinalIgnoreCase) == true;
     }
 
     // 已加载范围是 >= _timeCursor 的记录，< _timeCursor 的记录还未加载

@@ -365,8 +365,8 @@
                                                                     ViewModel="{Binding #_HistoryWindow.ViewModel}"
                                                                     IsVisible="{Binding !#_HistoryWindow.ViewModel.ShowPreviewPanel}" />
                                     <StackPanel Margin="8,8,0,8" VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding Name}"
-                                                   IsVisible="{Binding HasName}"
+                                        <TextBlock Text="{Binding Title}"
+                                                   IsVisible="{Binding HasTitle}"
                                                    FontWeight="SemiBold"
                                                    FontSize="{Binding #_HistoryWindow.ViewModel.ListItemFontSize}"
                                                    TextTrimming="CharacterEllipsis" />
@@ -376,7 +376,7 @@
                                                         Content="{Binding .}">
                                             <ContentControl.IsVisible>
                                                 <MultiBinding Converter="{x:Static BoolConverters.Or}">
-                                                    <Binding Path="!HasName" />
+                                                    <Binding Path="!HasTitle" />
                                                     <Binding Path="!#_HistoryWindow.ViewModel.IsCompactListMode" />
                                                 </MultiBinding>
                                             </ContentControl.IsVisible>

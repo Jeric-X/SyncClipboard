@@ -24,7 +24,7 @@ namespace SyncClipboard.Test.Client.History;
 [DoNotParallelize]
 public class HistoryViewModelPagingTests
 {
-    private static readonly int[] ExpectedNameAndTextMatches = [98, 99];
+    private static readonly int[] ExpectedTitleAndTextMatches = [98, 99];
     private static readonly int[] ExpectedCombinedFilter = [12, 16];
     private static readonly string[] InitialRedFilter = ["Red"];
 
@@ -398,15 +398,15 @@ public class HistoryViewModelPagingTests
     }
 
     [TestMethod]
-    public async Task NameSearch_PagesAndCountsMatchingNamesAlongsideOriginalText()
+    public async Task TitleSearch_PagesAndCountsMatchingTitlesAlongsideOriginalText()
     {
         await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
         for (var index = 0; index < 50; index++)
-            await fixture.ViewModel.SetNameAsync(new(ProfileType.Text, index.ToString("D64")), "Shared name");
-        // This record matches by its original text, even with a different name.
-        await fixture.ViewModel.SetNameAsync(new(ProfileType.Text, 99.ToString("D64")), "other");
-        await fixture.ViewModel.SetNameAsync(new(ProfileType.Text, 98.ToString("D64")), "record 99");
-        Fixture.SetField(fixture.ViewModel, "searchText", "SHARED NAME");
+            await fixture.ViewModel.SetTitleAsync(new(ProfileType.Text, index.ToString("D64")), "Shared title");
+        // This record matches by its original text, even with a different title.
+        await fixture.ViewModel.SetTitleAsync(new(ProfileType.Text, 99.ToString("D64")), "other");
+        await fixture.ViewModel.SetTitleAsync(new(ProfileType.Text, 98.ToString("D64")), "record 99");
+        Fixture.SetField(fixture.ViewModel, "searchText", "SHARED TITLE");
         await fixture.LoadAsync();
         Assert.HasCount(20, fixture.Records);
         await fixture.ViewModel.NotifyScrollPositionAsync(10, 10, 20);
@@ -421,67 +421,67 @@ public class HistoryViewModelPagingTests
                 && fixture.ViewModel.SelectedInCurrentFilterCount == 49)
                 countsChanged.TrySetResult();
         };
-        await fixture.ViewModel.SetNameAsync(new(ProfileType.Text, 49.ToString("D64")), "out of filter");
+        await fixture.ViewModel.SetTitleAsync(new(ProfileType.Text, 49.ToString("D64")), "out of filter");
         await countsChanged.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
         Assert.HasCount(40, fixture.Records);
 
         Fixture.SetField(fixture.ViewModel, "searchText", "record 99");
         await fixture.ReloadAsync();
-        CollectionAssert.AreEqual(ExpectedNameAndTextMatches, fixture.Records.Select(record => int.Parse(record.Hash)).ToArray());
+        CollectionAssert.AreEqual(ExpectedTitleAndTextMatches, fixture.Records.Select(record => int.Parse(record.Hash)).ToArray());
         fixture.Logger.VerifyNoOtherCalls();
     }
 
     [TestMethod]
-    public async Task NameEdits_UpdateSearchAndPreviewWithinTagAndStarredFilters()
+    public async Task TitleEdits_UpdateSearchAndPreviewWithinTagAndStarredFilters()
     {
         await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
         await fixture.AddTagsAsync();
         fixture.ObserveHistoryUpdates();
         fixture.RuntimeConfig.SetConfig(new HistoryWindowConfig { OnlyShowStarred = true });
         Fixture.SetField(fixture.ViewModel, "_selectedTags", InitialRedFilter);
-        Fixture.SetField(fixture.ViewModel, "searchText", "name");
+        Fixture.SetField(fixture.ViewModel, "searchText", "title");
         await fixture.LoadAsync();
         Assert.IsEmpty(fixture.Records);
 
         var key = new HistoryRecordKey(ProfileType.Text, 0.ToString("D64"));
-        await fixture.ViewModel.SetNameAsync(key, " First name ");
+        await fixture.ViewModel.SetTitleAsync(key, " First title ");
         Assert.HasCount(1, fixture.Records);
         var displayed = fixture.Records[0];
-        Assert.AreEqual("First name", displayed.Name);
-        Assert.IsTrue(displayed.HasName);
+        Assert.AreEqual("First title", displayed.Title);
+        Assert.IsTrue(displayed.HasTitle);
         Assert.AreEqual("record 0", displayed.Text);
-        Assert.AreEqual("First name", displayed.DeepCopy().ToHistoryRecord().Name);
-        await fixture.ViewModel.SetNameAsync(key, "Second name");
+        Assert.AreEqual("First title", displayed.DeepCopy().ToHistoryRecord().Title);
+        await fixture.ViewModel.SetTitleAsync(key, "Second title");
         Assert.AreSame(displayed, fixture.Records[0]);
-        Assert.AreEqual("Second name", displayed.Name);
-        await fixture.ViewModel.SetNameAsync(new(ProfileType.Text, 1.ToString("D64")), "Excluded name");
+        Assert.AreEqual("Second title", displayed.Title);
+        await fixture.ViewModel.SetTitleAsync(new(ProfileType.Text, 1.ToString("D64")), "Excluded title");
         Assert.HasCount(1, fixture.Records);
-        await fixture.ViewModel.SetNameAsync(key, "");
+        await fixture.ViewModel.SetTitleAsync(key, "");
         Assert.IsEmpty(fixture.Records);
         await fixture.ReloadAsync();
         Assert.IsEmpty(fixture.Records);
-        Assert.AreEqual("", (await fixture.ReadStoredRecordAsync(displayed)).Name);
+        Assert.AreEqual("", (await fixture.ReadStoredRecordAsync(displayed)).Title);
         fixture.Logger.VerifyNoOtherCalls();
     }
 
     [TestMethod]
     [DataRow(true)]
     [DataRow(false)]
-    public async Task NameEdit_SavesLocallyWhenServerCapabilityIsUnavailable(bool discoveryFails)
+    public async Task TitleEdit_SavesLocallyWhenServerCapabilityIsUnavailable(bool discoveryFails)
     {
         await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
         var server = new Mock<IOfficialSyncServer>();
-        var discovery = server.Setup(value => value.SupportsHistoryNameAsync(It.IsAny<CancellationToken>()));
+        var discovery = server.Setup(value => value.SupportsHistoryTitleAsync(It.IsAny<CancellationToken>()));
         if (discoveryFails)
             discovery.ThrowsAsync(new HttpRequestException("offline"));
         else
             discovery.ReturnsAsync(false);
         Fixture.SetField(fixture.ViewModel, "historySyncServer", server.Object);
         var key = new HistoryRecordKey(ProfileType.Text, 0.ToString("D64"));
-        await fixture.ViewModel.SetNameAsync(key, "Offline name");
+        await fixture.ViewModel.SetTitleAsync(key, "Offline title");
         var record = await fixture.Manager.GetSyncSnapshotAsync(key, TestContext.CancellationTokenSource.Token);
         Assert.IsNotNull(record);
-        Assert.AreEqual("Offline name", record.Name);
+        Assert.AreEqual("Offline title", record.Title);
         Assert.AreEqual("record 0", record.Text);
         fixture.Logger.Verify(value => value.Write(nameof(HistoryViewModel), It.IsAny<string>()),
             discoveryFails ? Times.Once() : Times.Never());
@@ -491,18 +491,18 @@ public class HistoryViewModelPagingTests
     [TestMethod]
     [DataRow(null)]
     [DataRow("")]
-    [DataRow("Image name")]
-    public async Task RecordName_PreservesUnknownClearAndNamedStates(string? name)
+    [DataRow("Image title")]
+    public async Task RecordTitle_PreservesUnknownClearAndTitledStates(string? title)
     {
         await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
-        var record = new HistoryRecordVM(new HistoryRecord { Name = name, Text = "image.png", Type = ProfileType.Image });
-        Assert.AreEqual(name, record.DeepCopy().ToHistoryRecord().Name);
-        Assert.AreEqual(!string.IsNullOrEmpty(name), record.HasName);
-        Assert.AreEqual(record.HasName ? SyncClipboard.Core.I18n.Strings.HistoryEditName
-            : SyncClipboard.Core.I18n.Strings.HistoryAddName, record.NameActionText);
-        record.Update(new HistoryRecordVM(new HistoryRecord { Name = "", Text = "image.png", Type = ProfileType.Image }));
-        Assert.IsFalse(record.HasName);
-        Assert.AreEqual("", record.Name);
+        var record = new HistoryRecordVM(new HistoryRecord { Title = title, Text = "image.png", Type = ProfileType.Image });
+        Assert.AreEqual(title, record.DeepCopy().ToHistoryRecord().Title);
+        Assert.AreEqual(!string.IsNullOrEmpty(title), record.HasTitle);
+        Assert.AreEqual(record.HasTitle ? SyncClipboard.Core.I18n.Strings.HistoryEditTitle
+            : SyncClipboard.Core.I18n.Strings.HistoryAddTitle, record.TitleActionText);
+        record.Update(new HistoryRecordVM(new HistoryRecord { Title = "", Text = "image.png", Type = ProfileType.Image }));
+        Assert.IsFalse(record.HasTitle);
+        Assert.AreEqual("", record.Title);
         Assert.AreEqual("image.png", record.Text);
     }
 

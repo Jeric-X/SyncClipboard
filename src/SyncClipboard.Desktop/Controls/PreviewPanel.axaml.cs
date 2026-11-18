@@ -17,12 +17,12 @@ namespace SyncClipboard.Desktop.Controls;
 /// </summary>
 public sealed partial class PreviewPanel : UserControl
 {
-    public event Action<HistoryRecordVM>? NameEditRequested;
+    public event Action<HistoryRecordVM>? TitleEditRequested;
 
-    private void EditName_Click(object sender, Avalonia.Interactivity.RoutedEventArgs args)
+    private void EditTitle_Click(object sender, Avalonia.Interactivity.RoutedEventArgs args)
     {
         if (ViewModel is { IsMultiSelecting: false } && SelectedItem is { } record)
-            NameEditRequested?.Invoke(record);
+            TitleEditRequested?.Invoke(record);
     }
 
     private const double DragThreshold = 4; // 拖拽阈值（像素）

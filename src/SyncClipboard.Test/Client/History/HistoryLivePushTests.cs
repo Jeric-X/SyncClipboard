@@ -222,10 +222,10 @@ public class HistoryLivePushTests
     [TestMethod]
     [DataRow(null, false)]
     [DataRow("", false)]
-    [DataRow("新名称", false)]
+    [DataRow("新标题", false)]
     [DataRow(null, true)]
-    public async Task NamePush_PreservesUnknownAndClearedValuesWithoutRestoringDeletedRecords(
-        string? remoteName, bool deleted)
+    public async Task TitlePush_PreservesUnknownAndClearedValuesWithoutRestoringDeletedRecords(
+        string? remoteTitle, bool deleted)
     {
         await using var fixture = await Fixture.CreateAsync(Token);
         var record = new HistoryRecord
@@ -233,14 +233,14 @@ public class HistoryLivePushTests
             Type = ProfileType.Text,
             Hash = "NAME-PUSH",
             Text = "content",
-            Name = "本地名称",
+            Title = "本地标题",
             Version = 3,
             SyncStatus = HistorySyncStatus.Synced
         };
         fixture.Db.Add(record);
         await fixture.Db.SaveChangesAsync(Token);
         var dto = record.ToHistoryRecordDto();
-        dto.Name = remoteName;
+        dto.Title = remoteTitle;
         dto.Version++;
         dto.IsDeleted = deleted;
         var service = (ClientHistoryService)RuntimeHelpers.GetUninitializedObject(typeof(ClientHistoryService));
@@ -251,7 +251,7 @@ public class HistoryLivePushTests
 
         fixture.Db.ChangeTracker.Clear();
         var saved = await fixture.Db.HistoryRecords.SingleAsync(Token);
-        Assert.AreEqual(remoteName ?? "本地名称", saved.Name);
+        Assert.AreEqual(remoteTitle ?? "本地标题", saved.Title);
         Assert.AreEqual(deleted, saved.IsDeleted);
     }
 

@@ -5,13 +5,13 @@
 namespace SyncClipboard.Core.Migrations
 {
     /// <inheritdoc />
-    public partial class AddHistoryName : Migration
+    public partial class AddHistoryTitle : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<string>(
-                name: "Name",
+                name: "Title",
                 table: "HistoryRecords",
                 type: "TEXT",
                 nullable: true);
@@ -21,7 +21,7 @@ namespace SyncClipboard.Core.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             // Keep the downgrade transactional if an earlier migration cannot be reverted.
-            migrationBuilder.Sql("ALTER TABLE HistoryRecords DROP COLUMN Name");
+            migrationBuilder.Sql("ALTER TABLE HistoryRecords DROP COLUMN Title");
         }
     }
 }

@@ -19,12 +19,12 @@ namespace SyncClipboard.WinUI3.Controls;
 /// </summary>
 public sealed partial class PreviewPanel : UserControl
 {
-    public event Action<HistoryRecordVM>? NameEditRequested;
+    public event Action<HistoryRecordVM>? TitleEditRequested;
 
-    internal void EditName_Click(object _, RoutedEventArgs __)
+    internal void EditTitle_Click(object _, RoutedEventArgs __)
     {
         if (ViewModel is { IsMultiSelecting: false } && SelectedItem is { } record)
-            NameEditRequested?.Invoke(record);
+            TitleEditRequested?.Invoke(record);
     }
 
     /// <summary>

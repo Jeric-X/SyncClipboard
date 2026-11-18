@@ -65,32 +65,32 @@ public class HistoryUploadResponseTests
     [DataRow("")]
     [DataRow("应用图标")]
     [DataRow("null")]
-    public async Task UploadHistoryAsync_PreservesNameIntent(string? name)
+    public async Task UploadHistoryAsync_PreservesTitleIntent(string? title)
     {
-        using var handler = new NameAcknowledgementHandler();
+        using var handler = new TitleAcknowledgementHandler();
         using var adapter = CreateAdapter(handler);
-        var incoming = new HistoryRecordDto { Hash = "hash", Name = name };
+        var incoming = new HistoryRecordDto { Hash = "hash", Title = title };
 
         var accepted = await adapter.UploadHistoryAsync(incoming, null,
             cancellationToken: TestContext.CancellationTokenSource.Token);
 
-        Assert.AreEqual(name is not null, handler.NameProvided);
-        Assert.AreEqual(name ?? "server", accepted.Name);
+        Assert.AreEqual(title is not null, handler.TitleProvided);
+        Assert.AreEqual(title ?? "server", accepted.Title);
     }
 
-    private sealed class NameAcknowledgementHandler : HttpMessageHandler
+    private sealed class TitleAcknowledgementHandler : HttpMessageHandler
     {
-        public bool NameProvided { get; private set; }
+        public bool TitleProvided { get; private set; }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
         {
             var form = (MultipartFormDataContent)request.Content!;
-            var field = form.SingleOrDefault(part => part.Headers.ContentDisposition?.Name?.Trim('"') == "name");
-            NameProvided = field is not null;
-            var name = field is null ? "server" : await field.ReadAsStringAsync(token);
+            var field = form.SingleOrDefault(part => part.Headers.ContentDisposition?.Name?.Trim('"') == "title");
+            TitleProvided = field is not null;
+            var title = field is null ? "server" : await field.ReadAsStringAsync(token);
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = JsonContent.Create(new HistoryRecordDto { Hash = "hash", Name = name })
+                Content = JsonContent.Create(new HistoryRecordDto { Hash = "hash", Title = title })
             };
         }
     }

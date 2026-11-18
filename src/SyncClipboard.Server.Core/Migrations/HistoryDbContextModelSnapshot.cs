@@ -50,9 +50,6 @@ namespace SyncClipboard.Server.Core.Migrations
                     b.Property<DateTime>("LastModified")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Name")
-                        .HasColumnType("TEXT");
-
                     b.Property<bool>("Pinned")
                         .HasColumnType("INTEGER");
 
@@ -67,6 +64,9 @@ namespace SyncClipboard.Server.Core.Migrations
 
                     b.Property<string>("Text")
                         .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("TransferDataFile")

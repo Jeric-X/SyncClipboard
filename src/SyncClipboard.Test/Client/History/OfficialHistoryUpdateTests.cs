@@ -24,7 +24,7 @@ public class OfficialHistoryUpdateTests
         var saved = new HistoryRecordUpdateDto
         {
             Tags = ["local"],
-            Name = "应用图标",
+            Title = "应用图标",
             Version = 10,
             Starred = true,
             LastModified = DateTimeOffset.UtcNow
@@ -44,7 +44,7 @@ public class OfficialHistoryUpdateTests
         }
         Assert.IsNotNull(result);
         CollectionAssert.AreEqual(saved.Tags, result.Tags);
-        Assert.AreEqual(saved.Name, result.Name);
+        Assert.AreEqual(saved.Title, result.Title);
         Assert.AreEqual(saved.Version, result.Version);
         Assert.AreEqual(saved.Starred, result.Starred);
         Assert.AreEqual(saved.LastModified, result.LastModified);

@@ -6,7 +6,7 @@ namespace SyncClipboard.Server.Core.Models;
 public class HistoryRecordDto
 {
     public string[]? Tags { get; set; }
-    public string? Name { get; set; }
+    public string? Title { get; set; }
     public string Hash { get; set; } = string.Empty;
     public string Text { get; set; } = string.Empty;
     [JsonConverter(typeof(JsonStringEnumConverter))]
@@ -32,7 +32,7 @@ public class HistoryRecordDto
             LastModified = new DateTimeOffset(e.LastModified, TimeSpan.Zero),
             LastAccessed = new DateTimeOffset(e.LastAccessed, TimeSpan.Zero),
             Tags = e.Tags is null ? null : [.. e.Tags],
-            Name = e.Name,
+            Title = e.Title,
             Starred = e.Stared,
             Pinned = e.Pinned,
             Size = e.Size,
@@ -54,7 +54,7 @@ public class HistoryRecordDto
             LastAccessed = this.LastAccessed.UtcDateTime,
             LastModified = this.LastModified.UtcDateTime,
             Tags = this.Tags is null ? null : HistoryTags.Normalize(this.Tags),
-            Name = this.Name?.Trim(),
+            Title = this.Title?.Trim(),
             Stared = this.Starred,
             Pinned = this.Pinned,
             Size = this.Size,

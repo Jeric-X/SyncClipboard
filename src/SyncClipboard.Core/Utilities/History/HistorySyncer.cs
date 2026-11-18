@@ -68,8 +68,8 @@ public class HistorySyncer
             token);
 
         var supportsHistoryTags = await remoteServer.SupportsHistoryTagsAsync(token);
-        var supportsHistoryName = await remoteServer.SupportsHistoryNameAsync(token);
-        var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, supportsHistoryName, token);
+        var supportsHistoryTitle = await remoteServer.SupportsHistoryTitleAsync(token);
+        var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, supportsHistoryTitle, token);
         await DetectOrphanDataAsync(before, after, remoteRecords, types, searchText, starred, token);
         await _historyManager.RemoveDeletedOrMissingLocalRecordsAsync(token);
         await PushLocalRangeAsync(before, after, types, searchText, starred, token);
@@ -96,8 +96,8 @@ public class HistorySyncer
             token);
 
         var supportsHistoryTags = await remoteServer.SupportsHistoryTagsAsync(token);
-        var supportsHistoryName = await remoteServer.SupportsHistoryNameAsync(token);
-        await _historyManager.SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, supportsHistoryName, token);
+        var supportsHistoryTitle = await remoteServer.SupportsHistoryTitleAsync(token);
+        await _historyManager.SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, supportsHistoryTitle, token);
         if (modifiedAfter is null)
         {
             await DetectOrphanDataAsync(null, null, remoteRecords, ProfileTypeFilter.All, null, null, token);
@@ -201,7 +201,7 @@ public class HistorySyncer
 
     private static HistoryRecordUpdateDto CreateUpdateDto(HistoryRecord record) => new()
     {
-        Name = record.Name,
+        Title = record.Title,
         Tags = record.Tags?.ToArray(),
         Starred = record.Stared,
         Pinned = record.Pinned,

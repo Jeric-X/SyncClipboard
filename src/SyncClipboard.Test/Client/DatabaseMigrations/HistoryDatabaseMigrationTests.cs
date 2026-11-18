@@ -35,7 +35,7 @@ public class HistoryDatabaseMigrationTests
         await db.Database.MigrateAsync(token);
         Assert.IsFalse(db.Database.HasPendingModelChanges());
         var record = await db.HistoryRecords.SingleAsync(token);
-        Assert.IsNull(record.Name);
+        Assert.IsNull(record.Title);
         Assert.IsNull(record.Tags);
         Assert.AreEqual("legacy", record.Hash);
         Assert.AreEqual("keep", record.Text);
@@ -91,7 +91,7 @@ public class HistoryDatabaseMigrationTests
         await db.Database.MigrateAsync(token);
         Assert.IsFalse(db.Database.HasPendingModelChanges());
         var empty = await db.HistoryRecords.SingleAsync(r => r.Hash == "legacy", token);
-        Assert.IsNull(empty.Name);
+        Assert.IsNull(empty.Title);
         Assert.IsNotNull(empty.Tags);
         Assert.IsEmpty(empty.Tags);
         var tagged = await db.HistoryRecords.SingleAsync(r => r.Hash == "tagged", token);
@@ -110,15 +110,15 @@ public class HistoryDatabaseMigrationTests
         await db.Database.OpenConnectionAsync(token);
         await db.Database.MigrateAsync(token);
         await InsertHistoryWithoutTags(db, "unknown", token);
-        var named = await db.HistoryRecords.SingleAsync(token);
-        named.Name = "保留名称";
+        var titled = await db.HistoryRecords.SingleAsync(token);
+        titled.Title = "保留标题";
         await db.SaveChangesAsync(token);
 
         var migrator = db.GetService<IMigrator>();
         await Assert.ThrowsExactlyAsync<SqliteException>(() => migrator.MigrateAsync("20261027010000_AddHistoryTags", token));
         var restored = await db.HistoryRecords.AsNoTracking().SingleAsync(token);
         Assert.IsNull(restored.Tags);
-        Assert.AreEqual(named.Name, restored.Name);
+        Assert.AreEqual(titled.Title, restored.Title);
         Assert.IsEmpty(await db.Database.GetPendingMigrationsAsync(token));
 
         await db.Database.ExecuteSqlRawAsync("""UPDATE HistoryRecords SET Tags = '["工作"]' WHERE Hash = 'unknown'""", token);
@@ -136,7 +136,7 @@ public class HistoryDatabaseMigrationTests
     [DataRow(null)]
     [DataRow("")]
     [DataRow("应用图标")]
-    public async Task UpgradeFromNullableTags_RoundTripsHistoryName(string? name)
+    public async Task UpgradeFromNullableTags_RoundTripsHistoryTitle(string? title)
     {
         var token = TestContext.CancellationTokenSource.Token;
         await using var db = new HistoryDbContext();
@@ -147,13 +147,13 @@ public class HistoryDatabaseMigrationTests
 
         await db.Database.MigrateAsync(token);
         var record = await db.HistoryRecords.SingleAsync(token);
-        Assert.IsNull(record.Name);
-        record.Name = name;
+        Assert.IsNull(record.Title);
+        record.Title = title;
         await db.SaveChangesAsync(token);
         db.ChangeTracker.Clear();
 
         var saved = await db.HistoryRecords.SingleAsync(token);
-        Assert.AreEqual(name, saved.Name);
+        Assert.AreEqual(title, saved.Title);
         Assert.AreEqual("keep", saved.Text);
         Assert.IsNull(saved.Tags);
     }

@@ -15,7 +15,7 @@ public partial class HistoryRecordVM : ObservableObject
     {
         id = record.ID;
         text = record.Text;
-        name = record.Name;
+        title = record.Title;
         Type = record.Type;
         filePath = RestoreFilePath(record.FilePath, record.Type, record.Hash);
         Hash = record.Hash;
@@ -44,12 +44,12 @@ public partial class HistoryRecordVM : ObservableObject
     [ObservableProperty]
     private string text;
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasName))]
-    [NotifyPropertyChangedFor(nameof(NameActionText))]
-    private string? name;
+    [NotifyPropertyChangedFor(nameof(HasTitle))]
+    [NotifyPropertyChangedFor(nameof(TitleActionText))]
+    private string? title;
 
-    public bool HasName => !string.IsNullOrEmpty(Name);
-    public string NameActionText => HasName ? Strings.HistoryEditName : Strings.HistoryAddName;
+    public bool HasTitle => !string.IsNullOrEmpty(Title);
+    public string TitleActionText => HasTitle ? Strings.HistoryEditTitle : Strings.HistoryAddTitle;
 
     public ProfileType Type { get; set; }
     [ObservableProperty]
@@ -310,7 +310,7 @@ public partial class HistoryRecordVM : ObservableObject
         {
             ID = id,
             Text = Text,
-            Name = Name,
+            Title = Title,
             Type = Type,
             FilePath = FilePath,
             Hash = Hash,
@@ -328,7 +328,7 @@ public partial class HistoryRecordVM : ObservableObject
     public void Update(HistoryRecordVM record)
     {
         Text = record.Text;
-        Name = record.Name;
+        Title = record.Title;
         Type = record.Type;
         FilePath = RestoreFilePath(record.FilePath, record.Type, record.Hash);
         TransferDataFile = record.TransferDataFile;
@@ -411,7 +411,7 @@ public partial class HistoryRecordVM : ObservableObject
         var copy = new HistoryRecordVM
         {
             Text = this.Text,
-            Name = this.Name,
+            Title = this.Title,
             Type = this.Type,
             FilePath = this.FilePath,
             Hash = this.Hash,
