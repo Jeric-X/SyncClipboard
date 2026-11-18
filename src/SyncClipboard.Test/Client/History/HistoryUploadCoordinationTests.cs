@@ -39,6 +39,82 @@ public class HistoryUploadCoordinationTests
         target.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(target, value);
 
     [TestMethod]
+    [DataRow(true, true, false, false, false)]
+    [DataRow(true, false, false, false, false)]
+    [DataRow(false, true, false, false, false)]
+    [DataRow(false, false, false, false, false)]
+    [DataRow(true, true, true, true, false)]
+    [DataRow(true, true, true, false, false)]
+    [DataRow(true, true, false, true, false)]
+    [DataRow(true, true, false, false, true)]
+    public async Task LivePush_BackfillsMissingMetadataByCapability(
+        bool supportsTags, bool supportsName, bool clearedTags, bool clearedName, bool deleted)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var record = new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = "PUSH-BACKFILL",
+            Text = "content",
+            Name = "应用图标",
+            Tags = [.. ExpectedLocalTags],
+            Version = 3,
+            SyncStatus = HistorySyncStatus.Synced
+        };
+        f.Db.Add(record);
+        await f.Db.SaveChangesAsync(Token);
+        f.RemoteRecord = record.ToHistoryRecordDto();
+        f.RemoteRecord.Version++;
+        f.RemoteRecord.Name = clearedName ? "" : null;
+        f.RemoteRecord.Tags = clearedTags ? [] : null;
+        f.RemoteRecord.IsDeleted = deleted;
+        f.Server.Setup(x => x.SupportsHistoryTagsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(supportsTags);
+        f.Server.Setup(x => x.SupportsHistoryNameAsync(It.IsAny<CancellationToken>())).ReturnsAsync(supportsName);
+        f.Server.Setup(x => x.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
+            It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
+            .Returns<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) =>
+            {
+                Interlocked.Increment(ref f.Updates);
+                if (supportsTags)
+                    f.RemoteRecord.Tags = dto.Tags;
+                if (supportsName)
+                    f.RemoteRecord.Name = dto.Name;
+                return Task.FromResult<HistoryRecordUpdateDto?>(f.RemoteRecord.ToUpdateDto());
+            });
+        _ = f.CreateSyncer();
+        var saved = Signal();
+        f.Manager.HistoryUpdated += updated =>
+        {
+            if (updated.SyncStatus == HistorySyncStatus.Synced)
+                saved.TrySetResult(true);
+        };
+        var service = (SyncClipboard.Core.UserServices.ClipboardService.HistoryService)RuntimeHelpers.GetUninitializedObject(
+            typeof(SyncClipboard.Core.UserServices.ClipboardService.HistoryService));
+        SetObjectField(service, "historyManager", f.Manager);
+        SetObjectField(service, "_historySyncServer", f.Server.Object);
+
+        await service.ApplyRemoteHistoryChangeAsync(f.RemoteRecord, Token);
+        if (!deleted)
+            await saved.Task.WaitAsync(TimeSpan.FromSeconds(5), Token);
+
+        var shouldBackfill = !deleted && ((supportsTags && !clearedTags) || (supportsName && !clearedName));
+        Assert.AreEqual(shouldBackfill ? 1 : 0, f.Updates);
+        var snapshot = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
+        Assert.IsNotNull(snapshot);
+        Assert.AreEqual(clearedName ? "" : "应用图标", snapshot.Name);
+        CollectionAssert.AreEqual(clearedTags ? [] : ExpectedLocalTags, snapshot.Tags);
+        Assert.AreEqual(deleted, snapshot.IsDeleted);
+        Assert.AreEqual(clearedName ? "" : shouldBackfill && supportsName ? "应用图标" : null, f.RemoteRecord.Name);
+        if (clearedTags)
+            Assert.IsEmpty(f.RemoteRecord.Tags!);
+        else if (shouldBackfill && supportsTags)
+            CollectionAssert.AreEqual(ExpectedLocalTags, f.RemoteRecord.Tags);
+        else
+            Assert.IsNull(f.RemoteRecord.Tags);
+        Assert.AreEqual(0, f.Uploads);
+    }
+
+    [TestMethod]
     [DataRow("full", true)]
     [DataRow("incremental", true)]
     [DataRow("range", true)]
