@@ -354,6 +354,136 @@ PUT /SyncClipboard.json
 
 For protocol and data format specifications when using S3-compatible object storage as sync backend, please refer to [S3 Adapter Design](docs/S3-Adapter-Design.md).
 
+### History API
+
+The official standalone server and the desktop client's built-in server share these endpoints, authenticated with HTTP Basic authentication. WebDAV and S3 do not provide them. Replace `USER`, `PASSWORD`, the server URL and content hash in the examples with actual values; see [Hash.md](docs/Hash.md) for hash calculation.
+
+#### Capability negotiation
+
+`GET /api/capabilities`:
+
+```json
+{"historySync":true,"historyTags":true,"historyName":true}
+```
+
+`historySync` indicates basic history synchronization. `historyTags` and `historyName` independently indicate tag and name synchronization support. Clients should check each field and synchronize that metadata only when supported; a missing or `false` field does not declare support. Older servers may return 404 for the capability endpoint. Do not infer name support from a version or tag support. Probe again after changing connections or accounts. Names and tags are history metadata; they do not change the record type, content hash or pasted content.
+
+#### Name and tag states
+
+JSON uses `name` and `tags`. Multipart text parts use the same names; the server also accepts the older client's `Tags` spelling.
+
+| Field | Missing or JSON `null` | Explicit clear | Set value |
+| --- | --- | --- | --- |
+| `name` | Unknown for a new record; preserve the existing value when merging | `""` | `"App icon"` |
+| `tags` | Unknown for a new record; preserve the existing value when merging | `[]` | `["Work","工作"]` |
+
+Each field is merged independently. Names are trimmed on write; whitespace-only input clears the name. Tags are NFC-normalized, trimmed, deduplicated and sorted with case-sensitive comparisons. Each tag must contain 1–64 Unicode characters without control characters or line breaks; a record can have at most 32 distinct tags.
+
+Writes follow the existing record version and modification-time conflict rules; explicit clearing does not bypass conflict resolution. Older requests that omit fields do not clear existing values. A stale request may only backfill nonempty metadata into fields that remain unknown on the server; it cannot overwrite known or explicitly cleared values.
+
+#### Initial or duplicate upload
+
+`POST /api/history` accepts `multipart/form-data`. All metadata must precede the optional binary `data` part. `hash` and `type` are required. Use `Text`, `Image`, `File` or `Group` for `type`. Other optional metadata includes `text`, `size`, `createTime`, `lastModified`, `lastAccessed`, `version`, `starred`, `pinned`, `isDeleted` and `hasData`.
+
+`name` is plain text, not a JSON string: an empty text part clears it, omission means unknown, and the literal text `null` is a valid four-character name. `tags` is a text part containing a JSON array: `[]` clears it, omission or the text `null` means unknown, and empty text is invalid JSON.
+
+```sh
+curl -u 'USER:PASSWORD' 'http://localhost:5033/api/history' \
+  --form-string 'hash=CONTENT_HASH' \
+  --form-string 'type=Image' \
+  --form-string 'text=icon.png' \
+  --form-string 'name=App icon' \
+  --form-string 'tags=["Work","工作"]' \
+  --form-string 'hasData=true' \
+  -F 'data=@icon.png'
+```
+
+Use `--form-string 'name='` to clear the name and `--form-string 'tags=[]'` to clear tags. When sending `data`, the optional `X-SyncClipboard-Transfer-Data-Hash` request header can declare the actual transfer file's SHA-256 as 64 uppercase hexadecimal characters. Transfer data follows the existing format for its profile type.
+
+Success returns **200** with the final `HistoryRecordDto`. Duplicate uploads also return the final server record; do not assume the response equals the request. Invalid metadata returns 400, and transfer-data validation failures return 422.
+
+#### Update metadata
+
+`PATCH /api/history/{type}/{hash}` accepts JSON. Name, tags, starred status, pinned status, deletion status, version and timestamps are optional. To set a name and tags:
+
+```sh
+curl -u 'USER:PASSWORD' -X PATCH \
+  'http://localhost:5033/api/history/Image/CONTENT_HASH' \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"App icon","tags":["Work","工作"]}'
+```
+
+Clear both fields:
+
+```json
+{"name":"","tags":[]}
+```
+
+Change only starred status, preserving name and tags:
+
+```json
+{"starred":true}
+```
+
+Synchronization clients can include `version`, `lastModified` and `lastAccessed` (ISO 8601 with a time zone). When version and modification time are omitted, the server supplies them under the existing rules. **200** indicates an accepted update and **409** a conflict; both return the final server metadata, which clients should merge with concurrency checks. A missing record or a record that cannot be restored returns 404.
+
+Example PATCH response (200 and 409 share this structure; values reflect the final server record):
+
+```json
+{
+  "name": "App icon",
+  "tags": ["Work", "工作"],
+  "starred": true,
+  "pinned": false,
+  "isDelete": false,
+  "version": 2,
+  "lastModified": "2026-11-18T00:00:00Z",
+  "lastAccessed": "2026-11-18T00:00:00Z"
+}
+```
+
+Unknown `name` and `tags` are omitted from PATCH responses; explicitly cleared values appear as `""` and `[]`. Preserve this distinction when merging, and prevent late responses from overwriting subsequent local edits. PATCH uses `isDelete`, while full history records use `isDeleted`.
+
+#### Queries and real-time notifications
+
+- `GET /api/history/{profileId}` returns one full record. `profileId` is `Type-Hash`, such as `Image-CONTENT_HASH`; a missing record returns 404.
+- `POST /api/history/query` accepts form fields and returns an array of full records. `page` starts at 1, with at most 50 records per page.
+- `GET /api/history/{profileId}/data` downloads the transfer data. The `X-SyncClipboard-Transfer-Data-Hash` response header provides its checksum.
+- SignalR `/SyncClipboardHub` sends `RemoteHistoryChanged` with the same full-record structure.
+
+By default, `searchText` matches only the original content. When the server supports `historyName`, send `searchNames=true` to also match record names. The `tags` filter is a JSON-array text part and matches any complete tag name. `onlyUntagged=true` cannot be combined with a nonempty tag filter. You can also combine `types` (type flags), `starred`, `before`, `after`, `modifiedAfter` and `sortByLastAccessed`; filtering happens before pagination.
+
+```sh
+curl -u 'USER:PASSWORD' 'http://localhost:5033/api/history/query' \
+  --form-string 'page=1' \
+  --form-string 'searchText=icon' \
+  --form-string 'searchNames=true' \
+  --form-string 'tags=["Work"]'
+```
+
+Example full record used by creation responses, single-record queries and real-time notifications; paginated queries return an array of these objects:
+
+```json
+{
+  "name": "App icon",
+  "tags": ["Work", "工作"],
+  "hash": "CONTENT_HASH",
+  "text": "icon.png",
+  "type": "Image",
+  "createTime": "2026-11-18T00:00:00Z",
+  "lastModified": "2026-11-18T00:00:00Z",
+  "lastAccessed": "2026-11-18T00:00:00Z",
+  "starred": true,
+  "pinned": false,
+  "size": 1024,
+  "hasData": true,
+  "version": 2,
+  "isDeleted": false
+}
+```
+
+Full records return `null` for unknown metadata, and `""` or `[]` for explicit clears. Older servers may omit these fields; clients should not clear local values merely because fields are absent. Incremental queries use `modifiedAfter`. A record missing from search results is not evidence of server deletion; confirm it with a full reconciliation without a search keyword.
+
 ## Open Source Dependencies
 [NativeNotification](https://github.com/Jeric-X/NativeNotification) 
 [Magick.NET](https://github.com/dlemstra/Magick.NET)  
