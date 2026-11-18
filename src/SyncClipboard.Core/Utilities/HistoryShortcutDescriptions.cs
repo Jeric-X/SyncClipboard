@@ -9,6 +9,7 @@ public static class HistoryShortcutDescriptions
     {
         HistoryShortcutAction.Search => Strings.HistoryShortcutSearch,
         HistoryShortcutAction.EditTags => Strings.HistoryTagsEdit,
+        HistoryShortcutAction.EditTitle => Strings.HistoryEditTitle,
         HistoryShortcutAction.PreviousItem => Strings.HistoryShortcutPreviousItem,
         HistoryShortcutAction.NextItem => Strings.HistoryShortcutNextItem,
         HistoryShortcutAction.FirstItem => Strings.HistoryShortcutFirstItem,
