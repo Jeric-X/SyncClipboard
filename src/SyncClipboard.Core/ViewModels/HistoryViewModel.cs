@@ -836,7 +836,7 @@ public partial class HistoryViewModel : ObservableObject
         {
             _foregroundWindowTrackingService.SetHistoryWindow(window.GetNativeWindowInfo());
         }
-        if (ScrollToTopOnReopen)
+        if (ScrollToTopOnReopen || (!IsMultiSelecting && SelectedItem is null))
         {
             ScrollToTop();
         }
