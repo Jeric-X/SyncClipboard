@@ -1650,7 +1650,7 @@ Choose whether to use the default location or select another folder.</value>
     <value>Do not add to local history</value>
   </data>
   <data name="HistoryCapabilitiesSyncTitle" xml:space="preserve">
-    <value>Some history features will not sync</value>
+    <value>Some sync features are not supported by this server</value>
   </data>
   <data name="HistoryCapabilitiesUpgrade" xml:space="preserve">
     <value>The current server does not support syncing {0}. Consider upgrading the server for the best sync experience.</value>
