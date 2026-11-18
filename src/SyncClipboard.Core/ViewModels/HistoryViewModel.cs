@@ -1157,9 +1157,9 @@ public partial class HistoryViewModel : ObservableObject
     {
         try
         {
-            var wasSelected = ReferenceEquals(SelectedItem, oldR);
+            var wasPreviewedInMultiSelect = IsMultiSelecting && ReferenceEquals(SelectedItem, oldR);
             var selectionAfterReplacement = PrepareSelectionForRecordRemoval(oldR);
-            if (wasSelected && newR is not null && IsMatchUiFilter(newR))
+            if (wasPreviewedInMultiSelect)
                 selectionAfterReplacement = newR;
             ClearVisibleRecordSelection(oldR);
             allHistoryItems.Remove(oldR);
