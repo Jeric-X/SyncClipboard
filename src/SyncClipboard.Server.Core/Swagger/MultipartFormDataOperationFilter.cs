@@ -45,7 +45,8 @@ public class MultipartFormDataOperationFilter : IOperationFilter
                 ["version"] = context.SchemaGenerator.GenerateSchema(typeof(int), context.SchemaRepository),
                 ["isDeleted"] = context.SchemaGenerator.GenerateSchema(typeof(bool), context.SchemaRepository),
                 ["text"] = context.SchemaGenerator.GenerateSchema(typeof(string), context.SchemaRepository),
-                ["name"] = new OpenApiSchema { Type = "string", Description = "Omit to preserve the name, or send an empty value to clear it." },
+                ["name"] = context.SchemaGenerator.GenerateSchema(typeof(string), context.SchemaRepository),
+                ["tags"] = new OpenApiSchema { Type = "string", Description = "JSON array like [\"Work\", \"Personal\"]." },
                 ["size"] = context.SchemaGenerator.GenerateSchema(typeof(long), context.SchemaRepository),
                 ["data"] = new OpenApiSchema
                 {
