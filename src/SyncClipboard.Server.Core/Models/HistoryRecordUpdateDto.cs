@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace SyncClipboard.Server.Core.Models;
 
-public record HistoryRecordUpdateDto
+public class HistoryRecordUpdateDto
 {
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string[]? Tags { get; set; }

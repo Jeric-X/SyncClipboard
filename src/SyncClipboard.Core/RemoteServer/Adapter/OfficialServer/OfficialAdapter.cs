@@ -36,6 +36,7 @@ public sealed class OfficialAdapter(
     private readonly IAppConfig _appConfig = appConfig;
     private readonly WebDavAdapter _webDavAdapter = new(logger, appConfig);
     private readonly Lock _hubLock = new();
+    private readonly Lock _httpClientLock = new();
     private HubConnection? _hubConnection;
     private Task<ServerCapabilitiesDto>? _capabilitiesTask;
     private OfficialConfig _officialConfig = new OfficialConfig();
@@ -307,27 +308,13 @@ public sealed class OfficialAdapter(
     }
 
     private Task<ServerCapabilitiesDto> GetCapabilitiesAsync(CancellationToken token)
-        => GetCapabilityProbe(token).Probe.WaitAsync(token);
-
-    private (HttpClient Client, Task<ServerCapabilitiesDto> Probe) GetCapabilityProbe(CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
         lock (_hubLock)
         {
             if (_capabilitiesTask is null || _capabilitiesTask.IsFaulted || _capabilitiesTask.IsCanceled)
-                _capabilitiesTask = CheckHistorySupportAsync(_httpClient, CancellationToken.None);
-            return (_httpClient, _capabilitiesTask);
-        }
-    }
-
-    private Task<HttpResponseMessage> SendHistoryWriteAsync(
-        HttpClient client, Task<ServerCapabilitiesDto> probe, HttpRequestMessage request, CancellationToken token)
-    {
-        lock (_hubLock)
-        {
-            if (!ReferenceEquals(probe, _capabilitiesTask))
-                throw new RemoteServerException("History connection changed while preparing the write.");
-            return client.SendAsync(request, token);
+                _capabilitiesTask = CheckHistorySupportAsync(_httpClient, token);
+            return _capabilitiesTask.WaitAsync(token);
         }
     }
 
@@ -458,27 +445,19 @@ public sealed class OfficialAdapter(
     {
         try
         {
-            var (client, probe) = GetCapabilityProbe(cancellationToken);
-            var capabilities = await probe.WaitAsync(cancellationToken);
-            var url = new Uri(client.BaseAddress!, $"api/history/{type}/{hash}");
-            using var request = new HttpRequestMessage(HttpMethod.Patch, url)
-            {
-                Content = JsonContent.Create(FilterUpdateMetadata(dto, capabilities), options: JsonSerializerOptions.Web)
-            };
-            using var response = await SendHistoryWriteAsync(client, probe, request, cancellationToken);
+            var url = new Uri(_httpClient.BaseAddress!, $"api/history/{type}/{hash}");
+            using var response = await _httpClient.PatchAsJsonAsync(url, dto, cancellationToken);
 
             if (response.IsSuccessStatusCode)
             {
                 var content = await response.Content.ReadAsStringAsync(cancellationToken);
-                var update = string.IsNullOrWhiteSpace(content) ? null
+                return string.IsNullOrWhiteSpace(content) ? null
                     : JsonSerializer.Deserialize<HistoryRecordUpdateDto>(content, JsonSerializerOptions.Web);
-                return update is null ? null : FilterUpdateMetadata(update, capabilities);
             }
             if (response.StatusCode == HttpStatusCode.Conflict)
             {
                 var serverDto = await response.Content.ReadFromJsonAsync<HistoryRecordUpdateDto>(cancellationToken: cancellationToken);
-                throw new RemoteHistoryConflictException($"History update conflict {type}/{hash}",
-                    serverDto is null ? null : FilterUpdateMetadata(serverDto, capabilities));
+                throw new RemoteHistoryConflictException($"History update conflict {type}/{hash}", serverDto);
             }
             if (response.StatusCode == HttpStatusCode.NotFound)
             {
@@ -501,9 +480,7 @@ public sealed class OfficialAdapter(
     {
         try
         {
-            var (client, probe) = GetCapabilityProbe(cancellationToken);
-            var capabilities = await probe.WaitAsync(cancellationToken);
-            var url = new Uri(client.BaseAddress!, $"api/history");
+            var url = new Uri(_httpClient.BaseAddress!, $"api/history");
             using var content = new MultipartFormDataContent
             {
                 // 添加元数据字段
@@ -521,9 +498,9 @@ public sealed class OfficialAdapter(
                 { new StringContent(dto.HasData.ToString()), "hasData" }
             };
 
-            if (capabilities.HistoryName && dto.Name is not null)
+            if (dto.Name is not null)
                 content.Add(new StringContent(dto.Name), "name");
-            if (capabilities.HistoryTags && dto.Tags is not null)
+            if (dto.Tags is not null)
                 content.Add(new StringContent(JsonSerializer.Serialize(dto.Tags)), nameof(HistoryRecordDto.Tags));
 
             using var request = new HttpRequestMessage(HttpMethod.Post, url)
@@ -548,12 +525,10 @@ public sealed class OfficialAdapter(
                 request.Headers.Add(HistoryTransferDataHeaders.TransferDataHash, normalizedTransferDataHash);
             }
 
-            using var response = await SendHistoryWriteAsync(client, probe, request, cancellationToken);
-            await EnsureHistoryUploadSucceeded(dto, response, capabilities, cancellationToken);
-            var accepted = await response.Content.ReadFromJsonAsync<HistoryRecordDto>(cancellationToken: cancellationToken)
+            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            await EnsureHistoryUploadSucceeded(dto, response, cancellationToken);
+            return await response.Content.ReadFromJsonAsync<HistoryRecordDto>(cancellationToken: cancellationToken)
                 ?? throw new InvalidDataException("History upload response did not contain a record.");
-            FilterRecordMetadata(accepted, capabilities);
-            return accepted;
         }
         catch (Exception ex)
         {
@@ -562,23 +537,8 @@ public sealed class OfficialAdapter(
         }
     }
 
-    private static HistoryRecordUpdateDto FilterUpdateMetadata(HistoryRecordUpdateDto dto, ServerCapabilitiesDto capabilities)
-        => dto with
-        {
-            Tags = capabilities.HistoryTags ? dto.Tags : null,
-            Name = capabilities.HistoryName ? dto.Name : null
-        };
-
-    private static void FilterRecordMetadata(HistoryRecordDto dto, ServerCapabilitiesDto capabilities)
-    {
-        if (!capabilities.HistoryTags)
-            dto.Tags = null;
-        if (!capabilities.HistoryName)
-            dto.Name = null;
-    }
-
     private static async Task EnsureHistoryUploadSucceeded(
-        HistoryRecordDto dto, HttpResponseMessage response, ServerCapabilitiesDto capabilities, CancellationToken cancellationToken)
+        HistoryRecordDto dto, HttpResponseMessage response, CancellationToken cancellationToken)
     {
         if (response.IsSuccessStatusCode)
         {
@@ -598,7 +558,7 @@ public sealed class OfficialAdapter(
             }
             throw new RemoteHistoryConflictException(
                 $"History already exists {dto.Type}/{dto.Hash}",
-                serverDto is null ? null : FilterUpdateMetadata(serverDto, capabilities));
+                serverDto);
         }
 
         var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
@@ -768,8 +728,9 @@ public sealed class OfficialAdapter(
     private void ReCreateHttpClient()
     {
         lock (_hubLock)
-        {
             _capabilitiesTask = null;
+        lock (_httpClientLock)
+        {
             _httpClient.Dispose();
 
             var handler = new HttpClientHandler
