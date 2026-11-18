@@ -664,7 +664,8 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     {
         return record.SyncStatus == HistorySyncStatus.LocalOnly &&
                (record.IsDeleted || (cleanupConfig.AutoDeleteMissingLocalFiles && !record.Stared && !record.Pinned
-                   && (!cleanupConfig.ProtectTaggedRecords || record.Tags == null || record.Tags.Length == 0) && !record.IsLocalFileReady));
+                   && (!cleanupConfig.ProtectTaggedRecords || record.Tags == null || record.Tags.Length == 0)
+                   && (!cleanupConfig.ProtectTitledRecords || string.IsNullOrEmpty(record.Title)) && !record.IsLocalFileReady));
     }
 
     public async Task CleanupExpiredHistory(CancellationToken token = default)
@@ -1055,6 +1056,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
 
     public Expression<Func<HistoryRecord, bool>> AutoDeletePredicate => entity => !entity.Stared &&
         !entity.Pinned && (!_historyConfig.ProtectTaggedRecords || entity.Tags == null || entity.Tags.Length == 0)
+        && (!_historyConfig.ProtectTitledRecords || string.IsNullOrEmpty(entity.Title))
         && entity.SyncStatus == HistorySyncStatus.LocalOnly;
 
     public Expression<Func<HistoryRecord, DateTime>> QueryLastActivityTime => entity =>

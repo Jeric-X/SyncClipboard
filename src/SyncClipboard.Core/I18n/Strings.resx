@@ -1674,10 +1674,10 @@ Choose whether to use the default location or select another folder.</value>
     <value>Protect tagged records</value>
   </data>
   <data name="ServerProtectTaggedRecordsDescription" xml:space="preserve">
-    <value>Tagged records are treated as starred and will not be automatically deleted</value>
+    <value>Records with tags will not be automatically deleted</value>
   </data>
   <data name="ProtectTaggedRecordsDescription" xml:space="preserve">
-    <value>Treat tagged records as starred</value>
+    <value>Records with tags will not be automatically deleted</value>
   </data>
   <data name="HistoryAutoDelete" xml:space="preserve">
     <value>Automatic deletion</value>
@@ -1792,5 +1792,11 @@ Choose whether to use the default location or select another folder.</value>
   </data>
   <data name="HistoryEditTitle" xml:space="preserve">
     <value>Edit title</value>
+  </data>
+  <data name="ProtectTitledRecords" xml:space="preserve">
+    <value>Protect titled records</value>
+  </data>
+  <data name="ProtectTitledRecordsDescription" xml:space="preserve">
+    <value>Records with a title will not be automatically deleted</value>
   </data>
 </root>

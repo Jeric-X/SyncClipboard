@@ -665,7 +665,8 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
     public Expression<Func<HistoryRecordEntity, bool>> QueryCount => entity => entity.UserId == HARD_CODED_USER_ID && !entity.IsDeleted;
     public Expression<Func<HistoryRecordEntity, bool>> AutoDeletePredicate =>
         entity => entity.UserId == HARD_CODED_USER_ID && !entity.Stared && !entity.Pinned && !entity.IsDeleted
-                  && (!_options.Value.ProtectTaggedRecords || entity.Tags == null || entity.Tags.Length == 0);
+                  && (!_options.Value.ProtectTaggedRecords || entity.Tags == null || entity.Tags.Length == 0)
+                  && (!_options.Value.ProtectTitledRecords || string.IsNullOrEmpty(entity.Title));
     public Expression<Func<HistoryRecordEntity, DateTime>> QueryLastActivityTime => entity =>
         entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;
 
