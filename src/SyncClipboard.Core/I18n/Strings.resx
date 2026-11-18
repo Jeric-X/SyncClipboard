@@ -1653,7 +1653,7 @@ Choose whether to use the default location or select another folder.</value>
     <value>Some history features will not sync</value>
   </data>
   <data name="HistoryCapabilitiesUpgrade" xml:space="preserve">
-    <value>The current server does not support syncing {0}. Upgrade the server to enable these features.</value>
+    <value>The current server does not support syncing {0}. Consider upgrading the server for the best sync experience.</value>
   </data>
   <data name="HistoryCapabilityTags" xml:space="preserve">
     <value>tags</value>
