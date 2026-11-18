@@ -155,12 +155,16 @@ Group 的传输 ZIP 是外层导出 ZIP 中的一个普通文件，不展开为�
 | 记录字段 | 含义 |
 | --- | --- |
 | `type`、`hash` | 内容类型字符串与原内容身份，哈希统一大小写 |
+| `title` | 可空标题；非空字符串为已设置标题，空串为明确清空，NULL 为未知。旧备份缺少此字段时按未知读取 |
+| `tags` | 可空标签数组；空数组表示明确清空，NULL 或旧备份缺省表示未知 |
 | `text` | 原记录的文本元数据，原样保留；短文本是全文，长文本是预览，其他类型按原描述保存 |
 | `size` | Profile 内容大小：先保留历史记录原值，准备后采用 `Profile.GetSize()` 返回的缓存值或新计算值；不使用传输文件字节数替代 |
 | `timestamp`、`lastModified`、`lastAccessed` | UTC ISO 8601 时间 |
 | `starred`、`pinned`、`from` | 收藏、置顶和来源；导出字段使用正确拼写 `starred` |
 | `hasTransferData` | 此记录是否需要传输文件；为 `true` 时必须附带完整文件 |
 | `transferData` | 已验证传输文件的描述，含 `name`、归档相对 `path`、实际字节数 `size` 和 `sha256`；仅无需传输文件时为 `null` |
+
+后续标题备份扩展仍使用 `formatVersion: 1`，JSON 与 ZIP 清单均导出 `title`，不改变正文、内容哈希或附件。导入新记录时恢复标题（去除首尾空白，保留 NULL 与空串的区别）和标签；沿用归档的 `timestamp`，`lastModified` 与 `lastAccessed` 设为导入时间，版本为 0、同步状态为 LocalOnly。已有记录复用或附件修复时保留本地标题及标签，包括 NULL 和明确空值，不以归档覆盖；沿用已有活动时间、版本和待同步状态更新规则。
 
 传输文件描述只保存本次已取得并验证的文件，描述在准备阶段确定，实际打包按该描述验证字节数和哈希，成功后原样写入清单。`hasTransferData == false` 且 `transferData == null` 表示无需附件，例如短文本；`hasTransferData == true` 时，`transferData` 和对应文件必须同时存在。不能取得完整文件的记录不进入 `records`。存在传输文件时，JSON 中的 `text` 不代表完整内容，长文本尤其不能用预览冒充全文。
 

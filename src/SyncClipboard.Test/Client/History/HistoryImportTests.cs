@@ -75,7 +75,7 @@ public class HistoryImportTests
             await Db.Database.EnsureCreatedAsync(token);
         }
 
-        public async Task<HistoryExportRecord> RecordAsync(Profile profile, CancellationToken token)
+        public async Task<HistoryExportRecord> RecordAsync(Profile profile, CancellationToken token, string? title = null)
         {
             var content = await profile.Persist(GetPersistentDir(), token);
             var stamp = new DateTime(2026, 1, 2, 3, 4, 5, DateTimeKind.Utc);
@@ -93,6 +93,7 @@ public class HistoryImportTests
                 LastAccessed = stamp.AddHours(2),
                 Stared = true,
                 Pinned = true,
+                Title = title,
                 From = "backup device"
             });
         }
@@ -153,7 +154,7 @@ public class HistoryImportTests
         var records = new List<HistoryExportRecord>();
         foreach (var profile in profiles)
         {
-            var record = await f.RecordAsync(profile, Token);
+            var record = await f.RecordAsync(profile, Token, "备份标题");
             records.Add(record with { Hash = record.Hash.ToLowerInvariant(), Tags = ["Prompt", "工作"] });
         }
         var backup = await f.ExportAsync([.. records], Token);
@@ -190,6 +191,7 @@ public class HistoryImportTests
             Assert.IsTrue(restored.Stared && restored.Pinned);
             Assert.AreEqual(original.From, restored.From);
             CollectionAssert.AreEqual(original.Tags, restored.Tags);
+            Assert.AreEqual(original.Title, restored.Title);
             Assert.AreEqual(HistorySyncStatus.LocalOnly, restored.SyncStatus);
             var profile = Profile.Create(f.GetHistoryPersistentDir(), new ProfilePersistentInfo
             {
@@ -208,6 +210,126 @@ public class HistoryImportTests
         Assert.AreEqual(5, duplicate.ExistingCount);
         Assert.AreEqual(0, duplicate.ImportedCount);
         Assert.HasCount(5, await f.Db.HistoryRecords.ToListAsync(Token));
+    }
+
+    [TestMethod]
+    [DataRow(false, null, false)]
+    [DataRow(false, "", false)]
+    [DataRow(false, "备份标题", false)]
+    [DataRow(false, null, true)]
+    [DataRow(true, null, false)]
+    [DataRow(true, "", false)]
+    [DataRow(true, "备份标题", false)]
+    [DataRow(true, null, true)]
+    public async Task BackupTitle_RoundTripsStatesAndAcceptsLegacyManifest(bool zip, string? title, bool legacy)
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var file = Path.Combine(f.Root, "title.txt");
+        await File.WriteAllTextAsync(file, "attachment contents", Token);
+        Profile profile = zip ? new FileProfile(file) : new TextProfile("original text");
+        var item = await f.RecordAsync(profile, Token, title);
+        var backup = await f.ExportAsync([item], Token);
+        JsonNode manifest;
+        if (zip)
+        {
+            using var archive = ZipFile.Open(backup, ZipArchiveMode.Update);
+            var entry = archive.GetEntry("history.json")!;
+            using (var input = entry.Open())
+                manifest = (await JsonNode.ParseAsync(input, cancellationToken: Token))!;
+            Assert.AreEqual(title, manifest["records"]![0]!["title"]?.GetValue<string>());
+            Assert.IsTrue(manifest["records"]![0]!.AsObject().ContainsKey("title"));
+            if (legacy)
+            {
+                manifest["records"]![0]!.AsObject().Remove("title");
+                entry.Delete();
+                await using var output = archive.CreateEntry("history.json").Open();
+                await JsonSerializer.SerializeAsync(output, manifest, cancellationToken: Token);
+            }
+        }
+        else
+        {
+            manifest = JsonNode.Parse(await File.ReadAllTextAsync(backup, Token))!;
+            Assert.AreEqual(title, manifest["records"]![0]!["title"]?.GetValue<string>());
+            Assert.IsTrue(manifest["records"]![0]!.AsObject().ContainsKey("title"));
+            if (legacy)
+            {
+                manifest["records"]![0]!.AsObject().Remove("title");
+                await File.WriteAllTextAsync(backup, manifest.ToJsonString(), Token);
+            }
+        }
+        Assert.AreEqual(1, manifest["formatVersion"]!.GetValue<int>());
+        var before = DateTime.UtcNow;
+        var result = await f.ImportAsync(backup, Token);
+        Assert.AreEqual(0, result.FailureCount);
+        Assert.AreEqual(1, result.ImportedCount);
+        f.Db.ChangeTracker.Clear();
+        var restored = await f.Db.HistoryRecords.SingleAsync(Token);
+        Assert.AreEqual(title, restored.Title);
+        Assert.AreEqual(item.Text, restored.Text);
+        Assert.AreEqual(item.Hash, restored.Hash);
+        Assert.AreEqual(item.Timestamp, restored.Timestamp.ToUniversalTime());
+        Assert.AreEqual(0, restored.Version);
+        Assert.AreEqual(HistorySyncStatus.LocalOnly, restored.SyncStatus);
+        Assert.IsTrue(restored.LastModified >= before && restored.LastModified <= DateTime.UtcNow);
+        Assert.AreEqual(restored.LastModified, restored.LastAccessed);
+    }
+
+    [TestMethod]
+    [DataRow(false, null)]
+    [DataRow(false, "")]
+    [DataRow(false, "本地标题")]
+    [DataRow(true, null)]
+    [DataRow(true, "")]
+    [DataRow(true, "本地标题")]
+    public async Task ImportExistingMetadata_PreservesTitleAndTags(bool repair, string? title)
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var file = Path.Combine(f.Root, "metadata.txt");
+        await File.WriteAllTextAsync(file, "attachment contents", Token);
+        Profile profile = repair ? new FileProfile(file) : new TextProfile("original text");
+        var item = await f.RecordAsync(profile, Token, "归档标题");
+        item = item with { Tags = ["归档标签"] };
+        var backup = await f.ExportAsync([item], Token);
+        string[]? tags = title is null ? null : title.Length == 0 ? [] : ["本地标签"];
+        var oldTime = DateTime.UtcNow.AddDays(-1);
+        f.Db.HistoryRecords.Add(new HistoryRecord
+        {
+            Type = item.ProfileType,
+            Hash = item.Hash,
+            Text = item.Text,
+            Size = item.Size,
+            FilePath = repair ? ["missing.txt"] : [],
+            Title = title,
+            Tags = tags,
+            Timestamp = oldTime,
+            LastModified = oldTime,
+            LastAccessed = oldTime,
+            Version = 4,
+            SyncStatus = HistorySyncStatus.Synced
+        });
+        await f.Db.SaveChangesAsync(Token);
+        var before = DateTime.UtcNow;
+        var result = await f.ImportAsync(backup, Token);
+        Assert.AreEqual(0, result.FailureCount);
+        Assert.AreEqual(0, result.ImportedCount);
+        Assert.AreEqual(repair ? 1 : 0, result.RepairedCount);
+        Assert.AreEqual(repair ? 0 : 1, result.ExistingCount);
+        f.Db.ChangeTracker.Clear();
+        var restored = await f.Db.HistoryRecords.SingleAsync(Token);
+        Assert.AreEqual(title, restored.Title);
+        CollectionAssert.AreEqual(tags, restored.Tags);
+        Assert.AreEqual(oldTime, restored.Timestamp.ToUniversalTime());
+        Assert.AreEqual(5, restored.Version);
+        Assert.AreEqual(HistorySyncStatus.NeedSync, restored.SyncStatus);
+        Assert.IsTrue(restored.LastModified >= before && restored.LastModified <= DateTime.UtcNow);
+        Assert.AreEqual(restored.LastModified, restored.LastAccessed);
+        if (repair)
+        {
+            var restoredFile = Profile.GetFullPath(f.GetHistoryPersistentDir(), restored.Type, restored.Hash, restored.TransferDataFile)!;
+            Assert.AreEqual("attachment contents", await File.ReadAllTextAsync(restoredFile, Token));
+        }
     }
 
     [TestMethod]

@@ -267,6 +267,7 @@ public sealed class HistoryImporter
             LastModified = item.LastModified.ToUniversalTime(),
             LastAccessed = item.LastAccessed.ToUniversalTime(),
             Tags = item.Tags is null ? null : HistoryTags.Normalize(item.Tags),
+            Title = item.Title?.Trim(),
             Stared = item.Starred,
             Pinned = item.Pinned,
             From = item.From,
