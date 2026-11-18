@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Moq;
+using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Server.Core.Models;
@@ -217,6 +219,49 @@ public class HistoryLivePushTests
         CollectionAssert.AreEqual(ExpectedNewTags, saved.Tags);
         Assert.AreEqual(version, saved.Version);
         Assert.AreEqual(HistorySyncStatus.NeedSync, saved.SyncStatus);
+    }
+
+    [TestMethod]
+    [DataRow(null, false, false)]
+    [DataRow(null, true, false)]
+    [DataRow("", true, false)]
+    [DataRow("新名称", true, false)]
+    [DataRow(null, true, true)]
+    public async Task NamePush_PreservesUnknownAndClearedValuesWithoutRestoringDeletedRecords(
+        string? remoteName, bool supportsName, bool deleted)
+    {
+        await using var fixture = await Fixture.CreateAsync(Token);
+        var record = new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = "NAME-PUSH",
+            Text = "content",
+            Name = "本地名称",
+            Version = 3,
+            SyncStatus = HistorySyncStatus.Synced
+        };
+        fixture.Db.Add(record);
+        await fixture.Db.SaveChangesAsync(Token);
+        var dto = record.ToHistoryRecordDto();
+        dto.Name = remoteName;
+        dto.Version++;
+        dto.IsDeleted = deleted;
+        var server = new Mock<IOfficialSyncServer>();
+        server.Setup(x => x.SupportsHistoryNameAsync(It.IsAny<CancellationToken>())).ReturnsAsync(supportsName);
+        var service = (ClientHistoryService)RuntimeHelpers.GetUninitializedObject(typeof(ClientHistoryService));
+        typeof(ClientHistoryService).GetField("historyManager", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(service, fixture.Manager);
+        typeof(ClientHistoryService).GetField("_historySyncServer", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(service, server.Object);
+
+        await service.ApplyRemoteHistoryChangeAsync(dto, Token);
+
+        fixture.Db.ChangeTracker.Clear();
+        var saved = await fixture.Db.HistoryRecords.SingleAsync(Token);
+        Assert.AreEqual(remoteName ?? "本地名称", saved.Name);
+        Assert.AreEqual(deleted, saved.IsDeleted);
+        Assert.AreEqual(supportsName && remoteName is null && !deleted
+            ? HistorySyncStatus.NeedSync : HistorySyncStatus.Synced, saved.SyncStatus);
     }
 
     private sealed class Fixture : IAsyncDisposable

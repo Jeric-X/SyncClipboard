@@ -68,8 +68,11 @@ public class HistorySyncer
             token);
 
         var supportsHistoryTags = await remoteServer.SupportsHistoryTagsAsync(token);
-        var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, token);
-        await DetectOrphanDataAsync(before, after, remoteRecords, types, searchText, starred, token);
+        var supportsHistoryName = await remoteServer.SupportsHistoryNameAsync(token);
+        var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, supportsHistoryName, token);
+        // Search results can omit records whose local and remote names differ. Only a complete range proves absence.
+        if (string.IsNullOrWhiteSpace(searchText) && pageLimit == int.MaxValue)
+            await DetectOrphanDataAsync(before, after, remoteRecords, types, searchText, starred, token);
         await _historyManager.RemoveDeletedOrMissingLocalRecordsAsync(token);
         await PushLocalRangeAsync(before, after, types, searchText, starred, token);
         return addedRecords;
@@ -95,7 +98,8 @@ public class HistorySyncer
             token);
 
         var supportsHistoryTags = await remoteServer.SupportsHistoryTagsAsync(token);
-        await _historyManager.SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, token);
+        var supportsHistoryName = await remoteServer.SupportsHistoryNameAsync(token);
+        await _historyManager.SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, supportsHistoryName, token);
         if (modifiedAfter is null)
         {
             await DetectOrphanDataAsync(null, null, remoteRecords, ProfileTypeFilter.All, null, null, token);
@@ -271,7 +275,7 @@ public class HistorySyncer
     {
         // 获取本地该范围内标记为 Synced 或 NeedSync 的记录
         var localRecords = await _historyManager.GetHistoryAsync(
-            new HistoryQueryPara { TypeFilter = types, Starred = starred, SearchText = searchText },
+            new HistoryQueryPara { TypeFilter = types, Starred = starred, SearchText = searchText, SearchNames = true },
             before: before, token: token).ConfigureAwait(false);
 
         await Task.Run(async () =>
@@ -311,7 +315,7 @@ public class HistorySyncer
         CancellationToken token)
     {
         var localRecords = await _historyManager.GetHistoryAsync(
-            new HistoryQueryPara { TypeFilter = types, Starred = starred, SearchText = searchText },
+            new HistoryQueryPara { TypeFilter = types, Starred = starred, SearchText = searchText, SearchNames = true },
             before: before, token: token);
 
         var needSync = localRecords

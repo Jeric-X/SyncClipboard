@@ -480,8 +480,13 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     public Task<List<HistoryRecord>> SyncRemoteHistoryAsync(IEnumerable<HistoryRecordDto> remoteRecords, CancellationToken token = default)
         => SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags: false, token);
 
-    internal async Task<List<HistoryRecord>> SyncRemoteHistoryAsync(
+    internal Task<List<HistoryRecord>> SyncRemoteHistoryAsync(
         IEnumerable<HistoryRecordDto> remoteRecords, bool supportsHistoryTags, CancellationToken token = default)
+        => SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, supportsHistoryName: false, token);
+
+    internal async Task<List<HistoryRecord>> SyncRemoteHistoryAsync(
+        IEnumerable<HistoryRecordDto> remoteRecords, bool supportsHistoryTags, bool supportsHistoryName,
+        CancellationToken token = default)
     {
         List<HistoryRecord> addedRecords = [];
         if (remoteRecords.Any() == false)
@@ -508,8 +513,9 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
                 else
                 {
                     ApplyRemoteHistory(entity, dto);
-                    if (supportsHistoryTags && dto.Tags is null && entity.Tags is { Length: > 0 }
-                        && !entity.IsDeleted && entity.SyncStatus == HistorySyncStatus.Synced)
+                    var missingTags = supportsHistoryTags && dto.Tags is null && entity.Tags is { Length: > 0 };
+                    var missingName = supportsHistoryName && dto.Name is null && !string.IsNullOrEmpty(entity.Name);
+                    if ((missingTags || missingName) && !entity.IsDeleted && entity.SyncStatus == HistorySyncStatus.Synced)
                     {
                         entity.SyncStatus = HistorySyncStatus.NeedSync;
                     }

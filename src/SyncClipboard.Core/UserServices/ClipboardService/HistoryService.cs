@@ -262,9 +262,10 @@ public class HistoryService : ClipboardHander
 
     internal async Task ApplyRemoteHistoryChangeAsync(HistoryRecordDto dto, CancellationToken token)
     {
-        // Merge the DTO before converting it: missing tags preserve local values, and older pushes
-        // must not overwrite pending local edits. Use the same rules as paged history sync.
-        await historyManager.SyncRemoteHistoryAsync([dto], token);
+        // Use the paged merge rules for missing metadata and pending local edits.
+        var supportsHistoryName = _historySyncServer is not null
+            && await _historySyncServer.SupportsHistoryNameAsync(token);
+        await historyManager.SyncRemoteHistoryAsync([dto], supportsHistoryTags: false, supportsHistoryName, token);
         var record = await historyManager.GetSyncSnapshotAsync(new(dto.Type, dto.Hash), token);
         if (record is null || record.IsDeleted || record.IsLocalFileReady)
             return;

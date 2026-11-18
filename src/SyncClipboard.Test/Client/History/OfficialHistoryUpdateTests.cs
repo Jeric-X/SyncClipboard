@@ -57,6 +57,54 @@ public class OfficialHistoryUpdateTests
         Assert.IsNull(await adapter.UpdateHistoryAsync(ProfileType.Text, "HASH", new(), Token));
     }
 
+    [TestMethod]
+    [DataRow(null, "图标", false)]
+    [DataRow("false", "图标", false)]
+    [DataRow("true", "图标", true)]
+    [DataRow("true", null, false)]
+    public async Task Query_SearchesNamesOnlyWhenSupported(string? capability, string? search, bool expected)
+    {
+        using var handler = new QueryHandler(capability);
+        using var adapter = new OfficialAdapter(Mock.Of<ILogger>(), Mock.Of<IAppConfig>());
+        var field = typeof(OfficialAdapter).GetField("_httpClient", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        ((HttpClient)field.GetValue(adapter)!).Dispose();
+        field.SetValue(adapter, new HttpClient(handler) { BaseAddress = new Uri("https://history.test/") });
+
+        var records = await adapter.GetHistoryAsync(searchText: search, token: Token);
+
+        Assert.AreEqual(expected, handler.SearchNames);
+        Assert.AreEqual(search ?? string.Empty, handler.SearchText);
+        Assert.AreEqual("应用图标", records.Single().Name);
+    }
+
+    private sealed class QueryHandler(string? capability) : HttpMessageHandler
+    {
+        public bool SearchNames { get; private set; }
+        public string? SearchText { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+        {
+            if (request.RequestUri!.AbsolutePath == "/api/capabilities")
+                return new(HttpStatusCode.OK)
+                {
+                    Content = new StringContent(capability is null ? "{\"historySync\":true,\"historyTags\":true}"
+                        : $"{{\"historySync\":true,\"historyTags\":true,\"historyName\":{capability}}}")
+                };
+            Assert.AreEqual("/api/history/query", request.RequestUri.AbsolutePath);
+            Assert.AreEqual(HttpMethod.Post, request.Method);
+            var form = (MultipartFormDataContent)request.Content!;
+            foreach (var part in form)
+            {
+                var name = part.Headers.ContentDisposition!.Name!.Trim('"');
+                if (name == "searchNames")
+                    SearchNames = bool.Parse(await part.ReadAsStringAsync(token));
+                if (name == nameof(HistoryQueryDto.SearchText))
+                    SearchText = await part.ReadAsStringAsync(token);
+            }
+            return new(HttpStatusCode.OK) { Content = new StringContent("[{\"name\":\"应用图标\"}]") };
+        }
+    }
+
     private static OfficialAdapter CreateAdapter(HttpStatusCode status, string body)
     {
         var adapter = new OfficialAdapter(Mock.Of<ILogger>(), Mock.Of<IAppConfig>());

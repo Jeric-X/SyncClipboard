@@ -413,6 +413,9 @@ public sealed class OfficialAdapter(
                 { new StringContent(sortByLastAccessed.ToString()), nameof(HistoryQueryDto.SortByLastAccessed) }
             };
 
+            if (!string.IsNullOrWhiteSpace(searchText) && await SupportsHistoryNameAsync(token))
+                content.Add(new StringContent(bool.TrueString), "searchNames");
+
             using var response = await _httpClient.PostAsync(url, content, token);
             response.EnsureSuccessStatusCode();
 
