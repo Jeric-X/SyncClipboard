@@ -49,16 +49,40 @@ public class HistoryShortcutSettingTests
     }
 
     [TestMethod]
-    public void SaveShortcut_UpdatesDisplayedBindingAndRuntimeConfiguration()
+    [DataRow(HistoryShortcutAction.Search)]
+    [DataRow(HistoryShortcutAction.EditTitle)]
+    public void SaveShortcut_UpdatesDisplayedBindingAndRuntimeConfiguration(HistoryShortcutAction action)
     {
-        var setting = viewModel.ShortcutSettings.Single(row => row.Action == HistoryShortcutAction.Search);
+        var setting = viewModel.ShortcutSettings.Single(row => row.Action == action);
         viewModel.BeginEditShortcut(setting);
-        viewModel.EditingShortcut = new Hotkey(Key.F2);
+        viewModel.EditingShortcut = new Hotkey(Key.F3);
         Assert.IsTrue(viewModel.SaveShortcutCommand.CanExecute(null));
         viewModel.SaveShortcutCommand.Execute(null);
-        Assert.AreEqual(new Hotkey(Key.F2), setting.Hotkey);
-        Assert.AreEqual(HistoryShortcutAction.Search, config.GetConfig<HistoryShortcutConfig>().Match(new Hotkey(Key.F2)));
-        Assert.IsNull(config.GetConfig<HistoryShortcutConfig>().Match(new Hotkey(Key.Ctrl, Key.F)));
+        Assert.AreEqual(new Hotkey(Key.F3), setting.Hotkey);
+        Assert.AreEqual(action, config.GetConfig<HistoryShortcutConfig>().Match(new Hotkey(Key.F3)));
+        Assert.IsNull(config.GetConfig<HistoryShortcutConfig>().Match(HistoryShortcutConfig.GetDefault(action)));
+    }
+
+    [TestMethod]
+    public async Task TitleShortcut_CanBeClearedPersistedAndResetWithoutChangingOtherBindings()
+    {
+        var title = viewModel.ShortcutSettings.Single(row => row.Action == HistoryShortcutAction.EditTitle);
+        Assert.AreEqual(Strings.HistoryEditTitle, title.Name);
+        Assert.AreEqual(new Hotkey(Key.F2), title.Hotkey);
+        viewModel.BeginEditShortcut(title);
+        viewModel.EditingShortcut = new Hotkey(Key.Ctrl, Key.T);
+        Assert.IsFalse(viewModel.SaveShortcutCommand.CanExecute(null));
+        viewModel.EditingShortcut = Hotkey.Nothing;
+        viewModel.SaveShortcutCommand.Execute(null);
+
+        var reloaded = new ConfigManager(Path.Combine(directory, "SyncClipboard.json"), configurationServices.Upgrader)
+            .GetConfig<HistoryShortcutConfig>();
+        Assert.IsNull(reloaded.Match(new Hotkey(Key.F2)));
+        Assert.AreEqual(HistoryShortcutAction.EditTags, reloaded.Match(new Hotkey(Key.Ctrl, Key.T)));
+
+        await viewModel.ResetShortcutCommand.ExecuteAsync(title);
+        Assert.AreEqual(HistoryShortcutAction.EditTitle, config.GetConfig<HistoryShortcutConfig>().Match(new Hotkey(Key.F2)));
+        Assert.IsFalse(title.IsModified);
     }
 
     [TestMethod]
@@ -217,7 +241,7 @@ public class HistoryShortcutSettingTests
     {
         config.SetConfig(new HistoryShortcutConfig
         {
-            Shortcuts = { [HistoryShortcutAction.Search] = new Hotkey(Key.F2) },
+            Shortcuts = { [HistoryShortcutAction.Search] = new Hotkey(Key.F3) },
             DoubleClickAction = HistoryMouseAction.ExecuteRecommendedAction
         });
         var before = config.GetConfig<HistoryShortcutConfig>();
@@ -232,7 +256,7 @@ public class HistoryShortcutSettingTests
         confirmation.SetResult(false);
         await reset;
         Assert.AreEqual(before, config.GetConfig<HistoryShortcutConfig>());
-        Assert.AreEqual(new Hotkey(Key.F2),
+        Assert.AreEqual(new Hotkey(Key.F3),
             viewModel.ShortcutSettings.Single(row => row.Action == HistoryShortcutAction.Search).Hotkey);
         dialog.Verify(service => service.ShowConfirmationAsync(Strings.ResetAllHistoryKeyboardShortcuts,
             Strings.ResetAllHistoryKeyboardShortcutsConfirmMessage), Times.Once);
@@ -247,7 +271,7 @@ public class HistoryShortcutSettingTests
         {
             Shortcuts = new()
             {
-                [search.Action] = new Hotkey(Key.F2),
+                [search.Action] = new Hotkey(Key.F3),
                 [copy.Action] = new Hotkey(Key.Ctrl, Key.F)
             }
         });
@@ -257,7 +281,7 @@ public class HistoryShortcutSettingTests
         await viewModel.ResetShortcutCommand.ExecuteAsync(search);
 
         Assert.AreEqual(before, config.GetConfig<HistoryShortcutConfig>());
-        Assert.AreEqual(new Hotkey(Key.F2), search.Hotkey);
+        Assert.AreEqual(new Hotkey(Key.F3), search.Hotkey);
         Assert.IsTrue(search.IsModified);
         dialog.Verify(service => service.ShowMessageAsync(Strings.ResetToDefault,
             string.Format(Strings.HistoryShortcutResetConflict, "Ctrl+F", copy.Name)), Times.Once);

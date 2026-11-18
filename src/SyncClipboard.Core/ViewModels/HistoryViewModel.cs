@@ -944,6 +944,10 @@ public partial class HistoryViewModel : ObservableObject
         switch (action)
         {
             case HistoryShortcutAction.Search: window?.FocusSearch(); break;
+            case HistoryShortcutAction.EditTitle:
+                if (!IsMultiSelecting && SelectedItem is not null && SelectedFilter != HistoryFilterType.Transferring)
+                    window?.ShowTitleEditor();
+                break;
             case HistoryShortcutAction.EditTags:
                 if (!IsMultiSelecting && SelectedItem is not null && SelectedFilter != HistoryFilterType.Transferring)
                     window?.ShowTagPicker();

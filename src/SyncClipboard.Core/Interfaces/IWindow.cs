@@ -11,6 +11,7 @@ public interface IWindow
     void CenterOnScreen(int width, int height);
     void FocusSearch();
     void ShowTagPicker() { }
+    void ShowTitleEditor() { }
     void NavigateTagFilter(bool forward) { }
     void NavigateTagFilterVertically(bool down) { }
     void ToggleTagBarExpanded() { }

@@ -556,6 +556,12 @@ public partial class HistoryWindow : Window, IWindow
         flyout.Items.Add(settings);
     }
 
+    public async void ShowTitleEditor()
+    {
+        if (_viewModel.SelectedItem is { } record)
+            await EditTitleAsync(record);
+    }
+
     private async Task EditTitleAsync(HistoryRecordVM record)
     {
         if (_viewModel.HasModalOperation || _viewModel.IsMultiSelecting)
