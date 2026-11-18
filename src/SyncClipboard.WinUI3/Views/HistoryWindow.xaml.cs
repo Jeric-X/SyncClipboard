@@ -191,6 +191,7 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         this.ResizeDip(_viewModel.Width, _viewModel.Height);
 
         InitializeComponent();
+        _PreviewPanel.NameEditRequested += async record => await EditNameAsync(record);
         _TagFilterItems.AddHandler(UIElement.PointerWheelChangedEvent, new PointerEventHandler(TagFilterScroll_PointerWheelChanged), true);
         _TagFilterScroll.ViewChanged += (_, e) =>
         {
@@ -899,6 +900,12 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         AddContextActions(flyout, actions);
         if (flyout.Items.Count > 0)
             flyout.Items.Add(new MenuFlyoutSeparator());
+        if (!isMultiSelecting)
+        {
+            var editName = new MenuFlyoutItem { Text = record.NameActionText };
+            editName.Click += async (_, _) => await EditNameAsync(record);
+            flyout.Items.Add(editName);
+        }
         var editTags = new MenuFlyoutItem
         {
             Text = Strings.HistoryTagsEdit,
@@ -958,6 +965,42 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         var settings = new MenuFlyoutItem { Text = Strings.HistoryTagBarEditPins };
         settings.Click += TagBarSettings_Click;
         flyout.Items.Add(settings);
+    }
+
+    private async Task EditNameAsync(HistoryRecordVM record)
+    {
+        if (_viewModel.HasModalOperation || _viewModel.IsMultiSelecting)
+            return;
+        using var hold = _viewModel.HoldForModalOperation();
+        var title = record.NameActionText;
+        try
+        {
+            var input = new TextBox { Text = record.Name ?? string.Empty };
+            var dialog = new ContentDialog
+            {
+                XamlRoot = Content.XamlRoot,
+                Title = title,
+                Content = input,
+                PrimaryButtonText = Strings.Confirm,
+                CloseButtonText = Strings.Cancel,
+                DefaultButton = ContentDialogButton.Primary
+            };
+            dialog.Opened += (_, _) =>
+            {
+                input.Focus(FocusState.Programmatic);
+                input.SelectAll();
+            };
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+                await _viewModel.SetNameAsync(record.Key, input.Text);
+        }
+        catch (Exception ex)
+        {
+            await new WinUIDialog(this).ShowMessageAsync(title, ex.Message);
+        }
+        finally
+        {
+            _SearchTextBox.Focus(FocusState.Programmatic);
+        }
     }
 
     private async Task RenameTagAsync(string name)
