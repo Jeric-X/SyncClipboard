@@ -1791,6 +1791,6 @@ Choose whether to use the default location or select another folder.</value>
     <value>Add name…</value>
   </data>
   <data name="HistoryEditName" xml:space="preserve">
-    <value>Edit name…</value>
+    <value>Edit name</value>
   </data>
 </root>

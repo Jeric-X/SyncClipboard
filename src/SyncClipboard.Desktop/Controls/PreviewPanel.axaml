@@ -2,6 +2,7 @@
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:views="using:SyncClipboard.Desktop.Views"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:vc="using:SyncClipboard.Desktop.ValueConverters"
              xmlns:i18n="using:SyncClipboard.Core.I18n"
              xmlns:vm="using:SyncClipboard.Core.ViewModels"
@@ -56,23 +57,26 @@
         </Border>
         <Grid Grid.Row="1"
               ColumnDefinitions="*,Auto"
+              HorizontalAlignment="Left"
               Margin="12,0,12,4"
-              IsVisible="{Binding #_PreviewPanel.SelectedItem, Converter={x:Static vc:FuncConverter.NotNullToVisible}}">
+              IsVisible="{Binding HasName, FallbackValue=False}">
             <TextBlock Text="{Binding Name}"
                        FontWeight="SemiBold"
-                       IsVisible="{Binding HasName}"
                        TextTrimming="CharacterEllipsis"
                        ToolTip.Tip="{Binding Name}"
                        VerticalAlignment="Center" />
             <Button Grid.Column="1"
-                    Padding="6,2"
-                    MinWidth="0"
-                    MinHeight="0"
-                    Background="Transparent"
-                    BorderThickness="0"
+                    Theme="{StaticResource DateTimeFlyoutButtonStyle}"
+                    Width="28"
+                    Height="28"
+                    Margin="4,0,0,0"
+                    FontSize="14"
                     IsVisible="{Binding !#_PreviewPanel.ViewModel.IsMultiSelecting}"
-                    Content="{Binding NameActionText}"
-                    Click="EditName_Click" />
+                    ToolTip.Tip="{x:Static i18n:Strings.HistoryEditName}"
+                    AutomationProperties.Name="{x:Static i18n:Strings.HistoryEditName}"
+                    Click="EditName_Click">
+                <ui:FAFontIcon Glyph="&#xE70F;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </Button>
         </Grid>
         <ScrollViewer Grid.Row="2"
                       MaxHeight="100"

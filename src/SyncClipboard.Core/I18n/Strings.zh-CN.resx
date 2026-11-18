@@ -1791,6 +1791,6 @@ Shift + 左键：选中连续范围</value>
     <value>添加名称…</value>
   </data>
   <data name="HistoryEditName" xml:space="preserve">
-    <value>编辑名称…</value>
+    <value>编辑名称</value>
   </data>
 </root>
