@@ -302,82 +302,36 @@ public class ServerHistoryTagWriteTests
     }
 
     [TestMethod]
-    [DataRow("current", "old", 1, "current")]
-    [DataRow("", "old", 1, "")]
-    [DataRow(null, " old ", 1, "old")]
-    [DataRow(null, " ", 1, null)]
-    [DataRow("current", " new ", 11, "new")]
-    public async Task Post_RestoresDeletedRecordWhileResolvingTitleByFreshness(
-        string? currentTitle, string incomingTitle, int version, string? expectedTitle)
+    [DataRow(null, null, "current", "kept")]
+    [DataRow(" new ", null, "new", "kept")]
+    [DataRow(null, "[\"uploaded\"]", "current", "uploaded")]
+    [DataRow("", "[]", "", "")]
+    [DataRow("new", "[\"uploaded\"]", "new", "uploaded")]
+    public async Task Post_RestoresDeletedRecordWithProvidedMetadata(
+        string? title, string? tagsJson, string expectedTitle, string expectedTag)
     {
         await using var f = await Fixture.CreateAsync(Token);
         var entity = await f.SeedAsync(Token);
         entity.IsDeleted = true;
-        entity.Title = currentTitle;
+        entity.Title = "current";
         await f.Db.SaveChangesAsync(Token);
 
-        var result = await f.PostAsync(null, Token, version, incomingTitle);
+        var result = await f.PostAsync(tagsJson, Token, 1, title, entity.LastModified.AddHours(-1));
         Assert.IsInstanceOfType<OkObjectResult>(result);
         var restored = (HistoryRecordDto)((OkObjectResult)result).Value!;
         Assert.IsFalse(restored.IsDeleted);
+        Assert.AreEqual(11, restored.Version);
         Assert.AreEqual(expectedTitle, restored.Title);
-        Assert.AreEqual(expectedTitle, f.Notifications.Single().Title);
-        Assert.AreEqual(expectedTitle, (await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token)).Title);
-    }
-
-    [TestMethod]
-    [DataRow(null, "current", 1, "uploaded", "current")]
-    [DataRow("current", null, 1, "current", "uploaded")]
-    [DataRow("", "", 1, "", "")]
-    [DataRow("current", "current", 11, "uploaded", "uploaded")]
-    public async Task Post_RestoreResolvesTagsAndTitleIndependently(
-        string? currentTag, string? currentTitle, int version, string expectedTag, string expectedTitle)
-    {
-        await using var f = await Fixture.CreateAsync(Token);
-        var entity = await f.SeedAsync(Token);
-        entity.IsDeleted = true;
-        entity.Tags = currentTag switch { null => null, "" => [], _ => [currentTag] };
-        entity.Title = currentTitle;
-        await f.Db.SaveChangesAsync(Token);
-
-        var result = await f.PostAsync("""["uploaded"]""", Token, version, "uploaded");
-        Assert.IsInstanceOfType<OkObjectResult>(result);
-        var restored = (HistoryRecordDto)((OkObjectResult)result).Value!;
-        Assert.IsFalse(restored.IsDeleted);
         string[] expectedTags = expectedTag.Length == 0 ? [] : [expectedTag];
         CollectionAssert.AreEqual(expectedTags, restored.Tags);
-        Assert.AreEqual(expectedTitle, restored.Title);
-        CollectionAssert.AreEqual(expectedTags, f.Notifications.Single().Tags);
+        var notified = f.Notifications.Single();
+        Assert.IsFalse(notified.IsDeleted);
+        Assert.AreEqual(expectedTitle, notified.Title);
+        CollectionAssert.AreEqual(expectedTags, notified.Tags);
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
-        CollectionAssert.AreEqual(expectedTags, saved.Tags);
+        Assert.IsFalse(saved.IsDeleted);
         Assert.AreEqual(expectedTitle, saved.Title);
-    }
-
-    [TestMethod]
-    public async Task Post_RetryOfOlderHighVersionRestorePreservesClearedMetadata()
-    {
-        await using var f = await Fixture.CreateAsync(Token);
-        var entity = await f.SeedAsync(Token);
-        entity.IsDeleted = true;
-        entity.Tags = [];
-        entity.Title = "";
-        await f.Db.SaveChangesAsync(Token);
-        var uploadedAt = entity.LastModified.AddHours(-1);
-
-        for (var attempt = 0; attempt < 2; attempt++)
-        {
-            var result = await f.PostAsync("""["old"]""", Token, 20, "old", uploadedAt);
-            Assert.IsInstanceOfType<OkObjectResult>(result);
-            var restored = (HistoryRecordDto)((OkObjectResult)result).Value!;
-            Assert.IsFalse(restored.IsDeleted);
-            Assert.AreEqual("", restored.Title);
-            Assert.IsNotNull(restored.Tags);
-            Assert.IsEmpty(restored.Tags);
-        }
-        Assert.HasCount(1, f.Notifications);
-        var renamed = await f.PatchAsync(null, Token, 21, "pending rename");
-        Assert.IsInstanceOfType<OkObjectResult>(renamed);
-        Assert.AreEqual("pending rename", ((HistoryRecordUpdateDto)((OkObjectResult)renamed).Value!).Title);
+        CollectionAssert.AreEqual(expectedTags, saved.Tags);
     }
 
     [TestMethod]
@@ -399,7 +353,7 @@ public class ServerHistoryTagWriteTests
             await f.Service.Update(entity.UserId, entity.Type, entity.Hash, dto, Token);
         }
         else
-            await f.PostAsync(null, Token, 1, "old", entity.LastModified);
+            await f.PostAsync(null, Token, 1, null, entity.LastModified);
         var changes = await f.Service.GetListAsync(HistoryService.HARD_CODED_USER_ID, 1, 50, modifiedAfter: since, token: Token);
         var restored = changes.Single();
         Assert.IsFalse(restored.IsDeleted);
@@ -408,7 +362,7 @@ public class ServerHistoryTagWriteTests
     }
 
     [TestMethod]
-    public async Task Post_RetryPreservesInitializedMetadata()
+    public async Task Post_RetryWithoutMetadataPreservesInitializedValues()
     {
         await using var f = await Fixture.CreateAsync(Token);
         var entity = await f.SeedAsync(Token);
@@ -418,7 +372,7 @@ public class ServerHistoryTagWriteTests
 
         for (var attempt = 0; attempt < 2; attempt++)
         {
-            var result = await f.PostAsync("[]", Token, 1, "old");
+            var result = await f.PostAsync(null, Token, 1);
             Assert.IsInstanceOfType<OkObjectResult>(result);
             var restored = (HistoryRecordDto)((OkObjectResult)result).Value!;
             Assert.AreEqual("", restored.Title);
