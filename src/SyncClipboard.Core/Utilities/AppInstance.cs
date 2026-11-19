@@ -248,7 +248,7 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
     internal static void CheckCanInstallUpdate()
     {
         if (HasOtherInstances(InstallationPath, Environment.ProcessId))
-            throw new InvalidOperationException("Close the other SyncClipboard instances from this installation before installing an update.");
+            throw new InvalidOperationException(I18n.Strings.UpdateCloseOtherInstances);
     }
 
     internal static FileStream LockDataDirectory(string directory)

@@ -1478,6 +1478,9 @@ Choose whether to use the default location or select another folder.</value>
   <data name="UpdateInstallationUnsupported" xml:space="preserve">
     <value>Automatic installation is not supported. Install the downloaded package manually.</value>
   </data>
+  <data name="UpdateCloseOtherInstances" xml:space="preserve">
+    <value>Close the other SyncClipboard instances from this installation before installing an update.</value>
+  </data>
   <data name="UpdatedToVersion" xml:space="preserve">
     <value>Updated to version {0}.</value>
   </data>
