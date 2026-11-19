@@ -570,22 +570,9 @@ public partial class HistoryWindow : Window, IWindow
         var title = record.TitleActionText;
         try
         {
-            var input = new TextBox { Text = record.Title ?? string.Empty };
-            var dialog = new FAContentDialog
-            {
-                Title = title,
-                Content = input,
-                PrimaryButtonText = Strings.Confirm,
-                CloseButtonText = Strings.Cancel,
-                DefaultButton = FAContentDialogButton.Primary
-            };
-            dialog.Opened += (_, _) => Dispatcher.UIThread.Post(() =>
-            {
-                input.Focus();
-                input.SelectAll();
-            });
+            var dialog = new HistoryTitleDialog(title, record.Title);
             if (await dialog.ShowAsync(this) == FAContentDialogResult.Primary)
-                await _viewModel.SetTitleAsync(record.Key, input.Text ?? string.Empty);
+                await _viewModel.SetTitleAsync(record.Key, dialog.Text);
         }
         catch (Exception ex)
         {

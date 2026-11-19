@@ -1799,4 +1799,16 @@ Shift + 左键：选中连续范围</value>
   <data name="ProtectTitledRecordsDescription" xml:space="preserve">
     <value>带标题的记录不会被自动删除</value>
   </data>
+  <data name="HistoryTitleTooLong" xml:space="preserve">
+    <value>最多 {0} 个字符</value>
+  </data>
+  <data name="HistoryTitleLineBreak" xml:space="preserve">
+    <value>不能包含换行</value>
+  </data>
+  <data name="HistoryTitleControlCharacter" xml:space="preserve">
+    <value>不能包含控制字符</value>
+  </data>
+  <data name="HistoryTitleInvalidCharacter" xml:space="preserve">
+    <value>包含无效字符</value>
+  </data>
 </root>

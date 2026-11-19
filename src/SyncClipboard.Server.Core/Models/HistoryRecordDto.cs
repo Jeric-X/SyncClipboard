@@ -54,7 +54,7 @@ public class HistoryRecordDto
             LastAccessed = this.LastAccessed.UtcDateTime,
             LastModified = this.LastModified.UtcDateTime,
             Tags = this.Tags is null ? null : HistoryTags.Normalize(this.Tags),
-            Title = this.Title?.Trim(),
+            Title = HistoryTitles.Normalize(this.Title),
             Stared = this.Starred,
             Pinned = this.Pinned,
             Size = this.Size,

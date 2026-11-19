@@ -1259,7 +1259,7 @@ public partial class HistoryViewModel : ObservableObject
     {
         return string.IsNullOrEmpty(SearchText)
             || vm.Text.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
-            || vm.Title?.Contains(SearchText, StringComparison.OrdinalIgnoreCase) == true;
+            || vm.Title?.Contains(SearchText.Normalize(), StringComparison.OrdinalIgnoreCase) == true;
     }
 
     // 已加载范围是 >= _timeCursor 的记录，< _timeCursor 的记录还未加载

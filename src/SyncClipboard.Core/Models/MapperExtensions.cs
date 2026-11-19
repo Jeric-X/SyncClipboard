@@ -19,7 +19,7 @@ public static class MapperExtensions
             TransferDataFile = null,
             TransferDataHash = null,
             Timestamp = dto.CreateTime.UtcDateTime,
-            Title = dto.Title?.Trim(),
+            Title = HistoryTitles.Normalize(dto.Title),
             Tags = dto.Tags is null ? null : HistoryTags.Normalize(dto.Tags),
             Stared = dto.Starred,
             Pinned = dto.Pinned,
@@ -35,10 +35,12 @@ public static class MapperExtensions
 
     public static void ApplyChangesFromRemote(this HistoryRecord entity, HistoryRecordDto dto)
     {
-        if (dto.Tags is not null)
-            entity.Tags = HistoryTags.Normalize(dto.Tags);
-        if (dto.Title is not null)
-            entity.Title = dto.Title.Trim();
+        var tags = dto.Tags is null ? null : HistoryTags.Normalize(dto.Tags);
+        var title = HistoryTitles.Normalize(dto.Title);
+        if (tags is not null)
+            entity.Tags = tags;
+        if (title is not null)
+            entity.Title = title;
         entity.Stared = dto.Starred;
         entity.Pinned = dto.Pinned;
         entity.Version = dto.Version;
@@ -107,10 +109,12 @@ public static class MapperExtensions
     /// </summary>
     public static void ApplyFromServerUpdateDto(this HistoryRecord entity, HistoryRecordUpdateDto server)
     {
-        if (server.Tags is not null)
-            entity.Tags = HistoryTags.Normalize(server.Tags);
-        if (server.Title is not null)
-            entity.Title = server.Title.Trim();
+        var tags = server.Tags is null ? null : HistoryTags.Normalize(server.Tags);
+        var title = HistoryTitles.Normalize(server.Title);
+        if (tags is not null)
+            entity.Tags = tags;
+        if (title is not null)
+            entity.Title = title;
         if (server.Starred.HasValue)
             entity.Stared = server.Starred.Value;
         if (server.Pinned.HasValue)

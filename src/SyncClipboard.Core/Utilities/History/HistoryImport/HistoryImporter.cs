@@ -250,6 +250,7 @@ public sealed class HistoryImporter
     private async Task<HistoryRecord> RestoreRecordAsync(
         HistoryImportPlan plan, HistoryExportRecord item, ProfileType type, string hash, string? directory, CancellationToken token)
     {
+        var title = HistoryTitles.Normalize(item.Title);
         var profile = CreateImportProfile(item, type, hash);
         await RestoreProfileTransferAsync(plan, item, profile, directory, token).ConfigureAwait(false);
         await ValidateRestoredProfileAsync(profile, item, directory, token).ConfigureAwait(false);
@@ -267,7 +268,7 @@ public sealed class HistoryImporter
             LastModified = item.LastModified.ToUniversalTime(),
             LastAccessed = item.LastAccessed.ToUniversalTime(),
             Tags = item.Tags is null ? null : HistoryTags.Normalize(item.Tags),
-            Title = item.Title?.Trim(),
+            Title = title,
             Stared = item.Starred,
             Pinned = item.Pinned,
             From = item.From,
