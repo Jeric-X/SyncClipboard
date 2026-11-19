@@ -395,23 +395,19 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             await EnsureExistingRecordData(existing, declaredTransferDataHash, transferFileStream, token);
         }
 
-        var metadataWins = HistoryHelper.ShouldUpdate(existing.Version, incoming.Version,
+        var shouldUpdate = restoring || HistoryHelper.ShouldUpdate(existing.Version, incoming.Version,
             new DateTimeOffset(existing.LastModified), incoming.LastModified);
-        var shouldUpdate = restoring || metadataWins;
         if (shouldUpdate)
         {
             var updatedEntity = incoming.ToEntity(userId);
             updatedEntity.Version = Math.Max(incoming.Version, existing.Version + 1);
             updatedEntity.LastModified = ResolveModificationTime(existing, incoming.IsDeleted, updatedEntity.LastModified);
             UpdateEntityFields(updatedEntity, existing);
-        }
-        if (metadataWins)
-        {
             existing.Title = incoming.Title ?? existing.Title;
             if (incoming.Tags is not null)
                 existing.Tags = [.. incoming.Tags];
         }
-        var backfilled = !metadataWins && BackfillMissingMetadata(existing, incoming.Tags, incoming.Title);
+        var backfilled = !shouldUpdate && BackfillMissingMetadata(existing, incoming.Tags, incoming.Title);
         if (shouldUpdate || backfilled)
         {
             await _dbContext.SaveChangesAsync(token);
