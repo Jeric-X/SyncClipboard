@@ -272,13 +272,14 @@ namespace SyncClipboard.Core
             contextMenu.AddMenuItem(new MenuItem(Strings.About, () => mainWindow.OpenPage(PageDefinition.About)), "Top Group");
             contextMenu.AddMenuItem(new MenuItem(Strings.HistoryPanel, historyViewModel.ShowWithAutoPosition), "Top Group");
 
+            var programPath = OperatingSystem.IsMacOS()
+                ? MacUpdaterFiles.FindBundle(Env.ProgramDirectory) ?? Env.ProgramPath
+                : Env.ProgramPath;
             MenuItem[] menu =
             [
                 new MenuItem(I18n.Strings.OpenConfigFile, () => Sys.OpenWithDefaultApp(ConfigManager.Path)),
                 new MenuItem(I18n.Strings.ReloadConfigFile, ReloadConfig),
-#if !MACOS
-                new MenuItem(I18n.Strings.OpenInstallFolder, () => Sys.ShowPathInFileManager(Env.ProgramPath)),
-#endif
+                new MenuItem(I18n.Strings.OpenInstallFolder, () => Sys.ShowPathInFileManager(programPath)),
                 new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Sys.OpenFolderInFileManager(Env.AppDataDirectory)),
             ];
             contextMenu.AddMenuItemGroup(menu);
