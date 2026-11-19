@@ -2,6 +2,8 @@
 using SyncClipboard.Core.Interfaces;
 using System.Diagnostics;
 using System.IO.Pipes;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace SyncClipboard.Core.Utilities;
 
@@ -11,6 +13,10 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
     private const string ShutdownCommand = "Shutdown";
     private static readonly string MutexPrefix = @$"Global\{Env.SoftName}-Mutex-{Environment.UserName}-";
     private static readonly string PipePrefix = @$"Global\{Env.SoftName}-Pipe-{Environment.UserName}-";
+    private static string MutexName => MutexPrefix + AppLaunchOptions.Current.InstanceSuffix;
+    private static string PipeName => AppLaunchOptions.Current.IsMultiInstance ? AppLaunchOptions.Current.PipeName : PipePrefix;
+    private static FileStream? _directoryLock;
+    private static Mutex? _installationMarker;
     private bool _disposed = false;
 
     private CancellationTokenSource? _cancellationSource = null;
@@ -26,6 +32,8 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
         }
         CancelWaitForOtherInstanceToActiveAsync();
         GC.SuppressFinalize(this);
+        _installationMarker?.Dispose();
+        _directoryLock?.Dispose();
         GlobalMutex?.ReleaseMutex();
         GlobalMutex?.Dispose();
         _disposed = true;
@@ -70,7 +78,7 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
         {
             try
             {
-                using var pipeServer = new NamedPipeServerStream(PipePrefix, PipeDirection.InOut, 1);
+                using var pipeServer = new NamedPipeServerStream(PipeName, PipeDirection.InOut, 1);
                 await pipeServer.WaitForConnectionAsync(cancellationToken);
                 using var reader = new StreamReader(pipeServer);
                 var command = await reader.ReadLineAsync(cancellationToken);
@@ -98,7 +106,7 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
 
     private static async Task SendCommandToOtherInstance(string command)
     {
-        using var pipeClient = new NamedPipeClientStream(".", PipePrefix, PipeDirection.InOut);
+        using var pipeClient = new NamedPipeClientStream(".", PipeName, PipeDirection.InOut);
         var token = new CancellationTokenSource(TimeSpan.FromSeconds(3)).Token;
         try
         {
@@ -125,7 +133,7 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
 
     public static Mutex? CreateMutexOrWakeUp(string[] args)
     {
-        Mutex mutex = new(false, MutexPrefix, out bool createdNew);
+        Mutex mutex = new(false, MutexName, out bool createdNew);
         if (!createdNew)
         {
             if (args.Any(args => args.StartsWith(StartArguments.CommandPrefix)))
@@ -150,7 +158,7 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
 
     public static Mutex? ForceCreateMutex()
     {
-        Mutex mutex = new(false, MutexPrefix, out bool createdNew);
+        Mutex mutex = new(false, MutexName, out bool createdNew);
         if (!createdNew)
         {
             ShutdownOtherInstance().Wait();
@@ -159,6 +167,21 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
     }
 
     public static bool EnsureSingleInstance(string[] args)
+    {
+        try
+        {
+            AppLaunchOptions.Current.ValidateDataDirectory(AppDomain.CurrentDomain.BaseDirectory);
+            return TryAcquireInstance(args);
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or TypeInitializationException)
+        {
+            Console.Error.WriteLine($"Could not start SyncClipboard: {ex.GetBaseException().Message}");
+            Environment.ExitCode = 1;
+            return false;
+        }
+    }
+
+    private static bool TryAcquireInstance(string[] args)
     {
         Mutex? mutex;
         if (args.Contains(StartArguments.ShutdownPrivious))
@@ -179,15 +202,64 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
         {
             if (mutex.WaitOne(TimeSpan.FromSeconds(10)))
             {
-                GlobalMutex = mutex;
-                return true;
+                return HoldDataDirectory(mutex);
             }
+            mutex.Dispose();
             return false;
         }
         catch (AbandonedMutexException)
         {
-            GlobalMutex = new(false, MutexPrefix);
-            return GlobalMutex?.WaitOne(TimeSpan.FromSeconds(10)) ?? false;
+            return HoldDataDirectory(mutex);
+        }
+    }
+
+    private static string InstallationPath =>
+        OperatingSystem.IsLinux() ? Env.GetAppImageExecPath() ?? Env.ProgramDirectory : Env.ProgramDirectory;
+
+    private static string InstallationMarkerName(string programDirectory)
+    {
+        var path = AppLaunchOptions.NormalizePath(programDirectory);
+        if (OperatingSystem.IsWindows())
+            path = path.ToUpperInvariant();
+        return @"Global\SyncClipboard-Multi-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)));
+    }
+
+    internal static Mutex CreateInstallationMarker(string programDirectory)
+        => new(false, InstallationMarkerName(programDirectory));
+
+    internal static bool HasAdditionalInstances(string programDirectory)
+    {
+        if (!Mutex.TryOpenExisting(InstallationMarkerName(programDirectory), out var marker))
+            return false;
+        marker.Dispose();
+        return true;
+    }
+
+    internal static void CheckCanInstallUpdate()
+    {
+        if (HasAdditionalInstances(InstallationPath))
+            throw new InvalidOperationException("Close the additional SyncClipboard instances before installing an update.");
+    }
+
+    internal static FileStream LockDataDirectory(string directory)
+        => new(Path.Combine(directory, ".instance.lock"), FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+
+    private static bool HoldDataDirectory(Mutex mutex)
+    {
+        try
+        {
+            // A file lock also prevents directory aliases or the normal instance from sharing the same database.
+            _directoryLock = LockDataDirectory(Env.AppDataDirectory);
+            if (AppLaunchOptions.Current.IsMultiInstance)
+                _installationMarker = CreateInstallationMarker(InstallationPath);
+            GlobalMutex = mutex;
+            return true;
+        }
+        catch
+        {
+            mutex.ReleaseMutex();
+            mutex.Dispose();
+            throw;
         }
     }
 }

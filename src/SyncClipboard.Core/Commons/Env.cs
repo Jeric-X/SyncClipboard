@@ -23,8 +23,10 @@ namespace SyncClipboard.Core.Commons
         public static readonly string ProgramDirectory = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly string PortableAppDataDirectory = Path.Combine(ProgramDirectory, PortableAppDataFolderName);
         public static readonly string ProgramPath = GetProgramPath();
-        public static readonly string PortableUserConfigFile = Path.Combine(ProgramDirectory, "SyncClipboard.json");
-        public static readonly string StaticConfigPath = Path.Combine(ProgramDirectory, "StaticConfig.json");
+        public static readonly string PortableUserConfigFile =
+            Path.Combine(AppLaunchOptions.Current.AppDataDirectory ?? ProgramDirectory, "SyncClipboard.json");
+        public static readonly string StaticConfigPath =
+            Path.Combine(AppLaunchOptions.Current.AppDataDirectory ?? ProgramDirectory, "StaticConfig.json");
         public static readonly string UserAppDataDirectory = GetUserAppDataDirectory();
         /// <summary>
         /// Path to the independent config file that stores the custom AppData directory.
@@ -84,6 +86,9 @@ namespace SyncClipboard.Core.Commons
 
         private static string GetAppDataDirectory()
         {
+            if (AppLaunchOptions.Current.AppDataDirectory is string explicitDirectory)
+                return explicitDirectory;
+
             if (GetStaticEnvConfig().PortableAppDataFolder)
             {
                 return PortableAppDataDirectory;

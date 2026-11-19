@@ -17,7 +17,7 @@
                 <FontIcon Glyph="&#xE9F5;" />
             </ui:SettingsExpander.HeaderIcon>
             <ui:SettingsExpander.Items>
-                <ui:SettingsCard Header="{x:Bind i18n:Strings.RunAtSystemStartup}">
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.RunAtSystemStartup}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.ShowStartUpSetting), Mode=OneTime}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.StartUpWithSystem, Mode=TwoWay}" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.RunAsAdministrator}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.ShowStartUpAsAdministratorSetting), Mode=OneTime}">

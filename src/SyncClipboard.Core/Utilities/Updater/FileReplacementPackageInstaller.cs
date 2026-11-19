@@ -9,6 +9,7 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
 {
     public async Task StartAsync(UpdateInstallRequest request, CancellationToken token)
     {
+        AppInstance.CheckCanInstallUpdate();
         var bundle = OperatingSystem.IsMacOS() ? MacUpdaterFiles.FindBundle(Env.ProgramDirectory) : null;
         string workspace;
         if (OperatingSystem.IsLinux())

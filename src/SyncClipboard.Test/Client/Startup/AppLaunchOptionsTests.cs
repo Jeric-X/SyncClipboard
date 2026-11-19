@@ -1,0 +1,215 @@
+using SyncClipboard.Core.Commons;
+using System.Diagnostics;
+using System.IO.Pipes;
+using SyncClipboard.Core.Utilities;
+
+namespace SyncClipboard.Test.Client.Startup;
+
+[TestClass]
+public class AppLaunchOptionsTests
+{
+    [TestMethod]
+    public void NormalStartup_KeepsDefaultInstance()
+    {
+        var options = AppLaunchOptions.Parse([StartArguments.ShutdownPrivious, "--command-ShowHistory"]);
+        Assert.IsFalse(options.IsMultiInstance);
+        Assert.IsNull(options.AppDataDirectory);
+    }
+
+    [TestMethod]
+    [DataRow("--multi-instance")]
+    [DataRow("--app-data-dir", "/tmp/test")]
+    [DataRow("--multi-instance", "--app-data-dir")]
+    [DataRow("--multi-instance", "--app-data-dir=")]
+    [DataRow("--multi-instance", "--app-data-dir", " ")]
+    [DataRow("--multi-instance", "--app-data-dir", "--shutdown-previous")]
+    [DataRow("--multi-instance", "--multi-instance", "--app-data-dir=a")]
+    [DataRow("--multi-instance", "--app-data-dir=a", "--app-data-dir=b")]
+    public void InvalidOptions_RejectStartup(params string[] args)
+    {
+        Assert.ThrowsExactly<ArgumentException>(() => AppLaunchOptions.Parse(args));
+    }
+
+    [TestMethod]
+    public void ExplicitDirectory_NormalizesRelativePathWithoutCreatingIt()
+    {
+        var name = "startup-" + Guid.NewGuid().ToString("N");
+        var options = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", Path.Combine(name, "..", name)]);
+        Assert.AreEqual(Path.GetFullPath(name), options.AppDataDirectory);
+        Assert.IsFalse(Directory.Exists(options.AppDataDirectory));
+        Assert.AreEqual(options.InstanceSuffix,
+            AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir=" + options.AppDataDirectory + Path.DirectorySeparatorChar]).InstanceSuffix);
+        Assert.AreNotEqual(options.InstanceSuffix,
+            AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir=" + name + "-other"]).InstanceSuffix);
+    }
+
+    [TestMethod]
+    public void ExistingFile_RejectsDataDirectory()
+    {
+        var file = Path.GetTempFileName();
+        try
+        {
+            Assert.ThrowsExactly<ArgumentException>(() => AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", file]));
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
+    [TestMethod]
+    public void ProgramDirectory_RejectsPortableConfigurationOverlapButAllowsSeparateSubdirectory()
+    {
+        var programDirectory = Path.Combine(Path.GetTempPath(), "installation-" + Guid.NewGuid().ToString("N"));
+        var overlapping = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", programDirectory]);
+        Assert.ThrowsExactly<ArgumentException>(() => overlapping.ValidateDataDirectory(programDirectory));
+        var separate = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", Path.Combine(programDirectory, "profile")]);
+        separate.ValidateDataDirectory(programDirectory);
+        AppLaunchOptions.Parse([]).ValidateDataDirectory(programDirectory);
+    }
+
+    [TestMethod]
+    [TestCategory("PlatformMacOS")]
+    public void MacBundle_RejectsNestedDataDirectory()
+    {
+        if (!OperatingSystem.IsMacOS())
+            Assert.Inconclusive("Validates macOS app bundle locations.");
+        var root = Directory.CreateTempSubdirectory("startup-bundle-").FullName;
+        try
+        {
+            var contents = Directory.CreateDirectory(Path.Combine(root, "SyncClipboard.app", "Contents")).FullName;
+            File.WriteAllText(Path.Combine(contents, "Info.plist"), "test");
+            var programDirectory = Directory.CreateDirectory(Path.Combine(contents, "MonoBundle")).FullName;
+            var inside = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", Path.Combine(programDirectory, "profile")]);
+            Assert.ThrowsExactly<ArgumentException>(() => inside.ValidateDataDirectory(programDirectory));
+            var outside = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", Path.Combine(root, "profile")]);
+            outside.ValidateDataDirectory(programDirectory);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void Restart_PreservesOnlyInstanceArgumentsAndDirectoryWithSpaces()
+    {
+        var options = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", "test data", "--command-ShowHistory"]);
+        var start = new ProcessStartInfo();
+        options.AddRestartArguments(start);
+        CollectionAssert.AreEqual(new[] { StartArguments.ShutdownPrivious, "--multi-instance", "--app-data-dir", options.AppDataDirectory },
+            start.ArgumentList.ToArray());
+        Assert.AreEqual(options, AppLaunchOptions.Parse(start.ArgumentList.ToArray()));
+    }
+
+    [TestMethod]
+    [TestCategory("PlatformWindows")]
+    [TestCategory("PlatformMacOS")]
+    [TestCategory("PlatformLinux")]
+    public async Task InstancePipe_DeliversCommands()
+    {
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
+            Assert.Inconclusive("Requires a supported desktop OS.");
+        var options = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", "pipe-" + Guid.NewGuid().ToString("N")]);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        using var server = new NamedPipeServerStream(options.PipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
+        using var client = new NamedPipeClientStream(".", options.PipeName, PipeDirection.Out, PipeOptions.Asynchronous);
+        var connection = server.WaitForConnectionAsync(timeout.Token);
+        await client.ConnectAsync(timeout.Token);
+        await connection;
+        await client.WriteAsync("Active"u8.ToArray(), timeout.Token);
+        var received = new byte[6];
+        await server.ReadExactlyAsync(received, timeout.Token);
+        CollectionAssert.AreEqual("Active"u8.ToArray(), received);
+    }
+
+    [TestMethod]
+    [TestCategory("PlatformWindows")]
+    [TestCategory("PlatformMacOS")]
+    [TestCategory("PlatformLinux")]
+    public void DataDirectoryLock_PreventsConcurrentUseAndAllowsReuseAfterExit()
+    {
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
+            Assert.Inconclusive("Requires a supported desktop OS.");
+        var root = Directory.CreateTempSubdirectory("startup-lock-").FullName;
+        try
+        {
+            using (AppInstance.LockDataDirectory(root))
+            {
+                Assert.ThrowsExactly<IOException>(() => AppInstance.LockDataDirectory(root).Dispose());
+            }
+            using var nextInstance = AppInstance.LockDataDirectory(root);
+            Assert.IsTrue(nextInstance.CanWrite);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    [TestCategory("PlatformWindows")]
+    [TestCategory("PlatformMacOS")]
+    [TestCategory("PlatformLinux")]
+    public void InstallationMarker_TracksAdditionalInstancesUntilLastExit()
+    {
+        if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
+            Assert.Inconclusive("Requires a supported desktop OS.");
+        var directory = Path.Combine(Path.GetTempPath(), "installation-" + Guid.NewGuid().ToString("N"));
+        using (var first = AppInstance.CreateInstallationMarker(directory))
+        {
+            using (AppInstance.CreateInstallationMarker(directory))
+            {
+                Assert.IsTrue(AppInstance.HasAdditionalInstances(directory));
+                Assert.IsFalse(AppInstance.HasAdditionalInstances(directory + "-other"));
+            }
+            Assert.IsTrue(AppInstance.HasAdditionalInstances(directory));
+        }
+        Assert.IsFalse(AppInstance.HasAdditionalInstances(directory));
+    }
+
+    [TestMethod]
+    [TestCategory("PlatformMacOS")]
+    [TestCategory("PlatformLinux")]
+    public void UnixPaths_PreserveCaseForDistinctProfiles()
+    {
+        if (!OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
+            Assert.Inconclusive("Tests Unix path identity.");
+        var upper = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", "Test"]);
+        var lower = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", "test"]);
+        Assert.AreNotEqual(upper.InstanceSuffix, lower.InstanceSuffix);
+        Assert.AreNotEqual(upper.PipeName, lower.PipeName);
+    }
+
+    [TestMethod]
+    [TestCategory("PlatformMacOS")]
+    [TestCategory("PlatformLinux")]
+    public void SymbolicLink_UsesTargetInstance()
+    {
+        if (!OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
+            Assert.Inconclusive("Symbolic link setup requires Unix.");
+        var root = Directory.CreateTempSubdirectory("startup-").FullName;
+        try
+        {
+            var target = Directory.CreateDirectory(Path.Combine(root, "target")).FullName;
+            var link = Path.Combine(root, "link");
+            Directory.CreateSymbolicLink(link, target);
+            var direct = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", Path.Combine(target, "new")]);
+            var linked = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", Path.Combine(link, "new")]);
+            Assert.AreEqual(direct, linked);
+            Assert.AreEqual(direct.InstanceSuffix, linked.InstanceSuffix);
+            using (AppInstance.CreateInstallationMarker(target))
+                Assert.IsTrue(AppInstance.HasAdditionalInstances(link));
+            var image = Path.Combine(target, "SyncClipboard.AppImage");
+            File.WriteAllText(image, "test");
+            var imageLink = Path.Combine(root, "image-link");
+            File.CreateSymbolicLink(imageLink, image);
+            using (AppInstance.CreateInstallationMarker(image))
+                Assert.IsTrue(AppInstance.HasAdditionalInstances(imageLink));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+}

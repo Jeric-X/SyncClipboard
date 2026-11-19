@@ -248,9 +248,9 @@ namespace SyncClipboard.Core
             var startInfo = new ProcessStartInfo
             {
                 FileName = Env.ProgramPath,
-                UseShellExecute = true,
-                Arguments = StartArguments.ShutdownPrivious
+                UseShellExecute = true
             };
+            AppLaunchOptions.Current.AddRestartArguments(startInfo);
 
             try
             {

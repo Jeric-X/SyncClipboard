@@ -26,7 +26,7 @@ public static partial class Program
 
         if (AppInstance.EnsureSingleInstance(args) is false)
         {
-            return (int)ReturnCode.Success;
+            return Environment.ExitCode;
         }
 
         try
