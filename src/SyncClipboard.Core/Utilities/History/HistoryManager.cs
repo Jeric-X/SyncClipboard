@@ -286,26 +286,13 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         if (record is null || (record.Title ?? string.Empty) == normalized)
             return false;
 
-        var entry = _dbContext.Entry(record);
-        var previouslyModified = entry.Properties.Where(p => p.IsModified).Select(p => p.Metadata.Name).ToHashSet();
-        var previous = (record.Title, record.Version, record.LastModified, record.SyncStatus);
         record.Title = normalized;
         if (record.Version < int.MaxValue)
             record.Version++;
         record.LastModified = DateTime.UtcNow;
         if (record.SyncStatus != HistorySyncStatus.LocalOnly)
             record.SyncStatus = HistorySyncStatus.NeedSync;
-        try
-        {
-            await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
-        }
-        catch
-        {
-            foreach (var property in entry.Properties.Where(p => p.IsModified && !previouslyModified.Contains(p.Metadata.Name)))
-                property.IsModified = false;
-            (record.Title, record.Version, record.LastModified, record.SyncStatus) = previous;
-            throw;
-        }
+        await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
         HistoryUpdated?.Invoke(record);
         return true;
     }
