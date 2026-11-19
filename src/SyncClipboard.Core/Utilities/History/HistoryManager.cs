@@ -371,38 +371,8 @@ public partial class HistoryManager
     }
 
     /// <summary>
-    /// 持久化一次从服务器回写或同步成功后的本地记录，不修改版本号和时间戳（这些已由同步逻辑确定）。
-    /// 保留传入的 SyncStatus（通常为 Synced）。
+    /// 仅在本地版本和修改时间仍与发送时一致时应用同步响应，避免覆盖后续编辑。
     /// </summary>
-    public async Task<HistoryRecord> PersistServerSyncedAsync(HistoryRecord record, CancellationToken token = default)
-    {
-        await _dbSemaphore.WaitAsync(token);
-        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
-        using var dbContext = _dbContextFactory();
-
-        var entity = await Query(dbContext, record.Type, record.Hash, token);
-        if (entity is null)
-        {
-            // 如果本地不存在，直接添加（用于服务器回写新增场景）
-            record.Hash = record.Hash.ToUpperInvariant();
-            CopyLocalTransferDataBinding(record, record);
-            await dbContext.HistoryRecords.AddAsync(record, token);
-            await dbContext.SaveChangesAsync(token);
-            HistoryAdded?.Invoke(record);
-            return record;
-        }
-
-        ApplyServerSyncedProperties(record, entity);
-        if (record.IsLocalFileReady || !entity.IsLocalFileReady)
-        {
-            CopyLocalTransferDataBinding(record, entity);
-        }
-
-        await dbContext.SaveChangesAsync(token);
-        TriggleUpdateOrDeleteEvent(entity);
-        return entity;
-    }
-
     public async Task<bool> TryApplySyncResponseAsync(
         HistoryRecord record, int expectedVersion, DateTime expectedModified, CancellationToken token = default)
     {
@@ -643,8 +613,11 @@ public partial class HistoryManager
         }
     }
 
+    internal Task ConvertToLocalRecordAsync(HistoryRecordKey key, CancellationToken token)
+        => UpdateLocalRecordAsync(key, true, null, token);
+
     private async Task UpdateLocalRecordAsync(
-        HistoryRecordKey key, bool convertToLocal, HistoryConfig cleanupConfig, CancellationToken token)
+        HistoryRecordKey key, bool convertToLocal, HistoryConfig? cleanupConfig, CancellationToken token)
     {
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
@@ -656,7 +629,7 @@ public partial class HistoryManager
         var syncStatusChanged = convertToLocal && record.SyncStatus is HistorySyncStatus.Synced or HistorySyncStatus.NeedSync;
         if (syncStatusChanged)
             record.SyncStatus = HistorySyncStatus.LocalOnly;
-        if (ShouldDeleteLocalRecord(record, cleanupConfig))
+        if (cleanupConfig is not null && ShouldDeleteLocalRecord(record, cleanupConfig))
         {
             await RemoveHistoryNoLock(dbContext, record, token).ConfigureAwait(false);
         }
@@ -1052,5 +1025,4 @@ public partial class HistoryManager
         !entity.Pinned && (!_historyConfig.ProtectTaggedRecords || entity.Tags == null || entity.Tags.Length == 0)
         && (!_historyConfig.ProtectTitledRecords || string.IsNullOrEmpty(entity.Title))
         && entity.SyncStatus == HistorySyncStatus.LocalOnly;
-
 }

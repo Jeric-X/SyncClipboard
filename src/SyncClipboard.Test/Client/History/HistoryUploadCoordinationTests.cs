@@ -1156,6 +1156,42 @@ public class HistoryUploadCoordinationTests
     }
 
     [TestMethod]
+    public async Task OrphanDetection_PreservesEditsDuringLocalConversion()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var first = new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = "FIRST",
+            Timestamp = DateTime.UtcNow.AddMinutes(1),
+            SyncStatus = HistorySyncStatus.Synced
+        };
+        var second = new HistoryRecord { Type = ProfileType.Text, Hash = "SECOND", SyncStatus = HistorySyncStatus.Synced };
+        f.Db.AddRange(first, second);
+        await f.Db.SaveChangesAsync(Token);
+        f.SetupHistoryQuery();
+        f.Server.Setup(x => x.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
+            It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("offline"));
+        Task edit = Task.CompletedTask;
+        f.Manager.HistoryUpdated += record =>
+        {
+            if (record.Hash == first.Hash)
+                edit = f.Manager.SetStarredAsync([HistoryRecordKey.From(second)], true, Token);
+        };
+
+        await f.CreateSyncer().SyncRangeAsync(token: Token);
+        await edit;
+
+        var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(r => r.Hash == second.Hash, Token);
+        Assert.IsTrue(saved.Stared);
+        Assert.AreEqual(1, saved.Version);
+        Assert.AreEqual(HistorySyncStatus.LocalOnly, saved.SyncStatus);
+        Assert.AreEqual(0, f.Updates);
+        Assert.AreEqual(0, f.Uploads);
+    }
+
+    [TestMethod]
     public async Task MissingRemoteAttachment_WithoutLocalDataBecomesLocalOnly()
     {
         await using var f = await Fixture.CreateAsync(Token);
