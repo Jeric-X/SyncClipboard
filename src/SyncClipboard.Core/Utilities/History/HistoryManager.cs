@@ -287,8 +287,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             return false;
 
         record.Title = normalized;
-        if (record.Version < int.MaxValue)
-            record.Version++;
+        record.Version++;
         record.LastModified = DateTime.UtcNow;
         if (record.SyncStatus != HistorySyncStatus.LocalOnly)
             record.SyncStatus = HistorySyncStatus.NeedSync;

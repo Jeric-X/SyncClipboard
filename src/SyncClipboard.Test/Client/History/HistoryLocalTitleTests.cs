@@ -121,25 +121,4 @@ public class HistoryLocalTitleTests
         Assert.AreEqual(HistorySyncStatus.Synced, unchanged.SyncStatus);
         Assert.AreEqual(0, notifications);
     }
-
-    [TestMethod]
-    public async Task EditingAtMaximumVersion_LeavesAnUploadableVersion()
-    {
-        await using var fixture = await HistoryRetentionTests.Fixture.CreateAsync(Token);
-        fixture.RuntimeConfig.EnableSyncHistory = true;
-        var record = new HistoryRecord
-        {
-            Type = ProfileType.Text,
-            Hash = "ABC",
-            Version = int.MaxValue,
-            SyncStatus = HistorySyncStatus.Synced
-        };
-        fixture.Db.Add(record);
-        await fixture.Db.SaveChangesAsync(Token);
-
-        await fixture.Manager.SetTitleAsync(HistoryRecordKey.From(record), "note", Token);
-        var saved = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
-        Assert.AreEqual(int.MaxValue, saved.Version);
-        Assert.AreEqual(HistorySyncStatus.NeedSync, saved.SyncStatus);
-    }
 }

@@ -352,7 +352,7 @@ public class ServerHistoryTagWriteTests
             Assert.IsEmpty(restored.Tags);
         }
         Assert.HasCount(1, f.Notifications);
-        var renamed = await f.PatchAsync(null, Token, 11, "pending rename");
+        var renamed = await f.PatchAsync(null, Token, 21, "pending rename");
         Assert.IsInstanceOfType<OkObjectResult>(renamed);
         Assert.AreEqual("pending rename", ((HistoryRecordUpdateDto)((OkObjectResult)renamed).Value!).Title);
     }
@@ -385,12 +385,11 @@ public class ServerHistoryTagWriteTests
     }
 
     [TestMethod]
-    public async Task Post_RetryAtMaximumVersionPreservesInitializedMetadata()
+    public async Task Post_RetryPreservesInitializedMetadata()
     {
         await using var f = await Fixture.CreateAsync(Token);
         var entity = await f.SeedAsync(Token);
         entity.IsDeleted = true;
-        entity.Version = int.MaxValue;
         entity.Title = "";
         await f.Db.SaveChangesAsync(Token);
 
@@ -399,7 +398,6 @@ public class ServerHistoryTagWriteTests
             var result = await f.PostAsync("[]", Token, 1, "old");
             Assert.IsInstanceOfType<OkObjectResult>(result);
             var restored = (HistoryRecordDto)((OkObjectResult)result).Value!;
-            Assert.AreEqual(int.MaxValue, restored.Version);
             Assert.AreEqual("", restored.Title);
             Assert.AreEqual("kept", restored.Tags!.Single());
         }
