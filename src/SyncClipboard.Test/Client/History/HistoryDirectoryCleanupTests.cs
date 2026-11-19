@@ -33,7 +33,7 @@ public class HistoryDirectoryCleanupTests
         public Fixture()
         {
             Manager = (HistoryManager)RuntimeHelpers.GetUninitializedObject(typeof(HistoryManager));
-            SetField("_dbContext", Db);
+            SetField("_dbContextFactory", HistoryTestDatabase.CreateFactory(Db));
             SetField("_dbSemaphore", DbSemaphore);
             SetField("_logger", Mock.Of<ILogger>());
             SetField("_profileEnv", this);

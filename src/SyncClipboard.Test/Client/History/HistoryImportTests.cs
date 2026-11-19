@@ -55,13 +55,12 @@ public class HistoryImportTests
         public Fixture()
         {
             Manager = (HistoryManager)RuntimeHelpers.GetUninitializedObject(typeof(HistoryManager));
-            SetField("_dbContext", Db);
+            SetField("_dbContextFactory", HistoryTestDatabase.CreateFactory(Db));
             SetField("_dbSemaphore", _semaphore);
             SetField("_logger", Mock.Of<ILogger>());
             SetField("_profileEnv", this);
             SetField("_historyConfig", new HistoryConfig { HistoryRetentionMinutes = 60 });
             SetField("_runtimeHistoryConfig", new RuntimeHistoryConfig());
-            SetField("_historyManagerHelper", new HistoryManagerHelper<HistoryRecord, DateTime>(Manager));
             Config = new ConfigManager(Path.Combine(Root, "SyncClipboard.json"), _configurationServices.Upgrader);
             Importer = new(this, Manager);
         }
@@ -386,6 +385,7 @@ public class HistoryImportTests
         Assert.AreEqual(0, result.FailureCount);
         Assert.AreEqual(1, result.ExistingCount);
         Assert.IsTrue(notified);
+        await f.Db.Entry(existing).ReloadAsync(Token);
         Assert.IsFalse(existing.IsDeleted);
         Assert.IsTrue(existing.IsLocalFileReady);
         Assert.AreEqual(oldTime, existing.Timestamp);
@@ -919,6 +919,7 @@ public class HistoryImportTests
         Assert.HasCount(1, syncNotifications);
         Assert.AreEqual(0, result.ImportedCount);
         Assert.AreEqual(0, result.FailureCount);
+        await f.Db.Entry(local).ReloadAsync(Token);
         Assert.AreEqual(Timestamp, local.Timestamp);
         Assert.AreEqual("local text", local.Text);
         Assert.AreEqual("local device", local.From);
@@ -1106,6 +1107,7 @@ public class HistoryImportTests
         var result = await f.ImportAsync(backup, Token);
         Assert.AreEqual(rejectCommit ? 0 : 1, result.RepairedCount);
         Assert.AreEqual(rejectCommit ? 1 : 0, result.FailureCount);
+        await f.Db.Entry(local).ReloadAsync(Token);
         Assert.AreEqual(rejectCommit, File.Exists(obsolete));
         Assert.AreEqual(rejectCommit, File.Exists(oldTransfer));
         Assert.AreEqual(rejectCommit, Directory.Exists(oldDirectory));

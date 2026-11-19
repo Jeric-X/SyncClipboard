@@ -20,10 +20,11 @@ using SyncClipboard.Core.Utilities.History;
 using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Shared;
 using SyncClipboard.Shared.Profiles;
+using SyncClipboard.Test.Client.History;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Client.Clipboard;
 
 [TestClass]
 [DoNotParallelize]
@@ -319,8 +320,8 @@ public class DownloadServiceQuickDownloadTests
 
             // As in HistoryQueryCompatibilityTests, isolate history queries from the user's on-disk database.
             var history = (HistoryManager)RuntimeHelpers.GetUninitializedObject(typeof(HistoryManager));
-            typeof(HistoryManager).GetField("_dbContext", BindingFlags.Instance | BindingFlags.NonPublic)!
-                .SetValue(history, _db);
+            typeof(HistoryManager).GetField("_dbContextFactory", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(history, HistoryTestDatabase.CreateFactory(_db));
             typeof(HistoryManager).GetField("_dbSemaphore", BindingFlags.Instance | BindingFlags.NonPublic)!
                 .SetValue(history, _historySemaphore);
 

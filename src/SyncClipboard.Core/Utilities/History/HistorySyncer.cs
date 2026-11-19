@@ -295,8 +295,7 @@ public class HistorySyncer
                 }
                 // 孤儿数据：服务器已删除，修改为 LocalOnly
                 // await _logger.WriteAsync("HistorySyncer", $"检测到孤儿数据 [{localId}]，标记为 LocalOnly");
-                localRecord.SyncStatus = HistorySyncStatus.LocalOnly;
-                await _historyManager.PersistServerSyncedAsync(localRecord, token).ConfigureAwait(false);
+                await _historyManager.ConvertToLocalRecordAsync(HistoryRecordKey.From(localRecord), token).ConfigureAwait(false);
             }
         }, token).ConfigureAwait(false);
     }

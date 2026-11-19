@@ -37,6 +37,7 @@ public class HistoryLivePushTests
         fixture.Db.Add(record);
         await fixture.Db.SaveChangesAsync(Token);
         await fixture.Manager.EditTagsAsync([HistoryRecordKey.From(record)], ["local"], [], Token);
+        await fixture.Db.Entry(record).ReloadAsync(Token);
 
         // The legacy server accepts the version/time update but ignores the unsupported Tags field.
         var legacyResponse = record.ToHistoryRecordDto();
@@ -206,6 +207,7 @@ public class HistoryLivePushTests
         var delayed = record.ToHistoryRecordDto();
         delayed.Tags = [];
         await fixture.Manager.EditTagsAsync([HistoryRecordKey.From(record)], ["new"], [], Token);
+        await fixture.Db.Entry(record).ReloadAsync(Token);
         var version = record.Version;
         var service = (ClientHistoryService)RuntimeHelpers.GetUninitializedObject(typeof(ClientHistoryService));
         typeof(ClientHistoryService).GetField("historyManager", BindingFlags.Instance | BindingFlags.NonPublic)!
@@ -264,7 +266,8 @@ public class HistoryLivePushTests
         public static async Task<Fixture> CreateAsync(CancellationToken token)
         {
             var fixture = new Fixture();
-            typeof(HistoryManager).GetField("_dbContext", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(fixture.Manager, fixture.Db);
+            typeof(HistoryManager).GetField("_dbContextFactory", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(fixture.Manager, HistoryTestDatabase.CreateFactory(fixture.Db));
             typeof(HistoryManager).GetField("_dbSemaphore", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(fixture.Manager, fixture.semaphore);
             fixture.Db.Database.SetConnectionString("Data Source=:memory:");
             await fixture.Db.Database.OpenConnectionAsync(token);

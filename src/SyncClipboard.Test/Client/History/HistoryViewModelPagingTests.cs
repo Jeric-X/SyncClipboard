@@ -564,7 +564,7 @@ public class HistoryViewModelPagingTests
             var app = (AppCore)RuntimeHelpers.GetUninitializedObject(typeof(AppCore));
             SetField(app, "<Services>k__BackingField", services);
             typeof(AppCore).GetField("_current", BindingFlags.Static | BindingFlags.NonPublic)!.SetValue(null, app);
-            SetField(Manager, "_dbContext", db);
+            SetField(Manager, "_dbContextFactory", HistoryTestDatabase.CreateFactory(db));
             SetField(Manager, "_dbSemaphore", semaphore);
             SetField(Manager, "_profileEnv", profileEnv);
             SetField(Manager, "_runtimeHistoryConfig", new RuntimeHistoryConfig());

@@ -40,11 +40,13 @@ public class HistoryLocalTitleTests
         await fixture.Db.SaveChangesAsync(Token);
         var key = HistoryRecordKey.From(titleRecord);
         Assert.IsTrue(await fixture.Manager.SetTitleAsync(key, " Cafe\u0301 ", Token));
+        await fixture.Db.Entry(titleRecord).ReloadAsync(Token);
         var modified = titleRecord.LastModified;
         var version = titleRecord.Version;
         Assert.IsFalse(await fixture.Manager.SetTitleAsync(key, "Café", Token));
         await Assert.ThrowsExactlyAsync<HistoryTitleValidationException>(() => fixture.Manager.SetTitleAsync(key, "a\nb", Token));
         await Assert.ThrowsExactlyAsync<HistoryTitleValidationException>(() => fixture.Manager.SetTitleAsync(key, new string('a', 257), Token));
+        await fixture.Db.Entry(titleRecord).ReloadAsync(Token);
         Assert.AreEqual(modified, titleRecord.LastModified);
         Assert.AreEqual(version, titleRecord.Version);
         Assert.AreEqual("original", titleRecord.Text);

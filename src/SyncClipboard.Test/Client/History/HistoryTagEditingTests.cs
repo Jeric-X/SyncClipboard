@@ -209,6 +209,10 @@ public class HistoryTagEditingTests
         f.Manager.HistoryUpdated += record => notified.Add(record.ID);
 
         await f.Manager.DeleteTagAsync(" old ", Token);
+        await f.Db.Entry(local).ReloadAsync(Token);
+        await f.Db.Entry(synced).ReloadAsync(Token);
+        await f.Db.Entry(deleted).ReloadAsync(Token);
+        await f.Db.Entry(differentCase).ReloadAsync(Token);
 
         AssertNames(local.Tags, "other");
         Assert.IsNotNull(synced.Tags);
@@ -246,6 +250,9 @@ public class HistoryTagEditingTests
         Assert.AreEqual(0, notified);
 
         Assert.IsTrue(await f.Manager.RenameTagAsync("old", "new", allowMerge: true, token: Token));
+        await f.Db.Entry(source).ReloadAsync(Token);
+        await f.Db.Entry(overlap).ReloadAsync(Token);
+        await f.Db.Entry(targetOnly).ReloadAsync(Token);
         AssertNames(source.Tags, "keep", "new");
         AssertNames(overlap.Tags, "new");
         Assert.AreEqual(8, source.Version);
@@ -268,6 +275,8 @@ public class HistoryTagEditingTests
         await f.Db.SaveChangesAsync(Token);
 
         Assert.IsTrue(await f.Manager.RenameTagAsync("tag0", " Cafe\u0301 ", token: Token));
+        await f.Db.Entry(full).ReloadAsync(Token);
+        await f.Db.Entry(deleted).ReloadAsync(Token);
         Assert.IsNotNull(full.Tags);
         Assert.HasCount(HistoryTags.MaxCount, full.Tags);
         Assert.Contains("Café", full.Tags);
@@ -275,6 +284,7 @@ public class HistoryTagEditingTests
         Assert.AreEqual(8, full.Version);
         AssertNames(deleted.Tags, "tag0", "Café");
         Assert.IsTrue(await f.Manager.RenameTagAsync("Café", " Cafe\u0301 ", token: Token));
+        await f.Db.Entry(full).ReloadAsync(Token);
         Assert.AreEqual(8, full.Version);
         await Assert.ThrowsExactlyAsync<ArgumentException>(() => f.Manager.RenameTagAsync("Café", " ", token: Token));
         Assert.Contains("Café", full.Tags);
@@ -294,7 +304,8 @@ public class HistoryTagEditingTests
         {
             var fixture = new Fixture();
             var flags = BindingFlags.Instance | BindingFlags.NonPublic;
-            typeof(HistoryManager).GetField("_dbContext", flags)!.SetValue(fixture.Manager, fixture.Db);
+            typeof(HistoryManager).GetField("_dbContextFactory", flags)!
+                .SetValue(fixture.Manager, HistoryTestDatabase.CreateFactory(fixture.Db));
             typeof(HistoryManager).GetField("_dbSemaphore", flags)!.SetValue(fixture.Manager, fixture.semaphore);
             fixture.Db.Database.SetConnectionString("Data Source=:memory:");
             await fixture.Db.Database.OpenConnectionAsync(token);

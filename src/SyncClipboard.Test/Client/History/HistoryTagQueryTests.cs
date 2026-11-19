@@ -191,7 +191,8 @@ public class HistoryTagQueryTests
         {
             var f = new Fixture();
             var flags = BindingFlags.Instance | BindingFlags.NonPublic;
-            typeof(HistoryManager).GetField("_dbContext", flags)!.SetValue(f.Manager, f.Db);
+            typeof(HistoryManager).GetField("_dbContextFactory", flags)!
+                .SetValue(f.Manager, HistoryTestDatabase.CreateFactory(f.Db));
             typeof(HistoryManager).GetField("_dbSemaphore", flags)!.SetValue(f.Manager, f.semaphore);
             f.Db.Database.SetConnectionString("Data Source=:memory:");
             await f.Db.Database.OpenConnectionAsync(token);
