@@ -117,9 +117,10 @@ public class AppLaunchOptionsTests
         var connection = server.WaitForConnectionAsync(timeout.Token);
         await client.ConnectAsync(timeout.Token);
         await connection;
-        await client.WriteAsync("Active"u8.ToArray(), timeout.Token);
+        var write = client.WriteAsync("Active"u8.ToArray(), timeout.Token);
         var received = new byte[6];
         await server.ReadExactlyAsync(received, timeout.Token);
+        await write;
         CollectionAssert.AreEqual("Active"u8.ToArray(), received);
     }
 
