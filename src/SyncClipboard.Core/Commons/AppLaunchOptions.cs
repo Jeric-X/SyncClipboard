@@ -8,7 +8,6 @@ namespace SyncClipboard.Core.Commons;
 
 internal sealed record AppLaunchOptions(string? AppDataDirectory)
 {
-    public const string MultiInstanceArgument = "--multi-instance";
     public const string AppDataArgument = "--app-data-dir";
     private static readonly Lazy<AppLaunchOptions> _current = new(() => Parse(Environment.GetCommandLineArgs()[1..]));
 
@@ -25,17 +24,10 @@ internal sealed record AppLaunchOptions(string? AppDataDirectory)
 
     public static AppLaunchOptions Parse(string[] args)
     {
-        var multiInstance = false;
         string? directory = null;
         for (var i = 0; i < args.Length; i++)
         {
-            if (args[i] == MultiInstanceArgument)
-            {
-                if (multiInstance)
-                    throw new ArgumentException($"Duplicate argument: {MultiInstanceArgument}");
-                multiInstance = true;
-            }
-            else if (args[i] == AppDataArgument || args[i].StartsWith(AppDataArgument + "=", StringComparison.Ordinal))
+            if (args[i] == AppDataArgument || args[i].StartsWith(AppDataArgument + "=", StringComparison.Ordinal))
             {
                 if (directory is not null)
                     throw new ArgumentException($"Duplicate argument: {AppDataArgument}");
@@ -53,9 +45,6 @@ internal sealed record AppLaunchOptions(string? AppDataDirectory)
                     throw new ArgumentException($"{AppDataArgument} requires a directory.");
             }
         }
-
-        if (multiInstance != (directory is not null))
-            throw new ArgumentException($"Use {MultiInstanceArgument} together with {AppDataArgument} <directory>.");
 
         return new(directory is null ? null : NormalizeDirectory(directory));
     }
@@ -106,7 +95,6 @@ internal sealed record AppLaunchOptions(string? AppDataDirectory)
         startInfo.ArgumentList.Add(StartArguments.ShutdownPrivious);
         if (AppDataDirectory is not null)
         {
-            startInfo.ArgumentList.Add(MultiInstanceArgument);
             startInfo.ArgumentList.Add(AppDataArgument);
             startInfo.ArgumentList.Add(AppDataDirectory);
         }

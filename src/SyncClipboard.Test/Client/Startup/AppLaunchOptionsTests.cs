@@ -17,14 +17,11 @@ public class AppLaunchOptionsTests
     }
 
     [TestMethod]
-    [DataRow("--multi-instance")]
-    [DataRow("--app-data-dir", "/tmp/test")]
-    [DataRow("--multi-instance", "--app-data-dir")]
-    [DataRow("--multi-instance", "--app-data-dir=")]
-    [DataRow("--multi-instance", "--app-data-dir", " ")]
-    [DataRow("--multi-instance", "--app-data-dir", "--shutdown-previous")]
-    [DataRow("--multi-instance", "--multi-instance", "--app-data-dir=a")]
-    [DataRow("--multi-instance", "--app-data-dir=a", "--app-data-dir=b")]
+    [DataRow("--app-data-dir")]
+    [DataRow("--app-data-dir=")]
+    [DataRow("--app-data-dir", " ")]
+    [DataRow("--app-data-dir", "--shutdown-previous")]
+    [DataRow("--app-data-dir=a", "--app-data-dir=b")]
     public void InvalidOptions_RejectStartup(params string[] args)
     {
         Assert.ThrowsExactly<ArgumentException>(() => AppLaunchOptions.Parse(args));
@@ -34,13 +31,15 @@ public class AppLaunchOptionsTests
     public void ExplicitDirectory_NormalizesRelativePathWithoutCreatingIt()
     {
         var name = "startup-" + Guid.NewGuid().ToString("N");
-        var options = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", Path.Combine(name, "..", name)]);
+        var options = AppLaunchOptions.Parse(["--app-data-dir", Path.Combine(name, "..", name)]);
+        Assert.IsTrue(options.IsMultiInstance);
+        Assert.AreNotEqual(AppLaunchOptions.Parse([]).InstanceSuffix, options.InstanceSuffix);
         Assert.AreEqual(Path.GetFullPath(name), options.AppDataDirectory);
         Assert.IsFalse(Directory.Exists(options.AppDataDirectory));
         Assert.AreEqual(options.InstanceSuffix,
-            AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir=" + options.AppDataDirectory + Path.DirectorySeparatorChar]).InstanceSuffix);
+            AppLaunchOptions.Parse(["--app-data-dir=" + options.AppDataDirectory + Path.DirectorySeparatorChar]).InstanceSuffix);
         Assert.AreNotEqual(options.InstanceSuffix,
-            AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir=" + name + "-other"]).InstanceSuffix);
+            AppLaunchOptions.Parse(["--app-data-dir=" + name + "-other"]).InstanceSuffix);
     }
 
     [TestMethod]
@@ -49,7 +48,7 @@ public class AppLaunchOptionsTests
         var file = Path.GetTempFileName();
         try
         {
-            Assert.ThrowsExactly<ArgumentException>(() => AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", file]));
+            Assert.ThrowsExactly<ArgumentException>(() => AppLaunchOptions.Parse(["--app-data-dir", file]));
         }
         finally
         {
@@ -61,9 +60,9 @@ public class AppLaunchOptionsTests
     public void ProgramDirectory_RejectsPortableConfigurationOverlapButAllowsSeparateSubdirectory()
     {
         var programDirectory = Path.Combine(Path.GetTempPath(), "installation-" + Guid.NewGuid().ToString("N"));
-        var overlapping = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", programDirectory]);
+        var overlapping = AppLaunchOptions.Parse(["--app-data-dir", programDirectory]);
         Assert.ThrowsExactly<ArgumentException>(() => overlapping.ValidateDataDirectory(programDirectory));
-        var separate = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", Path.Combine(programDirectory, "profile")]);
+        var separate = AppLaunchOptions.Parse(["--app-data-dir", Path.Combine(programDirectory, "profile")]);
         separate.ValidateDataDirectory(programDirectory);
         AppLaunchOptions.Parse([]).ValidateDataDirectory(programDirectory);
     }
@@ -80,9 +79,9 @@ public class AppLaunchOptionsTests
             var contents = Directory.CreateDirectory(Path.Combine(root, "SyncClipboard.app", "Contents")).FullName;
             File.WriteAllText(Path.Combine(contents, "Info.plist"), "test");
             var programDirectory = Directory.CreateDirectory(Path.Combine(contents, "MonoBundle")).FullName;
-            var inside = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", Path.Combine(programDirectory, "profile")]);
+            var inside = AppLaunchOptions.Parse(["--app-data-dir", Path.Combine(programDirectory, "profile")]);
             Assert.ThrowsExactly<ArgumentException>(() => inside.ValidateDataDirectory(programDirectory));
-            var outside = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", Path.Combine(root, "profile")]);
+            var outside = AppLaunchOptions.Parse(["--app-data-dir", Path.Combine(root, "profile")]);
             outside.ValidateDataDirectory(programDirectory);
         }
         finally
@@ -94,10 +93,10 @@ public class AppLaunchOptionsTests
     [TestMethod]
     public void Restart_PreservesOnlyInstanceArgumentsAndDirectoryWithSpaces()
     {
-        var options = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", "test data", "--command-ShowHistory"]);
+        var options = AppLaunchOptions.Parse(["--app-data-dir", "test data", "--command-ShowHistory"]);
         var start = new ProcessStartInfo();
         options.AddRestartArguments(start);
-        CollectionAssert.AreEqual(new[] { StartArguments.ShutdownPrivious, "--multi-instance", "--app-data-dir", options.AppDataDirectory },
+        CollectionAssert.AreEqual(new[] { StartArguments.ShutdownPrivious, "--app-data-dir", options.AppDataDirectory },
             start.ArgumentList.ToArray());
         Assert.AreEqual(options, AppLaunchOptions.Parse(start.ArgumentList.ToArray()));
     }
@@ -110,7 +109,7 @@ public class AppLaunchOptionsTests
     {
         if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
             Assert.Inconclusive("Requires a supported desktop OS.");
-        var options = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", "pipe-" + Guid.NewGuid().ToString("N")]);
+        var options = AppLaunchOptions.Parse(["--app-data-dir", "pipe-" + Guid.NewGuid().ToString("N")]);
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         using var server = new NamedPipeServerStream(options.PipeName, PipeDirection.In, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
         using var client = new NamedPipeClientStream(".", options.PipeName, PipeDirection.Out, PipeOptions.Asynchronous);
@@ -176,8 +175,8 @@ public class AppLaunchOptionsTests
     {
         if (!OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
             Assert.Inconclusive("Tests Unix path identity.");
-        var upper = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", "Test"]);
-        var lower = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", "test"]);
+        var upper = AppLaunchOptions.Parse(["--app-data-dir", "Test"]);
+        var lower = AppLaunchOptions.Parse(["--app-data-dir", "test"]);
         Assert.AreNotEqual(upper.InstanceSuffix, lower.InstanceSuffix);
         Assert.AreNotEqual(upper.PipeName, lower.PipeName);
     }
@@ -195,8 +194,8 @@ public class AppLaunchOptionsTests
             var target = Directory.CreateDirectory(Path.Combine(root, "target")).FullName;
             var link = Path.Combine(root, "link");
             Directory.CreateSymbolicLink(link, target);
-            var direct = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", Path.Combine(target, "new")]);
-            var linked = AppLaunchOptions.Parse(["--multi-instance", "--app-data-dir", Path.Combine(link, "new")]);
+            var direct = AppLaunchOptions.Parse(["--app-data-dir", Path.Combine(target, "new")]);
+            var linked = AppLaunchOptions.Parse(["--app-data-dir", Path.Combine(link, "new")]);
             Assert.AreEqual(direct, linked);
             Assert.AreEqual(direct.InstanceSuffix, linked.InstanceSuffix);
             using (AppInstance.CreateInstallationMarker(target))
