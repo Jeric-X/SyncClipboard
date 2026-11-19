@@ -1250,18 +1250,7 @@ public partial class HistoryViewModel : ObservableObject
 
     public async Task SetTitleAsync(HistoryRecordKey key, string title)
     {
-        var server = historySyncServer;
-        var supportsHistoryTitle = false;
-        try
-        {
-            if (server is not null)
-                supportsHistoryTitle = await server.SupportsHistoryTitleAsync();
-        }
-        catch (Exception ex)
-        {
-            logger.Write(nameof(HistoryViewModel), $"Failed to query history title support; saving locally: {ex.Message}");
-        }
-        await historyManager.SetTitleAsync(key, title, supportsHistoryTitle);
+        await historyManager.SetTitleAsync(key, title);
         if (await historyManager.GetSyncSnapshotAsync(key) is not { IsDeleted: false })
             throw new InvalidOperationException(I18n.Strings.HistoryExportRemoved);
     }
