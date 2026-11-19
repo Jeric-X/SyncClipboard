@@ -12,7 +12,7 @@ public class AppLaunchOptionsTests
     public void NormalStartup_KeepsDefaultInstance()
     {
         var options = AppLaunchOptions.Parse([StartArguments.ShutdownPrivious, "--command-ShowHistory"]);
-        Assert.IsFalse(options.IsMultiInstance);
+        Assert.IsFalse(options.IsSpecifiedDataDirectory);
         Assert.IsNull(options.AppDataDirectory);
     }
 
@@ -32,7 +32,7 @@ public class AppLaunchOptionsTests
     {
         var name = "startup-" + Guid.NewGuid().ToString("N");
         var options = AppLaunchOptions.Parse(["--app-data-dir", Path.Combine(name, "..", name)]);
-        Assert.IsTrue(options.IsMultiInstance);
+        Assert.IsTrue(options.IsSpecifiedDataDirectory);
         Assert.AreNotEqual(AppLaunchOptions.Parse([]).InstanceSuffix, options.InstanceSuffix);
         Assert.AreEqual(Path.GetFullPath(name), options.AppDataDirectory);
         Assert.IsFalse(Directory.Exists(options.AppDataDirectory));
@@ -151,7 +151,7 @@ public class AppLaunchOptionsTests
     [TestCategory("PlatformWindows")]
     [TestCategory("PlatformMacOS")]
     [TestCategory("PlatformLinux")]
-    public void InstallationMarker_TracksAdditionalInstancesUntilLastExit()
+    public void InstallationMarker_ExcludesCallerAndTracksOtherProcesses()
     {
         if (!OperatingSystem.IsWindows() && !OperatingSystem.IsMacOS() && !OperatingSystem.IsLinux())
             Assert.Inconclusive("Requires a supported desktop OS.");
@@ -160,12 +160,13 @@ public class AppLaunchOptionsTests
         {
             using (AppInstance.CreateInstallationMarker(directory))
             {
-                Assert.IsTrue(AppInstance.HasAdditionalInstances(directory));
-                Assert.IsFalse(AppInstance.HasAdditionalInstances(directory + "-other"));
+                Assert.IsFalse(AppInstance.HasOtherInstances(directory, Environment.ProcessId));
+                Assert.IsTrue(AppInstance.HasOtherInstances(directory, -1));
+                Assert.IsFalse(AppInstance.HasOtherInstances(directory + "-other", -1));
             }
-            Assert.IsTrue(AppInstance.HasAdditionalInstances(directory));
+            Assert.IsTrue(AppInstance.HasOtherInstances(directory, -1));
         }
-        Assert.IsFalse(AppInstance.HasAdditionalInstances(directory));
+        Assert.IsFalse(AppInstance.HasOtherInstances(directory, -1));
     }
 
     [TestMethod]
@@ -199,13 +200,13 @@ public class AppLaunchOptionsTests
             Assert.AreEqual(direct, linked);
             Assert.AreEqual(direct.InstanceSuffix, linked.InstanceSuffix);
             using (AppInstance.CreateInstallationMarker(target))
-                Assert.IsTrue(AppInstance.HasAdditionalInstances(link));
+                Assert.IsTrue(AppInstance.HasOtherInstances(link, -1));
             var image = Path.Combine(target, "SyncClipboard.AppImage");
             File.WriteAllText(image, "test");
             var imageLink = Path.Combine(root, "image-link");
             File.CreateSymbolicLink(imageLink, image);
             using (AppInstance.CreateInstallationMarker(image))
-                Assert.IsTrue(AppInstance.HasAdditionalInstances(imageLink));
+                Assert.IsTrue(AppInstance.HasOtherInstances(imageLink, -1));
         }
         finally
         {

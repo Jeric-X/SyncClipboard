@@ -12,7 +12,8 @@ internal sealed record UpdateArguments(
     string? WorkDirectory = null,
     bool Elevated = false,
     long ProcessStartTime = 0,
-    bool AppElevated = false)
+    bool AppElevated = false,
+    string? AppDataDirectory = null)
 {
     public static UpdateArguments Parse(string[] args)
     {
@@ -35,6 +36,9 @@ internal sealed record UpdateArguments(
         var processStartTime = long.Parse(startTimeValue, CultureInfo.InvariantCulture);
         var appElevated = ParseAppElevated(values.GetValueOrDefault("--app-elevated", "false"));
 
+        var appDataDirectory = values.ContainsKey("--app-data-dir")
+            ? Path.GetFullPath(GetRequiredValue(values, "--app-data-dir")) : null;
+
         return new UpdateArguments(
             PackagePath: packagePath,
             Digest: digest,
@@ -45,7 +49,8 @@ internal sealed record UpdateArguments(
             WorkDirectory: workDirectory,
             Elevated: elevated,
             ProcessStartTime: processStartTime,
-            AppElevated: appElevated);
+            AppElevated: appElevated,
+            AppDataDirectory: appDataDirectory);
     }
 
     private static (Dictionary<string, string> Values, string[] ProtectedPaths, bool Elevated) ReadOptions(string[] args)
@@ -70,6 +75,7 @@ internal sealed record UpdateArguments(
                 case "--work-dir":
                 case "--process-start-time":
                 case "--app-elevated":
+                case "--app-data-dir":
                     break;
                 default:
                     throw new ArgumentException(UpdaterText.Current.UnknownArgument + key);
@@ -171,6 +177,12 @@ internal sealed record UpdateArguments(
         {
             yield return "--protect-path";
             yield return path;
+        }
+
+        if (AppDataDirectory is not null)
+        {
+            yield return "--app-data-dir";
+            yield return AppDataDirectory;
         }
 
         if (WorkDirectory is not null)

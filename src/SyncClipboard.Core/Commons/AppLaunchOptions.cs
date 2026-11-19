@@ -12,7 +12,7 @@ internal sealed record AppLaunchOptions(string? AppDataDirectory)
     private static readonly Lazy<AppLaunchOptions> _current = new(() => Parse(Environment.GetCommandLineArgs()[1..]));
 
     public static AppLaunchOptions Current => _current.Value;
-    public bool IsMultiInstance => AppDataDirectory is not null;
+    public bool IsSpecifiedDataDirectory => AppDataDirectory is not null;
 
     public string InstanceSuffix => AppDataDirectory is null ? string.Empty
         : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(

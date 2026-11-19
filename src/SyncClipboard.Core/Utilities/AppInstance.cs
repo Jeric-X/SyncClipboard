@@ -1,4 +1,4 @@
-﻿using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
 using System.Diagnostics;
 using System.IO.Pipes;
@@ -14,7 +14,7 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
     private static readonly string MutexPrefix = @$"Global\{Env.SoftName}-Mutex-{Environment.UserName}-";
     private static readonly string PipePrefix = @$"Global\{Env.SoftName}-Pipe-{Environment.UserName}-";
     private static string MutexName => MutexPrefix + AppLaunchOptions.Current.InstanceSuffix;
-    private static string PipeName => AppLaunchOptions.Current.IsMultiInstance ? AppLaunchOptions.Current.PipeName : PipePrefix;
+    private static string PipeName => AppLaunchOptions.Current.IsSpecifiedDataDirectory ? AppLaunchOptions.Current.PipeName : PipePrefix;
     private static FileStream? _directoryLock;
     private static Mutex? _installationMarker;
     private bool _disposed = false;
@@ -221,24 +221,34 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
         var path = AppLaunchOptions.NormalizePath(programDirectory);
         if (OperatingSystem.IsWindows())
             path = path.ToUpperInvariant();
-        return @"Global\SyncClipboard-Multi-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)));
+        return @"Global\SyncClipboard-Installation-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)));
     }
 
     internal static Mutex CreateInstallationMarker(string programDirectory)
-        => new(false, InstallationMarkerName(programDirectory));
+        => new(false, InstallationMarkerName(programDirectory) + "-" + Environment.ProcessId);
 
-    internal static bool HasAdditionalInstances(string programDirectory)
+    internal static bool HasOtherInstances(string programDirectory, int excludedProcessId)
     {
-        if (!Mutex.TryOpenExisting(InstallationMarkerName(programDirectory), out var marker))
-            return false;
-        marker.Dispose();
-        return true;
+        var prefix = InstallationMarkerName(programDirectory) + "-";
+        var found = false;
+        foreach (var process in Process.GetProcesses())
+        {
+            using (process)
+            {
+                if (process.Id != excludedProcessId && Mutex.TryOpenExisting(prefix + process.Id, out var marker))
+                {
+                    marker.Dispose();
+                    found = true;
+                }
+            }
+        }
+        return found;
     }
 
     internal static void CheckCanInstallUpdate()
     {
-        if (HasAdditionalInstances(InstallationPath))
-            throw new InvalidOperationException("Close the additional SyncClipboard instances before installing an update.");
+        if (HasOtherInstances(InstallationPath, Environment.ProcessId))
+            throw new InvalidOperationException("Close the other SyncClipboard instances from this installation before installing an update.");
     }
 
     internal static FileStream LockDataDirectory(string directory)
@@ -250,8 +260,7 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
         {
             // A file lock also prevents directory aliases or the normal instance from sharing the same database.
             _directoryLock = LockDataDirectory(Env.AppDataDirectory);
-            if (AppLaunchOptions.Current.IsMultiInstance)
-                _installationMarker = CreateInstallationMarker(InstallationPath);
+            _installationMarker = CreateInstallationMarker(InstallationPath);
             GlobalMutex = mutex;
             return true;
         }

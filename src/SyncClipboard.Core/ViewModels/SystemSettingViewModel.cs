@@ -114,7 +114,7 @@ public partial class SystemSettingViewModel : ObservableObject
     private LocaleString<bool> userConfigPosition;
     partial void OnUserConfigPositionChanged(LocaleString<bool> value)
     {
-        if (!AppLaunchOptions.Current.IsMultiInstance)
+        if (!AppLaunchOptions.Current.IsSpecifiedDataDirectory)
             _staticConfig.SetConfig(_staticConfig.GetConfig<EnvConfig>() with { PortableUserConfig = value.Key });
     }
 
@@ -178,7 +178,7 @@ public partial class SystemSettingViewModel : ObservableObject
         _logger = serviceProvider.GetRequiredService<ILogger>();
 
         programConfig = _configManager.GetConfig<ProgramConfig>();
-        var taskRunAsAdministrator = AppLaunchOptions.Current.IsMultiInstance ? null : StartUpHelper.GetWindowsTaskRunAsAdministrator();
+        var taskRunAsAdministrator = AppLaunchOptions.Current.IsSpecifiedDataDirectory ? null : StartUpHelper.GetWindowsTaskRunAsAdministrator();
         if (taskRunAsAdministrator is bool runAsAdministrator && runAsAdministrator != programConfig.StartUpAsAdministrator)
         {
             programConfig = programConfig with { StartUpAsAdministrator = runAsAdministrator };
@@ -208,18 +208,18 @@ public partial class SystemSettingViewModel : ObservableObject
     }
 
     public bool ShowStartUpSetting { get; } =
-        !AppLaunchOptions.Current.IsMultiInstance && (OperatingSystem.IsWindows() || OperatingSystem.IsLinux());
+        !AppLaunchOptions.Current.IsSpecifiedDataDirectory && (OperatingSystem.IsWindows() || OperatingSystem.IsLinux());
 
     public bool ShowStartUpAsAdministratorSetting { get; } =
-        !AppLaunchOptions.Current.IsMultiInstance && OperatingSystem.IsWindows() && Env.IsUserInAdministratorGroup;
+        !AppLaunchOptions.Current.IsSpecifiedDataDirectory && OperatingSystem.IsWindows() && Env.IsUserInAdministratorGroup;
 
-    public bool ShowPortableLocationSetting { get; } = !AppLaunchOptions.Current.IsMultiInstance && OperatingSystem.IsWindows();
+    public bool ShowPortableLocationSetting { get; } = !AppLaunchOptions.Current.IsSpecifiedDataDirectory && OperatingSystem.IsWindows();
 
     public static string AppDataDirectory => Env.AppDataDirectory;
 
     public static bool IsUsingCustomAppDataDirectory => Env.IsUsingCustomAppDataDirectory;
 
-    public bool IsIndependentAppDataDirectory => !AppLaunchOptions.Current.IsMultiInstance && !PortableAppDataFolderPosition.Key;
+    public bool IsIndependentAppDataDirectory => !AppLaunchOptions.Current.IsSpecifiedDataDirectory && !PortableAppDataFolderPosition.Key;
 
     public bool IsUsingCustomIndependentAppDataDirectory =>
         Env.IsUsingCustomAppDataDirectory && IsIndependentAppDataDirectory;
@@ -252,7 +252,7 @@ public partial class SystemSettingViewModel : ObservableObject
 
     public bool StartUpWithSystem
     {
-        get => !AppLaunchOptions.Current.IsMultiInstance && StartUpHelper.Status();
+        get => !AppLaunchOptions.Current.IsSpecifiedDataDirectory && StartUpHelper.Status();
         set
         {
             if (!_isSynchronizingStartUpSettings)
@@ -268,7 +268,7 @@ public partial class SystemSettingViewModel : ObservableObject
 
     private async Task UpdateStartUpSettingsAsync(bool updateTask, bool enable, bool runAsAdministrator, string errorTitle)
     {
-        if (_isSynchronizingStartUpSettings || AppLaunchOptions.Current.IsMultiInstance)
+        if (_isSynchronizingStartUpSettings || AppLaunchOptions.Current.IsSpecifiedDataDirectory)
         {
             return;
         }
@@ -295,7 +295,7 @@ public partial class SystemSettingViewModel : ObservableObject
 
     private void RefreshStartUpSettings(bool startUpAsAdministrator)
     {
-        var taskRunAsAdministrator = AppLaunchOptions.Current.IsMultiInstance ? null : StartUpHelper.GetWindowsTaskRunAsAdministrator();
+        var taskRunAsAdministrator = AppLaunchOptions.Current.IsSpecifiedDataDirectory ? null : StartUpHelper.GetWindowsTaskRunAsAdministrator();
         var actualStartUpAsAdministrator = taskRunAsAdministrator ?? startUpAsAdministrator;
         _isSynchronizingStartUpSettings = true;
         try
@@ -326,7 +326,7 @@ public partial class SystemSettingViewModel : ObservableObject
     /// </summary>
     public async Task<bool> ChangeAppDataFolderAsync(string selectedFolder)
     {
-        if (AppLaunchOptions.Current.IsMultiInstance)
+        if (AppLaunchOptions.Current.IsSpecifiedDataDirectory)
             return false;
 
         var targetFolder = await ConfirmAndResolveTargetFolderAsync(selectedFolder);
@@ -341,7 +341,7 @@ public partial class SystemSettingViewModel : ObservableObject
 
     private async Task<bool> SwitchPortableAppDataFolderAsync(bool portableAppDataFolder)
     {
-        if (AppLaunchOptions.Current.IsMultiInstance)
+        if (AppLaunchOptions.Current.IsSpecifiedDataDirectory)
             return false;
 
         if (!portableAppDataFolder)
@@ -508,7 +508,7 @@ public partial class SystemSettingViewModel : ObservableObject
     [RelayCommand]
     public async Task RestoreDefaultAppDataFolderAsync()
     {
-        if (AppLaunchOptions.Current.IsMultiInstance)
+        if (AppLaunchOptions.Current.IsSpecifiedDataDirectory)
             return;
 
         var dialog = _services.GetRequiredService<IMainWindowDialog>();

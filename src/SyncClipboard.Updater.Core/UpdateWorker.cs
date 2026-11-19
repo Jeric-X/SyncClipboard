@@ -392,16 +392,20 @@ internal static class UpdateWorker
 
     internal static async Task RestartAsync(UpdateArguments update, bool updateCompleted)
     {
-        var argument = updateCompleted ? "--update-completed" : null;
+        List<string> appArguments = [];
+        if (updateCompleted)
+            appArguments.Add("--update-completed");
+        if (update.AppDataDirectory is string appDataDirectory)
+            appArguments.AddRange(["--app-data-dir", appDataDirectory]);
         if (OperatingSystem.IsMacOS())
         {
             List<string> arguments = ["-n", update.Target];
-            if (argument is not null)
-                arguments.AddRange(["--args", argument]);
+            if (appArguments.Count != 0)
+                arguments.AddRange(["--args", .. appArguments]);
             await MacCommand.RunAsync("/usr/bin/open", [.. arguments], CancellationToken.None);
         }
         else if (OperatingSystem.IsWindows())
-            WindowsProcessLauncher.Start(WindowsZipPackage.GetExecutablePath(update.Target), update.Target, update.AppElevated, argument);
+            WindowsProcessLauncher.Start(WindowsZipPackage.GetExecutablePath(update.Target), update.Target, update.AppElevated, [.. appArguments]);
         else if (OperatingSystem.IsLinux())
         {
             var start = new ProcessStartInfo(update.Target)
@@ -409,7 +413,7 @@ internal static class UpdateWorker
                 UseShellExecute = false,
                 WorkingDirectory = Path.GetDirectoryName(update.Target)!
             };
-            if (argument is not null)
+            foreach (var argument in appArguments)
                 start.ArgumentList.Add(argument);
             using var process = Process.Start(start) ?? throw new IOException(UpdaterText.Current.RestartError + update.Target);
         }
