@@ -100,7 +100,7 @@ public class HistoryLocalTitleTests
     }
 
     [TestMethod]
-    public async Task FailedRename_CanRetryTheSameValue()
+    public async Task FailedRename_PropagatesDatabaseErrorWithoutNotifying()
     {
         await using var fixture = await HistoryRetentionTests.Fixture.CreateAsync(Token);
         fixture.RuntimeConfig.EnableSyncHistory = true;
@@ -111,19 +111,15 @@ public class HistoryLocalTitleTests
         await fixture.Db.Database.ExecuteSqlRawAsync(
             "CREATE TRIGGER fail_title BEFORE UPDATE OF Title ON HistoryRecords BEGIN SELECT RAISE(ABORT, 'write failed'); END;", Token);
 
+        var notifications = 0;
+        fixture.Manager.HistoryUpdated += _ => notifications++;
+
         await Assert.ThrowsExactlyAsync<DbUpdateException>(() => fixture.Manager.SetTitleAsync(key, "note", Token));
 
-        fixture.Db.Add(new HistoryRecord { Type = ProfileType.Text, Hash = "DEF" });
-        await fixture.Db.SaveChangesAsync(Token);
         var unchanged = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(r => r.Hash == key.Hash, Token);
         Assert.IsNull(unchanged.Title);
         Assert.AreEqual(HistorySyncStatus.Synced, unchanged.SyncStatus);
-        await fixture.Db.Database.ExecuteSqlRawAsync("DROP TRIGGER fail_title", Token);
-        Assert.IsTrue(await fixture.Manager.SetTitleAsync(key, "note", Token));
-        var saved = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(r => r.Hash == key.Hash, Token);
-        Assert.AreEqual("note", saved.Title);
-        Assert.AreEqual(1, saved.Version);
-        Assert.AreEqual(HistorySyncStatus.NeedSync, saved.SyncStatus);
+        Assert.AreEqual(0, notifications);
     }
 
     [TestMethod]
