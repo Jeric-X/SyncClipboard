@@ -163,6 +163,52 @@ public class HistoryDatabaseOperationTests
     }
 
     [TestMethod]
+    [DataRow(true, false)]
+    [DataRow(true, true)]
+    [DataRow(false, true)]
+    public async Task LocalConversionAndCleanup_PreserveConcurrentStarEdit(bool convert, bool missingFile)
+    {
+        await using var fixture = await HistoryRetentionTests.Fixture.CreateAsync(Token);
+        fixture.Config.AutoDeleteMissingLocalFiles = true;
+        var first = new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = "FIRST",
+            Timestamp = DateTime.UtcNow.AddMinutes(1),
+            SyncStatus = convert ? HistorySyncStatus.Synced : HistorySyncStatus.LocalOnly,
+            IsLocalFileReady = !missingFile
+        };
+        var second = new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = "SECOND",
+            SyncStatus = first.SyncStatus,
+            IsLocalFileReady = !missingFile
+        };
+        fixture.Db.AddRange(first, second);
+        await fixture.Db.SaveChangesAsync(Token);
+        Task edit = Task.CompletedTask;
+        void StarSecondRecord(HistoryRecord record)
+        {
+            if (record.Hash == first.Hash)
+                edit = fixture.Manager.SetStarredAsync([HistoryRecordKey.From(second)], true, Token);
+        }
+        fixture.Manager.HistoryUpdated += StarSecondRecord;
+        fixture.Manager.HistoryRemoved += StarSecondRecord;
+
+        if (convert)
+            await fixture.Manager.ConvertToLocalRecordsAsync(Token);
+        else
+            await fixture.Manager.RemoveDeletedOrMissingLocalRecordsAsync(Token);
+        await edit;
+
+        var saved = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(r => r.Hash == second.Hash, Token);
+        Assert.IsTrue(saved.Stared);
+        Assert.AreEqual(1, saved.Version);
+        Assert.AreEqual(HistorySyncStatus.LocalOnly, saved.SyncStatus);
+    }
+
+    [TestMethod]
     public async Task ReturnedRecordMutation_DoesNotPersistThroughAnotherOperation()
     {
         await using var fixture = await HistoryRetentionTests.Fixture.CreateAsync(Token);

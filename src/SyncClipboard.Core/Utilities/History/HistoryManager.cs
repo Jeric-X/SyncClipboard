@@ -625,22 +625,7 @@ public partial class HistoryManager
         {
             foreach (var record in records)
             {
-                var syncStatusChanged = record.SyncStatus is HistorySyncStatus.Synced or HistorySyncStatus.NeedSync;
-                if (syncStatusChanged)
-                {
-                    record.SyncStatus = HistorySyncStatus.LocalOnly;
-                }
-
-                if (ShouldDeleteLocalRecord(record, cleanupConfig))
-                {
-                    await RemoveHistory(record, token).ConfigureAwait(false);
-                    continue;
-                }
-
-                if (syncStatusChanged)
-                {
-                    await PersistServerSyncedAsync(record, token).ConfigureAwait(false);
-                }
+                await UpdateLocalRecordAsync(HistoryRecordKey.From(record), true, cleanupConfig, token).ConfigureAwait(false);
             }
         }, token).ConfigureAwait(false);
 
@@ -654,7 +639,31 @@ public partial class HistoryManager
 
         foreach (var record in records.Where(r => ShouldDeleteLocalRecord(r, cleanupConfig)))
         {
-            await RemoveHistory(record, token);
+            await UpdateLocalRecordAsync(HistoryRecordKey.From(record), false, cleanupConfig, token).ConfigureAwait(false);
+        }
+    }
+
+    private async Task UpdateLocalRecordAsync(
+        HistoryRecordKey key, bool convertToLocal, HistoryConfig cleanupConfig, CancellationToken token)
+    {
+        await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
+        // Earlier records can trigger edits while the caller processes its snapshot.
+        var record = await Query(dbContext, key.Type, key.Hash, token).ConfigureAwait(false);
+        if (record is null)
+            return;
+        var syncStatusChanged = convertToLocal && record.SyncStatus is HistorySyncStatus.Synced or HistorySyncStatus.NeedSync;
+        if (syncStatusChanged)
+            record.SyncStatus = HistorySyncStatus.LocalOnly;
+        if (ShouldDeleteLocalRecord(record, cleanupConfig))
+        {
+            await RemoveHistoryNoLock(dbContext, record, token).ConfigureAwait(false);
+        }
+        else if (syncStatusChanged)
+        {
+            await dbContext.SaveChangesAsync(token).ConfigureAwait(false);
+            TriggleUpdateOrDeleteEvent(record);
         }
     }
 
