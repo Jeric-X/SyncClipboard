@@ -43,6 +43,25 @@ public class AppLaunchOptionsTests
     }
 
     [TestMethod]
+    public void ExplicitDirectory_ResolvesRelativePathAgainstLauncherWorkingDirectory()
+    {
+        var root = Directory.CreateTempSubdirectory("startup-working-directory-").FullName;
+        try
+        {
+            var profile = Path.Combine(root, "profile 中文");
+            var relative = AppLaunchOptions.Parse(["--app-data-dir", "profile 中文"], root);
+            var absolute = AppLaunchOptions.Parse(["--app-data-dir", profile]);
+            Assert.AreEqual(absolute, relative);
+            Assert.IsFalse(Directory.Exists(profile));
+            Assert.AreEqual(absolute, AppLaunchOptions.Parse(["--app-data-dir", profile], Path.GetTempPath()));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [TestMethod]
     public void ExistingFile_RejectsDataDirectory()
     {
         var file = Path.GetTempFileName();

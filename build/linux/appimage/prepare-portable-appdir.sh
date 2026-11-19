@@ -39,6 +39,7 @@ bash "$(dirname -- "${BASH_SOURCE[0]}")/collect-elf-dependencies.sh" "$bin" "$lo
     > "$bin/appimage-updater.files"
 cat > "$appdir/AppRun" <<EOF
 #!/bin/sh
+export SYNC_CLIPBOARD_LAUNCH_DIRECTORY="\$(pwd)"
 HERE=\${APPDIR:-\$(CDPATH= cd -- "\$(dirname -- "\$0")" && pwd)}
 cd -- "\$HERE/usr/bin" || exit 1
 exec ./SyncClipboard.Desktop.Default "\$@"

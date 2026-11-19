@@ -9,7 +9,8 @@ namespace SyncClipboard.Core.Commons;
 internal sealed record AppLaunchOptions(string? AppDataDirectory)
 {
     public const string AppDataArgument = "--app-data-dir";
-    private static readonly Lazy<AppLaunchOptions> _current = new(() => Parse(Environment.GetCommandLineArgs()[1..]));
+    private static readonly Lazy<AppLaunchOptions> _current = new(() => Parse(Environment.GetCommandLineArgs()[1..],
+        OperatingSystem.IsLinux() ? Environment.GetEnvironmentVariable("SYNC_CLIPBOARD_LAUNCH_DIRECTORY") : null));
 
     public static AppLaunchOptions Current => _current.Value;
     public bool IsSpecifiedDataDirectory => AppDataDirectory is not null;
@@ -22,7 +23,7 @@ internal sealed record AppLaunchOptions(string? AppDataDirectory)
     public string PipeName => "SC-" + Convert.ToHexString(SHA256.HashData(
         Encoding.UTF8.GetBytes(Environment.UserName + ":" + InstanceSuffix)))[..16];
 
-    public static AppLaunchOptions Parse(string[] args)
+    public static AppLaunchOptions Parse(string[] args, string? workingDirectory = null)
     {
         string? directory = null;
         for (var i = 0; i < args.Length; i++)
@@ -46,12 +47,12 @@ internal sealed record AppLaunchOptions(string? AppDataDirectory)
             }
         }
 
-        return new(directory is null ? null : NormalizeDirectory(directory));
+        return new(directory is null ? null : NormalizeDirectory(directory, workingDirectory));
     }
 
-    private static string NormalizeDirectory(string path)
+    private static string NormalizeDirectory(string path, string? workingDirectory)
     {
-        var directory = NormalizePath(path);
+        var directory = NormalizePath(Path.GetFullPath(path, workingDirectory ?? Environment.CurrentDirectory));
         if (File.Exists(directory))
             throw new ArgumentException($"The application data path is not a directory: {directory}");
         return directory;
