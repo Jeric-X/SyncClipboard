@@ -62,6 +62,30 @@ public class AppLaunchOptionsTests
     }
 
     [TestMethod]
+    [DataRow("Profile")]
+    [DataRow("Prófile")]
+    public void ExplicitDirectory_FirstLaunchUsesStableDirectoryIdentity(string name)
+    {
+        var root = Directory.CreateTempSubdirectory("startup-created-").FullName;
+        try
+        {
+            var path = Path.Combine(root, name);
+            var first = AppLaunchOptions.Parse(["--app-data-dir", path]);
+            Assert.IsFalse(Directory.Exists(path));
+            first = first.PrepareDataDirectory(Path.Combine(root, "program"));
+            Assert.IsTrue(Directory.Exists(path));
+            var next = AppLaunchOptions.Parse(["--app-data-dir", path]);
+            Assert.AreEqual(first.AppDataDirectory, next.AppDataDirectory);
+            Assert.AreEqual(first.InstanceSuffix, next.InstanceSuffix);
+            Assert.AreEqual(first.PipeName, next.PipeName);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [TestMethod]
     public void ExistingFile_RejectsDataDirectory()
     {
         var file = Path.GetTempFileName();
@@ -80,7 +104,8 @@ public class AppLaunchOptionsTests
     {
         var programDirectory = Path.Combine(Path.GetTempPath(), "installation-" + Guid.NewGuid().ToString("N"));
         var overlapping = AppLaunchOptions.Parse(["--app-data-dir", programDirectory]);
-        Assert.ThrowsExactly<ArgumentException>(() => overlapping.ValidateDataDirectory(programDirectory));
+        Assert.ThrowsExactly<ArgumentException>(() => overlapping.PrepareDataDirectory(programDirectory));
+        Assert.IsFalse(Directory.Exists(programDirectory));
         var separate = AppLaunchOptions.Parse(["--app-data-dir", Path.Combine(programDirectory, "profile")]);
         separate.ValidateDataDirectory(programDirectory);
         AppLaunchOptions.Parse([]).ValidateDataDirectory(programDirectory);
@@ -99,7 +124,8 @@ public class AppLaunchOptionsTests
             File.WriteAllText(Path.Combine(contents, "Info.plist"), "test");
             var programDirectory = Directory.CreateDirectory(Path.Combine(contents, "MonoBundle")).FullName;
             var inside = AppLaunchOptions.Parse(["--app-data-dir", Path.Combine(programDirectory, "profile")]);
-            Assert.ThrowsExactly<ArgumentException>(() => inside.ValidateDataDirectory(programDirectory));
+            Assert.ThrowsExactly<ArgumentException>(() => inside.PrepareDataDirectory(programDirectory));
+            Assert.IsFalse(Directory.Exists(inside.AppDataDirectory));
             var outside = AppLaunchOptions.Parse(["--app-data-dir", Path.Combine(root, "profile")]);
             outside.ValidateDataDirectory(programDirectory);
         }
@@ -186,6 +212,36 @@ public class AppLaunchOptionsTests
             Assert.IsTrue(AppInstance.HasOtherInstances(directory, -1));
         }
         Assert.IsFalse(AppInstance.HasOtherInstances(directory, -1));
+    }
+
+    [TestMethod]
+    [TestCategory("PlatformMacOS")]
+    public void MacDirectoryIdentity_FollowsVolumeCaseSensitivity()
+    {
+        if (!OperatingSystem.IsMacOS())
+            Assert.Inconclusive("Requires macOS path canonicalization.");
+        var root = Directory.CreateTempSubdirectory("startup-case-").FullName;
+        try
+        {
+            var upper = Directory.CreateDirectory(Path.Combine(root, "Profile")).FullName;
+            var lower = Path.Combine(root, "profile");
+            var sameDirectory = Directory.Exists(lower);
+            if (!sameDirectory)
+                Directory.CreateDirectory(lower);
+            var first = AppLaunchOptions.Parse(["--app-data-dir", upper]);
+            var second = AppLaunchOptions.Parse(["--app-data-dir", lower]);
+            var firstChild = AppLaunchOptions.Parse(["--app-data-dir", Path.Combine(upper, "new")]);
+            var secondChild = AppLaunchOptions.Parse(["--app-data-dir", Path.Combine(lower, "new")]);
+            Assert.AreEqual(sameDirectory, first.InstanceSuffix == second.InstanceSuffix);
+            Assert.AreEqual(sameDirectory, first.PipeName == second.PipeName);
+            Assert.AreEqual(sameDirectory, firstChild.InstanceSuffix == secondChild.InstanceSuffix);
+            using var marker = AppInstance.CreateInstallationMarker(upper);
+            Assert.AreEqual(sameDirectory, AppInstance.HasOtherInstances(lower, -1));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
     }
 
     [TestMethod]
