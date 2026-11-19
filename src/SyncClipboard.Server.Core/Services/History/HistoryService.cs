@@ -73,7 +73,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
     private static bool? ApplyMetadataUpdate(HistoryRecordEntity existing, HistoryRecordUpdateDto dto)
     {
-        dto.Version ??= NextVersion(existing.Version);
+        dto.Version ??= existing.Version + 1;
         dto.LastModified ??= DateTimeOffset.UtcNow;
         if (!HistoryHelper.ShouldUpdate(existing.Version, dto.Version.Value,
             new DateTimeOffset(existing.LastModified), dto.LastModified.Value))
@@ -87,8 +87,6 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         existing.Version = dto.Version.Value;
         return true;
     }
-
-    private static int NextVersion(int version) => version == int.MaxValue ? version : version + 1;
 
     private static DateTime ResolveModificationTime(HistoryRecordEntity existing, bool? incomingDeleted, DateTime incomingTime)
     {
@@ -251,7 +249,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             existing.TransferDataFile = entity.TransferDataFile;
             existing.TransferDataHash = entity.TransferDataHash;
             existing.FilePaths = entity.FilePaths;
-            existing.Version = NextVersion(existing.Version);
+            existing.Version++;
             await _dbContext.SaveChangesAsync(token);
             await NotifyProfileChangeAsync(existing);
             return;
@@ -358,7 +356,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         entity.LastModified = DateTime.UtcNow;
         entity.LastAccessed = DateTime.UtcNow;
-        entity.Version = NextVersion(entity.Version);
+        entity.Version++;
         await _dbContext.SaveChangesAsync(token);
         await NotifyProfileChangeAsync(entity);
 
@@ -402,8 +400,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         if (shouldUpdate)
         {
             var updatedEntity = incoming.ToEntity(userId);
-            var nextVersion = NextVersion(existing.Version);
-            updatedEntity.Version = metadataWins ? Math.Max(incoming.Version, nextVersion) : nextVersion;
+            updatedEntity.Version = Math.Max(incoming.Version, existing.Version + 1);
             updatedEntity.LastModified = ResolveModificationTime(existing, incoming.IsDeleted, updatedEntity.LastModified);
             UpdateEntityFields(updatedEntity, existing);
         }
@@ -686,7 +683,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             }
             existing.IsDeleted = true;
             existing.LastModified = DateTime.UtcNow;
-            existing.Version = NextVersion(existing.Version);
+            existing.Version++;
             // 同步到原 entity 用于后续 OnRecordDeletedAsync 的广播/删文件
             entity.IsDeleted = existing.IsDeleted;
             entity.LastModified = existing.LastModified;
@@ -697,7 +694,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         // helper 路径：entity 已被 ToListAsync 跟踪，直接改字段
         entity.IsDeleted = true;
         entity.LastModified = DateTime.UtcNow;
-        entity.Version = NextVersion(entity.Version);
+        entity.Version++;
     }
 
     public Task<int> SaveChangesAsync(CancellationToken token)
