@@ -1,6 +1,5 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
 using SyncClipboard.Core.I18n;
 
 namespace SyncClipboard.WinUI3.Views;
@@ -30,10 +29,16 @@ public sealed class HistoryTitleDialog : ContentDialog
             {
                 HistoryTitles.Normalize(Text);
             }
-            catch (ArgumentException)
+            catch (HistoryTitleValidationException ex)
             {
                 args.Cancel = true;
-                message.Text = string.Format(Strings.HistoryTitleFormatError, HistoryTitles.MaxLength);
+                message.Text = ex.Error switch
+                {
+                    HistoryTitleError.TooLong => string.Format(Strings.HistoryTitleTooLong, HistoryTitles.MaxLength),
+                    HistoryTitleError.LineBreak => Strings.HistoryTitleLineBreak,
+                    HistoryTitleError.ControlCharacter => Strings.HistoryTitleControlCharacter,
+                    _ => Strings.HistoryTitleInvalidCharacter
+                };
                 message.Visibility = Visibility.Visible;
                 _input.Focus(FocusState.Programmatic);
             }

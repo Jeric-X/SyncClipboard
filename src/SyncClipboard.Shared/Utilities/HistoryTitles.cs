@@ -9,12 +9,21 @@ public static class HistoryTitles
         if (title is null)
             return null;
 
-        var normalized = title.Normalize().Trim();
-        if (normalized.EnumerateRunes().Count() > MaxLength
-            || normalized.Any(c => char.IsControl(c) || c is '\u2028' or '\u2029'))
+        string normalized;
+        try
         {
-            throw new ArgumentException($"Titles must contain at most {MaxLength} characters without line breaks or control characters.");
+            normalized = title.Normalize().Trim();
         }
+        catch (ArgumentException)
+        {
+            throw new HistoryTitleValidationException(HistoryTitleError.InvalidCharacter);
+        }
+        if (normalized.EnumerateRunes().Count() > MaxLength)
+            throw new HistoryTitleValidationException(HistoryTitleError.TooLong);
+        if (normalized.Any(c => c is '\r' or '\n' or '\u0085' or '\u2028' or '\u2029'))
+            throw new HistoryTitleValidationException(HistoryTitleError.LineBreak);
+        if (normalized.Any(char.IsControl))
+            throw new HistoryTitleValidationException(HistoryTitleError.ControlCharacter);
         return normalized;
     }
 }

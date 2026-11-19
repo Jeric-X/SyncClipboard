@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Shared.Profiles;
+using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Test.Client.History;
 
@@ -21,7 +22,7 @@ public class HistoryLocalTitleTests
         dto.Title = "a\nb";
         dto.Tags = ["new"];
         record.Tags = ["kept"];
-        Assert.ThrowsExactly<ArgumentException>(() => MapperExtensions.ApplyChangesFromRemote(record, dto));
+        Assert.ThrowsExactly<HistoryTitleValidationException>(() => MapperExtensions.ApplyChangesFromRemote(record, dto));
         Assert.AreEqual("kept", record.Tags!.Single());
         Assert.AreEqual("é", record.Title);
         var update = new HistoryRecordUpdateDto { Title = " e\u0301 " };
@@ -42,8 +43,8 @@ public class HistoryLocalTitleTests
         var modified = titleRecord.LastModified;
         var version = titleRecord.Version;
         Assert.IsFalse(await fixture.Manager.SetTitleAsync(key, "Café", Token));
-        await Assert.ThrowsExactlyAsync<ArgumentException>(() => fixture.Manager.SetTitleAsync(key, "a\nb", Token));
-        await Assert.ThrowsExactlyAsync<ArgumentException>(() => fixture.Manager.SetTitleAsync(key, new string('a', 257), Token));
+        await Assert.ThrowsExactlyAsync<HistoryTitleValidationException>(() => fixture.Manager.SetTitleAsync(key, "a\nb", Token));
+        await Assert.ThrowsExactlyAsync<HistoryTitleValidationException>(() => fixture.Manager.SetTitleAsync(key, new string('a', 257), Token));
         Assert.AreEqual(modified, titleRecord.LastModified);
         Assert.AreEqual(version, titleRecord.Version);
         Assert.AreEqual("original", titleRecord.Text);

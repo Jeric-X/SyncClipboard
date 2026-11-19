@@ -34,10 +34,16 @@ public sealed class HistoryTitleDialog : FAContentDialog
             {
                 HistoryTitles.Normalize(Text);
             }
-            catch (ArgumentException)
+            catch (HistoryTitleValidationException ex)
             {
                 args.Cancel = true;
-                message.Text = string.Format(Strings.HistoryTitleFormatError, HistoryTitles.MaxLength);
+                message.Text = ex.Error switch
+                {
+                    HistoryTitleError.TooLong => string.Format(Strings.HistoryTitleTooLong, HistoryTitles.MaxLength),
+                    HistoryTitleError.LineBreak => Strings.HistoryTitleLineBreak,
+                    HistoryTitleError.ControlCharacter => Strings.HistoryTitleControlCharacter,
+                    _ => Strings.HistoryTitleInvalidCharacter
+                };
                 message.IsVisible = true;
                 _input.Focus();
             }

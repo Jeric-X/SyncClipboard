@@ -1799,7 +1799,16 @@ Choose whether to use the default location or select another folder.</value>
   <data name="ProtectTitledRecordsDescription" xml:space="preserve">
     <value>Records with a title will not be automatically deleted</value>
   </data>
-  <data name="HistoryTitleFormatError" xml:space="preserve">
-    <value>Titles must be a single line of at most {0} characters, without control characters.</value>
+  <data name="HistoryTitleTooLong" xml:space="preserve">
+    <value>Use at most {0} characters.</value>
+  </data>
+  <data name="HistoryTitleLineBreak" xml:space="preserve">
+    <value>Line breaks are not allowed.</value>
+  </data>
+  <data name="HistoryTitleControlCharacter" xml:space="preserve">
+    <value>Control characters are not allowed.</value>
+  </data>
+  <data name="HistoryTitleInvalidCharacter" xml:space="preserve">
+    <value>Contains invalid characters.</value>
   </data>
 </root>
