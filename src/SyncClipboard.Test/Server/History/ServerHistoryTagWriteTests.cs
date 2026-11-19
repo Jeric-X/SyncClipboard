@@ -21,6 +21,28 @@ public class ServerHistoryTagWriteTests
     private CancellationToken Token => TestContext.CancellationTokenSource.Token;
 
     [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task PostAndPatch_ValidateAndNormalizeTitles(bool patch)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        await f.SeedAsync(Token);
+        foreach (var title in new[] { "a\nb", "a\tb", "a\u2028b", new string('中', 257) })
+        {
+            var result = patch ? await f.PatchAsync(null, Token, title: title) : await f.PostAsync(null, Token, title: title);
+            Assert.IsInstanceOfType<BadRequestObjectResult>(result);
+            var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
+            Assert.IsNull(saved.Title);
+            Assert.AreEqual(10, saved.Version);
+            Assert.IsEmpty(f.Notifications);
+        }
+        var accepted = patch ? await f.PatchAsync(null, Token, title: " e\u0301 ") : await f.PostAsync(null, Token, title: " e\u0301 ");
+        Assert.IsInstanceOfType<OkObjectResult>(accepted);
+        Assert.AreEqual("é", (await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token)).Title);
+        Assert.AreEqual("é", f.Notifications.Single().Title);
+    }
+
+    [TestMethod]
     [DataRow(null)]
     [DataRow("null")]
     [DataRow("[]")]
@@ -228,6 +250,7 @@ public class ServerHistoryTagWriteTests
     [DataRow(null, null)]
     [DataRow("", "")]
     [DataRow(" null ", "null")]
+    [DataRow(" Cafe\u0301 ", "Café")]
     public async Task Post_NewRecordPreservesTitleStates(string? title, string? expected)
     {
         await using var f = await Fixture.CreateAsync(Token);

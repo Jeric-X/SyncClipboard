@@ -981,23 +981,9 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         var title = record.TitleActionText;
         try
         {
-            var input = new TextBox { Text = record.Title ?? string.Empty };
-            var dialog = new ContentDialog
-            {
-                XamlRoot = Content.XamlRoot,
-                Title = title,
-                Content = input,
-                PrimaryButtonText = Strings.Confirm,
-                CloseButtonText = Strings.Cancel,
-                DefaultButton = ContentDialogButton.Primary
-            };
-            dialog.Opened += (_, _) =>
-            {
-                input.Focus(FocusState.Programmatic);
-                input.SelectAll();
-            };
+            var dialog = new HistoryTitleDialog(title, record.Title) { XamlRoot = Content.XamlRoot };
             if (await dialog.ShowAsync() == ContentDialogResult.Primary)
-                await _viewModel.SetTitleAsync(record.Key, input.Text);
+                await _viewModel.SetTitleAsync(record.Key, dialog.Text);
         }
         catch (Exception ex)
         {

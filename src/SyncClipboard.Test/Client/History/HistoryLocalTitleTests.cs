@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Shared.Profiles;
 
 namespace SyncClipboard.Test.Client.History;
@@ -9,6 +10,53 @@ public class HistoryLocalTitleTests
 {
     public TestContext TestContext { get; set; } = null!;
     private CancellationToken Token => TestContext.CancellationTokenSource.Token;
+
+    [TestMethod]
+    public void TitleMapping_NormalizesReceivedValuesBeforeChangingTrackedMetadata()
+    {
+        var dto = new HistoryRecordDto { Title = " e\u0301 " };
+        Assert.AreEqual("é", dto.ToEntity("user").Title);
+        var record = MapperExtensions.ToHistoryRecord(dto);
+        Assert.AreEqual("é", record.Title);
+        dto.Title = "a\nb";
+        dto.Tags = ["new"];
+        record.Tags = ["kept"];
+        Assert.ThrowsExactly<ArgumentException>(() => MapperExtensions.ApplyChangesFromRemote(record, dto));
+        CollectionAssert.AreEqual(new[] { "kept" }, record.Tags);
+        Assert.AreEqual("é", record.Title);
+        var update = new HistoryRecordUpdateDto { Title = " e\u0301 " };
+        MapperExtensions.ApplyFromServerUpdateDto(record, update);
+        Assert.AreEqual("é", record.Title);
+    }
+
+    [TestMethod]
+    public async Task UnicodeTitle_SaveSearchAndInvalidEditPreserveContentAndMetadata()
+    {
+        await using var fixture = await HistoryRetentionTests.Fixture.CreateAsync(Token);
+        var titleRecord = new HistoryRecord { Type = ProfileType.Text, Hash = "ABC", Text = "original" };
+        var textRecord = new HistoryRecord { Type = ProfileType.Text, Hash = "DEF", Text = "Cafe\u0301" };
+        fixture.Db.AddRange(titleRecord, textRecord);
+        await fixture.Db.SaveChangesAsync(Token);
+        var key = HistoryRecordKey.From(titleRecord);
+        Assert.IsTrue(await fixture.Manager.SetTitleAsync(key, " Cafe\u0301 ", Token));
+        var modified = titleRecord.LastModified;
+        var version = titleRecord.Version;
+        Assert.IsFalse(await fixture.Manager.SetTitleAsync(key, "Café", Token));
+        await Assert.ThrowsExactlyAsync<ArgumentException>(() => fixture.Manager.SetTitleAsync(key, "a\nb", Token));
+        await Assert.ThrowsExactlyAsync<ArgumentException>(() => fixture.Manager.SetTitleAsync(key, new string('a', 257), Token));
+        Assert.AreEqual(modified, titleRecord.LastModified);
+        Assert.AreEqual(version, titleRecord.Version);
+        Assert.AreEqual("original", titleRecord.Text);
+        Assert.AreEqual("Café", titleRecord.Title);
+        var query = new HistoryQueryPara { SearchText = "Cafe\u0301", SearchTitles = true };
+        Assert.HasCount(2, await fixture.Manager.GetHistoryAsync(query, token: Token));
+        Assert.AreEqual(textRecord.ID, (await fixture.Manager.GetHistoryAsync(query with { SearchTitles = false }, token: Token)).Single().ID);
+        Assert.AreEqual(titleRecord.ID, (await fixture.Manager.GetHistoryAsync(query with { SearchText = "Café" }, token: Token)).Single().ID);
+        Assert.IsEmpty(await fixture.Manager.GetHistoryAsync(query with { SearchText = " Café " }, token: Token));
+        var stored = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(record => record.ID == titleRecord.ID, Token);
+        Assert.AreEqual("Café", stored.Title);
+        Assert.AreEqual(version, stored.Version);
+    }
 
     [TestMethod]
     [DataRow(false, HistorySyncStatus.Synced, HistorySyncStatus.NeedSync)]

@@ -27,6 +27,24 @@ public class ServerHistoryTagQueryTests
     private static readonly DateTime Epoch = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     [TestMethod]
+    public async Task Query_NormalizesOnlyTitleSearchAndPreservesSearchSpaces()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        f.Add("title", []).Title = "Café";
+        f.Add("text", []).Text = "Cafe\u0301";
+        await f.Db.SaveChangesAsync(Token);
+        var query = new HistoryQueryDto { SearchText = "Cafe\u0301", SearchTitles = true };
+        Assert.HasCount(2, await f.QueryAsync(query));
+        query.SearchTitles = false;
+        Assert.AreEqual("text", (await f.QueryAsync(query)).Single().Hash);
+        query.SearchTitles = true;
+        query.SearchText = "Café";
+        Assert.AreEqual("title", (await f.QueryAsync(query)).Single().Hash);
+        query.SearchText = " Café ";
+        Assert.IsEmpty(await f.QueryAsync(query));
+    }
+
+    [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
     public async Task Query_NormalizesNamesAndMatchesWholeTagsCaseSensitively(bool multiple)

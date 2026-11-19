@@ -141,6 +141,21 @@ public class HistoryImportTests
     }
 
     [TestMethod]
+    [DataRow("line\nbreak")]
+    [DataRow("tab\tinside")]
+    public async Task Import_InvalidTitleReportsFailureWithoutCreatingRecord(string title)
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var item = await f.RecordAsync(new TextProfile("original"), Token, title);
+        var backup = await f.ExportAsync([item], Token);
+        var result = await f.ImportAsync(backup, Token);
+        Assert.AreEqual(1, result.FailureCount);
+        Assert.AreEqual(0, result.ImportedCount);
+        Assert.IsEmpty(await f.Db.HistoryRecords.ToListAsync(Token));
+    }
+
+    [TestMethod]
     public async Task ExportThenImport_RestoresAllTypesAttachmentsAndMetadata()
     {
         await using var f = new Fixture();
@@ -216,10 +231,12 @@ public class HistoryImportTests
     [DataRow(false, null, false)]
     [DataRow(false, "", false)]
     [DataRow(false, "备份标题", false)]
+    [DataRow(false, " Cafe\u0301 ", false)]
     [DataRow(false, null, true)]
     [DataRow(true, null, false)]
     [DataRow(true, "", false)]
     [DataRow(true, "备份标题", false)]
+    [DataRow(true, " Cafe\u0301 ", false)]
     [DataRow(true, null, true)]
     public async Task BackupTitle_RoundTripsStatesAndAcceptsLegacyManifest(bool zip, string? title, bool legacy)
     {
@@ -265,7 +282,7 @@ public class HistoryImportTests
         Assert.AreEqual(1, result.ImportedCount);
         f.Db.ChangeTracker.Clear();
         var restored = await f.Db.HistoryRecords.SingleAsync(Token);
-        Assert.AreEqual(title, restored.Title);
+        Assert.AreEqual(title?.Normalize().Trim(), restored.Title);
         Assert.AreEqual(item.Text, restored.Text);
         Assert.AreEqual(item.Hash, restored.Hash);
         Assert.AreEqual(item.Timestamp, restored.Timestamp.ToUniversalTime());

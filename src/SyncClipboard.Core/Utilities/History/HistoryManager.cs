@@ -277,7 +277,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
 
     public async Task<bool> SetTitleAsync(HistoryRecordKey key, string title, CancellationToken token = default)
     {
-        var normalized = title.Trim();
+        var normalized = HistoryTitles.Normalize(title);
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
         var record = await _dbContext.HistoryRecords.FirstOrDefaultAsync(
@@ -779,8 +779,9 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         if (!string.IsNullOrEmpty(queryPara.SearchText))
         {
             var pattern = $"%{queryPara.SearchText}%";
+            var titlePattern = $"%{queryPara.SearchText.Normalize()}%";
             query = query.Where(record => EF.Functions.Like(record.Text, pattern)
-                || (queryPara.SearchTitles && EF.Functions.Like(record.Title, pattern)));
+                || (queryPara.SearchTitles && EF.Functions.Like(record.Title, titlePattern)));
         }
 
         if (names.Length > 0)

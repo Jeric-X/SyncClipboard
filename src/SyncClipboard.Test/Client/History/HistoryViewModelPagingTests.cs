@@ -31,6 +31,23 @@ public class HistoryViewModelPagingTests
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
+    public async Task TitleSearch_NormalizesLiveEditsAndDatabaseReloadEqually()
+    {
+        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
+        fixture.ObserveHistoryUpdates();
+        Fixture.SetField(fixture.ViewModel, "searchText", "Cafe\u0301");
+        await fixture.LoadAsync();
+        Assert.IsEmpty(fixture.Records);
+        var key = new HistoryRecordKey(ProfileType.Text, 0.ToString("D64"));
+        await fixture.ViewModel.SetTitleAsync(key, "Café");
+        Assert.AreEqual("Café", fixture.Records.Single().Title);
+        await fixture.ReloadAsync();
+        Assert.AreEqual("Café", fixture.Records.Single().Title);
+        await fixture.ViewModel.SetTitleAsync(key, "other");
+        Assert.IsEmpty(fixture.Records);
+    }
+
+    [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
     public async Task UnavailableViewportPreloadsOnePageThenFillsAfterLayout(bool metricsAvailable)

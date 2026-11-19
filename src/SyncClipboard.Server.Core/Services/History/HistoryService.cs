@@ -54,7 +54,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
         if (dto.Tags is not null)
             dto.Tags = HistoryTags.Normalize(dto.Tags);
-        dto.Title = dto.Title?.Trim();
+        dto.Title = HistoryTitles.Normalize(dto.Title);
 
         var updated = ApplyMetadataUpdate(existing, dto);
         if (updated is null)
@@ -187,7 +187,8 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         if (!string.IsNullOrEmpty(searchText))
         {
             var pattern = $"%{searchText}%";
-            query = query.Where(r => EF.Functions.Like(r.Text, pattern) || (searchTitles && EF.Functions.Like(r.Title, pattern)));
+            var titlePattern = $"%{searchText.Normalize()}%";
+            query = query.Where(r => EF.Functions.Like(r.Text, pattern) || (searchTitles && EF.Functions.Like(r.Title, titlePattern)));
         }
 
         if (starred.HasValue)
@@ -369,6 +370,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
     {
         if (incoming.Tags is not null)
             incoming.Tags = HistoryTags.Normalize(incoming.Tags);
+        incoming.Title = HistoryTitles.Normalize(incoming.Title);
 
         await _sem.WaitAsync(token);
         using var guard = new ScopeGuard(() => _sem.Release());
@@ -393,7 +395,6 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             await EnsureExistingRecordData(existing, declaredTransferDataHash, transferFileStream, token);
         }
 
-        incoming.Title = incoming.Title?.Trim();
         var metadataWins = HistoryHelper.ShouldUpdate(existing.Version, incoming.Version,
             new DateTimeOffset(existing.LastModified), incoming.LastModified);
         var shouldUpdate = restoring || metadataWins;

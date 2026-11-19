@@ -349,6 +349,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
         {
             if (dto.Tags is not null)
                 dto.Tags = HistoryTags.Normalize(dto.Tags);
+            dto.Title = HistoryTitles.Normalize(dto.Title);
         }
         catch (ArgumentException ex)
         {
