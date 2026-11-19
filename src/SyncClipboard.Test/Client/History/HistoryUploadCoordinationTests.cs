@@ -168,7 +168,7 @@ public class HistoryUploadCoordinationTests
         a.Db.Add(record);
         await a.Db.SaveChangesAsync(Token);
         a.RemoteRecord = record.ToHistoryRecordDto();
-        await a.Manager.SetTitleAsync(HistoryRecordKey.From(record), "应用图标", supportsHistoryTitle: false, Token);
+        await a.Manager.SetTitleAsync(HistoryRecordKey.From(record), "应用图标", Token);
         await using var serverDb = new ServerHistoryDbContext();
         serverDb.Database.SetConnectionString("Data Source=:memory:");
         await serverDb.Database.OpenConnectionAsync(Token);
@@ -195,7 +195,7 @@ public class HistoryUploadCoordinationTests
         await b.Manager.SyncRemoteHistoryAsync([a.RemoteRecord], Token);
         var second = await b.Db.HistoryRecords.SingleAsync(Token);
         Assert.AreEqual("应用图标", second.Title);
-        await b.Manager.SetTitleAsync(HistoryRecordKey.From(second), "", supportsHistoryTitle: true, Token);
+        await b.Manager.SetTitleAsync(HistoryRecordKey.From(second), "", Token);
         var (_, cleared) = await server.Update(ServerHistoryService.HARD_CODED_USER_ID, second.Type, second.Hash,
             new HistoryRecordUpdateDto { Title = second.Title, Version = second.Version, LastModified = second.LastModified }, Token);
         Assert.AreEqual("", cleared!.Title);
@@ -541,12 +541,14 @@ public class HistoryUploadCoordinationTests
     }
 
     [TestMethod]
-    [DataRow("")]
-    [DataRow("新标题")]
-    public async Task TitleEdit_SynchronizesTheFinalTitleThroughPatch(string title)
+    [DataRow("", false)]
+    [DataRow("新标题", false)]
+    [DataRow("", true)]
+    [DataRow("新标题", true)]
+    public async Task TitleEdit_SynchronizesTheFinalTitleThroughPatch(string title, bool syncEnabledDuringEdit)
     {
         await using var f = await Fixture.CreateAsync(Token);
-        f.RuntimeConfig.EnableSyncHistory = true;
+        f.RuntimeConfig.EnableSyncHistory = syncEnabledDuringEdit;
         var record = new HistoryRecord
         {
             Type = ProfileType.Text,
@@ -557,8 +559,10 @@ public class HistoryUploadCoordinationTests
         f.Db.Add(record);
         await f.Db.SaveChangesAsync(Token);
         f.RemoteRecord = record.ToHistoryRecordDto();
-        await f.Manager.SetTitleAsync(HistoryRecordKey.From(record), title, true, Token);
+        await f.Manager.SetTitleAsync(HistoryRecordKey.From(record), title, Token);
 
+        Assert.AreEqual(HistorySyncStatus.NeedSync, record.SyncStatus);
+        f.RuntimeConfig.EnableSyncHistory = true;
         await f.CreateSyncer().SyncNeedUpdateAsync(Token);
 
         Assert.AreEqual(title, f.RemoteRecord.Title);
@@ -597,9 +601,7 @@ public class HistoryUploadCoordinationTests
     }
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task LateAcknowledgement_PreservesANewerTitleEdit(bool supportsTitle)
+    public async Task LateAcknowledgement_PreservesANewerTitleEdit()
     {
         await using var f = await Fixture.CreateAsync(Token);
         f.RuntimeConfig.EnableSyncHistory = true;
@@ -608,7 +610,7 @@ public class HistoryUploadCoordinationTests
         await f.Db.SaveChangesAsync(Token);
         var sent = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
         Assert.IsNotNull(sent);
-        await f.Manager.SetTitleAsync(HistoryRecordKey.From(record), "second", supportsTitle, Token);
+        await f.Manager.SetTitleAsync(HistoryRecordKey.From(record), "second", Token);
         sent.SyncStatus = HistorySyncStatus.Synced;
 
         Assert.IsFalse(await f.Manager.TryApplySyncResponseAsync(sent, sent.Version, sent.LastModified, Token));

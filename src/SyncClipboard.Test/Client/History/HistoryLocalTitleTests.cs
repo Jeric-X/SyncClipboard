@@ -11,17 +11,19 @@ public class HistoryLocalTitleTests
     private CancellationToken Token => TestContext.CancellationTokenSource.Token;
 
     [TestMethod]
-    [DataRow(false, true, HistorySyncStatus.Synced, HistorySyncStatus.Synced)]
-    [DataRow(true, false, HistorySyncStatus.Synced, HistorySyncStatus.Synced)]
-    [DataRow(true, false, HistorySyncStatus.NeedSync, HistorySyncStatus.NeedSync)]
-    [DataRow(true, true, HistorySyncStatus.Synced, HistorySyncStatus.NeedSync)]
-    [DataRow(true, true, HistorySyncStatus.LocalOnly, HistorySyncStatus.LocalOnly)]
-    public async Task EditAndClear_OnlyQueueChangesWhenTitleSyncIsAvailable(
-        bool syncEnabled, bool supportsTitle, HistorySyncStatus initialStatus, HistorySyncStatus expectedStatus)
+    [DataRow(false, HistorySyncStatus.Synced, HistorySyncStatus.NeedSync)]
+    [DataRow(false, HistorySyncStatus.NeedSync, HistorySyncStatus.NeedSync)]
+    [DataRow(false, HistorySyncStatus.LocalOnly, HistorySyncStatus.LocalOnly)]
+    [DataRow(true, HistorySyncStatus.Synced, HistorySyncStatus.NeedSync)]
+    [DataRow(true, HistorySyncStatus.NeedSync, HistorySyncStatus.NeedSync)]
+    [DataRow(true, HistorySyncStatus.LocalOnly, HistorySyncStatus.LocalOnly)]
+    public async Task EditAndClear_QueueNonLocalRecordsEvenWhenSyncIsDisabled(
+        bool syncEnabled, HistorySyncStatus initialStatus, HistorySyncStatus expectedStatus)
     {
         await using var fixture = await HistoryRetentionTests.Fixture.CreateAsync(Token);
         fixture.RuntimeConfig.EnableSyncHistory = syncEnabled;
         var modified = DateTime.UtcNow.AddHours(-1);
+        var accessed = modified.AddDays(-1);
         var record = new HistoryRecord
         {
             Type = ProfileType.Text,
@@ -29,6 +31,8 @@ public class HistoryLocalTitleTests
             Text = "clipboard content",
             SyncStatus = initialStatus,
             LastModified = modified,
+            Timestamp = accessed,
+            LastAccessed = accessed,
             Version = 7
         };
         fixture.Db.Add(record);
@@ -37,23 +41,26 @@ public class HistoryLocalTitleTests
         var notifications = 0;
         fixture.Manager.HistoryUpdated += _ => notifications++;
 
-        Assert.IsFalse(await fixture.Manager.SetTitleAsync(key, "", supportsTitle, Token));
+        Assert.IsFalse(await fixture.Manager.SetTitleAsync(key, "", Token));
         Assert.IsNull((await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(Token)).Title);
-        Assert.IsTrue(await fixture.Manager.SetTitleAsync(key, "  Release notes  ", supportsTitle, Token));
+        Assert.IsTrue(await fixture.Manager.SetTitleAsync(key, "  Release notes  ", Token));
         var titled = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
         Assert.AreEqual("Release notes", titled.Title);
         Assert.AreEqual(expectedStatus, titled.SyncStatus);
         Assert.AreEqual(8, titled.Version);
         Assert.IsGreaterThan(modified, titled.LastModified);
 
-        Assert.IsFalse(await fixture.Manager.SetTitleAsync(key, "Release notes ", supportsTitle, Token));
+        Assert.IsFalse(await fixture.Manager.SetTitleAsync(key, "Release notes ", Token));
         var unchanged = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
         Assert.AreEqual(titled.LastModified, unchanged.LastModified);
         Assert.AreEqual(titled.Version, unchanged.Version);
-        Assert.IsTrue(await fixture.Manager.SetTitleAsync(key, "  ", supportsTitle, Token));
+        Assert.IsTrue(await fixture.Manager.SetTitleAsync(key, "  ", Token));
         var cleared = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
         Assert.AreEqual(string.Empty, cleared.Title);
         Assert.AreEqual(9, cleared.Version);
+        Assert.AreEqual(expectedStatus, cleared.SyncStatus);
+        Assert.AreEqual(accessed, cleared.Timestamp);
+        Assert.AreEqual(accessed, cleared.LastAccessed);
         Assert.AreEqual("clipboard content", cleared.Text);
         Assert.AreEqual(2, notifications);
     }
@@ -70,8 +77,8 @@ public class HistoryLocalTitleTests
         fixture.Db.Add(image);
         await fixture.Db.SaveChangesAsync(Token);
 
-        await manager.SetTitleAsync(key, "Checklist", false, Token);
-        await manager.SetTitleAsync(HistoryRecordKey.From(image), "Checklist", false, Token);
+        await manager.SetTitleAsync(key, "Checklist", Token);
+        await manager.SetTitleAsync(HistoryRecordKey.From(image), "Checklist", Token);
         await manager.AddLocalProfile(profile, token: Token);
 
         var contentOnly = new HistoryQueryPara { SearchText = "CHECKLIST" };
@@ -85,10 +92,10 @@ public class HistoryLocalTitleTests
         Assert.AreEqual(key, HistoryRecordKey.From((await manager.GetHistoryAsync(
             titles with { SearchText = "original" }, token: Token)).Single()));
 
-        await manager.SetTitleAsync(key, "", false, Token);
+        await manager.SetTitleAsync(key, "", Token);
         Assert.AreEqual(image.ID, (await manager.GetHistoryAsync(titles, token: Token)).Single().ID);
         await manager.DeleteHistory(image, Token);
-        Assert.IsFalse(await manager.SetTitleAsync(HistoryRecordKey.From(image), "deleted", false, Token));
+        Assert.IsFalse(await manager.SetTitleAsync(HistoryRecordKey.From(image), "deleted", Token));
         Assert.IsEmpty(await manager.GetHistoryAsync(titles, token: Token));
     }
 
@@ -104,7 +111,7 @@ public class HistoryLocalTitleTests
         await fixture.Db.Database.ExecuteSqlRawAsync(
             "CREATE TRIGGER fail_title BEFORE UPDATE OF Title ON HistoryRecords BEGIN SELECT RAISE(ABORT, 'write failed'); END;", Token);
 
-        await Assert.ThrowsExactlyAsync<DbUpdateException>(() => fixture.Manager.SetTitleAsync(key, "note", true, Token));
+        await Assert.ThrowsExactlyAsync<DbUpdateException>(() => fixture.Manager.SetTitleAsync(key, "note", Token));
 
         fixture.Db.Add(new HistoryRecord { Type = ProfileType.Text, Hash = "DEF" });
         await fixture.Db.SaveChangesAsync(Token);
@@ -112,7 +119,7 @@ public class HistoryLocalTitleTests
         Assert.IsNull(unchanged.Title);
         Assert.AreEqual(HistorySyncStatus.Synced, unchanged.SyncStatus);
         await fixture.Db.Database.ExecuteSqlRawAsync("DROP TRIGGER fail_title", Token);
-        Assert.IsTrue(await fixture.Manager.SetTitleAsync(key, "note", true, Token));
+        Assert.IsTrue(await fixture.Manager.SetTitleAsync(key, "note", Token));
         var saved = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(r => r.Hash == key.Hash, Token);
         Assert.AreEqual("note", saved.Title);
         Assert.AreEqual(1, saved.Version);
@@ -134,7 +141,7 @@ public class HistoryLocalTitleTests
         fixture.Db.Add(record);
         await fixture.Db.SaveChangesAsync(Token);
 
-        await fixture.Manager.SetTitleAsync(HistoryRecordKey.From(record), "note", true, Token);
+        await fixture.Manager.SetTitleAsync(HistoryRecordKey.From(record), "note", Token);
         var saved = await fixture.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
         Assert.AreEqual(int.MaxValue, saved.Version);
         Assert.AreEqual(HistorySyncStatus.NeedSync, saved.SyncStatus);

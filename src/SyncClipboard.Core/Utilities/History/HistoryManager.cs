@@ -275,8 +275,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         return CreateSyncSnapshot(entity);
     }
 
-    public async Task<bool> SetTitleAsync(
-        HistoryRecordKey key, string title, bool supportsHistoryTitle, CancellationToken token = default)
+    public async Task<bool> SetTitleAsync(HistoryRecordKey key, string title, CancellationToken token = default)
     {
         var normalized = title.Trim();
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
@@ -294,7 +293,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         if (record.Version < int.MaxValue)
             record.Version++;
         record.LastModified = DateTime.UtcNow;
-        if (_runtimeHistoryConfig.EnableSyncHistory && supportsHistoryTitle && record.SyncStatus != HistorySyncStatus.LocalOnly)
+        if (record.SyncStatus != HistorySyncStatus.LocalOnly)
             record.SyncStatus = HistorySyncStatus.NeedSync;
         try
         {

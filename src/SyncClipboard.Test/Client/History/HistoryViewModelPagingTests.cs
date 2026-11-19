@@ -465,26 +465,29 @@ public class HistoryViewModelPagingTests
     }
 
     [TestMethod]
-    [DataRow(true)]
-    [DataRow(false)]
-    public async Task TitleEdit_SavesLocallyWhenServerCapabilityIsUnavailable(bool discoveryFails)
+    [DataRow("offline")]
+    [DataRow("unsupported")]
+    [DataRow("pending")]
+    public async Task TitleEdit_SavesLocallyWhenServerCapabilityIsUnavailable(string capabilityState)
     {
         await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
         var server = new Mock<IOfficialSyncServer>();
+        var pending = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
         var discovery = server.Setup(value => value.SupportsHistoryTitleAsync(It.IsAny<CancellationToken>()));
-        if (discoveryFails)
+        if (capabilityState == "offline")
             discovery.ThrowsAsync(new HttpRequestException("offline"));
+        else if (capabilityState == "pending")
+            discovery.Returns(pending.Task);
         else
             discovery.ReturnsAsync(false);
         Fixture.SetField(fixture.ViewModel, "historySyncServer", server.Object);
         var key = new HistoryRecordKey(ProfileType.Text, 0.ToString("D64"));
-        await fixture.ViewModel.SetTitleAsync(key, "Offline title");
+        await fixture.ViewModel.SetTitleAsync(key, "Offline title")
+            .WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
         var record = await fixture.Manager.GetSyncSnapshotAsync(key, TestContext.CancellationTokenSource.Token);
         Assert.IsNotNull(record);
         Assert.AreEqual("Offline title", record.Title);
         Assert.AreEqual("record 0", record.Text);
-        fixture.Logger.Verify(value => value.Write(nameof(HistoryViewModel), It.IsAny<string>()),
-            discoveryFails ? Times.Once() : Times.Never());
         fixture.Logger.VerifyNoOtherCalls();
     }
 
