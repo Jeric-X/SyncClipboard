@@ -1800,6 +1800,6 @@ Choose whether to use the default location or select another folder.</value>
     <value>Records with a title will not be automatically deleted</value>
   </data>
   <data name="HistoryTitleFormatError" xml:space="preserve">
-    <value>Titles must be a single line of at most {0} Unicode characters, without control characters.</value>
+    <value>Titles must be a single line of at most {0} characters, without control characters.</value>
   </data>
 </root>

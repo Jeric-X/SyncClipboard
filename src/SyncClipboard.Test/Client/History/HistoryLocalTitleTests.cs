@@ -22,7 +22,7 @@ public class HistoryLocalTitleTests
         dto.Tags = ["new"];
         record.Tags = ["kept"];
         Assert.ThrowsExactly<ArgumentException>(() => MapperExtensions.ApplyChangesFromRemote(record, dto));
-        CollectionAssert.AreEqual(new[] { "kept" }, record.Tags);
+        Assert.AreEqual("kept", record.Tags!.Single());
         Assert.AreEqual("é", record.Title);
         var update = new HistoryRecordUpdateDto { Title = " e\u0301 " };
         MapperExtensions.ApplyFromServerUpdateDto(record, update);

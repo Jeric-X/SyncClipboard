@@ -13,7 +13,7 @@ public static class HistoryTitles
         if (normalized.EnumerateRunes().Count() > MaxLength
             || normalized.Any(c => char.IsControl(c) || c is '\u2028' or '\u2029'))
         {
-            throw new ArgumentException($"Titles must contain at most {MaxLength} Unicode characters without line breaks or control characters.");
+            throw new ArgumentException($"Titles must contain at most {MaxLength} characters without line breaks or control characters.");
         }
         return normalized;
     }
