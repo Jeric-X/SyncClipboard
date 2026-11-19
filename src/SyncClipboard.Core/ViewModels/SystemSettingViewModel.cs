@@ -6,6 +6,7 @@ using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities.Instances;
 using SyncClipboard.Core.Utilities;
 using System.Diagnostics;
 
@@ -114,7 +115,7 @@ public partial class SystemSettingViewModel : ObservableObject
     private LocaleString<bool> userConfigPosition;
     partial void OnUserConfigPositionChanged(LocaleString<bool> value)
     {
-        if (!AppLaunchOptions.Current.IsSpecifiedDataDirectory)
+        if (!AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory)
             _staticConfig.SetConfig(_staticConfig.GetConfig<EnvConfig>() with { PortableUserConfig = value.Key });
     }
 
@@ -178,7 +179,7 @@ public partial class SystemSettingViewModel : ObservableObject
         _logger = serviceProvider.GetRequiredService<ILogger>();
 
         programConfig = _configManager.GetConfig<ProgramConfig>();
-        var taskRunAsAdministrator = AppLaunchOptions.Current.IsSpecifiedDataDirectory ? null : StartUpHelper.GetWindowsTaskRunAsAdministrator();
+        var taskRunAsAdministrator = AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory ? null : StartUpHelper.GetWindowsTaskRunAsAdministrator();
         if (taskRunAsAdministrator is bool runAsAdministrator && runAsAdministrator != programConfig.StartUpAsAdministrator)
         {
             programConfig = programConfig with { StartUpAsAdministrator = runAsAdministrator };
@@ -208,18 +209,18 @@ public partial class SystemSettingViewModel : ObservableObject
     }
 
     public bool ShowStartUpSetting { get; } =
-        !AppLaunchOptions.Current.IsSpecifiedDataDirectory && (OperatingSystem.IsWindows() || OperatingSystem.IsLinux());
+        !AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory && (OperatingSystem.IsWindows() || OperatingSystem.IsLinux());
 
     public bool ShowStartUpAsAdministratorSetting { get; } =
-        !AppLaunchOptions.Current.IsSpecifiedDataDirectory && OperatingSystem.IsWindows() && Env.IsUserInAdministratorGroup;
+        !AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory && OperatingSystem.IsWindows() && Env.IsUserInAdministratorGroup;
 
-    public bool ShowPortableLocationSetting { get; } = !AppLaunchOptions.Current.IsSpecifiedDataDirectory && OperatingSystem.IsWindows();
+    public bool ShowPortableLocationSetting { get; } = !AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory && OperatingSystem.IsWindows();
 
     public static string AppDataDirectory => Env.AppDataDirectory;
 
     public static bool IsUsingCustomAppDataDirectory => Env.IsUsingCustomAppDataDirectory;
 
-    public bool IsIndependentAppDataDirectory => !AppLaunchOptions.Current.IsSpecifiedDataDirectory && !PortableAppDataFolderPosition.Key;
+    public bool IsIndependentAppDataDirectory => !AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory && !PortableAppDataFolderPosition.Key;
 
     public bool IsUsingCustomIndependentAppDataDirectory =>
         Env.IsUsingCustomAppDataDirectory && IsIndependentAppDataDirectory;
@@ -252,7 +253,7 @@ public partial class SystemSettingViewModel : ObservableObject
 
     public bool StartUpWithSystem
     {
-        get => !AppLaunchOptions.Current.IsSpecifiedDataDirectory && StartUpHelper.Status();
+        get => !AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory && StartUpHelper.Status();
         set
         {
             if (!_isSynchronizingStartUpSettings)
@@ -268,7 +269,7 @@ public partial class SystemSettingViewModel : ObservableObject
 
     private async Task UpdateStartUpSettingsAsync(bool updateTask, bool enable, bool runAsAdministrator, string errorTitle)
     {
-        if (_isSynchronizingStartUpSettings || AppLaunchOptions.Current.IsSpecifiedDataDirectory)
+        if (_isSynchronizingStartUpSettings || AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory)
         {
             return;
         }
@@ -295,7 +296,7 @@ public partial class SystemSettingViewModel : ObservableObject
 
     private void RefreshStartUpSettings(bool startUpAsAdministrator)
     {
-        var taskRunAsAdministrator = AppLaunchOptions.Current.IsSpecifiedDataDirectory ? null : StartUpHelper.GetWindowsTaskRunAsAdministrator();
+        var taskRunAsAdministrator = AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory ? null : StartUpHelper.GetWindowsTaskRunAsAdministrator();
         var actualStartUpAsAdministrator = taskRunAsAdministrator ?? startUpAsAdministrator;
         _isSynchronizingStartUpSettings = true;
         try
@@ -326,7 +327,7 @@ public partial class SystemSettingViewModel : ObservableObject
     /// </summary>
     public async Task<bool> ChangeAppDataFolderAsync(string selectedFolder)
     {
-        if (AppLaunchOptions.Current.IsSpecifiedDataDirectory)
+        if (AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory)
             return false;
 
         var targetFolder = await ConfirmAndResolveTargetFolderAsync(selectedFolder);
@@ -341,7 +342,7 @@ public partial class SystemSettingViewModel : ObservableObject
 
     private async Task<bool> SwitchPortableAppDataFolderAsync(bool portableAppDataFolder)
     {
-        if (AppLaunchOptions.Current.IsSpecifiedDataDirectory)
+        if (AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory)
             return false;
 
         if (!portableAppDataFolder)
@@ -508,7 +509,7 @@ public partial class SystemSettingViewModel : ObservableObject
     [RelayCommand]
     public async Task RestoreDefaultAppDataFolderAsync()
     {
-        if (AppLaunchOptions.Current.IsSpecifiedDataDirectory)
+        if (AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory)
             return;
 
         var dialog = _services.GetRequiredService<IMainWindowDialog>();

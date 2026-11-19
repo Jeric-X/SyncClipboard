@@ -3,6 +3,7 @@
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Utilities.Instances;
 using SyncClipboard.Core.Utilities;
 using System;
 using System.Runtime.InteropServices;
@@ -24,9 +25,9 @@ public static partial class Program
             return returnCode;
         }
 
-        if (AppInstance.EnsureSingleInstance(args) is false)
+        if (AppInstance.EnsureSingleInstance(args) is int exitCode)
         {
-            return Environment.ExitCode;
+            return exitCode;
         }
 
         try

@@ -1,33 +1,22 @@
-using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Utilities.Updater;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Text;
 
-namespace SyncClipboard.Core.Commons;
+namespace SyncClipboard.Core.Utilities.Instances;
 
-internal sealed record AppLaunchOptions(string? AppDataDirectory)
+internal sealed record AppDataDirectoryOptions(string? AppDataDirectory)
 {
     public const string AppDataArgument = "--app-data-dir";
-    private static readonly Lazy<AppLaunchOptions> _current = new(() => Parse(Environment.GetCommandLineArgs()[1..],
+    private static readonly Lazy<AppDataDirectoryOptions> _current = new(() => Parse(Environment.GetCommandLineArgs()[1..],
         OperatingSystem.IsLinux() ? Environment.GetEnvironmentVariable("SYNC_CLIPBOARD_LAUNCH_DIRECTORY") : null)
         .PrepareDataDirectory(AppDomain.CurrentDomain.BaseDirectory));
 
-    public static AppLaunchOptions Current => _current.Value;
+    public static AppDataDirectoryOptions Current => _current.Value;
     public bool IsSpecifiedDataDirectory => AppDataDirectory is not null;
 
-    public string InstanceSuffix => AppDataDirectory is null ? string.Empty
-        : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
-            OperatingSystem.IsWindows() ? AppDataDirectory.ToUpperInvariant() : AppDataDirectory)))[..24];
-
-    // Keep the Unix socket name short enough for the standard macOS per-user temporary directory.
-    public string PipeName => "SC-" + Convert.ToHexString(SHA256.HashData(
-        Encoding.UTF8.GetBytes(Environment.UserName + ":" + InstanceSuffix)))[..16];
-
-    public static AppLaunchOptions Parse(string[] args, string? workingDirectory = null)
+    public static AppDataDirectoryOptions Parse(string[] args, string? workingDirectory = null)
     {
         string? directory = null;
         for (var i = 0; i < args.Length; i++)
@@ -54,7 +43,7 @@ internal sealed record AppLaunchOptions(string? AppDataDirectory)
         return new(directory is null ? null : NormalizeDirectory(directory, workingDirectory));
     }
 
-    internal AppLaunchOptions PrepareDataDirectory(string programDirectory)
+    internal AppDataDirectoryOptions PrepareDataDirectory(string programDirectory)
     {
         ValidateDataDirectory(programDirectory);
         if (AppDataDirectory is null)
@@ -139,16 +128,6 @@ internal sealed record AppLaunchOptions(string? AppDataDirectory)
             OperatingSystem.IsLinux() ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase))
         {
             throw new ArgumentException("Choose a separate application data directory instead of the program directory.");
-        }
-    }
-
-    public void AddRestartArguments(ProcessStartInfo startInfo)
-    {
-        startInfo.ArgumentList.Add(StartArguments.ShutdownPrivious);
-        if (AppDataDirectory is not null)
-        {
-            startInfo.ArgumentList.Add(AppDataArgument);
-            startInfo.ArgumentList.Add(AppDataDirectory);
         }
     }
 }

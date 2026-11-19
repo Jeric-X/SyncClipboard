@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities.Instances;
 
 namespace SyncClipboard.Core.Commons
 {
@@ -24,9 +25,9 @@ namespace SyncClipboard.Core.Commons
         public static readonly string PortableAppDataDirectory = Path.Combine(ProgramDirectory, PortableAppDataFolderName);
         public static readonly string ProgramPath = GetProgramPath();
         public static readonly string PortableUserConfigFile =
-            Path.Combine(AppLaunchOptions.Current.AppDataDirectory ?? ProgramDirectory, "SyncClipboard.json");
+            Path.Combine(AppDataDirectoryOptions.Current.AppDataDirectory ?? ProgramDirectory, "SyncClipboard.json");
         public static readonly string StaticConfigPath =
-            Path.Combine(AppLaunchOptions.Current.AppDataDirectory ?? ProgramDirectory, "StaticConfig.json");
+            Path.Combine(AppDataDirectoryOptions.Current.AppDataDirectory ?? ProgramDirectory, "StaticConfig.json");
         public static readonly string UserAppDataDirectory = GetUserAppDataDirectory();
         /// <summary>
         /// Path to the independent config file that stores the custom AppData directory.
@@ -86,7 +87,7 @@ namespace SyncClipboard.Core.Commons
 
         private static string GetAppDataDirectory()
         {
-            if (AppLaunchOptions.Current.AppDataDirectory is string explicitDirectory)
+            if (AppDataDirectoryOptions.Current.AppDataDirectory is string explicitDirectory)
                 return explicitDirectory;
 
             if (GetStaticEnvConfig().PortableAppDataFolder)

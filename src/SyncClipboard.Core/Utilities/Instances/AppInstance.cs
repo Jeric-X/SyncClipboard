@@ -5,7 +5,7 @@ using System.IO.Pipes;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace SyncClipboard.Core.Utilities;
+namespace SyncClipboard.Core.Utilities.Instances;
 
 public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManager hotkeyManager) : IDisposable
 {
@@ -13,8 +13,18 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
     private const string ShutdownCommand = "Shutdown";
     private static readonly string MutexPrefix = @$"Global\{Env.SoftName}-Mutex-{Environment.UserName}-";
     private static readonly string PipePrefix = @$"Global\{Env.SoftName}-Pipe-{Environment.UserName}-";
-    private static string MutexName => MutexPrefix + AppLaunchOptions.Current.InstanceSuffix;
-    private static string PipeName => AppLaunchOptions.Current.IsSpecifiedDataDirectory ? AppLaunchOptions.Current.PipeName : PipePrefix;
+    private static string MutexName => MutexPrefix + GetInstanceSuffix(AppDataDirectoryOptions.Current);
+    private static string PipeName => GetPipeName(AppDataDirectoryOptions.Current);
+
+    internal static string GetInstanceSuffix(AppDataDirectoryOptions options) => options.AppDataDirectory is null ? string.Empty
+        : Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
+            OperatingSystem.IsWindows() ? options.AppDataDirectory.ToUpperInvariant() : options.AppDataDirectory)))[..24];
+
+    // Keep the Unix socket name short enough for the standard macOS per-user temporary directory.
+    internal static string GetPipeName(AppDataDirectoryOptions options) => !options.IsSpecifiedDataDirectory ? PipePrefix
+        : "SC-" + Convert.ToHexString(SHA256.HashData(
+            Encoding.UTF8.GetBytes(Environment.UserName + ":" + GetInstanceSuffix(options))))[..16];
+
     private static FileStream? _directoryLock;
     private static Mutex? _installationMarker;
     private bool _disposed = false;
@@ -166,18 +176,18 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
         return mutex;
     }
 
-    public static bool EnsureSingleInstance(string[] args)
+    // No exit code means this process owns the instance and should continue startup.
+    public static int? EnsureSingleInstance(string[] args)
     {
         try
         {
-            AppLaunchOptions.Current.ValidateDataDirectory(AppDomain.CurrentDomain.BaseDirectory);
-            return TryAcquireInstance(args);
+            AppDataDirectoryOptions.Current.ValidateDataDirectory(AppDomain.CurrentDomain.BaseDirectory);
+            return TryAcquireInstance(args) ? null : 0;
         }
         catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or TypeInitializationException)
         {
             Console.Error.WriteLine($"Could not start SyncClipboard: {ex.GetBaseException().Message}");
-            Environment.ExitCode = 1;
-            return false;
+            return 1;
         }
     }
 
@@ -218,7 +228,7 @@ public sealed class AppInstance(IMainWindow window, ILogger logger, HotkeyManage
 
     private static string InstallationMarkerName(string programDirectory)
     {
-        var path = AppLaunchOptions.NormalizePath(programDirectory);
+        var path = AppDataDirectoryOptions.NormalizePath(programDirectory);
         if (OperatingSystem.IsWindows())
             path = path.ToUpperInvariant();
         return @"Global\SyncClipboard-Installation-" + Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(path)));

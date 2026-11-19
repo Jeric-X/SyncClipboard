@@ -1,5 +1,6 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities.Instances;
 using SyncClipboard.Core.Utilities.Updater;
 using SyncClipboard.Updater;
 
@@ -23,7 +24,7 @@ public class SpecifiedDataDirectoryUpdateTests
     public void UpdaterHandoff_PreservesStartupModeAcrossElevation(bool specifiedDirectory)
     {
         var profile = specifiedDirectory ? Path.Combine(directory, "profile 中文") : null;
-        var options = new AppLaunchOptions(profile);
+        var options = new AppDataDirectoryOptions(profile);
         var programDirectory = Path.Combine(directory, "SyncClipboard.app", "Contents", "MonoBundle");
         Directory.CreateDirectory(programDirectory);
         File.WriteAllText(Path.Combine(directory, "SyncClipboard.app", "Contents", "Info.plist"), "bundle");

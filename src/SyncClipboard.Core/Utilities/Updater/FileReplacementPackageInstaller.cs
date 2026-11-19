@@ -1,5 +1,6 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities.Instances;
 using System.Diagnostics;
 using System.Globalization;
 
@@ -92,7 +93,7 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
     }
 
     internal static ProcessStartInfo CreateStartInfo(UpdateInstallRequest request, string workspace,
-        string? programDirectory = null, string? appImagePath = null, AppLaunchOptions? launchOptions = null)
+        string? programDirectory = null, string? appImagePath = null, AppDataDirectoryOptions? launchOptions = null)
     {
         programDirectory ??= Env.ProgramDirectory;
         var targetPath = Path.GetFullPath(programDirectory);
@@ -121,7 +122,7 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
         ];
         foreach (var argument in arguments)
             start.ArgumentList.Add(argument);
-        if ((launchOptions ?? AppLaunchOptions.Current).AppDataDirectory is string appDataDirectory)
+        if ((launchOptions ?? AppDataDirectoryOptions.Current).AppDataDirectory is string appDataDirectory)
         {
             start.ArgumentList.Add("--app-data-dir");
             start.ArgumentList.Add(appDataDirectory);

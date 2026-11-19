@@ -1,6 +1,7 @@
 ﻿using Avalonia;
 using Avalonia.Media;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Utilities.Instances;
 using SyncClipboard.Core.Utilities;
 
 namespace SyncClipboard.Desktop.Default;
@@ -18,9 +19,9 @@ class Program
             return returnCode;
         }
 
-        if (AppInstance.EnsureSingleInstance(args) is false)
+        if (AppInstance.EnsureSingleInstance(args) is int exitCode)
         {
-            return Environment.ExitCode;
+            return exitCode;
         }
 
         try

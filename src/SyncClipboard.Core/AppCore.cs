@@ -22,6 +22,7 @@ using SyncClipboard.Core.RemoteServer.LogInHelper;
 using SyncClipboard.Core.UserServices;
 using SyncClipboard.Core.UserServices.ClipboardService;
 using SyncClipboard.Core.UserServices.ServerService;
+using SyncClipboard.Core.Utilities.Instances;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.FileCacheManager;
 using SyncClipboard.Core.Utilities.History;
@@ -250,7 +251,7 @@ namespace SyncClipboard.Core
                 FileName = Env.ProgramPath,
                 UseShellExecute = true
             };
-            AppLaunchOptions.Current.AddRestartArguments(startInfo);
+            StartArguments.AddRestartArguments(startInfo, AppDataDirectoryOptions.Current);
 
             try
             {

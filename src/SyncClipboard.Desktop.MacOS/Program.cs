@@ -1,7 +1,7 @@
 ﻿using AppKit;
 using Avalonia;
 using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.Utilities.Instances;
 using System;
 using System.IO;
 
@@ -15,9 +15,9 @@ class Program
     [STAThread]
     public static int Main(string[] args)
     {
-        if (AppInstance.EnsureSingleInstance(args) is false)
+        if (AppInstance.EnsureSingleInstance(args) is int exitCode)
         {
-            return Environment.ExitCode;
+            return exitCode;
         }
         NSApplication.Init();
 
