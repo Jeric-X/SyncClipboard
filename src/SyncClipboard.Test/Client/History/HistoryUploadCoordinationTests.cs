@@ -196,6 +196,7 @@ public class HistoryUploadCoordinationTests
         var second = await b.Db.HistoryRecords.SingleAsync(Token);
         Assert.AreEqual("应用图标", second.Title);
         await b.Manager.SetTitleAsync(HistoryRecordKey.From(second), "", Token);
+        await b.Db.Entry(second).ReloadAsync(Token);
         var (_, cleared) = await server.Update(ServerHistoryService.HARD_CODED_USER_ID, second.Type, second.Hash,
             new HistoryRecordUpdateDto { Title = second.Title, Version = second.Version, LastModified = second.LastModified }, Token);
         Assert.AreEqual("", cleared!.Title);
@@ -204,6 +205,8 @@ public class HistoryUploadCoordinationTests
         a.RemoteRecord = starred!;
         await syncer.SyncAllAsync(null, Token);
         await b.Manager.SyncRemoteHistoryAsync([starred!], Token);
+        await a.Db.Entry(record).ReloadAsync(Token);
+        await b.Db.Entry(second).ReloadAsync(Token);
         Assert.AreEqual("", record.Title);
         Assert.AreEqual("", second.Title);
         Assert.IsTrue(record.Stared);
@@ -211,6 +214,8 @@ public class HistoryUploadCoordinationTests
         var updates = a.Updates;
         await syncer.SyncAllAsync(null, Token);
         Assert.AreEqual(updates, a.Updates);
+        await a.Db.Entry(record).ReloadAsync(Token);
+        await b.Db.Entry(second).ReloadAsync(Token);
         Assert.AreEqual(HistorySyncStatus.Synced, record.SyncStatus);
         Assert.AreEqual(HistorySyncStatus.Synced, second.SyncStatus);
         Assert.AreEqual(0, a.Uploads);
@@ -240,6 +245,7 @@ public class HistoryUploadCoordinationTests
 
         await f.CreateSyncer().SyncAllAsync(null, Token);
 
+        await f.Db.Entry(record).ReloadAsync(Token);
         Assert.AreEqual(title, record.Title);
         Assert.AreEqual(title, f.RemoteRecord.Title);
         Assert.AreEqual(0, f.Updates);
@@ -561,6 +567,7 @@ public class HistoryUploadCoordinationTests
         f.RemoteRecord = record.ToHistoryRecordDto();
         await f.Manager.SetTitleAsync(HistoryRecordKey.From(record), title, Token);
 
+        await f.Db.Entry(record).ReloadAsync(Token);
         Assert.AreEqual(HistorySyncStatus.NeedSync, record.SyncStatus);
         f.RuntimeConfig.EnableSyncHistory = true;
         await f.CreateSyncer().SyncNeedUpdateAsync(Token);
@@ -1521,13 +1528,12 @@ public class HistoryUploadCoordinationTests
         {
             // Exercise real cleanup against SQLite without opening the application database or starting config listeners.
             Manager = (HistoryManager)RuntimeHelpers.GetUninitializedObject(typeof(HistoryManager));
-            SetField("_dbContext", Db);
+            SetField("_dbContextFactory", HistoryTestDatabase.CreateFactory(Db));
             SetField("_dbSemaphore", semaphore);
             SetField("_profileEnv", this);
             SetField("_logger", Mock.Of<ILogger>());
             SetField("_historyConfig", Config);
             SetField("_runtimeHistoryConfig", RuntimeConfig);
-            SetField("_historyManagerHelper", new HistoryManagerHelper<HistoryRecord, DateTime>(Manager));
             _ = Server;
             Factory = (RemoteClipboardServerFactory)RuntimeHelpers.GetUninitializedObject(typeof(RemoteClipboardServerFactory));
             SetObjectField(Factory, "_current", Remote.Object);

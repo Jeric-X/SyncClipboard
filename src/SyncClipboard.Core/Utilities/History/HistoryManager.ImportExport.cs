@@ -28,10 +28,11 @@ public partial class HistoryManager
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using (new ScopeGuard(() => _dbSemaphore.Release()))
         {
-            existing = await Query(type, hash, token).ConfigureAwait(false);
+            using var dbContext = _dbContextFactory();
+            existing = await Query(dbContext, type, hash, token).ConfigureAwait(false);
             if (existing is null || !await CanReuseLocalContentAsync(existing, token).ConfigureAwait(false))
                 return (false, existing?.Hash ?? hash.ToUpperInvariant());
-            await UpdateExistingRecordAsync(existing, token).ConfigureAwait(false);
+            await UpdateExistingRecordAsync(dbContext, existing, token).ConfigureAwait(false);
         }
         NotifyImportChange(existing, added: false);
         return (true, existing.Hash);
@@ -66,11 +67,12 @@ public partial class HistoryManager
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using (new ScopeGuard(() => _dbSemaphore.Release()))
         {
-            var existing = await Query(record.Type, record.Hash, token).ConfigureAwait(false);
+            using var dbContext = _dbContextFactory();
+            var existing = await Query(dbContext, record.Type, record.Hash, token).ConfigureAwait(false);
             changed = existing ?? record;
             if (existing is not null && await CanReuseLocalContentAsync(existing, token).ConfigureAwait(false))
             {
-                await UpdateExistingRecordAsync(existing, token).ConfigureAwait(false);
+                await UpdateExistingRecordAsync(dbContext, existing, token).ConfigureAwait(false);
                 outcome = HistoryImportOutcome.Existing;
             }
             else
@@ -81,18 +83,18 @@ public partial class HistoryManager
                 if (importDirectory is not null && !await CanReuseLocalContentAsync(record, token).ConfigureAwait(false))
                     throw new FileNotFoundException("Import attachments are no longer available or valid.");
                 outcome = existing is null
-                    ? await AddImportedRecordAsync(record, token).ConfigureAwait(false)
-                    : await RepairExistingRecordDataAsync(existing, record, token).ConfigureAwait(false);
+                    ? await AddImportedRecordAsync(dbContext, record, token).ConfigureAwait(false)
+                    : await RepairExistingRecordDataAsync(dbContext, existing, record, token).ConfigureAwait(false);
             }
         }
         NotifyImportChange(changed, outcome == HistoryImportOutcome.Imported);
         return outcome;
     }
 
-    private async Task UpdateExistingRecordAsync(HistoryRecord record, CancellationToken token)
+    private static async Task UpdateExistingRecordAsync(HistoryDbContext dbContext, HistoryRecord record, CancellationToken token)
     {
         UpdateImportedRecordState(record);
-        await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
+        await dbContext.SaveChangesAsync(token).ConfigureAwait(false);
     }
 
     private static void UpdateImportedRecordState(HistoryRecord record)
@@ -124,34 +126,22 @@ public partial class HistoryManager
     }
 
     private async Task<HistoryImportOutcome> RepairExistingRecordDataAsync(
-        HistoryRecord existing, HistoryRecord record, CancellationToken token)
+        HistoryDbContext dbContext, HistoryRecord existing, HistoryRecord record, CancellationToken token)
     {
         var oldPaths = existing.FilePath;
         var oldFile = existing.TransferDataFile;
-        var oldHash = existing.TransferDataHash;
-        var oldReady = existing.IsLocalFileReady;
-        try
-        {
-            existing.FilePath = record.FilePath;
-            existing.TransferDataFile = record.TransferDataFile;
-            existing.TransferDataHash = record.TransferDataHash;
-            existing.IsLocalFileReady = true;
-            UpdateImportedRecordState(existing);
-            await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
-        }
-        catch
-        {
-            existing.FilePath = oldPaths;
-            existing.TransferDataFile = oldFile;
-            existing.TransferDataHash = oldHash;
-            existing.IsLocalFileReady = oldReady;
-            throw;
-        }
+        existing.FilePath = record.FilePath;
+        existing.TransferDataFile = record.TransferDataFile;
+        existing.TransferDataHash = record.TransferDataHash;
+        existing.IsLocalFileReady = true;
+        UpdateImportedRecordState(existing);
+        await dbContext.SaveChangesAsync(token).ConfigureAwait(false);
         CleanupReplacedLocalFiles(existing, oldPaths, oldFile);
         return HistoryImportOutcome.Repaired;
     }
 
-    private async Task<HistoryImportOutcome> AddImportedRecordAsync(HistoryRecord record, CancellationToken token)
+    private static async Task<HistoryImportOutcome> AddImportedRecordAsync(
+        HistoryDbContext dbContext, HistoryRecord record, CancellationToken token)
     {
         record.Hash = record.Hash.ToUpperInvariant();
         record.ID = 0;
@@ -159,16 +149,8 @@ public partial class HistoryManager
         record.SyncStatus = HistorySyncStatus.LocalOnly;
         record.Version = 0;
         record.LastModified = record.LastAccessed = DateTime.UtcNow;
-        _dbContext.HistoryRecords.Add(record);
-        try
-        {
-            await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
-        }
-        catch
-        {
-            _dbContext.Entry(record).State = EntityState.Detached;
-            throw;
-        }
+        dbContext.HistoryRecords.Add(record);
+        await dbContext.SaveChangesAsync(token).ConfigureAwait(false);
         return HistoryImportOutcome.Imported;
     }
 
@@ -195,9 +177,10 @@ public partial class HistoryManager
     {
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
         if (selected is { Count: 0 })
             return [];
-        var records = await _dbContext.HistoryRecords.AsNoTracking().Where(record => !record.IsDeleted)
+        var records = await dbContext.HistoryRecords.AsNoTracking().Where(record => !record.IsDeleted)
             .ToListAsync(token).ConfigureAwait(false);
         var keys = selected?.Select(key => new HistoryRecordKey(key.Type, key.Hash.ToUpperInvariant())).ToHashSet();
         return records.Where(record => keys is null || keys.Contains(new(record.Type, record.Hash.ToUpperInvariant())))

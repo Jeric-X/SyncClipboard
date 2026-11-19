@@ -765,13 +765,12 @@ public class HistoryRetentionTests
         {
             // Exercise real cleanup against SQLite without opening the application database or starting config listeners.
             Manager = (HistoryManager)RuntimeHelpers.GetUninitializedObject(typeof(HistoryManager));
-            SetField("_dbContext", Db);
+            SetField("_dbContextFactory", HistoryTestDatabase.CreateFactory(Db));
             SetField("_dbSemaphore", semaphore);
             SetField("_profileEnv", this);
             SetField("_logger", Mock.Of<ILogger>());
             SetField("_historyConfig", Config);
             SetField("_runtimeHistoryConfig", RuntimeConfig);
-            SetField("_historyManagerHelper", new HistoryManagerHelper<HistoryRecord, DateTime>(Manager));
         }
 
         private void SetField(string name, object value) => typeof(HistoryManager)

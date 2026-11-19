@@ -100,7 +100,7 @@ public class HistoryRequestCancellationTests
         await db.Database.OpenConnectionAsync(TestContext.CancellationTokenSource.Token);
         await db.Database.EnsureCreatedAsync(TestContext.CancellationTokenSource.Token);
         using var semaphore = new SemaphoreSlim(1, 1);
-        SetField(manager, "_dbContext", db);
+        SetField(manager, "_dbContextFactory", HistoryTestDatabase.CreateFactory(db));
         SetField(manager, "_dbSemaphore", semaphore);
         db.Add(record);
         await db.SaveChangesAsync(TestContext.CancellationTokenSource.Token);
