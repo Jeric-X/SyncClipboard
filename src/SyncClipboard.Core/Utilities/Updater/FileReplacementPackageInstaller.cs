@@ -1,5 +1,6 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Utilities.Instances;
 using System.Diagnostics;
 using System.Globalization;
 
@@ -9,6 +10,7 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
 {
     public async Task StartAsync(UpdateInstallRequest request, CancellationToken token)
     {
+        AppInstance.CheckCanInstallUpdate();
         var bundle = OperatingSystem.IsMacOS() ? MacUpdaterFiles.FindBundle(Env.ProgramDirectory) : null;
         string workspace;
         if (OperatingSystem.IsLinux())
@@ -91,7 +93,7 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
     }
 
     internal static ProcessStartInfo CreateStartInfo(UpdateInstallRequest request, string workspace,
-        string? programDirectory = null, string? appImagePath = null)
+        string? programDirectory = null, string? appImagePath = null, AppDataDirectoryOptions? launchOptions = null)
     {
         programDirectory ??= Env.ProgramDirectory;
         var targetPath = Path.GetFullPath(programDirectory);
@@ -120,6 +122,11 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
         ];
         foreach (var argument in arguments)
             start.ArgumentList.Add(argument);
+        if ((launchOptions ?? AppDataDirectoryOptions.Current).AppDataDirectory is string appDataDirectory)
+        {
+            start.ArgumentList.Add("--app-data-dir");
+            start.ArgumentList.Add(appDataDirectory);
+        }
         string[] protectedPaths =
         [
             Env.AppDataDirectory,
