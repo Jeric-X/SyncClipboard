@@ -31,6 +31,31 @@ public class HistoryViewModelPagingTests
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
+    [DataRow("项a!_%", "项A!_%", "项A!Xextra")]
+    [DataRow("CAFÉ", "cAFÉ", "café")]
+    public async Task Search_ShowsAndSelectsTheSameLiteralMatches(string term, string match, string other)
+    {
+        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
+        fixture.ObserveHistoryUpdates();
+        Fixture.SetField(fixture.ViewModel, "searchText", term);
+        await fixture.LoadAsync();
+        var first = new HistoryRecordKey(ProfileType.Text, 0.ToString("D64"));
+        var second = new HistoryRecordKey(ProfileType.Text, 1.ToString("D64"));
+        await fixture.ViewModel.SetTitleAsync(first, match);
+        await fixture.ViewModel.SetTitleAsync(second, other);
+        Assert.AreEqual(first, fixture.Records.Single().Key);
+
+        await fixture.ReloadAsync();
+        await fixture.ViewModel.SetCurrentFilterSelectionAsync(true);
+        await fixture.RefreshCountsAsync();
+        var visible = fixture.Records.Single();
+        Assert.AreEqual(first, visible.Key);
+        Assert.IsTrue(visible.IsSelected);
+        Assert.AreEqual(1, fixture.ViewModel.SelectedHistoryCount);
+        Assert.AreEqual(1, fixture.ViewModel.SelectedInCurrentFilterCount);
+    }
+
+    [TestMethod]
     public async Task TitleSearch_NormalizesLiveEditsAndDatabaseReloadEqually()
     {
         await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);

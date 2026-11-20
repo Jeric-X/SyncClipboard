@@ -774,13 +774,7 @@ public partial class HistoryManager
         if (queryPara.Starred.HasValue)
             query = query.Where(record => record.Stared == queryPara.Starred.Value);
 
-        if (!string.IsNullOrEmpty(queryPara.SearchText))
-        {
-            var pattern = $"%{queryPara.SearchText}%";
-            var titlePattern = $"%{queryPara.SearchText.Normalize()}%";
-            query = query.Where(record => EF.Functions.Like(record.Text, pattern)
-                || (queryPara.SearchTitles && EF.Functions.Like(record.Title, titlePattern)));
-        }
+        query = HistorySearch.Apply(query, queryPara.SearchText, queryPara.SearchTitles);
 
         if (names.Length > 0)
             query = query.Where(record => record.Tags != null && record.Tags.Any(name => names.Contains(name)));

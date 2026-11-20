@@ -27,6 +27,49 @@ public class ServerHistoryTagQueryTests
     private static readonly DateTime Epoch = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     [TestMethod]
+    public async Task Query_MatchesLiteralWildcardsInTextAndTitles()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        f.Add("text", []).Text = "A!_%";
+        f.Add("title", []).Title = "A!_%";
+        f.Add("other", []).Text = "A!Xextra";
+        await f.Db.SaveChangesAsync(Token);
+
+        var query = new HistoryQueryDto { SearchText = "a!_%" };
+        Assert.AreEqual("text", (await f.QueryAsync(query)).Single().Hash);
+        query.SearchTitles = true;
+        string[] expected = ["text", "title"];
+        CollectionAssert.AreEquivalent(expected, (await f.QueryAsync(query)).Select(record => record.Hash).ToArray());
+    }
+
+    [TestMethod]
+    [DataRow("after!_%")]
+    [DataRow("\0after!_%")]
+    public async Task Query_MatchesClipboardTextAcrossEmbeddedNulls(string term)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        f.Add("match", []).Text = "before\0AFTER!_%";
+        f.Add("other", []).Text = "before\0AFTER!Xanything";
+        await f.Db.SaveChangesAsync(Token);
+
+        var query = new HistoryQueryDto { SearchText = term, SearchTitles = true };
+        Assert.AreEqual("match", (await f.QueryAsync(query)).Single().Hash);
+    }
+
+    [TestMethod]
+    public async Task Query_MatchesLongLiteralSearchTerms()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var punctuation = new string('!', 50_001);
+        f.Add("match", []).Text = "before" + punctuation + "éA";
+        f.Add("other", []).Text = punctuation + "ÉA";
+        await f.Db.SaveChangesAsync(Token);
+
+        var query = new HistoryQueryDto { SearchText = punctuation + "éa", SearchTitles = true };
+        Assert.AreEqual("match", (await f.QueryAsync(query)).Single().Hash);
+    }
+
+    [TestMethod]
     public async Task Query_NormalizesOnlyTitleSearchAndPreservesSearchSpaces()
     {
         await using var f = await Fixture.CreateAsync(Token);

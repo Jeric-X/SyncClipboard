@@ -184,12 +184,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             query = query.Where(r => includedTypes.Contains(r.Type));
         }
 
-        if (!string.IsNullOrEmpty(searchText))
-        {
-            var pattern = $"%{searchText}%";
-            var titlePattern = $"%{searchText.Normalize()}%";
-            query = query.Where(r => EF.Functions.Like(r.Text, pattern) || (searchTitles && EF.Functions.Like(r.Title, titlePattern)));
-        }
+        query = HistorySearch.Apply(query, searchText, searchTitles);
 
         if (starred.HasValue)
         {

@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SyncClipboard.Core.Models;
 
-public class HistoryRecord
+public class HistoryRecord : IHistorySearchable
 {
     public int ID { get; set; }
     public string Text { get; set; } = string.Empty;
