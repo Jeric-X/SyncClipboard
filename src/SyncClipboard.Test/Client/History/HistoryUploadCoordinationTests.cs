@@ -68,19 +68,7 @@ public class HistoryUploadCoordinationTests
         f.RemoteRecord.Title = clearedTitle ? "" : null;
         f.RemoteRecord.Tags = clearedTags ? [] : null;
         f.RemoteRecord.IsDeleted = deleted;
-        f.Server.Setup(x => x.SupportsHistoryTagsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(supportsTags);
-        f.Server.Setup(x => x.SupportsHistoryTitleAsync(It.IsAny<CancellationToken>())).ReturnsAsync(supportsTitle);
-        f.Server.Setup(x => x.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
-            It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
-            .Returns<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) =>
-            {
-                Interlocked.Increment(ref f.Updates);
-                if (supportsTags)
-                    f.RemoteRecord.Tags = dto.Tags;
-                if (supportsTitle)
-                    f.RemoteRecord.Title = dto.Title;
-                return Task.FromResult<HistoryRecordUpdateDto?>(f.RemoteRecord.ToUpdateDto());
-            });
+        f.SetupMetadataUpdates(supportsTags, supportsTitle);
         _ = f.CreateSyncer();
         var saved = Signal();
         f.Manager.HistoryUpdated += updated =>
@@ -104,14 +92,20 @@ public class HistoryUploadCoordinationTests
         Assert.AreEqual(clearedTitle ? "" : "应用图标", snapshot.Title);
         CollectionAssert.AreEqual(clearedTags ? [] : ExpectedLocalTags, snapshot.Tags);
         Assert.AreEqual(deleted, snapshot.IsDeleted);
-        Assert.AreEqual(clearedTitle ? "" : shouldBackfill && supportsTitle ? "应用图标" : null, f.RemoteRecord.Title);
-        if (clearedTags)
-            Assert.IsEmpty(f.RemoteRecord.Tags!);
-        else if (shouldBackfill && supportsTags)
-            CollectionAssert.AreEqual(ExpectedLocalTags, f.RemoteRecord.Tags);
-        else
-            Assert.IsNull(f.RemoteRecord.Tags);
+        AssertRemoteMetadata(f.RemoteRecord, shouldBackfill, supportsTags, supportsTitle, clearedTags, clearedTitle);
         Assert.AreEqual(0, f.Uploads);
+    }
+
+    private static void AssertRemoteMetadata(HistoryRecordDto remote, bool shouldBackfill,
+        bool supportsTags, bool supportsTitle, bool clearedTags, bool clearedTitle)
+    {
+        Assert.AreEqual(clearedTitle ? "" : shouldBackfill && supportsTitle ? "应用图标" : null, remote.Title);
+        if (clearedTags)
+            Assert.IsEmpty(remote.Tags!);
+        else if (shouldBackfill && supportsTags)
+            CollectionAssert.AreEqual(ExpectedLocalTags, remote.Tags);
+        else
+            Assert.IsNull(remote.Tags);
     }
 
     [TestMethod]
@@ -1612,6 +1606,23 @@ public class HistoryUploadCoordinationTests
             Session = new HistorySyncSession(Factory, Runtime);
             Queue = new HistoryTransferQueue(Mock.Of<ILogger>(), Factory, Manager, this, UserConfig, Runtime);
             application = UseApplication();
+        }
+
+        public void SetupMetadataUpdates(bool supportsTags, bool supportsTitle)
+        {
+            Server.Setup(x => x.SupportsHistoryTagsAsync(It.IsAny<CancellationToken>())).ReturnsAsync(supportsTags);
+            Server.Setup(x => x.SupportsHistoryTitleAsync(It.IsAny<CancellationToken>())).ReturnsAsync(supportsTitle);
+            Server.Setup(x => x.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
+                It.IsAny<HistoryRecordUpdateDto>(), It.IsAny<CancellationToken>()))
+                .Returns<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>((_, _, dto, _) =>
+                {
+                    Interlocked.Increment(ref Updates);
+                    if (supportsTags)
+                        RemoteRecord!.Tags = dto.Tags;
+                    if (supportsTitle)
+                        RemoteRecord!.Title = dto.Title;
+                    return Task.FromResult<HistoryRecordUpdateDto?>(RemoteRecord!.ToUpdateDto());
+                });
         }
 
         public void SetupHistoryQuery()

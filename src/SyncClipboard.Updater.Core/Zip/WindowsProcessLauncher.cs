@@ -90,7 +90,7 @@ internal static class WindowsProcessLauncher
                 slashes++;
                 continue;
             }
-            result.Append('\\', character == '"' ? slashes * 2 + 1 : slashes);
+            result.Append('\\', character == '"' ? (slashes * 2) + 1 : slashes);
             result.Append(character);
             slashes = 0;
         }

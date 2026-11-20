@@ -206,16 +206,21 @@ public class HistoryRetentionTests
             await f.Manager.RemoveDeletedOrMissingLocalRecordsAsync(Token);
 
         var hashes = await f.Db.HistoryRecords.Select(record => record.Hash).ToArrayAsync(Token);
-        Assert.AreEqual(!deleteMissing || protectTagged, hashes.Contains(tagged.Hash));
-        Assert.AreEqual(!deleteMissing || !protectTagged, hashes.Contains(titled.Hash));
-        Assert.AreEqual(!deleteMissing, hashes.Contains(emptyTitle.Hash));
-        Assert.AreEqual(!deleteMissing, hashes.Contains(untagged.Hash));
-        Assert.AreEqual(!disableSync || !deleteMissing, hashes.Contains(synced.Hash));
-        Assert.AreEqual(!disableSync || !deleteMissing, hashes.Contains(pending.Hash));
-        Assert.Contains(starred.Hash, hashes);
-        Assert.Contains(pinned.Hash, hashes);
-        Assert.Contains(ready.Hash, hashes);
-        Assert.DoesNotContain(deleted.Hash, hashes);
+        AssertMissingFileRetention(hashes, protectTagged, deleteMissing, disableSync);
+    }
+
+    private static void AssertMissingFileRetention(string[] hashes, bool protectTagged, bool deleteMissing, bool disableSync)
+    {
+        Assert.AreEqual(!deleteMissing || protectTagged, hashes.Contains("missing-tagged"));
+        Assert.AreEqual(!deleteMissing || !protectTagged, hashes.Contains("missing-titled"));
+        Assert.AreEqual(!deleteMissing, hashes.Contains("missing-empty-title"));
+        Assert.AreEqual(!deleteMissing, hashes.Contains("missing-untagged"));
+        Assert.AreEqual(!disableSync || !deleteMissing, hashes.Contains("missing-synced"));
+        Assert.AreEqual(!disableSync || !deleteMissing, hashes.Contains("missing-pending"));
+        Assert.Contains("missing-starred", hashes);
+        Assert.Contains("missing-pinned", hashes);
+        Assert.Contains("ready", hashes);
+        Assert.DoesNotContain("explicitly-deleted", hashes);
     }
 
     [TestMethod]
