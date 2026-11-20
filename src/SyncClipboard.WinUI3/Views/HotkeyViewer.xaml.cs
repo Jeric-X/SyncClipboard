@@ -11,11 +11,6 @@ public sealed partial class HotkeyViewer : UserControl
     public HotkeyViewer()
     {
         InitializeComponent();
-        SizeChanged += (_, args) =>
-        {
-            foreach (ToggleButton button in _Keys.Children)
-                button.MinWidth = args.NewSize.Height;
-        };
     }
 
     public Hotkey Hotkey
@@ -28,7 +23,7 @@ public sealed partial class HotkeyViewer : UserControl
             nameof(Hotkey),
             typeof(Hotkey),
             typeof(HotkeyViewer),
-            new PropertyMetadata(Hotkey.Nothing, (sender, _) => ((HotkeyViewer)sender).UpdateKeys())
+            new PropertyMetadata(Hotkey.Nothing)
     );
 
     public bool IsError
@@ -44,42 +39,38 @@ public sealed partial class HotkeyViewer : UserControl
             new PropertyMetadata(false)
     );
 
-    private void UpdateKeys()
+    // This is a workaround for https://github.com/microsoft/microsoft-ui-xaml/issues/560
+    private void ToggleButton_Loaded(object sender, RoutedEventArgs _)
     {
-        var keys = Hotkey.Keys;
-        while (_Keys.Children.Count > keys.Length)
-            _Keys.Children.RemoveAt(_Keys.Children.Count - 1);
-
-        // A hotkey has only a few keys. Keep them in a plain panel so scrolling the
-        // settings list does not run another virtualizing layout for every row.
-        for (var i = 0; i < keys.Length; i++)
+        if (sender is ToggleButton toggleButton)
         {
-            if (i == _Keys.Children.Count)
-                _Keys.Children.Add(CreateKeyButton());
-            ((ToggleButton)_Keys.Children[i]).DataContext = keys[i];
+            var widthBinding = new Binding
+            {
+                Source = this,
+                Path = new PropertyPath("ActualHeight"),
+                Mode = BindingMode.OneWay,
+            };
+            toggleButton.SetBinding(MinWidthProperty, widthBinding);
+
+            var fontSizeBinding = new Binding
+            {
+                Source = this,
+                Path = new PropertyPath("FontSize"),
+                Mode = BindingMode.OneWay,
+            };
+            toggleButton.SetBinding(FontSizeProperty, fontSizeBinding);
+
+            var isErrorBinding = new Binding
+            {
+                Source = this,
+                Path = new PropertyPath(nameof(IsError)),
+                Converter = new BoolNegationConverter(),
+                Mode = BindingMode.OneWay
+            };
+
+            toggleButton.SetBinding(ToggleButton.IsCheckedProperty, isErrorBinding);
+            toggleButton.Checked += delegate { toggleButton.ClearValue(BorderThicknessProperty); };
+            toggleButton.Unchecked += delegate { toggleButton.SetValue(BorderThicknessProperty, new Thickness(2)); };
         }
-    }
-
-    private ToggleButton CreateKeyButton()
-    {
-        var button = (ToggleButton)((DataTemplate)Resources["KeyTemplate"]).LoadContent();
-        button.MinWidth = ActualHeight;
-        button.SetBinding(FontSizeProperty, new Binding
-        {
-            Source = this,
-            Path = new PropertyPath(nameof(FontSize)),
-            Mode = BindingMode.OneWay
-        });
-
-        button.Checked += (_, _) => button.ClearValue(BorderThicknessProperty);
-        button.Unchecked += (_, _) => button.BorderThickness = new Thickness(2);
-        button.SetBinding(ToggleButton.IsCheckedProperty, new Binding
-        {
-            Source = this,
-            Path = new PropertyPath(nameof(IsError)),
-            Converter = new BoolNegationConverter(),
-            Mode = BindingMode.OneWay
-        });
-        return button;
     }
 }

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <UserControl x:Class="SyncClipboard.WinUI3.Views.HotkeyViewer"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -10,14 +10,6 @@
     <UserControl.Resources>
         <ResourceDictionary>
             <vc:KeyToJsonStringConverter x:Key="KeyToJsonStringConverter" />
-            <DataTemplate x:Key="KeyTemplate" x:DataType="mk:Key">
-                <ToggleButton VerticalAlignment="Stretch"
-                              Background="{ThemeResource KeybordButtonBackgoundColor}"
-                              BorderBrush="{ThemeResource KeybordButtonBorderColor}"
-                              BorderThickness="2"
-                              Content="{Binding Converter={StaticResource KeyToJsonStringConverter}}"
-                              IsHitTestVisible="False" />
-            </DataTemplate>
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
                     <Color x:Key="KeybordButtonBorderColor">#c42b1c</Color>
@@ -30,8 +22,22 @@
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
-    <StackPanel x:Name="_Keys"
-                HorizontalAlignment="Center"
-                Orientation="Horizontal"
-                Spacing="4" />
+    <ItemsControl HorizontalAlignment="Center" ItemsSource="{x:Bind Hotkey.Keys, Mode=OneWay}">
+        <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="4" />
+            </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="mk:Key">
+                <ToggleButton VerticalAlignment="Stretch"
+                              Background="{ThemeResource KeybordButtonBackgoundColor}"
+                              BorderBrush="{ThemeResource KeybordButtonBorderColor}"
+                              BorderThickness="2"
+                              Content="{Binding Converter={StaticResource KeyToJsonStringConverter}}"
+                              IsHitTestVisible="False"
+                              Loaded="ToggleButton_Loaded" />
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
 </UserControl>
