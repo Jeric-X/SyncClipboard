@@ -54,11 +54,13 @@
             <!--  滚动内容区域  -->
             <ScrollViewer Grid.Row="1" Padding="0,0,12,0" VerticalScrollBarVisibility="Auto">
                 <!--  动态属性输入  -->
-                <ui:FAItemsRepeater ItemsSource="{Binding Properties}">
-                    <ui:FAItemsRepeater.Layout>
-                        <ui:FAStackLayout Spacing="10" />
-                    </ui:FAItemsRepeater.Layout>
-                    <ui:FAItemsRepeater.ItemTemplate>
+                <ItemsControl ItemsSource="{Binding Properties}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <StackPanel Spacing="10" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
                         <DataTemplate DataType="vm:PropertyInputViewModel">
                             <Border Classes="Card">
                                 <StackPanel Spacing="10">
@@ -122,8 +124,8 @@
                                 </StackPanel>
                             </Border>
                         </DataTemplate>
-                    </ui:FAItemsRepeater.ItemTemplate>
-                </ui:FAItemsRepeater>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </ScrollViewer>
         </Grid>
 
