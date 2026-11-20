@@ -1130,12 +1130,6 @@ This operation cannot be undone.</value>
   <data name="S3ForcePathStyleDescription" xml:space="preserve">
     <value>Enable for S3-compatible endpoints that do not support virtual-host style buckets.</value>
   </data>
-  <data name="S3DeleteFilesIndividually" xml:space="preserve">
-    <value>Delete old files individually</value>
-  </data>
-  <data name="S3DeleteFilesIndividuallyDescription" xml:space="preserve">
-    <value>Send one request per file during automatic cleanup. Enable this if your S3 service rejects batch deletes.</value>
-  </data>
   <data name="S3AccessKeyId" xml:space="preserve">
     <value>Access Key ID</value>
   </data>

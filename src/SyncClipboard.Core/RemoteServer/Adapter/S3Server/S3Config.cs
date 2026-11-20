@@ -34,9 +34,6 @@ public record S3Config : IAdapterConfig<S3Config>
     [PropertyDisplay("DeleteServerTemporaryFileAutoly", Description = "DeletePreviousFilesDescription")]
     public bool DeletePreviousFilesOnPush { get; set; } = true;
 
-    [PropertyDisplay("S3DeleteFilesIndividually", Description = "S3DeleteFilesIndividuallyDescription")]
-    public bool DeleteFilesIndividually { get; set; }
-
     public string CustomName { get; set; } = string.Empty;
 
     [JsonIgnore]

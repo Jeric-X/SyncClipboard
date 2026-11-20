@@ -1130,12 +1130,6 @@ Shift + 左键：选中连续范围</value>
   <data name="S3ForcePathStyleDescription" xml:space="preserve">
     <value>对不支持虚拟主机风格 Bucket 地址的 S3 兼容服务请开启此项。</value>
   </data>
-  <data name="S3DeleteFilesIndividually" xml:space="preserve">
-    <value>逐个删除旧文件</value>
-  </data>
-  <data name="S3DeleteFilesIndividuallyDescription" xml:space="preserve">
-    <value>自动清理时，每个文件单独发送一次删除请求。如果 S3 服务不支持批量删除，可开启此项。</value>
-  </data>
   <data name="S3AccessKeyId" xml:space="preserve">
     <value>Access Key ID</value>
   </data>
