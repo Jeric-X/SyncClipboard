@@ -6,6 +6,7 @@ using SyncClipboard.Core.ViewModels.Sub;
 using System.Threading.Channels;
 using SyncClipboard.Core;
 using Moq;
+using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Exceptions;
 using SyncClipboard.Core.Interfaces;
@@ -1402,6 +1403,33 @@ public class HistoryUploadCoordinationTests
         Assert.AreEqual(remoteExists ? HistorySyncStatus.Synced : HistorySyncStatus.LocalOnly, saved.SyncStatus);
         Assert.IsTrue(saved.Stared);
         Assert.IsTrue(saved.IsLocalFileReady);
+    }
+
+    [TestMethod]
+    public async Task BackgroundUpload_KeepsMatchingTextLocalAndUploadsOtherText()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        f.UserConfig.SetConfig(new TextFilterConfig
+        {
+            FilterMode = "BlackList",
+            BlackList = [new("x-special/nautilus-clipboard")],
+        });
+
+        var blocked = new TextProfile("x-special/nautilus-clipboard\ncopy\nfile:///tmp/image.png");
+        var allowed = new TextProfile("plain text");
+        Assert.IsNotNull(await ContentControlHelper.IsContentValid(blocked, Token));
+        Assert.IsNull(await ContentControlHelper.IsContentValid(allowed, Token));
+        await f.Manager.AddLocalProfile(blocked, token: Token);
+        await f.Manager.AddLocalProfile(allowed, token: Token);
+        f.SetupHistoryQuery();
+
+        await f.CreateSyncer().SyncAllAsync(null, Token);
+        await f.Queue.WaitAllTasks(Token).WaitAsync(TimeSpan.FromSeconds(5), Token);
+
+        var records = await f.Db.HistoryRecords.AsNoTracking().ToListAsync(Token);
+        Assert.AreEqual(HistorySyncStatus.LocalOnly, records.Single(record => record.Text == blocked.DisplayText).SyncStatus);
+        Assert.AreEqual(HistorySyncStatus.Synced, records.Single(record => record.Text == allowed.DisplayText).SyncStatus);
+        Assert.AreEqual(1, f.Uploads);
     }
 
     [TestMethod]

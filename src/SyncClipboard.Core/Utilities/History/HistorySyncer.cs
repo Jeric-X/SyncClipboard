@@ -424,9 +424,11 @@ public class HistorySyncer
         }
     }
 
-    private static async Task<bool> CanUploadLocalProfileAsync(Profile profile, CancellationToken token)
+    private async Task<bool> CanUploadLocalProfileAsync(Profile profile, CancellationToken token)
     {
         var validationError = await ContentControlHelper.IsContentValid(profile, token);
+        if (validationError == ContentControlHelper.TextAttachmentMissing)
+            await _historyManager.HandleLocalFileUnavailableAsync(profile.Type, await profile.GetHash(token), token);
         return validationError is null;
     }
 

@@ -470,6 +470,7 @@ namespace SyncClipboard.Core
             services.AddTransient<NetworkAccountSwitchViewModel>();
             services.AddTransient<CurrentNetworkStatusViewModel>();
             services.AddSingleton<FileSyncFilterSettingViewModel>();
+            services.AddTransient<TextSyncFilterSettingViewModel>();
             services.AddSingleton<ClipboardOwnerFilterSettingViewModel>();
             services.AddSingleton<ClipboardAcquisitionRulesViewModel>();
             services.AddTransient<ProxySettingViewModel>();

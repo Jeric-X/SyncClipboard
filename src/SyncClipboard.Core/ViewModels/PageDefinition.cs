@@ -22,6 +22,7 @@ public class PageDefinition(string name, string title, string? fontIcon = null)
     public static readonly PageDefinition NetworkAccountSwitch = new("NetworkAccountSwitch", I18n.Strings.AutoSwitchAccount);
     public static readonly PageDefinition CurrentNetworkStatus = new("CurrentNetworkStatus", I18n.Strings.CurrentNetworkStatus);
     public static readonly PageDefinition FileSyncFilterSetting = new("FileSyncFilterSetting", I18n.Strings.FileSyncFilter);
+    public static readonly PageDefinition TextSyncFilterSetting = new("TextSyncFilterSetting", I18n.Strings.TextSyncFilter);
     public static readonly PageDefinition ClipboardOwnerFilterSetting = new("ClipboardOwnerFilterSetting", I18n.Strings.ClipboardOwnerFilter);
     public static readonly PageDefinition SyncContentControl = new("SyncContentControl", I18n.Strings.SyncContentControl);
     public static readonly PageDefinition Hotkey = new("Hotkey", I18n.Strings.Hotkeys, "\uE144");

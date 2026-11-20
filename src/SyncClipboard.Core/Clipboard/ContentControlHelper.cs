@@ -6,6 +6,8 @@ namespace SyncClipboard.Core.Clipboard;
 
 public static class ContentControlHelper
 {
+    internal const string TextAttachmentMissing = "Skipped: Text attachment is missing.";
+
     private static SyncConfig GetSyncConfig() => AppCore.Current.Services.GetRequiredService<ConfigManager>().GetConfig<SyncConfig>();
     private static FileFilterConfig GetFileFilterConfig() => AppCore.Current.Services.GetRequiredService<ConfigManager>().GetConfig<FileFilterConfig>();
 
@@ -25,7 +27,37 @@ public static class ContentControlHelper
         if (typeValidationError != null)
             return typeValidationError;
 
-        return await ValidateSize(profile, syncConfig, token);
+        var sizeError = await ValidateSize(profile, syncConfig, token);
+        if (sizeError is not null || profile is not TextProfile text)
+            return sizeError;
+
+        var filter = AppCore.Current.Services.GetRequiredService<ConfigManager>().GetConfig<TextFilterConfig>();
+        try
+        {
+            return await IsTextAllowed(text, filter, token) ? null : I18n.Strings.TextUploadFiltered;
+        }
+        catch (Exception ex) when (!token.IsCancellationRequested && ex is FileNotFoundException or DirectoryNotFoundException)
+        {
+            return TextAttachmentMissing;
+        }
+        catch (Exception ex) when (!token.IsCancellationRequested && ex is IOException or UnauthorizedAccessException)
+        {
+            return "Skipped: Text attachment could not be read.";
+        }
+    }
+
+    internal static async Task<bool> IsTextAllowed(TextProfile profile, TextFilterConfig config, CancellationToken token)
+    {
+        var rules = config.FilterMode switch
+        {
+            "BlackList" => config.BlackList,
+            "WhiteList" => config.WhiteList,
+            _ => null,
+        };
+        if (rules is null || rules.Count == 0)
+            return config.FilterMode != "WhiteList";
+
+        return config.AllowsUpload(await profile.ReadFullText(token));
     }
 
     private static string? ValidateTextUpload(SyncConfig config) =>

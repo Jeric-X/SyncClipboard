@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page x:Class="SyncClipboard.WinUI3.Views.TextSyncFilterSettingPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:i18n="using:SyncClipboard.Core.I18n"
+      xmlns:vm="using:SyncClipboard.Core.ViewModels"
+      xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      mc:Ignorable="d">
+    <StackPanel Spacing="12">
+        <TextBlock Text="{x:Bind i18n:Strings.FilterMode}" />
+        <ComboBox SelectedItem="{x:Bind _viewModel.FilterMode, Mode=TwoWay}" ItemsSource="{x:Bind vm:FileSyncFilterSettingViewModel.Modes}" DisplayMemberPath="ShownString" />
+        <StackPanel Spacing="8" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.Enabled), Mode=OneWay}">
+            <ItemsControl ItemsSource="{x:Bind _viewModel.Rules, Mode=OneWay}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:EditableTextFilterRule">
+                        <StackPanel Margin="0,0,0,8" Spacing="4">
+                            <TextBox Text="{Binding Pattern, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{x:Bind i18n:Strings.TextFilterPattern}" />
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <CheckBox Content="{x:Bind i18n:Strings.RegularExpression}" IsChecked="{Binding UseRegex, Mode=TwoWay}" />
+                                <CheckBox Content="{x:Bind i18n:Strings.ExcludeFromLocalHistory}" IsChecked="{Binding ExcludeFromHistory, Mode=TwoWay}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(CanExcludeFromHistory)}" />
+                                <Button Click="DeleteRuleClick" Content="{x:Bind i18n:Strings.DeleteRule}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Content="{x:Bind i18n:Strings.AddRule}" Command="{x:Bind _viewModel.AddRuleCommand}" />
+        </StackPanel>
+        <TextBlock Text="{x:Bind _viewModel.Error, Mode=OneWay}" TextWrapping="Wrap" />
+        <Button Content="{x:Bind i18n:Strings.Confirm}" Command="{x:Bind _viewModel.ConfirmCommand}" />
+    </StackPanel>
+</Page>

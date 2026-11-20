@@ -399,6 +399,19 @@ public class TextProfile : Profile
         _transferDataName = Path.GetFileName(targetPath);
     }
 
+    public async Task<string> ReadFullText(CancellationToken token)
+    {
+        if (_fullText is { } fullText && _transferDataPath is null)
+            return fullText;
+        if (!HasTransferData)
+            return _text;
+
+        // Text attachments are written without a BOM. A leading U+FEFF belongs to the clipboard text.
+        var path = _transferDataPath ?? throw new FileNotFoundException("No attachment path for this text.");
+        using var reader = new StreamReader(path, new UTF8Encoding(false), detectEncodingFromByteOrderMarks: false);
+        return await reader.ReadToEndAsync(token);
+    }
+
     public override async Task<ProfileLocalInfo> Localize(string _, CancellationToken token)
     {
         if (_fullText is not null)

@@ -1,4 +1,4 @@
-<UserControl x:Class="SyncClipboard.Desktop.Views.SyncContentControlPage"
+﻿<UserControl x:Class="SyncClipboard.Desktop.Views.SyncContentControlPage"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -69,9 +69,13 @@
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
                 <ui:FASettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
-                                         IsClickEnabled="True"
-                                         Command="{Binding SetFileSyncFilterCommand}"
-                                         Content="{x:Static i18n:Strings.FileSyncFilter}" />
+                                           IsClickEnabled="True"
+                                           Command="{Binding SetFileSyncFilterCommand}"
+                                           Content="{x:Static i18n:Strings.FileSyncFilter}" />
+                <ui:FASettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
+                                           IsClickEnabled="True"
+                                           Command="{Binding SetTextSyncFilterCommand}"
+                                           Content="{x:Static i18n:Strings.TextSyncFilter}" />
             </ui:FASettingsExpander.Items>
         </ui:FASettingsExpander>
     </StackPanel>

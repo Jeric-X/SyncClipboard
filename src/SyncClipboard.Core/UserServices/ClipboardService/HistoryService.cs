@@ -285,6 +285,10 @@ public class HistoryService : ClipboardHander
         if (!CanRecordClipboard(clipboardMetaInfomation, profile))
             return;
 
+        if (profile is TextProfile && clipboardMetaInfomation.Text is { } text
+            && configManager.GetConfig<TextFilterConfig>().ExcludesFromHistory(text))
+            return;
+
         if (ShouldRecordLocalProfile(profile, configManager.GetConfig<FileFilterConfig>()))
         {
             await historyManager.AddLocalProfile(profile, token: token);

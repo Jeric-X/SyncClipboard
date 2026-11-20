@@ -1,0 +1,35 @@
+<UserControl x:Class="SyncClipboard.Desktop.Views.TextSyncFilterSettingPage"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:i18n="using:SyncClipboard.Core.I18n"
+             xmlns:vm="using:SyncClipboard.Core.ViewModels"
+             x:DataType="vm:TextSyncFilterSettingViewModel"
+             d:DesignWidth="800"
+             d:DesignHeight="450"
+             mc:Ignorable="d">
+    <StackPanel Spacing="12">
+        <TextBlock Text="{x:Static i18n:Strings.FilterMode}" />
+        <ComboBox SelectedItem="{Binding FilterMode, Mode=TwoWay}" ItemsSource="{x:Static vm:FileSyncFilterSettingViewModel.Modes}" ItemTemplate="{StaticResource LocaleStringTemplate}" />
+        <StackPanel Spacing="8" IsVisible="{Binding Enabled}">
+            <ItemsControl ItemsSource="{Binding Rules, Mode=OneWay}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:EditableTextFilterRule">
+                        <StackPanel Margin="0,0,0,8" Spacing="4">
+                            <TextBox Text="{Binding Pattern, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{x:Static i18n:Strings.TextFilterPattern}" />
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <CheckBox Content="{x:Static i18n:Strings.RegularExpression}" IsChecked="{Binding UseRegex, Mode=TwoWay}" />
+                                <CheckBox Content="{x:Static i18n:Strings.ExcludeFromLocalHistory}" IsChecked="{Binding ExcludeFromHistory, Mode=TwoWay}" IsVisible="{Binding CanExcludeFromHistory}" />
+                                <Button Click="DeleteRuleClick" Content="{x:Static i18n:Strings.DeleteRule}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Content="{x:Static i18n:Strings.AddRule}" Command="{Binding AddRuleCommand}" />
+        </StackPanel>
+        <TextBlock Text="{Binding Error, Mode=OneWay}" TextWrapping="Wrap" />
+        <Button Content="{x:Static i18n:Strings.Confirm}" Command="{Binding ConfirmCommand}" />
+    </StackPanel>
+</UserControl>
