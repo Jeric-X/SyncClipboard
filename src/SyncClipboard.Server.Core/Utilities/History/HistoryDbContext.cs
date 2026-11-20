@@ -1,4 +1,5 @@
 
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Server.Core.Services;
@@ -31,7 +32,7 @@ public class HistoryDbContext : DbContext
     {
         if (!options.IsConfigured)
         {
-            options.UseSqlite($"Data Source={_dbPath}");
+            options.UseSqlite(new SqliteConnectionStringBuilder { DataSource = _dbPath }.ToString());
         }
     }
 

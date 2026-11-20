@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using SyncClipboard.Core.Commons;
 
@@ -7,17 +8,19 @@ public class LocalFileCacheDbContext : DbContext
 {
     public static string DbPath { get; } = Path.Combine(Env.AppDataFileFolder, "LocalFileCache.db");
 
+    private static string ConnectionString { get; } = new SqliteConnectionStringBuilder { DataSource = DbPath }.ToString();
+
     public DbSet<LocalFileCacheEntry> CacheEntries { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        optionsBuilder.UseSqlite($"Data Source={DbPath}");
+        optionsBuilder.UseSqlite(ConnectionString);
     }
 
     public static void ClearConnectionPool()
     {
-        using var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={DbPath}");
-        Microsoft.Data.Sqlite.SqliteConnection.ClearPool(connection);
+        using var connection = new SqliteConnection(ConnectionString);
+        SqliteConnection.ClearPool(connection);
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -45,6 +45,8 @@ public class MultipartFormDataOperationFilter : IOperationFilter
                 ["version"] = context.SchemaGenerator.GenerateSchema(typeof(int), context.SchemaRepository),
                 ["isDeleted"] = context.SchemaGenerator.GenerateSchema(typeof(bool), context.SchemaRepository),
                 ["text"] = context.SchemaGenerator.GenerateSchema(typeof(string), context.SchemaRepository),
+                ["title"] = context.SchemaGenerator.GenerateSchema(typeof(string), context.SchemaRepository),
+                ["tags"] = new OpenApiSchema { Type = "string", Description = "JSON array like [\"Work\", \"Personal\"]." },
                 ["size"] = context.SchemaGenerator.GenerateSchema(typeof(long), context.SchemaRepository),
                 ["data"] = new OpenApiSchema
                 {

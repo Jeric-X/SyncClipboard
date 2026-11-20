@@ -4,18 +4,19 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Security.Principal;
+using System.Text;
 
 namespace SyncClipboard.Updater.Zip;
 
 [SupportedOSPlatform("windows")]
 internal static class WindowsProcessLauncher
 {
-    public static void Start(string executable, string workingDirectory, bool elevated, string? argument)
+    public static void Start(string executable, string workingDirectory, bool elevated, string[] arguments)
     {
         using var identity = WindowsIdentity.GetCurrent();
         if (!elevated && new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator))
         {
-            StartAsDesktopUser(executable, workingDirectory, argument);
+            StartAsDesktopUser(executable, workingDirectory, arguments);
             return;
         }
 
@@ -25,12 +26,12 @@ internal static class WindowsProcessLauncher
             WorkingDirectory = workingDirectory,
             Verb = elevated ? "runas" : string.Empty
         };
-        if (argument is not null)
+        foreach (var argument in arguments)
             start.ArgumentList.Add(argument);
         using var process = Process.Start(start) ?? throw new IOException(UpdaterText.Current.RestartFailed);
     }
 
-    private static void StartAsDesktopUser(string executable, string workingDirectory, string? argument)
+    private static void StartAsDesktopUser(string executable, string workingDirectory, string[] arguments)
     {
         var shell = GetShellWindow();
         if (shell == 0 || GetWindowThreadProcessId(shell, out var processId) == 0)
@@ -61,7 +62,7 @@ internal static class WindowsProcessLauncher
             {
                 var startup = new StartupInfo { Size = Marshal.SizeOf<StartupInfo>() };
                 // A null environment uses the desktop user's profile, not the elevated updater's environment.
-                var commandLine = Marshal.StringToHGlobalUni($"\"{executable}\" {argument}");
+                var commandLine = Marshal.StringToHGlobalUni(string.Join(" ", new[] { executable }.Concat(arguments).Select(QuoteArgument)));
                 try
                 {
                     if (!CreateProcessWithTokenW(primaryToken, 0, executable, commandLine, 0, 0,
@@ -76,6 +77,24 @@ internal static class WindowsProcessLauncher
                 }
             }
         }
+    }
+
+    internal static string QuoteArgument(string argument)
+    {
+        var result = new StringBuilder().Append('"');
+        var slashes = 0;
+        foreach (var character in argument)
+        {
+            if (character == '\\')
+            {
+                slashes++;
+                continue;
+            }
+            result.Append('\\', character == '"' ? (slashes * 2) + 1 : slashes);
+            result.Append(character);
+            slashes = 0;
+        }
+        return result.Append('\\', slashes * 2).Append('"').ToString();
     }
 
     [StructLayout(LayoutKind.Sequential)]

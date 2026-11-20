@@ -1,11 +1,13 @@
 using Moq;
 using NativeNotification.Interface;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 using SyncClipboard.Core.RemoteServer.Adapter.WebDavServer;
 using SyncClipboard.Core.Utilities.Web;
+using System.Globalization;
 using System.Net;
 using System.Reflection;
 using System.Text.Json;
@@ -16,6 +18,26 @@ namespace SyncClipboard.Test.Client.History;
 public class OfficialServerCapabilitiesTests
 {
     public TestContext TestContext { get; set; } = null!;
+
+    [TestMethod]
+    [DataRow(null, false, false)]
+    [DataRow("""{"historySync":true}""", false, false)]
+    [DataRow("""{"historySync":true,"historyTags":true}""", true, false)]
+    [DataRow("""{"historySync":true,"historyTags":true,"historyTitle":false}""", true, false)]
+    [DataRow("""{"historySync":true,"historyTitle":true}""", false, true)]
+    [DataRow("""{"historySync":true,"historyTags":true,"historyTitle":true}""", true, true)]
+    public async Task Probe_ReadsTagAndTitleSupportIndependently(string? json, bool supportsTags, bool supportsTitle)
+    {
+        using var handler = new CapabilityHandler { Capabilities = json };
+        using var client = new HttpClient(handler) { BaseAddress = new Uri("https://history.test/") };
+
+        var capabilities = await OfficialAdapter.CheckHistorySupportAsync(client, TestContext.CancellationTokenSource.Token);
+
+        Assert.IsTrue(capabilities.HistorySync);
+        Assert.AreEqual(supportsTags, capabilities.HistoryTags);
+        Assert.AreEqual(supportsTitle, capabilities.HistoryTitle);
+        Assert.AreEqual(json is null ? 1 : 0, handler.VersionRequests);
+    }
 
     [TestMethod]
     [DataRow(false)]
@@ -59,6 +81,23 @@ public class OfficialServerCapabilitiesTests
     }
 
     [TestMethod]
+    public async Task Reconnect_RefreshesTitleSupportWhenTagsStayEnabled()
+    {
+        var token = TestContext.CancellationTokenSource.Token;
+        using var handler = new CapabilityHandler { Capabilities = """{"historySync":true,"historyTags":true}""" };
+        using var adapter = CreateAdapter(handler);
+        Assert.IsTrue(await adapter.SupportsHistoryTagsAsync(token));
+        Assert.IsFalse(await adapter.SupportsHistoryTitleAsync(token));
+        Assert.AreEqual(1, handler.CapabilityRequests);
+
+        adapter.StopListening();
+        handler.Capabilities = """{"historySync":true,"historyTags":true,"historyTitle":true}""";
+        Assert.IsTrue(await adapter.SupportsHistoryTitleAsync(token));
+        Assert.IsTrue(await adapter.SupportsHistoryTagsAsync(token));
+        Assert.AreEqual(2, handler.CapabilityRequests);
+    }
+
+    [TestMethod]
     public async Task Disconnect_DiscardsPendingCapabilityRequest()
     {
         var token = TestContext.CancellationTokenSource.Token;
@@ -66,24 +105,30 @@ public class OfficialServerCapabilitiesTests
         using var handler = new CapabilityHandler { CapabilityResponse = response.Task };
         using var adapter = CreateAdapter(handler);
         var loading = adapter.TestConnectionAsync(token);
-        var concurrentRead = adapter.SupportsHistoryTagsAsync(token);
+        var tagRead = adapter.SupportsHistoryTagsAsync(token);
+        var titleRead = adapter.SupportsHistoryTitleAsync(token);
         Assert.AreEqual(1, handler.CapabilityRequests);
         adapter.StopListening();
         handler.CapabilityResponse = null;
-        handler.Capabilities = "{\"historySync\":true}";
+        handler.Capabilities = """{"historySync":true,"historyTitle":true}""";
         await adapter.TestConnectionAsync(token);
         response.SetResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new StringContent("{\"historySync\":true,\"historyTags\":true}")
         });
         await loading;
-        await concurrentRead;
+        Assert.IsTrue(await tagRead);
+        Assert.IsFalse(await titleRead);
         Assert.IsFalse(await adapter.SupportsHistoryTagsAsync(token));
+        Assert.IsTrue(await adapter.SupportsHistoryTitleAsync(token));
         Assert.AreEqual(2, handler.CapabilityRequests);
     }
 
     [TestMethod]
-    public async Task IgnoreTagNotice_PersistsForOriginalServerAfterSwitch()
+    [DataRow("""{"historySync":true}""")]
+    [DataRow("""{"historySync":true,"historyTags":true}""")]
+    [DataRow("""{"historySync":true,"historyTitle":true}""")]
+    public async Task IgnoreCapabilityNotice_PersistsForOriginalServerAfterSwitch(string capabilities)
     {
         var directory = Path.Combine(Path.GetTempPath(), $"history-notification-{Guid.NewGuid():N}");
         Directory.CreateDirectory(directory);
@@ -91,7 +136,7 @@ public class OfficialServerCapabilitiesTests
         {
             var path = Path.Combine(directory, Env.RuntimeConfigName);
             var config = new ConfigBase(path);
-            using var handler = new CapabilityHandler { Capabilities = "{\"historySync\":true}" };
+            using var handler = new CapabilityHandler { Capabilities = capabilities };
             var notifications = new Mock<INotificationManager>();
             var dispatcher = new Mock<IThreadDispatcher>();
             dispatcher.Setup(d => d.RunOnMainThreadAsync(It.IsAny<Action>()))
@@ -113,7 +158,7 @@ public class OfficialServerCapabilitiesTests
 
             var reloadedConfig = new ConfigBase(path);
             var reloadedNotifications = new Mock<INotificationManager>();
-            using var reloadedHandler = new CapabilityHandler { Capabilities = "{\"historySync\":true}" };
+            using var reloadedHandler = new CapabilityHandler { Capabilities = capabilities };
             using var reloadedAdapter = CreateAdapter(reloadedHandler, reloadedNotifications.Object, reloadedConfig, dispatcher.Object);
             reloadedAdapter.SetConfig(new OfficialConfig { RemoteURL = "https://HISTORY.test:443/" }, new SyncConfig());
             await reloadedAdapter.NotifyCapabilitiesOnConfigChangedAsync();
@@ -146,6 +191,39 @@ public class OfficialServerCapabilitiesTests
     }
 
     [TestMethod]
+    [DataRow(null, "en", "tags, history titles")]
+    [DataRow("""{"historySync":true}""", "en", "tags, history titles")]
+    [DataRow("""{"historySync":true,"historyTags":false,"historyTitle":false}""", "en", "tags, history titles")]
+    [DataRow("""{"historySync":true,"historyTags":true}""", "en", "history titles")]
+    [DataRow("""{"historySync":true,"historyTitle":true}""", "en", "tags")]
+    [DataRow("""{"historySync":true}""", "zh-CN", "标签、历史记录标题")]
+    [DataRow("""{"historySync":true,"historyTags":true}""", "zh-CN", "历史记录标题")]
+    [DataRow("""{"historySync":true,"historyTitle":true}""", "zh-CN", "标签")]
+    public async Task MissingCapabilities_NotifyWithLocalizedList(
+        string? capabilities, string language, string missingNames)
+    {
+        var previousCulture = CultureInfo.CurrentUICulture;
+        try
+        {
+            CultureInfo.CurrentUICulture = CultureInfo.GetCultureInfo(language);
+            using var handler = new CapabilityHandler { Capabilities = capabilities };
+            var notifications = new Mock<INotificationManager>();
+            using var adapter = CreateAdapter(handler, notifications.Object);
+
+            await adapter.NotifyCapabilitiesOnConfigChangedAsync();
+
+            var notice = notifications.Invocations.Single(i => i.Method.Name == "Show");
+            Assert.AreEqual(Strings.HistoryCapabilitiesSyncTitle, notice.Arguments[0]);
+            Assert.AreEqual(string.Format(Strings.HistoryCapabilitiesUpgrade, missingNames), notice.Arguments[1]);
+            Assert.AreEqual(1, handler.CapabilityRequests);
+        }
+        finally
+        {
+            CultureInfo.CurrentUICulture = previousCulture;
+        }
+    }
+
+    [TestMethod]
     public async Task FailedCapabilityProbe_DoesNotReportAnUnsupportedServer()
     {
         using var handler = new CapabilityHandler { FailProbe = true };
@@ -164,7 +242,7 @@ public class OfficialServerCapabilitiesTests
     {
         using var handler = new CapabilityHandler
         {
-            Capabilities = "{\"historySync\":true,\"historyTags\":true}",
+            Capabilities = """{"historySync":true,"historyTags":true,"historyTitle":true}""",
             Version = "1.0.0"
         };
         var notifications = new Mock<INotificationManager>();

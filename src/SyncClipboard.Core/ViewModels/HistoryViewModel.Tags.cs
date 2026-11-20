@@ -45,7 +45,7 @@ public partial class HistoryViewModel
         if (snapshot is null || snapshot.IsDeleted)
             return null;
         var counts = await Task.Run(() => historyManager.GetTagCountsAsync());
-        return new HistoryTagPickerViewModel(counts.Keys, snapshot.Tags, (name, add) => Task.Run(async () =>
+        return new HistoryTagPickerViewModel(counts.Keys, snapshot.Tags ?? [], (name, add) => Task.Run(async () =>
         {
             await historyManager.EditTagsAsync([key], add ? [name] : [], add ? [] : [name]);
             if (await historyManager.GetSyncSnapshotAsync(key) is not { IsDeleted: false })

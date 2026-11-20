@@ -191,6 +191,7 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         this.ResizeDip(_viewModel.Width, _viewModel.Height);
 
         InitializeComponent();
+        _PreviewPanel.TitleEditRequested += async record => await EditTitleAsync(record);
         _TagFilterItems.AddHandler(UIElement.PointerWheelChangedEvent, new PointerEventHandler(TagFilterScroll_PointerWheelChanged), true);
         _TagFilterScroll.ViewChanged += (_, e) =>
         {
@@ -899,6 +900,12 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         AddContextActions(flyout, actions);
         if (flyout.Items.Count > 0)
             flyout.Items.Add(new MenuFlyoutSeparator());
+        if (!isMultiSelecting)
+        {
+            var editTitle = new MenuFlyoutItem { Text = record.TitleActionText };
+            editTitle.Click += async (_, _) => await EditTitleAsync(record);
+            flyout.Items.Add(editTitle);
+        }
         var editTags = new MenuFlyoutItem
         {
             Text = Strings.HistoryTagsEdit,
@@ -958,6 +965,34 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         var settings = new MenuFlyoutItem { Text = Strings.HistoryTagBarEditPins };
         settings.Click += TagBarSettings_Click;
         flyout.Items.Add(settings);
+    }
+
+    public async void ShowTitleEditor()
+    {
+        if (_viewModel.SelectedItem is { } record)
+            await EditTitleAsync(record);
+    }
+
+    private async Task EditTitleAsync(HistoryRecordVM record)
+    {
+        if (_viewModel.HasModalOperation || _viewModel.IsMultiSelecting)
+            return;
+        using var hold = _viewModel.HoldForModalOperation();
+        var title = record.TitleActionText;
+        try
+        {
+            var dialog = new HistoryTitleDialog(title, record.Title) { XamlRoot = Content.XamlRoot };
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+                await _viewModel.SetTitleAsync(record.Key, dialog.Text);
+        }
+        catch (Exception ex)
+        {
+            await new WinUIDialog(this).ShowMessageAsync(title, ex.Message);
+        }
+        finally
+        {
+            _SearchTextBox.Focus(FocusState.Programmatic);
+        }
     }
 
     private async Task RenameTagAsync(string name)
@@ -1029,7 +1064,7 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
             {
                 var record = await manager.GetSyncSnapshotAsync(key);
                 if (record is { IsDeleted: false })
-                    assignments.Add(record.Tags);
+                    assignments.Add(record.Tags ?? []);
             }
             if (assignments.Count == 0)
             {

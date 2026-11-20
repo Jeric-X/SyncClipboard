@@ -48,6 +48,10 @@ public partial class ServerConfigViewModel : ObservableObject
     private bool protectTaggedRecords;
     partial void OnProtectTaggedRecordsChanged(bool value) => ServerConfig = ServerConfig with { ProtectTaggedRecords = value };
 
+    [ObservableProperty]
+    private bool protectTitledRecords;
+    partial void OnProtectTitledRecordsChanged(bool value) => ServerConfig = ServerConfig with { ProtectTitledRecords = value };
+
     [RelayCommand]
     private static void OpenCustomConfigDescLink()
     {
@@ -68,6 +72,7 @@ public partial class ServerConfigViewModel : ObservableObject
         MaxHistoryCount = value.MaxHistoryCount;
         HistoryRetentionMinutes = value.HistoryRetentionMinutes;
         ProtectTaggedRecords = value.ProtectTaggedRecords;
+        ProtectTitledRecords = value.ProtectTitledRecords;
         _configManager.SetConfig(value);
 
         OnPropertyChanged(nameof(ShowHttpsConfig));
@@ -112,6 +117,7 @@ public partial class ServerConfigViewModel : ObservableObject
         maxHistoryCount = serverConfig.MaxHistoryCount;
         historyRetentionMinutes = serverConfig.HistoryRetentionMinutes;
         protectTaggedRecords = serverConfig.ProtectTaggedRecords;
+        protectTitledRecords = serverConfig.ProtectTitledRecords;
     }
 
     public string? SetServerConfig(string portString, string username, string password)

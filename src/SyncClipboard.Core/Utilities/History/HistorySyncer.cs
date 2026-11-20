@@ -68,7 +68,8 @@ public class HistorySyncer
             token);
 
         var supportsHistoryTags = await remoteServer.SupportsHistoryTagsAsync(token);
-        var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, token);
+        var supportsHistoryTitle = await remoteServer.SupportsHistoryTitleAsync(token);
+        var addedRecords = await _historyManager.SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, supportsHistoryTitle, token);
         await DetectOrphanDataAsync(before, after, remoteRecords, types, searchText, starred, token);
         await _historyManager.RemoveDeletedOrMissingLocalRecordsAsync(token);
         await PushLocalRangeAsync(before, after, types, searchText, starred, token);
@@ -95,7 +96,8 @@ public class HistorySyncer
             token);
 
         var supportsHistoryTags = await remoteServer.SupportsHistoryTagsAsync(token);
-        await _historyManager.SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, token);
+        var supportsHistoryTitle = await remoteServer.SupportsHistoryTitleAsync(token);
+        await _historyManager.SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, supportsHistoryTitle, token);
         if (modifiedAfter is null)
         {
             await DetectOrphanDataAsync(null, null, remoteRecords, ProfileTypeFilter.All, null, null, token);
@@ -199,7 +201,8 @@ public class HistorySyncer
 
     private static HistoryRecordUpdateDto CreateUpdateDto(HistoryRecord record) => new()
     {
-        Tags = [.. record.Tags],
+        Title = record.Title,
+        Tags = record.Tags?.ToArray(),
         Starred = record.Stared,
         Pinned = record.Pinned,
         IsDelete = record.IsDeleted,
@@ -292,8 +295,7 @@ public class HistorySyncer
                 }
                 // 孤儿数据：服务器已删除，修改为 LocalOnly
                 // await _logger.WriteAsync("HistorySyncer", $"检测到孤儿数据 [{localId}]，标记为 LocalOnly");
-                localRecord.SyncStatus = HistorySyncStatus.LocalOnly;
-                await _historyManager.PersistServerSyncedAsync(localRecord, token).ConfigureAwait(false);
+                await _historyManager.ConvertToLocalRecordAsync(HistoryRecordKey.From(localRecord), token).ConfigureAwait(false);
             }
         }, token).ConfigureAwait(false);
     }

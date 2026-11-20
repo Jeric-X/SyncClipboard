@@ -160,6 +160,7 @@ public partial class HistoryWindow : Window, IWindow
             this.WindowDecorations = WindowDecorations.BorderOnly;
 
         InitializeComponent();
+        _PreviewPanel.TitleEditRequested += async record => await EditTitleAsync(record);
         _TagFilterScroll.AddHandler(PointerWheelChangedEvent, TagFilterScroll_PointerWheelChanged, RoutingStrategies.Tunnel);
         _TagFilterScroll.ScrollChanged += (_, _) => _tagNavigation.SnapToRow(_TagFilterItems, _TagFilterScroll);
         // Handle configured keys before the search box, without intercepting modal dialog input.
@@ -494,6 +495,12 @@ public partial class HistoryWindow : Window, IWindow
     {
         if (flyout.Items.Count > 0)
             flyout.Items.Add(new FAMenuFlyoutSeparator());
+        if (!isMultiSelecting)
+        {
+            var editTitle = new FAMenuFlyoutItem { Text = record.TitleActionText };
+            editTitle.Click += async (_, _) => await EditTitleAsync(record);
+            flyout.Items.Add(editTitle);
+        }
         var editTags = new FAMenuFlyoutItem
         {
             Text = Strings.HistoryTagsEdit,
@@ -547,6 +554,34 @@ public partial class HistoryWindow : Window, IWindow
         var settings = new FAMenuFlyoutItem { Text = Strings.HistoryTagBarEditPins };
         settings.Click += TagBarSettings_Click;
         flyout.Items.Add(settings);
+    }
+
+    public async void ShowTitleEditor()
+    {
+        if (_viewModel.SelectedItem is { } record)
+            await EditTitleAsync(record);
+    }
+
+    private async Task EditTitleAsync(HistoryRecordVM record)
+    {
+        if (_viewModel.HasModalOperation || _viewModel.IsMultiSelecting)
+            return;
+        using var hold = _viewModel.HoldForModalOperation();
+        var title = record.TitleActionText;
+        try
+        {
+            var dialog = new HistoryTitleDialog(title, record.Title);
+            if (await dialog.ShowAsync(this) == FAContentDialogResult.Primary)
+                await _viewModel.SetTitleAsync(record.Key, dialog.Text);
+        }
+        catch (Exception ex)
+        {
+            await new AvaloniaDialog(this).ShowMessageAsync(title, ex.Message);
+        }
+        finally
+        {
+            _SearchTextBox.Focus();
+        }
     }
 
     private async Task RenameTagAsync(string name)
@@ -621,7 +656,7 @@ public partial class HistoryWindow : Window, IWindow
             {
                 var record = await manager.GetSyncSnapshotAsync(key);
                 if (record is { IsDeleted: false })
-                    assignments.Add([.. record.Tags]);
+                    assignments.Add(record.Tags ?? []);
             }
             if (assignments.Count == 0)
             {

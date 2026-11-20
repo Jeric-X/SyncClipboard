@@ -213,6 +213,7 @@ public sealed class HistoryImporter
         var type = ValidateRecordType(item);
         ValidateRecordMetadata(item);
         HistoryTags.Normalize(item.Tags ?? []);
+        HistoryTitles.Normalize(item.Title);
         ValidateRecordTimestamps(item);
         if (type != ProfileType.Text && item.TransferData is null)
             throw new InvalidDataException("Transfer data is missing.");
@@ -250,6 +251,7 @@ public sealed class HistoryImporter
     private async Task<HistoryRecord> RestoreRecordAsync(
         HistoryImportPlan plan, HistoryExportRecord item, ProfileType type, string hash, string? directory, CancellationToken token)
     {
+        var title = HistoryTitles.Normalize(item.Title);
         var profile = CreateImportProfile(item, type, hash);
         await RestoreProfileTransferAsync(plan, item, profile, directory, token).ConfigureAwait(false);
         await ValidateRestoredProfileAsync(profile, item, directory, token).ConfigureAwait(false);
@@ -266,7 +268,8 @@ public sealed class HistoryImporter
             Timestamp = item.Timestamp.ToUniversalTime(),
             LastModified = item.LastModified.ToUniversalTime(),
             LastAccessed = item.LastAccessed.ToUniversalTime(),
-            Tags = HistoryTags.Normalize(item.Tags ?? []),
+            Tags = item.Tags is null ? null : HistoryTags.Normalize(item.Tags),
+            Title = title,
             Stared = item.Starred,
             Pinned = item.Pinned,
             From = item.From,

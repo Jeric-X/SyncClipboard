@@ -139,6 +139,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             query.SortByLastAccessed,
             query.OnlyUntagged,
             query.Tags,
+            query.SearchTitles,
             HttpContext.RequestAborted);
         return Ok(list);
     }
@@ -155,7 +156,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     /// POST api/history
     /// 使用 multipart/form-data 流式传输文件和元数据。
     /// 请求头：X-SyncClipboard-Transfer-Data-Hash（存在 data 时可选，用于声明文件 SHA-256）。
-    /// Form 字段：hash, type, createTime, lastModified, starred, pinned, version, isDeleted, text, size, tags, data
+    /// Form 字段：hash, type, createTime, lastModified, starred, pinned, version, isDeleted, text, size, tags, title, data
     /// tags 为可选的 JSON 字符串数组；省略或 null 保留已有标签，[] 清空标签。
     /// data 字段为可选的二进制文件数据。
     /// </summary>
@@ -239,6 +240,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             CreateTime = ParseDateTimeOffset(metadata, "createTime"),
             LastModified = ParseDateTimeOffset(metadata, "lastModified"),
             LastAccessed = ParseDateTimeOffset(metadata, "lastAccessed"),
+            Title = metadata.GetValueOrDefault("title"),
             Tags = metadata.TryGetValue("tags", out var tags)
                 ? JsonSerializer.Deserialize<string[]>(tags) : null,
             Starred = ParseBool(metadata, "starred"),
@@ -347,6 +349,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
         {
             if (dto.Tags is not null)
                 dto.Tags = HistoryTags.Normalize(dto.Tags);
+            dto.Title = HistoryTitles.Normalize(dto.Title);
         }
         catch (ArgumentException ex)
         {

@@ -1,10 +1,12 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Updater;
+using SyncClipboard.Updater.Zip;
+using SyncClipboard.Test.Updater;
 using System.Diagnostics;
 using System.Runtime.Versioning;
 using System.Security.Principal;
 
-namespace SyncClipboard.Test.Updater.Windows;
+namespace SyncClipboard.Test.Client.Updater.Windows;
 
 [TestClass]
 [TestCategory("PlatformWindows")]
@@ -60,9 +62,11 @@ public class WindowsRestartTests : UpdaterTestBase
     private string Executable => Path.Combine(target, "SyncClipboard.exe");
 
     [TestMethod]
-    [DataRow(false)]
-    [DataRow(true)]
-    public async Task Installation_RestartsUpdatedOrRolledBackApplication(bool rollback)
+    [DataRow(false, false)]
+    [DataRow(true, false)]
+    [DataRow(false, true)]
+    [DataRow(true, true)]
+    public async Task Installation_RestartsUpdatedOrRolledBackApplication(bool rollback, bool specifiedDirectory)
     {
         File.WriteAllText(Path.Combine(target, "version"), "old");
         File.Copy(Executable, Path.Combine(stage, "SyncClipboard.exe"));
@@ -78,8 +82,21 @@ public class WindowsRestartTests : UpdaterTestBase
         else
             await InstallAsync();
 
-        await UpdateWorker.RestartAsync(Arguments() with { AppElevated = IsAdministrator() }, updateCompleted: !rollback);
-        await AssertChildAsync(rollback);
+        var profile = specifiedDirectory ? Path.Combine(directory, "profile 中文") : null;
+        await UpdateWorker.RestartAsync(Arguments() with { AppElevated = IsAdministrator(), AppDataDirectory = profile },
+            updateCompleted: !rollback);
+        await AssertChildAsync(rollback, profile);
+    }
+
+    [TestMethod]
+    public async Task DesktopCommandLine_PreservesSpacesAndTrailingBackslash()
+    {
+        File.WriteAllText(Path.Combine(target, "version"), "old");
+        var profile = Path.Combine(directory, "profile 中文") + Path.DirectorySeparatorChar;
+        var command = string.Join(" ", new[] { "--app-data-dir", profile }.Select(WindowsProcessLauncher.QuoteArgument));
+        using var process = Process.Start(new ProcessStartInfo(Executable) { UseShellExecute = false, Arguments = command })!;
+        await process.WaitForExitAsync(TestContext.CancellationTokenSource.Token);
+        await AssertChildAsync(rollback: true, profile);
     }
 
     private static bool IsAdministrator()
@@ -88,7 +105,7 @@ public class WindowsRestartTests : UpdaterTestBase
         return new WindowsPrincipal(identity).IsInRole(WindowsBuiltInRole.Administrator);
     }
 
-    private async Task AssertChildAsync(bool rollback)
+    private async Task AssertChildAsync(bool rollback, string? profile)
     {
         var output = Path.Combine(target, "arguments.txt");
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(TestContext.CancellationTokenSource.Token);
@@ -114,6 +131,8 @@ public class WindowsRestartTests : UpdaterTestBase
                 await child.WaitForExitAsync(timeout.Token);
         }
         string[] expected = rollback ? ["old"] : ["new", StartArguments.UpdateCompleted];
+        if (profile is not null)
+            expected = [.. expected, "--app-data-dir", profile];
         CollectionAssert.AreEqual(expected, result[1..]);
     }
 }

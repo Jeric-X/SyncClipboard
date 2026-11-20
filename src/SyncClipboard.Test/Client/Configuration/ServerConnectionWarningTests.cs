@@ -23,13 +23,15 @@ public class ServerConnectionWarningTests
     public TestContext TestContext { get; set; } = null!;
 
     [TestMethod]
-    [DataRow("{\"historySync\":true}", true, true)]
-    [DataRow("{\"historySync\":true,\"historyTags\":true}", true, false)]
-    [DataRow("{\"historySync\":false}", false, false)]
-    [DataRow(null, true, true)]
-    [DataRow("invalid json", false, false)]
+    [DataRow("""{"historySync":true}""", true, new[] { "HistoryCapabilityTags", "HistoryCapabilityTitle" })]
+    [DataRow("""{"historySync":true,"historyTags":true}""", true, new[] { "HistoryCapabilityTitle" })]
+    [DataRow("""{"historySync":true,"historyTitle":true}""", true, new[] { "HistoryCapabilityTags" })]
+    [DataRow("""{"historySync":true,"historyTags":true,"historyTitle":true}""", true, null)]
+    [DataRow("""{"historySync":false}""", false, null)]
+    [DataRow(null, true, new[] { "HistoryCapabilityTags", "HistoryCapabilityTitle" })]
+    [DataRow("invalid json", false, null)]
     public async Task TestConfiguration_ReportsWarningOrErrorWithoutSystemNotification(
-        string? capabilities, bool success, bool warning)
+        string? capabilities, bool success, string[]? missingCapabilityResources)
     {
         await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
         fixture.Capabilities = capabilities;
@@ -38,22 +40,34 @@ public class ServerConnectionWarningTests
 
         Assert.AreEqual(success, fixture.ViewModel.TestResult, fixture.ViewModel.ErrorMessage);
         Assert.AreEqual(!success, fixture.ViewModel.HasError);
-        Assert.AreEqual(warning, fixture.ViewModel.HasWarning);
-        if (warning)
-            Assert.AreEqual(Strings.HistoryTagsUpgrade, fixture.ViewModel.WarningMessage);
+        Assert.AreEqual(missingCapabilityResources is not null, fixture.ViewModel.HasWarning);
+        if (missingCapabilityResources is not null)
+        {
+            var names = string.Join(Strings.HistoryCapabilitySeparator,
+                missingCapabilityResources.Select(resource => Strings.ResourceManager.GetString(resource, Strings.Culture)));
+            Assert.AreEqual(string.Format(Strings.HistoryCapabilitiesUpgrade, names), fixture.ViewModel.WarningMessage);
+        }
         Assert.AreEqual(1, fixture.CapabilityRequests);
         Assert.AreEqual(capabilities is null ? 1 : 0, fixture.VersionRequests);
         Assert.IsEmpty(fixture.Notifications.Invocations);
     }
 
     [TestMethod]
-    public async Task Retest_ClearsPreviousWarningWhenServerGainsTagSupport()
+    public async Task Retest_UpdatesWarningUntilServerSupportsTagsAndTitles()
     {
         await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
         await fixture.ViewModel.TestConnectionCommand.ExecuteAsync(null);
-        Assert.IsTrue(fixture.ViewModel.HasWarning, fixture.ViewModel.ErrorMessage);
+        Assert.AreEqual(string.Format(Strings.HistoryCapabilitiesUpgrade,
+            string.Join(Strings.HistoryCapabilitySeparator, Strings.HistoryCapabilityTags, Strings.HistoryCapabilityTitle)),
+            fixture.ViewModel.WarningMessage);
 
-        fixture.Capabilities = "{\"historySync\":true,\"historyTags\":true}";
+        fixture.Capabilities = """{"historySync":true,"historyTags":true}""";
+        await fixture.ViewModel.TestConnectionCommand.ExecuteAsync(null);
+        Assert.IsTrue(fixture.ViewModel.HasWarning);
+        Assert.AreEqual(string.Format(Strings.HistoryCapabilitiesUpgrade, Strings.HistoryCapabilityTitle),
+            fixture.ViewModel.WarningMessage);
+
+        fixture.Capabilities = """{"historySync":true,"historyTags":true,"historyTitle":true}""";
         await fixture.ViewModel.TestConnectionCommand.ExecuteAsync(null);
 
         Assert.IsTrue(fixture.ViewModel.IsTestSuccess);

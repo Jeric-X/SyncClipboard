@@ -22,6 +22,7 @@ using SyncClipboard.Core.RemoteServer.LogInHelper;
 using SyncClipboard.Core.UserServices;
 using SyncClipboard.Core.UserServices.ClipboardService;
 using SyncClipboard.Core.UserServices.ServerService;
+using SyncClipboard.Core.Utilities.Instances;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.FileCacheManager;
 using SyncClipboard.Core.Utilities.History;
@@ -248,9 +249,9 @@ namespace SyncClipboard.Core
             var startInfo = new ProcessStartInfo
             {
                 FileName = Env.ProgramPath,
-                UseShellExecute = true,
-                Arguments = StartArguments.ShutdownPrivious
+                UseShellExecute = true
             };
+            StartArguments.AddRestartArguments(startInfo, AppDataDirectoryOptions.Current);
 
             try
             {
@@ -275,9 +276,7 @@ namespace SyncClipboard.Core
             [
                 new MenuItem(I18n.Strings.OpenConfigFile, () => Sys.OpenWithDefaultApp(ConfigManager.Path)),
                 new MenuItem(I18n.Strings.ReloadConfigFile, ReloadConfig),
-#if !MACOS
-                new MenuItem(I18n.Strings.OpenInstallFolder, () => Sys.ShowPathInFileManager(Env.ProgramPath)),
-#endif
+                new MenuItem(I18n.Strings.OpenInstallFolder, () => Sys.ShowPathInFileManager(Env.AppBundlePath ?? Env.ProgramPath)),
                 new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Sys.OpenFolderInFileManager(Env.AppDataDirectory)),
             ];
             contextMenu.AddMenuItemGroup(menu);

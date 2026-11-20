@@ -943,7 +943,7 @@ Shift + left click: Select a continuous range</value>
     <value>Transferring</value>
   </data>
   <data name="HistorySearchPlaceholder" xml:space="preserve">
-    <value>Search text or filename...</value>
+    <value>Search titles, text or filenames…</value>
   </data>
   <data name="ScrollToTop" xml:space="preserve">
     <value>Scroll to top</value>
@@ -1478,6 +1478,9 @@ Choose whether to use the default location or select another folder.</value>
   <data name="UpdateInstallationUnsupported" xml:space="preserve">
     <value>Automatic installation is not supported. Install the downloaded package manually.</value>
   </data>
+  <data name="UpdateCloseOtherInstances" xml:space="preserve">
+    <value>Close the other SyncClipboard instances from this installation before installing an update.</value>
+  </data>
   <data name="UpdatedToVersion" xml:space="preserve">
     <value>Updated to version {0}.</value>
   </data>
@@ -1649,11 +1652,20 @@ Choose whether to use the default location or select another folder.</value>
   <data name="ExcludeFromLocalHistory" xml:space="preserve">
     <value>Do not add to local history</value>
   </data>
-  <data name="HistoryTagsSyncTitle" xml:space="preserve">
-    <value>Tags will not sync</value>
+  <data name="HistoryCapabilitiesSyncTitle" xml:space="preserve">
+    <value>Some sync features are not supported by this server</value>
   </data>
-  <data name="HistoryTagsUpgrade" xml:space="preserve">
-    <value>The current server does not support tag sync, and unstarred records may be automatically deleted by the server. Upgrade the server for full tag support.</value>
+  <data name="HistoryCapabilitiesUpgrade" xml:space="preserve">
+    <value>The current server does not support syncing {0}. Consider upgrading the server for the best sync experience.</value>
+  </data>
+  <data name="HistoryCapabilityTags" xml:space="preserve">
+    <value>tags</value>
+  </data>
+  <data name="HistoryCapabilityTitle" xml:space="preserve">
+    <value>history titles</value>
+  </data>
+  <data name="HistoryCapabilitySeparator" xml:space="preserve">
+    <value>, </value>
   </data>
   <data name="HistorySyncUnsupported" xml:space="preserve">
     <value>This server does not support history sync.</value>
@@ -1665,10 +1677,10 @@ Choose whether to use the default location or select another folder.</value>
     <value>Protect tagged records</value>
   </data>
   <data name="ServerProtectTaggedRecordsDescription" xml:space="preserve">
-    <value>Tagged records are treated as starred and will not be automatically deleted</value>
+    <value>Records with tags will not be automatically deleted</value>
   </data>
   <data name="ProtectTaggedRecordsDescription" xml:space="preserve">
-    <value>Treat tagged records as starred</value>
+    <value>Records with tags will not be automatically deleted</value>
   </data>
   <data name="HistoryAutoDelete" xml:space="preserve">
     <value>Automatic deletion</value>
@@ -1777,5 +1789,29 @@ Choose whether to use the default location or select another folder.</value>
   </data>
   <data name="HistoryTagMergeConfirmation" xml:space="preserve">
     <value>The tag “{0}” already exists. Confirm to merge into it, or cancel to keep the tags unchanged.</value>
+  </data>
+  <data name="HistoryAddTitle" xml:space="preserve">
+    <value>Add title</value>
+  </data>
+  <data name="HistoryEditTitle" xml:space="preserve">
+    <value>Edit title</value>
+  </data>
+  <data name="ProtectTitledRecords" xml:space="preserve">
+    <value>Protect titled records</value>
+  </data>
+  <data name="ProtectTitledRecordsDescription" xml:space="preserve">
+    <value>Records with a title will not be automatically deleted</value>
+  </data>
+  <data name="HistoryTitleTooLong" xml:space="preserve">
+    <value>Use at most {0} characters.</value>
+  </data>
+  <data name="HistoryTitleLineBreak" xml:space="preserve">
+    <value>Line breaks are not allowed.</value>
+  </data>
+  <data name="HistoryTitleControlCharacter" xml:space="preserve">
+    <value>Control characters are not allowed.</value>
+  </data>
+  <data name="HistoryTitleInvalidCharacter" xml:space="preserve">
+    <value>Contains invalid characters.</value>
   </data>
 </root>

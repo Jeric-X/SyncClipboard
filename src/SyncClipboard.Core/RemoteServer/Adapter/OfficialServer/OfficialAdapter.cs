@@ -175,7 +175,7 @@ public sealed class OfficialAdapter(
         _webDavAdapter.ApplyConfig();
         ReCreateHttpClient();
         var capabilities = await TestHistoryConnectionAsync(cancellationToken);
-        return capabilities.HistoryTags ? null : Strings.HistoryTagsUpgrade;
+        return GetHistoryCapabilityWarning(capabilities)?.Message;
     }
 
     private async Task<ServerCapabilitiesDto> TestHistoryConnectionAsync(CancellationToken token)
@@ -260,13 +260,14 @@ public sealed class OfficialAdapter(
         try
         {
             var capabilities = await GetCapabilitiesAsync(CancellationToken.None);
-            if (capabilities.HistoryTags)
+            var warning = GetHistoryCapabilityWarning(capabilities);
+            if (warning is null)
                 return;
 
             void NotifyIfCurrent()
             {
                 if (!_disposed && ReferenceEquals(client, _httpClient) && Equals(config, _officialConfig))
-                    ShowHistoryTagsNotification(config);
+                    ShowHistoryCapabilityNotification(config, warning.Value.Title, warning.Value.Message);
             }
 
             if (dispatcher is null)
@@ -280,7 +281,23 @@ public sealed class OfficialAdapter(
         }
     }
 
-    private void ShowHistoryTagsNotification(OfficialConfig config)
+    private static (string Title, string Message)? GetHistoryCapabilityWarning(ServerCapabilitiesDto capabilities)
+    {
+        (bool Supported, string Name)[] optionalCapabilities =
+        [
+            (capabilities.HistoryTags, Strings.HistoryCapabilityTags),
+            (capabilities.HistoryTitle, Strings.HistoryCapabilityTitle)
+        ];
+        var missing = optionalCapabilities.Where(capability => !capability.Supported)
+            .Select(capability => capability.Name).ToArray();
+        if (missing.Length == 0)
+            return null;
+
+        var names = string.Join(Strings.HistoryCapabilitySeparator, missing);
+        return (Strings.HistoryCapabilitiesSyncTitle, string.Format(Strings.HistoryCapabilitiesUpgrade, names));
+    }
+
+    private void ShowHistoryCapabilityNotification(OfficialConfig config, string title, string message)
     {
         var serverAddress = new Uri(config.RemoteURL).GetComponents(
             UriComponents.SchemeAndServer | UriComponents.Path, UriFormat.UriEscaped).TrimEnd('/');
@@ -290,12 +307,12 @@ public sealed class OfficialAdapter(
 
         ActionButton[] buttons = runtimeConfig is not null && dispatcher is not null
             ? [new(Strings.HistoryTagsDontNotifyServer, () => DelegateExtention.SafeFireAndForget(
-                () => dispatcher.RunOnMainThreadAsync(() => IgnoreHistoryTagsNotification(serverAddress)), nameof(OfficialAdapter)))]
+                () => dispatcher.RunOnMainThreadAsync(() => IgnoreHistoryCapabilityNotification(serverAddress)), nameof(OfficialAdapter)))]
             : [];
-        notifications?.Show(Strings.HistoryTagsSyncTitle, Strings.HistoryTagsUpgrade, buttons);
+        notifications?.Show(title, message, buttons);
     }
 
-    private void IgnoreHistoryTagsNotification(string serverAddress)
+    private void IgnoreHistoryCapabilityNotification(string serverAddress)
     {
         if (runtimeConfig is null)
             return;
@@ -342,6 +359,12 @@ public sealed class OfficialAdapter(
     {
         var capabilities = await GetCapabilitiesAsync(cancellationToken);
         return capabilities.HistoryTags;
+    }
+
+    public async Task<bool> SupportsHistoryTitleAsync(CancellationToken cancellationToken = default)
+    {
+        var capabilities = await GetCapabilitiesAsync(cancellationToken);
+        return capabilities.HistoryTitle;
     }
 
     private static async Task<string> ReadVersionAsync(HttpClient client, CancellationToken token)
@@ -492,8 +515,10 @@ public sealed class OfficialAdapter(
                 { new StringContent(dto.HasData.ToString()), "hasData" }
             };
 
+            if (dto.Title is not null)
+                content.Add(new StringContent(dto.Title), "title");
             if (dto.Tags is not null)
-                content.Add(new StringContent(JsonSerializer.Serialize(dto.Tags)), nameof(HistoryRecordDto.Tags));
+                content.Add(new StringContent(JsonSerializer.Serialize(dto.Tags)), "tags");
 
             using var request = new HttpRequestMessage(HttpMethod.Post, url)
             {

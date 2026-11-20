@@ -2,11 +2,12 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using SyncClipboard.Shared.Models;
+using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Server.Core.Models;
 
 [Table("HistoryRecords")]
-public class HistoryRecordEntity
+public class HistoryRecordEntity : IHistorySearchable
 {
     [Key]
     public int ID { get; set; }
@@ -45,6 +46,7 @@ public class HistoryRecordEntity
     public string From { get; set; } = string.Empty;
     // Null means tags have never been supplied; an empty array means they were explicitly cleared.
     public string[]? Tags { get; set; }
+    public string? Title { get; set; }
     public string? ExtraData { get; set; }
     public int Version { get; set; } = 0;
     public bool IsDeleted { get; set; } = false;

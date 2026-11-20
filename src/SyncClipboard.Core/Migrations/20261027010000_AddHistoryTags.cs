@@ -9,7 +9,7 @@ public partial class AddHistoryTags : Migration
     protected override void Up(MigrationBuilder migrationBuilder)
     {
         migrationBuilder.AddColumn<string>(
-            name: "Tags", table: "HistoryRecords", type: "TEXT", nullable: false, defaultValue: "[]");
+            name: "Tags", table: "HistoryRecords", type: "TEXT", nullable: true);
     }
 
     protected override void Down(MigrationBuilder migrationBuilder)

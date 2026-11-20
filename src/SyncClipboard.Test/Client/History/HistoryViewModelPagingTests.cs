@@ -24,10 +24,53 @@ namespace SyncClipboard.Test.Client.History;
 [DoNotParallelize]
 public class HistoryViewModelPagingTests
 {
+    private static readonly int[] ExpectedTitleAndTextMatches = [98, 99];
     private static readonly int[] ExpectedCombinedFilter = [12, 16];
     private static readonly string[] InitialRedFilter = ["Red"];
 
     public TestContext TestContext { get; set; } = null!;
+
+    [TestMethod]
+    [DataRow("项a!_%", "项A!_%", "项A!Xextra")]
+    [DataRow("CAFÉ", "cAFÉ", "café")]
+    public async Task Search_ShowsAndSelectsTheSameLiteralMatches(string term, string match, string other)
+    {
+        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
+        fixture.ObserveHistoryUpdates();
+        Fixture.SetField(fixture.ViewModel, "searchText", term);
+        await fixture.LoadAsync();
+        var first = new HistoryRecordKey(ProfileType.Text, 0.ToString("D64"));
+        var second = new HistoryRecordKey(ProfileType.Text, 1.ToString("D64"));
+        await fixture.ViewModel.SetTitleAsync(first, match);
+        await fixture.ViewModel.SetTitleAsync(second, other);
+        Assert.AreEqual(first, fixture.Records.Single().Key);
+
+        await fixture.ReloadAsync();
+        await fixture.ViewModel.SetCurrentFilterSelectionAsync(true);
+        await fixture.RefreshCountsAsync();
+        var visible = fixture.Records.Single();
+        Assert.AreEqual(first, visible.Key);
+        Assert.IsTrue(visible.IsSelected);
+        Assert.AreEqual(1, fixture.ViewModel.SelectedHistoryCount);
+        Assert.AreEqual(1, fixture.ViewModel.SelectedInCurrentFilterCount);
+    }
+
+    [TestMethod]
+    public async Task TitleSearch_NormalizesLiveEditsAndDatabaseReloadEqually()
+    {
+        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
+        fixture.ObserveHistoryUpdates();
+        Fixture.SetField(fixture.ViewModel, "searchText", "Cafe\u0301");
+        await fixture.LoadAsync();
+        Assert.IsEmpty(fixture.Records);
+        var key = new HistoryRecordKey(ProfileType.Text, 0.ToString("D64"));
+        await fixture.ViewModel.SetTitleAsync(key, "Café");
+        Assert.AreEqual("Café", fixture.Records.Single().Title);
+        await fixture.ReloadAsync();
+        Assert.AreEqual("Café", fixture.Records.Single().Title);
+        await fixture.ViewModel.SetTitleAsync(key, "other");
+        Assert.IsEmpty(fixture.Records);
+    }
 
     [TestMethod]
     [DataRow(false)]
@@ -396,6 +439,118 @@ public class HistoryViewModelPagingTests
         fixture.Logger.VerifyNoOtherCalls();
     }
 
+    [TestMethod]
+    public async Task TitleSearch_PagesAndCountsMatchingTitlesAlongsideOriginalText()
+    {
+        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
+        for (var index = 0; index < 50; index++)
+            await fixture.ViewModel.SetTitleAsync(new(ProfileType.Text, index.ToString("D64")), "Shared title");
+        // This record matches by its original text, even with a different title.
+        await fixture.ViewModel.SetTitleAsync(new(ProfileType.Text, 99.ToString("D64")), "other");
+        await fixture.ViewModel.SetTitleAsync(new(ProfileType.Text, 98.ToString("D64")), "record 99");
+        Fixture.SetField(fixture.ViewModel, "searchText", "SHARED TITLE");
+        await fixture.LoadAsync();
+        Assert.HasCount(20, fixture.Records);
+        await fixture.ViewModel.NotifyScrollPositionAsync(10, 10, 20);
+        Assert.HasCount(40, fixture.Records);
+        await fixture.ViewModel.SetCurrentFilterSelectionAsync(true);
+        Assert.AreEqual(50, fixture.ViewModel.SelectedInCurrentFilterCount);
+        fixture.ObserveHistoryUpdates();
+        var countsChanged = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        fixture.ViewModel.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(HistoryViewModel.SelectedInCurrentFilterCount)
+                && fixture.ViewModel.SelectedInCurrentFilterCount == 49)
+                countsChanged.TrySetResult();
+        };
+        await fixture.ViewModel.SetTitleAsync(new(ProfileType.Text, 49.ToString("D64")), "out of filter");
+        await countsChanged.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
+        Assert.HasCount(40, fixture.Records);
+
+        Fixture.SetField(fixture.ViewModel, "searchText", "record 99");
+        await fixture.ReloadAsync();
+        CollectionAssert.AreEqual(ExpectedTitleAndTextMatches, fixture.Records.Select(record => int.Parse(record.Hash)).ToArray());
+        fixture.Logger.VerifyNoOtherCalls();
+    }
+
+    [TestMethod]
+    public async Task TitleEdits_UpdateSearchAndPreviewWithinTagAndStarredFilters()
+    {
+        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
+        await fixture.AddTagsAsync();
+        fixture.ObserveHistoryUpdates();
+        fixture.RuntimeConfig.SetConfig(new HistoryWindowConfig { OnlyShowStarred = true });
+        Fixture.SetField(fixture.ViewModel, "_selectedTags", InitialRedFilter);
+        Fixture.SetField(fixture.ViewModel, "searchText", "title");
+        await fixture.LoadAsync();
+        Assert.IsEmpty(fixture.Records);
+
+        var key = new HistoryRecordKey(ProfileType.Text, 0.ToString("D64"));
+        await fixture.ViewModel.SetTitleAsync(key, " First title ");
+        Assert.HasCount(1, fixture.Records);
+        var displayed = fixture.Records[0];
+        Assert.AreEqual("First title", displayed.Title);
+        Assert.IsTrue(displayed.HasTitle);
+        Assert.AreEqual("record 0", displayed.Text);
+        Assert.AreEqual("First title", displayed.DeepCopy().ToHistoryRecord().Title);
+        await fixture.ViewModel.SetTitleAsync(key, "Second title");
+        Assert.AreSame(displayed, fixture.Records[0]);
+        Assert.AreEqual("Second title", displayed.Title);
+        await fixture.ViewModel.SetTitleAsync(new(ProfileType.Text, 1.ToString("D64")), "Excluded title");
+        Assert.HasCount(1, fixture.Records);
+        await fixture.ViewModel.SetTitleAsync(key, "");
+        Assert.IsEmpty(fixture.Records);
+        await fixture.ReloadAsync();
+        Assert.IsEmpty(fixture.Records);
+        Assert.AreEqual("", (await fixture.ReadStoredRecordAsync(displayed)).Title);
+        fixture.Logger.VerifyNoOtherCalls();
+    }
+
+    [TestMethod]
+    [DataRow("offline")]
+    [DataRow("unsupported")]
+    [DataRow("pending")]
+    public async Task TitleEdit_SavesLocallyWhenServerCapabilityIsUnavailable(string capabilityState)
+    {
+        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
+        var server = new Mock<IOfficialSyncServer>();
+        var pending = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var discovery = server.Setup(value => value.SupportsHistoryTitleAsync(It.IsAny<CancellationToken>()));
+        if (capabilityState == "offline")
+            discovery.ThrowsAsync(new HttpRequestException("offline"));
+        else if (capabilityState == "pending")
+            discovery.Returns(pending.Task);
+        else
+            discovery.ReturnsAsync(false);
+        Fixture.SetField(fixture.ViewModel, "historySyncServer", server.Object);
+        var key = new HistoryRecordKey(ProfileType.Text, 0.ToString("D64"));
+        await fixture.ViewModel.SetTitleAsync(key, "Offline title")
+            .WaitAsync(TimeSpan.FromSeconds(5), TestContext.CancellationTokenSource.Token);
+        var record = await fixture.Manager.GetSyncSnapshotAsync(key, TestContext.CancellationTokenSource.Token);
+        Assert.IsNotNull(record);
+        Assert.AreEqual("Offline title", record.Title);
+        Assert.AreEqual("record 0", record.Text);
+        fixture.Logger.VerifyNoOtherCalls();
+    }
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("")]
+    [DataRow("Image title")]
+    public async Task RecordTitle_PreservesUnknownClearAndTitledStates(string? title)
+    {
+        await using var fixture = await Fixture.CreateAsync(TestContext.CancellationTokenSource.Token);
+        var record = new HistoryRecordVM(new HistoryRecord { Title = title, Text = "image.png", Type = ProfileType.Image });
+        Assert.AreEqual(title, record.DeepCopy().ToHistoryRecord().Title);
+        Assert.AreEqual(!string.IsNullOrEmpty(title), record.HasTitle);
+        Assert.AreEqual(record.HasTitle ? SyncClipboard.Core.I18n.Strings.HistoryEditTitle
+            : SyncClipboard.Core.I18n.Strings.HistoryAddTitle, record.TitleActionText);
+        record.Update(new HistoryRecordVM(new HistoryRecord { Title = "", Text = "image.png", Type = ProfileType.Image }));
+        Assert.IsFalse(record.HasTitle);
+        Assert.AreEqual("", record.Title);
+        Assert.AreEqual("image.png", record.Text);
+    }
+
     public sealed class Fixture : IAsyncDisposable
     {
         private readonly HistoryDbContext db = new();
@@ -434,7 +589,7 @@ public class HistoryViewModelPagingTests
             var app = (AppCore)RuntimeHelpers.GetUninitializedObject(typeof(AppCore));
             SetField(app, "<Services>k__BackingField", services);
             typeof(AppCore).GetField("_current", BindingFlags.Static | BindingFlags.NonPublic)!.SetValue(null, app);
-            SetField(Manager, "_dbContext", db);
+            SetField(Manager, "_dbContextFactory", HistoryTestDatabase.CreateFactory(db));
             SetField(Manager, "_dbSemaphore", semaphore);
             SetField(Manager, "_profileEnv", profileEnv);
             SetField(Manager, "_runtimeHistoryConfig", new RuntimeHistoryConfig());
@@ -494,6 +649,10 @@ public class HistoryViewModelPagingTests
             return fixture;
         }
 
+        public void ObserveHistoryUpdates() => Manager.HistoryUpdated +=
+            typeof(HistoryViewModel).GetMethod("RecordEntityUpdated", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .CreateDelegate<Action<HistoryRecord>>(ViewModel);
+
         public Task<HistoryRecord> ReadStoredRecordAsync(HistoryRecordVM record) =>
             db.HistoryRecords.AsNoTracking().SingleAsync(item => item.Hash == record.Hash && item.Type == record.Type);
 
@@ -507,7 +666,7 @@ public class HistoryViewModelPagingTests
         public async Task ReplaceTagsAsync(string oldTag, string newTag)
         {
             foreach (var record in db.HistoryRecords.Local)
-                record.Tags = record.Tags.Select(tag => tag == oldTag ? newTag : tag).ToArray();
+                record.Tags = record.Tags?.Select(tag => tag == oldTag ? newTag : tag).ToArray();
             await db.SaveChangesAsync();
         }
 

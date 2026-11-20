@@ -19,7 +19,8 @@ public static class MapperExtensions
             TransferDataFile = null,
             TransferDataHash = null,
             Timestamp = dto.CreateTime.UtcDateTime,
-            Tags = HistoryTags.Normalize(dto.Tags ?? []),
+            Title = HistoryTitles.Normalize(dto.Title),
+            Tags = dto.Tags is null ? null : HistoryTags.Normalize(dto.Tags),
             Stared = dto.Starred,
             Pinned = dto.Pinned,
             SyncStatus = HistorySyncStatus.Synced,
@@ -34,8 +35,12 @@ public static class MapperExtensions
 
     public static void ApplyChangesFromRemote(this HistoryRecord entity, HistoryRecordDto dto)
     {
-        if (dto.Tags is not null)
-            entity.Tags = HistoryTags.Normalize(dto.Tags);
+        var tags = dto.Tags is null ? null : HistoryTags.Normalize(dto.Tags);
+        var title = HistoryTitles.Normalize(dto.Title);
+        if (tags is not null)
+            entity.Tags = tags;
+        if (title is not null)
+            entity.Title = title;
         entity.Stared = dto.Starred;
         entity.Pinned = dto.Pinned;
         entity.Version = dto.Version;
@@ -87,7 +92,8 @@ public static class MapperExtensions
             CreateTime = entity.Timestamp,
             LastModified = entity.LastModified,
             LastAccessed = entity.LastAccessed,
-            Tags = [.. entity.Tags],
+            Title = entity.Title,
+            Tags = entity.Tags?.ToArray(),
             Starred = entity.Stared,
             Pinned = entity.Pinned,
             Size = entity.Size,
@@ -99,12 +105,16 @@ public static class MapperExtensions
 
     /// <summary>
     /// 将服务器返回的 HistoryRecordUpdateDto 的并发相关字段应用到本地实体上。
-    /// 仅覆盖 Tags/Stared/Pinned/IsDeleted/LastModified/LastAccessed/Version，并将 SyncStatus 置为 Synced。
+    /// 仅覆盖 Title/Tags/Stared/Pinned/IsDeleted/LastModified/LastAccessed/Version，并将 SyncStatus 置为 Synced。
     /// </summary>
     public static void ApplyFromServerUpdateDto(this HistoryRecord entity, HistoryRecordUpdateDto server)
     {
-        if (server.Tags is not null)
-            entity.Tags = HistoryTags.Normalize(server.Tags);
+        var tags = server.Tags is null ? null : HistoryTags.Normalize(server.Tags);
+        var title = HistoryTitles.Normalize(server.Title);
+        if (tags is not null)
+            entity.Tags = tags;
+        if (title is not null)
+            entity.Title = title;
         if (server.Starred.HasValue)
             entity.Stared = server.Starred.Value;
         if (server.Pinned.HasValue)

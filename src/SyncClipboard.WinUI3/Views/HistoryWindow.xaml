@@ -310,12 +310,20 @@
                                                                 Tags="{x:Bind PreviewTags, Mode=OneWay}"
                                                                 OverflowTemplate="{StaticResource HistoryTagOverflowTemplate}"
                                                                 Loaded="InlineTagsLoaded" />
-                                <ContentControl Padding="8,8,0,8"
-                                                HorizontalAlignment="Left"
-                                                VerticalAlignment="Center"
-                                                FontSize="{Binding FontSize, Source={StaticResource FontScaleProxy}}"
-                                                Content="{x:Bind}"
-                                                ContentTemplateSelector="{StaticResource clipboardTemplateSelector}" />
+                                <StackPanel Margin="8,8,0,8" VerticalAlignment="Center">
+                                    <TextBlock Text="{x:Bind Title, Mode=OneWay}"
+                                               Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(HasTitle), Mode=OneWay}"
+                                               FontWeight="SemiBold"
+                                               FontSize="{Binding FontSize, Source={StaticResource FontScaleProxy}}"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <ContentControl Padding="0"
+                                                    HorizontalAlignment="Left"
+                                                    VerticalAlignment="Center"
+                                                    FontSize="{Binding FontSize, Source={StaticResource FontScaleProxy}}"
+                                                    Content="{x:Bind}"
+                                                    ContentTemplateSelector="{StaticResource clipboardTemplateSelector}"
+                                                    Visibility="{x:Bind vc:ConvertMethod.HistorySummaryVisibility(HasTitle, local:HistoryListModeProxy.Current.IsCompactListMode), Mode=OneWay}" />
+                                </StackPanel>
                             </toolkit:DockPanel>
                             <Border Grid.Column="3"
                                     Height="40"

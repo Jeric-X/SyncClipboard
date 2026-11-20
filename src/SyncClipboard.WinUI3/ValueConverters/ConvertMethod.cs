@@ -93,6 +93,9 @@ internal static class ConvertMethod
         };
     }
 
+    public static Visibility HistorySummaryVisibility(bool hasTitle, bool compact) =>
+        BoolToVisibility(!hasTitle || !compact);
+
     public static string LimitHistoryListText(string? input, bool isCompactListMode)
     {
         return Converter.LimitHistoryListText(input, isCompactListMode);

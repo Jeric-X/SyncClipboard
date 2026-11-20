@@ -38,7 +38,7 @@ internal sealed class UpdateInstallerFactory : IUpdateInstallerFactory
     {
         if (!packageName.EndsWith(".dmg", StringComparison.OrdinalIgnoreCase))
             return null;
-        var bundle = MacUpdaterFiles.FindBundle(programDirectory);
+        var bundle = Env.FindBundle(programDirectory);
         return bundle is not null && MacUpdaterFiles.GetFiles(bundle).Length != 0
             ? new FileReplacementPackageInstaller() : null;
     }

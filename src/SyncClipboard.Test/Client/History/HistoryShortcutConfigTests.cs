@@ -3,7 +3,7 @@ using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
 using System.Text.Json;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Client.History;
 
 [TestClass]
 public class HistoryShortcutConfigTests
@@ -76,7 +76,7 @@ public class HistoryShortcutConfigTests
         Assert.IsFalse(config.CanAssign(HistoryShortcutAction.Copy, new Hotkey(Key.Ctrl, Key.F)));
         Assert.IsFalse(config.CanAssign(HistoryShortcutAction.Copy, new Hotkey(Key.Ctrl)));
         Assert.IsFalse(config.CanAssign(HistoryShortcutAction.Copy, new Hotkey(Key.Ctrl, Key.C, Key.V)));
-        Assert.IsTrue(config.CanAssign(HistoryShortcutAction.Copy, new Hotkey(Key.F2)));
+        Assert.IsTrue(config.CanAssign(HistoryShortcutAction.Copy, new Hotkey(Key.F3)));
         Assert.IsTrue(config.CanAssign(HistoryShortcutAction.Copy, Hotkey.Nothing));
     }
 
@@ -226,6 +226,18 @@ public class HistoryShortcutConfigTests
         {
             Directory.Delete(directory, true);
         }
+    }
+
+    [TestMethod]
+    public void ExistingF2Binding_KeepsItsActionWhenTitleShortcutIsAdded()
+    {
+        var config = JsonSerializer.Deserialize<HistoryShortcutConfig>(
+            """{"Shortcuts":{"Search":{"Keys":["F2"]}}}""")!;
+        Assert.AreEqual(HistoryShortcutAction.Search, config.Match(new Hotkey(Key.F2)));
+        Assert.AreEqual((HistoryShortcutError.Conflict, (HistoryShortcutAction?)HistoryShortcutAction.Search),
+            config.Validate(HistoryShortcutAction.EditTitle, new Hotkey(Key.F2)));
+        config.Shortcuts[HistoryShortcutAction.EditTitle] = new(Key.F3);
+        Assert.AreEqual(HistoryShortcutAction.EditTitle, config.Match(new Hotkey(Key.F3)));
     }
 
     [TestMethod]

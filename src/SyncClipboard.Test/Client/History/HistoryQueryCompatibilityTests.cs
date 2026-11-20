@@ -126,8 +126,8 @@ public class HistoryQueryCompatibilityTests
         {
             // Bypass application startup/configuration and the user's on-disk database; exercise the real query methods.
             Manager = (HistoryManager)RuntimeHelpers.GetUninitializedObject(typeof(HistoryManager));
-            typeof(HistoryManager).GetField("_dbContext", BindingFlags.Instance | BindingFlags.NonPublic)!
-                .SetValue(Manager, Db);
+            typeof(HistoryManager).GetField("_dbContextFactory", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(Manager, HistoryTestDatabase.CreateFactory(Db));
             typeof(HistoryManager).GetField("_dbSemaphore", BindingFlags.Instance | BindingFlags.NonPublic)!
                 .SetValue(Manager, _semaphore);
         }

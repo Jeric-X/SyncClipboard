@@ -66,6 +66,9 @@ namespace SyncClipboard.Server.Core.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Title")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("TransferDataFile")
                         .IsRequired()
                         .HasColumnType("TEXT");

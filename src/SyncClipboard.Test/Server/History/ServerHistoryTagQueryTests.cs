@@ -27,6 +27,67 @@ public class ServerHistoryTagQueryTests
     private static readonly DateTime Epoch = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     [TestMethod]
+    public async Task Query_MatchesLiteralWildcardsInTextAndTitles()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        f.Add("text", []).Text = "A!_%";
+        f.Add("title", []).Title = "A!_%";
+        f.Add("other", []).Text = "A!Xextra";
+        await f.Db.SaveChangesAsync(Token);
+
+        var query = new HistoryQueryDto { SearchText = "a!_%" };
+        Assert.AreEqual("text", (await f.QueryAsync(query)).Single().Hash);
+        query.SearchTitles = true;
+        string[] expected = ["text", "title"];
+        CollectionAssert.AreEquivalent(expected, (await f.QueryAsync(query)).Select(record => record.Hash).ToArray());
+    }
+
+    [TestMethod]
+    [DataRow("after!_%")]
+    [DataRow("\0after!_%")]
+    public async Task Query_MatchesClipboardTextAcrossEmbeddedNulls(string term)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        f.Add("match", []).Text = "before\0AFTER!_%";
+        f.Add("other", []).Text = "before\0AFTER!Xanything";
+        await f.Db.SaveChangesAsync(Token);
+
+        var query = new HistoryQueryDto { SearchText = term, SearchTitles = true };
+        Assert.AreEqual("match", (await f.QueryAsync(query)).Single().Hash);
+    }
+
+    [TestMethod]
+    public async Task Query_MatchesLongLiteralSearchTerms()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var punctuation = new string('!', 50_001);
+        f.Add("match", []).Text = "before" + punctuation + "éA";
+        f.Add("other", []).Text = punctuation + "ÉA";
+        await f.Db.SaveChangesAsync(Token);
+
+        var query = new HistoryQueryDto { SearchText = punctuation + "éa", SearchTitles = true };
+        Assert.AreEqual("match", (await f.QueryAsync(query)).Single().Hash);
+    }
+
+    [TestMethod]
+    public async Task Query_NormalizesOnlyTitleSearchAndPreservesSearchSpaces()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        f.Add("title", []).Title = "Café";
+        f.Add("text", []).Text = "Cafe\u0301";
+        await f.Db.SaveChangesAsync(Token);
+        var query = new HistoryQueryDto { SearchText = "Cafe\u0301", SearchTitles = true };
+        Assert.HasCount(2, await f.QueryAsync(query));
+        query.SearchTitles = false;
+        Assert.AreEqual("text", (await f.QueryAsync(query)).Single().Hash);
+        query.SearchTitles = true;
+        query.SearchText = "Café";
+        Assert.AreEqual("title", (await f.QueryAsync(query)).Single().Hash);
+        query.SearchText = " Café ";
+        Assert.IsEmpty(await f.QueryAsync(query));
+    }
+
+    [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
     public async Task Query_NormalizesNamesAndMatchesWholeTagsCaseSensitively(bool multiple)
@@ -211,6 +272,26 @@ public class ServerHistoryTagQueryTests
         var (multiple, multipleState) = await BindFormAsync(new() { ["Tags"] = "[\"A\",\"B\"]" });
         Assert.IsTrue(multipleState.IsValid);
         Assert.HasCount(2, await f.QueryAsync(multiple));
+    }
+
+    [TestMethod]
+    public async Task Query_SearchTitlesMatchesImageTitleOrOriginalFilename()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var image = f.Add("image", ["A"]);
+        image.Type = ProfileType.Image;
+        image.Text = "icon.png";
+        image.Title = "应用图标";
+        image.Stared = true;
+        f.Add("other", ["B"]).Title = image.Title;
+        await f.Db.SaveChangesAsync(Token);
+
+        var query = new HistoryQueryDto { SearchText = "图标", Starred = true, Tags = ["A"], Types = ProfileTypeFilter.Image };
+        Assert.IsEmpty(await f.QueryAsync(query));
+        query.SearchTitles = true;
+        Assert.AreEqual("image", (await f.QueryAsync(query)).Single().Hash);
+        query.SearchText = "icon";
+        Assert.AreEqual("image", (await f.QueryAsync(query)).Single().Hash);
     }
 
     private static async Task<(HistoryQueryDto Query, ModelStateDictionary State)> BindFormAsync(

@@ -59,8 +59,8 @@ public partial class HistoryViewModel
             return;
         }
 
-        ClearSelectedItem();
-        window.ScrollToTop();
+        if (ScrollToTopOnReopen)
+            ScrollToTop();
         window.Hide();
     }
 
@@ -68,8 +68,8 @@ public partial class HistoryViewModel
     {
         if (!IsTopmost)
         {
-            ClearSelectedItem();
-            window.ScrollToTop();
+            if (ScrollToTopOnReopen)
+                ScrollToTop();
             window.Hide();
             await PasteAfterHistoryWindowHiddenOrClosedAsync(token);
             return;

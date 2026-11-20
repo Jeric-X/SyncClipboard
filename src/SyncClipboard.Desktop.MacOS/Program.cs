@@ -1,7 +1,7 @@
 ﻿using AppKit;
 using Avalonia;
 using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.Utilities.Instances;
 using System;
 using System.IO;
 
@@ -13,11 +13,11 @@ class Program
     // SynchronizationContext-reliant code before AppMain is called: things aren't initialized
     // yet and stuff might break.
     [STAThread]
-    public static void Main(string[] args)
+    public static int Main(string[] args)
     {
-        if (AppInstance.EnsureSingleInstance(args) is false)
+        if (AppInstance.EnsureSingleInstance(args) is int exitCode)
         {
-            return;
+            return exitCode;
         }
         NSApplication.Init();
 
@@ -40,6 +40,7 @@ class Program
                 Environment.Exit((int)ReturnCode.UnhandledException);
             }
         }
+        return (int)ReturnCode.Success;
     }
 
     // Avalonia configuration, don't remove; also used by visual designer.

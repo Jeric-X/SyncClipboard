@@ -88,13 +88,23 @@ Name: "{group}\{cm:UninstallProgram,{#AppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExe}"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#AppExe}"; Parameters: "{code:GetLaunchParameters}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
 var
   GOverwriteInstall: Boolean;
   GExistingInstallPath: String;
   GRemoveAppData: Boolean;
+
+function GetLaunchParameters(Param: String): String;
+var
+  DataDirectory: String;
+begin
+  DataDirectory := ExpandConstant('{param:APPDATADIR|}');
+  Result := '';
+  if DataDirectory <> '' then
+    Result := '--app-data-dir ' + AddQuotes(AddBackslash(DataDirectory) + '.');
+end;
 
 function IsAppRunning(const AppExe: String): Boolean;
 var

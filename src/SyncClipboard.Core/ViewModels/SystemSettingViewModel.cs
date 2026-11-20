@@ -6,6 +6,7 @@ using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities.Instances;
 using SyncClipboard.Core.Utilities;
 using System.Diagnostics;
 
@@ -114,7 +115,8 @@ public partial class SystemSettingViewModel : ObservableObject
     private LocaleString<bool> userConfigPosition;
     partial void OnUserConfigPositionChanged(LocaleString<bool> value)
     {
-        _staticConfig.SetConfig(_staticConfig.GetConfig<EnvConfig>() with { PortableUserConfig = value.Key });
+        if (!AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory)
+            _staticConfig.SetConfig(_staticConfig.GetConfig<EnvConfig>() with { PortableUserConfig = value.Key });
     }
 
     [ObservableProperty]
@@ -177,7 +179,7 @@ public partial class SystemSettingViewModel : ObservableObject
         _logger = serviceProvider.GetRequiredService<ILogger>();
 
         programConfig = _configManager.GetConfig<ProgramConfig>();
-        var taskRunAsAdministrator = StartUpHelper.GetWindowsTaskRunAsAdministrator();
+        var taskRunAsAdministrator = AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory ? null : StartUpHelper.GetWindowsTaskRunAsAdministrator();
         if (taskRunAsAdministrator is bool runAsAdministrator && runAsAdministrator != programConfig.StartUpAsAdministrator)
         {
             programConfig = programConfig with { StartUpAsAdministrator = runAsAdministrator };
@@ -206,20 +208,22 @@ public partial class SystemSettingViewModel : ObservableObject
         _isInitializingPortableAppDataFolder = false;
     }
 
-    public bool ShowStartUpSetting { get; } = OperatingSystem.IsWindows() || OperatingSystem.IsLinux();
+    public bool ShowStartUpSetting { get; } =
+        !AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory && (OperatingSystem.IsWindows() || OperatingSystem.IsLinux());
 
-    public bool ShowStartUpAsAdministratorSetting { get; } = OperatingSystem.IsWindows() && Env.IsUserInAdministratorGroup;
+    public bool ShowStartUpAsAdministratorSetting { get; } =
+        !AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory && OperatingSystem.IsWindows() && Env.IsUserInAdministratorGroup;
 
-    public bool ShowPortableLocationSetting { get; } = OperatingSystem.IsWindows();
+    public bool ShowPortableLocationSetting { get; } = !AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory && OperatingSystem.IsWindows();
 
     public static string AppDataDirectory => Env.AppDataDirectory;
 
     public static bool IsUsingCustomAppDataDirectory => Env.IsUsingCustomAppDataDirectory;
 
-    public bool IsIndependentAppDataDirectory => !PortableAppDataFolderPosition.Key;
+    public bool IsIndependentAppDataDirectory => !AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory && !PortableAppDataFolderPosition.Key;
 
     public bool IsUsingCustomIndependentAppDataDirectory =>
-        Env.IsUsingCustomAppDataDirectory && !PortableAppDataFolderPosition.Key;
+        Env.IsUsingCustomAppDataDirectory && IsIndependentAppDataDirectory;
 
     private void SetPortableAppDataFolderPosition(bool portableAppDataFolder)
     {
@@ -249,7 +253,7 @@ public partial class SystemSettingViewModel : ObservableObject
 
     public bool StartUpWithSystem
     {
-        get => StartUpHelper.Status();
+        get => !AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory && StartUpHelper.Status();
         set
         {
             if (!_isSynchronizingStartUpSettings)
@@ -265,7 +269,7 @@ public partial class SystemSettingViewModel : ObservableObject
 
     private async Task UpdateStartUpSettingsAsync(bool updateTask, bool enable, bool runAsAdministrator, string errorTitle)
     {
-        if (_isSynchronizingStartUpSettings)
+        if (_isSynchronizingStartUpSettings || AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory)
         {
             return;
         }
@@ -292,7 +296,7 @@ public partial class SystemSettingViewModel : ObservableObject
 
     private void RefreshStartUpSettings(bool startUpAsAdministrator)
     {
-        var taskRunAsAdministrator = StartUpHelper.GetWindowsTaskRunAsAdministrator();
+        var taskRunAsAdministrator = AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory ? null : StartUpHelper.GetWindowsTaskRunAsAdministrator();
         var actualStartUpAsAdministrator = taskRunAsAdministrator ?? startUpAsAdministrator;
         _isSynchronizingStartUpSettings = true;
         try
@@ -323,6 +327,9 @@ public partial class SystemSettingViewModel : ObservableObject
     /// </summary>
     public async Task<bool> ChangeAppDataFolderAsync(string selectedFolder)
     {
+        if (AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory)
+            return false;
+
         var targetFolder = await ConfirmAndResolveTargetFolderAsync(selectedFolder);
         if (targetFolder is null)
             return false;
@@ -335,6 +342,9 @@ public partial class SystemSettingViewModel : ObservableObject
 
     private async Task<bool> SwitchPortableAppDataFolderAsync(bool portableAppDataFolder)
     {
+        if (AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory)
+            return false;
+
         if (!portableAppDataFolder)
         {
             return await SwitchToIndependentAppDataFolderAsync();
@@ -499,6 +509,9 @@ public partial class SystemSettingViewModel : ObservableObject
     [RelayCommand]
     public async Task RestoreDefaultAppDataFolderAsync()
     {
+        if (AppDataDirectoryOptions.Current.IsSpecifiedDataDirectory)
+            return;
+
         var dialog = _services.GetRequiredService<IMainWindowDialog>();
         var confirmed = await dialog.ShowConfirmationAsync(
             Strings.RestoreDefaultFolder,
@@ -590,6 +603,7 @@ public partial class SystemSettingViewModel : ObservableObject
 
         try
         {
+            using var destinationLock = AppInstance.LockDataDirectory(targetFolder);
             await Task.Run(() => CopyDirectoryWithProgress(Env.AppDataDirectory, targetFolder, sourceSize, progress));
         }
         catch (Exception ex)

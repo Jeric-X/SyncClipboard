@@ -37,18 +37,22 @@ public class HistoryLivePushTests
         fixture.Db.Add(record);
         await fixture.Db.SaveChangesAsync(Token);
         await fixture.Manager.EditTagsAsync([HistoryRecordKey.From(record)], ["local"], [], Token);
+        await fixture.Db.Entry(record).ReloadAsync(Token);
 
         // The legacy server accepts the version/time update but ignores the unsupported Tags field.
-        var serverRecord = record.ToHistoryRecordDto().ToEntity("user");
-        serverRecord.Tags = [];
+        var legacyResponse = record.ToHistoryRecordDto();
+        legacyResponse.Tags = null;
         await using var serverDb = new ServerHistoryDbContext();
         serverDb.Database.SetConnectionString("Data Source=:memory:");
         await serverDb.Database.OpenConnectionAsync(Token);
         await serverDb.GetService<IMigrator>().MigrateAsync("20260901065719_AddHistoryTransferDataHash", Token);
-        serverDb.Add(serverRecord);
-        await serverDb.SaveChangesAsync(Token);
-        var legacyResponse = HistoryRecordDto.FromEntity(serverRecord);
-        legacyResponse.Tags = null;
+        await serverDb.Database.ExecuteSqlAsync($"""
+            INSERT INTO HistoryRecords (UserId, Type, Hash, Text, Size, CreateTime, LastAccessed, LastModified, Version,
+                Stared, Pinned, IsDeleted, TransferDataFile, TransferDataSha256, TransferDataMd5, FilePaths, "From", Tags)
+            VALUES ('user', {(int)record.Type}, {record.Hash}, {record.Text}, {record.Size}, {legacyResponse.CreateTime.UtcDateTime},
+                {legacyResponse.LastAccessed.UtcDateTime}, {legacyResponse.LastModified.UtcDateTime}, {record.Version},
+                0, 0, 0, '', '', '', '[]', '', '[]')
+            """, Token);
         await fixture.Manager.SyncRemoteHistoryAsync([legacyResponse], Token);
         fixture.Db.ChangeTracker.Clear();
         var beforeUpgrade = await fixture.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
@@ -89,7 +93,9 @@ public class HistoryLivePushTests
         Assert.IsEmpty(cleared.Tags);
         await fixture.Manager.SyncRemoteHistoryAsync([cleared], Token);
         fixture.Db.ChangeTracker.Clear();
-        Assert.IsEmpty((await fixture.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token))!.Tags);
+        var localTags = (await fixture.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token))!.Tags;
+        Assert.IsNotNull(localTags);
+        Assert.IsEmpty(localTags);
     }
 
     [TestMethod]
@@ -128,11 +134,13 @@ public class HistoryLivePushTests
     }
 
     [TestMethod]
-    [DataRow(false, false)]
-    [DataRow(false, true)]
-    [DataRow(true, false)]
-    [DataRow(true, true)]
-    public async Task TagBackfill_PushAndFullSyncPreservePendingMetadata(bool livePush, bool pendingEdit)
+    [DataRow(false, false, false)]
+    [DataRow(true, false, false)]
+    [DataRow(false, true, false)]
+    [DataRow(true, true, false)]
+    [DataRow(false, true, true)]
+    [DataRow(true, true, true)]
+    public async Task TagBackfill_PushAndFullSyncPreservePendingMetadata(bool livePush, bool pendingEdit, bool emptyTags)
     {
         await using var fixture = await Fixture.CreateAsync(Token);
         var modified = DateTime.UtcNow.AddHours(-2);
@@ -146,7 +154,7 @@ public class HistoryLivePushTests
             SyncStatus = HistorySyncStatus.Synced
         };
         var notification = record.ToHistoryRecordDto();
-        notification.Tags = ["new"];
+        notification.Tags = emptyTags ? [] : [.. ExpectedNewTags];
         if (pendingEdit)
         {
             record.Stared = true;
@@ -176,8 +184,10 @@ public class HistoryLivePushTests
         Assert.AreEqual(pendingEdit ? 11 : 10, saved.Version);
         Assert.AreEqual(pendingEdit ? modified.AddHours(1) : modified, saved.LastModified);
         Assert.AreEqual(pendingEdit ? HistorySyncStatus.NeedSync : HistorySyncStatus.Synced, saved.SyncStatus);
-        if (!pendingEdit)
-            CollectionAssert.AreEqual(ExpectedNewTags, saved.Tags);
+        if (pendingEdit)
+            Assert.IsNull(saved.Tags);
+        else
+            CollectionAssert.AreEqual(notification.Tags, saved.Tags);
     }
 
     [TestMethod]
@@ -195,7 +205,9 @@ public class HistoryLivePushTests
         fixture.Db.Add(record);
         await fixture.Db.SaveChangesAsync(Token);
         var delayed = record.ToHistoryRecordDto();
+        delayed.Tags = [];
         await fixture.Manager.EditTagsAsync([HistoryRecordKey.From(record)], ["new"], [], Token);
+        await fixture.Db.Entry(record).ReloadAsync(Token);
         var version = record.Version;
         var service = (ClientHistoryService)RuntimeHelpers.GetUninitializedObject(typeof(ClientHistoryService));
         typeof(ClientHistoryService).GetField("historyManager", BindingFlags.Instance | BindingFlags.NonPublic)!
@@ -209,6 +221,42 @@ public class HistoryLivePushTests
         Assert.AreEqual(HistorySyncStatus.NeedSync, saved.SyncStatus);
     }
 
+    [TestMethod]
+    [DataRow(null, false)]
+    [DataRow("", false)]
+    [DataRow("新标题", false)]
+    [DataRow(null, true)]
+    public async Task TitlePush_PreservesUnknownAndClearedValuesWithoutRestoringDeletedRecords(
+        string? remoteTitle, bool deleted)
+    {
+        await using var fixture = await Fixture.CreateAsync(Token);
+        var record = new HistoryRecord
+        {
+            Type = ProfileType.Text,
+            Hash = "NAME-PUSH",
+            Text = "content",
+            Title = "本地标题",
+            Version = 3,
+            SyncStatus = HistorySyncStatus.Synced
+        };
+        fixture.Db.Add(record);
+        await fixture.Db.SaveChangesAsync(Token);
+        var dto = record.ToHistoryRecordDto();
+        dto.Title = remoteTitle;
+        dto.Version++;
+        dto.IsDeleted = deleted;
+        var service = (ClientHistoryService)RuntimeHelpers.GetUninitializedObject(typeof(ClientHistoryService));
+        typeof(ClientHistoryService).GetField("historyManager", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(service, fixture.Manager);
+
+        await service.ApplyRemoteHistoryChangeAsync(dto, Token);
+
+        fixture.Db.ChangeTracker.Clear();
+        var saved = await fixture.Db.HistoryRecords.SingleAsync(Token);
+        Assert.AreEqual(remoteTitle ?? "本地标题", saved.Title);
+        Assert.AreEqual(deleted, saved.IsDeleted);
+    }
+
     private sealed class Fixture : IAsyncDisposable
     {
         public HistoryDbContext Db { get; } = new();
@@ -218,7 +266,8 @@ public class HistoryLivePushTests
         public static async Task<Fixture> CreateAsync(CancellationToken token)
         {
             var fixture = new Fixture();
-            typeof(HistoryManager).GetField("_dbContext", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(fixture.Manager, fixture.Db);
+            typeof(HistoryManager).GetField("_dbContextFactory", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .SetValue(fixture.Manager, HistoryTestDatabase.CreateFactory(fixture.Db));
             typeof(HistoryManager).GetField("_dbSemaphore", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(fixture.Manager, fixture.semaphore);
             fixture.Db.Database.SetConnectionString("Data Source=:memory:");
             await fixture.Db.Database.OpenConnectionAsync(token);

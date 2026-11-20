@@ -65,6 +65,9 @@
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.ProtectTaggedRecords}" Description="{x:Bind i18n:Strings.ProtectTaggedRecordsDescription}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.ProtectTaggedRecords, Mode=TwoWay}" />
                 </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.ProtectTitledRecords}" Description="{x:Bind i18n:Strings.ProtectTitledRecordsDescription}">
+                    <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.ProtectTitledRecords, Mode=TwoWay}" />
+                </ui:SettingsCard>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
         <ui:SettingsExpander Header="{x:Bind i18n:Strings.HistoryShortcutSettings}" IsExpanded="True" ItemsSource="{x:Bind _viewModel.ShortcutSettings}">

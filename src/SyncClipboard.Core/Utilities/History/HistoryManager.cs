@@ -5,12 +5,11 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Server.Core.Models;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 
 namespace SyncClipboard.Core.Utilities.History;
 
-public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, DateTime>
+public partial class HistoryManager
 {
     private const int HistoryKeyQueryBatchSize = 800;
 
@@ -21,14 +20,11 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     private HistoryConfig _historyConfig = new();
     private RuntimeHistoryConfig _runtimeHistoryConfig = new();
     private readonly ILogger _logger;
-    private HistoryDbContext _dbContext;
+    private readonly Func<HistoryDbContext> _dbContextFactory = () => new HistoryDbContext();
     private readonly IProfileEnv _profileEnv;
     private readonly SemaphoreSlim _dbSemaphore = new(1, 1);
-    private readonly HistoryManagerHelper<HistoryRecord, DateTime> _historyManagerHelper;
     private int _cleanupPauseCount;
     private bool EnableCleanup => Volatile.Read(ref _cleanupPauseCount) == 0;
-
-    public DbSet<HistoryRecord> RecordDbSet => _dbContext.HistoryRecords;
 
     public HistoryManager(ConfigManager configManager, ILogger logger, IProfileEnv profileEnv,
         [FromKeyedServices(Env.RuntimeConfigName)] ConfigBase runtimeConfig)
@@ -36,7 +32,6 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         _logger = logger;
         _profileEnv = profileEnv;
         InitDatabaseContext();
-        _historyManagerHelper = new(this);
         _runtimeHistoryConfig = runtimeConfig.GetListenConfig<RuntimeHistoryConfig>(LoadRuntimeHistoryConfig);
         _historyConfig = configManager.GetListenConfig<HistoryConfig>(LoadHistoryConfig);
         LoadConfig(_historyConfig);
@@ -71,10 +66,11 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     {
         await _dbSemaphore.WaitAsync();
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
 
-        if (EnableCleanup && await _historyManagerHelper.SetRecordsMaxCount(historyConfig.MaxItemCount) != 0)
+        if (EnableCleanup && await CreateCleanupHelper(dbContext).SetRecordsMaxCount(historyConfig.MaxItemCount) != 0)
         {
-            await _dbContext.SaveChangesAsync();
+            await dbContext.SaveChangesAsync();
         }
     }
 
@@ -82,10 +78,11 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     {
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
 
         if (EnableCleanup)
         {
-            await _historyManagerHelper.SetRecordsMaxCount(_historyConfig.MaxItemCount, token);
+            await CreateCleanupHelper(dbContext).SetRecordsMaxCount(_historyConfig.MaxItemCount, token);
         }
     }
 
@@ -125,19 +122,20 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     {
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
 
-        await RemoveHistoryNoLock(record, token);
+        await RemoveHistoryNoLock(dbContext, record, token);
     }
 
-    private async Task RemoveHistoryNoLock(HistoryRecord record, CancellationToken token)
+    private async Task RemoveHistoryNoLock(HistoryDbContext dbContext, HistoryRecord record, CancellationToken token)
     {
-        var entity = await Query(record.Type, record.Hash, token);
+        var entity = await Query(dbContext, record.Type, record.Hash, token);
         if (entity != null)
         {
             await DeleteWorkingDirAsync(entity, token);
 
-            _dbContext.HistoryRecords.Remove(entity);
-            await _dbContext.SaveChangesAsync(token);
+            dbContext.HistoryRecords.Remove(entity);
+            await dbContext.SaveChangesAsync(token);
             HistoryRemoved?.Invoke(record);
         }
     }
@@ -148,8 +146,9 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         record.Hash = record.Hash.ToUpperInvariant();
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
 
-        if (_dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && EF.Functions.Like(r.Hash, record.Hash)) is HistoryRecord entity)
+        if (dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && EF.Functions.Like(r.Hash, record.Hash)) is HistoryRecord entity)
         {
             if (string.IsNullOrEmpty(entity.Text) && !string.IsNullOrEmpty(record.Text))
             {
@@ -170,7 +169,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             {
                 entity.LastAccessed = DateTime.UtcNow;
             }
-            await _dbContext.SaveChangesAsync(token);
+            await dbContext.SaveChangesAsync(token);
             if (restored)
             {
                 HistoryAdded?.Invoke(entity);
@@ -184,10 +183,10 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
 
         if (EnableCleanup && _historyConfig.MaxItemCount > 0)
         {
-            await _historyManagerHelper.SetRecordsMaxCount(_historyConfig.MaxItemCount - 1, token);
+            await CreateCleanupHelper(dbContext).SetRecordsMaxCount(_historyConfig.MaxItemCount - 1, token);
         }
-        await _dbContext.HistoryRecords.AddAsync(record, token);
-        await _dbContext.SaveChangesAsync(token);
+        await dbContext.HistoryRecords.AddAsync(record, token);
+        await dbContext.SaveChangesAsync(token);
         HistoryAdded?.Invoke(record);
     }
 
@@ -200,8 +199,9 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
 
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
 
-        if (_dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && EF.Functions.Like(r.Hash, record.Hash)) is HistoryRecord entity)
+        if (dbContext.HistoryRecords.FirstOrDefault(r => r.Type == record.Type && EF.Functions.Like(r.Hash, record.Hash)) is HistoryRecord entity)
         {
             entity.IsDeleted = false;
             entity.SyncStatus = HistorySyncStatus.Synced;
@@ -210,15 +210,15 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
                 entity.TransferDataFile = null;
                 entity.TransferDataHash = null;
             }
-            await _dbContext.SaveChangesAsync(token);
+            await dbContext.SaveChangesAsync(token);
             HistoryUpdated?.Invoke(entity);
             return;
         }
 
         record.IsLocalFileReady = false;
         record.SyncStatus = HistorySyncStatus.Synced;
-        await _dbContext.HistoryRecords.AddAsync(record, token);
-        await _dbContext.SaveChangesAsync(token);
+        await dbContext.HistoryRecords.AddAsync(record, token);
+        await dbContext.SaveChangesAsync(token);
         HistoryAdded?.Invoke(record);
     }
 
@@ -227,8 +227,9 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         token ??= CancellationToken.None;
         await _dbSemaphore.WaitAsync(token.Value);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
 
-        return _dbContext.HistoryRecords
+        return dbContext.HistoryRecords
             .OrderByDescending(r => r.Timestamp)
             .ToList();
     }
@@ -237,22 +238,24 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     {
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
 
-        return await Query(type, hash, token);
+        return await Query(dbContext, type, hash, token);
     }
 
     public async Task<HistoryRecord?> GetSyncSnapshotAsync(HistoryRecordKey key, CancellationToken token = default)
     {
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
-        var entity = await Query(key.Type, key.Hash, token).ConfigureAwait(false);
-        return entity is null ? null : CreateSyncSnapshot(entity);
+        using var dbContext = _dbContextFactory();
+        var entity = await Query(dbContext, key.Type, key.Hash, token).ConfigureAwait(false);
+        return entity is null ? null : CreateSyncSnapshot(dbContext, entity);
     }
 
-    private HistoryRecord CreateSyncSnapshot(HistoryRecord entity)
+    private static HistoryRecord CreateSyncSnapshot(HistoryDbContext dbContext, HistoryRecord entity)
     {
-        var snapshot = (HistoryRecord)_dbContext.Entry(entity).CurrentValues.ToObject();
-        snapshot.Tags = [.. entity.Tags];
+        var snapshot = (HistoryRecord)dbContext.Entry(entity).CurrentValues.ToObject();
+        snapshot.Tags = entity.Tags?.ToArray();
         snapshot.FilePath = [.. entity.FilePath];
         return snapshot;
     }
@@ -261,26 +264,50 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     {
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
 
-        var entity = await Query(profile.Type, await profile.GetHash(token), token);
+        var entity = await Query(dbContext, profile.Type, await profile.GetHash(token), token);
         if (entity is null)
         {
             entity = await ToHistoryRecord(profile, token);
             entity.Hash = entity.Hash.ToUpperInvariant();
-            await _dbContext.HistoryRecords.AddAsync(entity, token);
-            await _dbContext.SaveChangesAsync(token);
+            await dbContext.HistoryRecords.AddAsync(entity, token);
+            await dbContext.SaveChangesAsync(token);
             HistoryAdded?.Invoke(entity);
         }
         // Network operations must not mutate EF's tracked entity outside the database lock.
-        return CreateSyncSnapshot(entity);
+        return CreateSyncSnapshot(dbContext, entity);
+    }
+
+    public async Task<bool> SetTitleAsync(HistoryRecordKey key, string title, CancellationToken token = default)
+    {
+        var normalized = HistoryTitles.Normalize(title);
+        await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
+        var record = await dbContext.HistoryRecords.FirstOrDefaultAsync(
+            r => r.Type == key.Type && r.Hash == key.Hash && !r.IsDeleted, token).ConfigureAwait(false);
+        // Confirming an empty editor on an untitled record leaves its title unknown.
+        if (record is null || (record.Title ?? string.Empty) == normalized)
+            return false;
+
+        record.Title = normalized;
+        record.Version++;
+        record.LastModified = DateTime.UtcNow;
+        if (record.SyncStatus != HistorySyncStatus.LocalOnly)
+            record.SyncStatus = HistorySyncStatus.NeedSync;
+        await dbContext.SaveChangesAsync(token).ConfigureAwait(false);
+        HistoryUpdated?.Invoke(record);
+        return true;
     }
 
     public async Task UpdateHistoryProperty(HistoryRecord record, CancellationToken token = default)
     {
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
 
-        var entity = await Query(record.Type, record.Hash, token);
+        var entity = await Query(dbContext, record.Type, record.Hash, token);
         if (entity != null)
         {
             entity.Stared = record.Stared;
@@ -295,7 +322,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             {
                 entity.SyncStatus = HistorySyncStatus.NeedSync;
             }
-            await _dbContext.SaveChangesAsync(token);
+            await dbContext.SaveChangesAsync(token);
             HistoryUpdated?.Invoke(entity);
         }
     }
@@ -304,13 +331,14 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     {
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
-        var entity = await Query(record.Type, record.Hash, token);
+        using var dbContext = _dbContextFactory();
+        var entity = await Query(dbContext, record.Type, record.Hash, token);
         if (entity != null)
         {
             entity.IsLocalFileReady = record.IsLocalFileReady;
             entity.FilePath = record.FilePath;
             CopyLocalTransferDataBinding(record, entity);
-            await _dbContext.SaveChangesAsync(token);
+            await dbContext.SaveChangesAsync(token);
             HistoryUpdated?.Invoke(entity);
         }
     }
@@ -322,8 +350,9 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     {
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
 
-        var entity = await Query(type, hash, token);
+        var entity = await Query(dbContext, type, hash, token);
         if (entity is null)
         {
             return;
@@ -337,55 +366,30 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         entity.IsLocalFileReady = false;
         entity.TransferDataFile = null;
         entity.TransferDataHash = null;
-        await _dbContext.SaveChangesAsync(token);
+        await dbContext.SaveChangesAsync(token);
         HistoryUpdated?.Invoke(entity);
     }
 
     /// <summary>
-    /// 持久化一次从服务器回写或同步成功后的本地记录，不修改版本号和时间戳（这些已由同步逻辑确定）。
-    /// 保留传入的 SyncStatus（通常为 Synced）。
+    /// 仅在本地版本和修改时间仍与发送时一致时应用同步响应，避免覆盖后续编辑。
     /// </summary>
-    public async Task<HistoryRecord> PersistServerSyncedAsync(HistoryRecord record, CancellationToken token = default)
-    {
-        await _dbSemaphore.WaitAsync(token);
-        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
-
-        var entity = await Query(record.Type, record.Hash, token);
-        if (entity is null)
-        {
-            // 如果本地不存在，直接添加（用于服务器回写新增场景）
-            record.Hash = record.Hash.ToUpperInvariant();
-            CopyLocalTransferDataBinding(record, record);
-            await _dbContext.HistoryRecords.AddAsync(record, token);
-            await _dbContext.SaveChangesAsync(token);
-            HistoryAdded?.Invoke(record);
-            return record;
-        }
-
-        ApplyServerSyncedProperties(record, entity);
-        if (record.IsLocalFileReady || !entity.IsLocalFileReady)
-        {
-            CopyLocalTransferDataBinding(record, entity);
-        }
-
-        await _dbContext.SaveChangesAsync(token);
-        TriggleUpdateOrDeleteEvent(entity);
-        return entity;
-    }
-
     public async Task<bool> TryApplySyncResponseAsync(
         HistoryRecord record, int expectedVersion, DateTime expectedModified, CancellationToken token = default)
     {
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
 
-        var entity = await Query(record.Type, record.Hash, token);
+        var entity = await Query(dbContext, record.Type, record.Hash, token);
         if (entity is null || entity.ID != record.ID || entity.Version != expectedVersion || entity.LastModified != expectedModified)
             return false;
 
-        entity.Tags = [.. record.Tags];
+        if (record.Title is not null)
+            entity.Title = record.Title;
+        if (record.Tags is not null)
+            entity.Tags = [.. record.Tags];
         ApplyServerSyncedProperties(record, entity);
-        await _dbContext.SaveChangesAsync(token);
+        await dbContext.SaveChangesAsync(token);
         TriggleUpdateOrDeleteEvent(entity);
         return true;
     }
@@ -406,8 +410,9 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     {
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
 
-        var entity = await Query(record.Type, record.Hash, token);
+        var entity = await Query(dbContext, record.Type, record.Hash, token);
         if (entity is null)
         {
             return;
@@ -434,15 +439,20 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             }
         }
 
-        await _dbContext.SaveChangesAsync(token);
+        await dbContext.SaveChangesAsync(token);
         HistoryRemoved?.Invoke(entity);
     }
 
     public Task<List<HistoryRecord>> SyncRemoteHistoryAsync(IEnumerable<HistoryRecordDto> remoteRecords, CancellationToken token = default)
         => SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags: false, token);
 
-    internal async Task<List<HistoryRecord>> SyncRemoteHistoryAsync(
+    internal Task<List<HistoryRecord>> SyncRemoteHistoryAsync(
         IEnumerable<HistoryRecordDto> remoteRecords, bool supportsHistoryTags, CancellationToken token = default)
+        => SyncRemoteHistoryAsync(remoteRecords, supportsHistoryTags, supportsHistoryTitle: false, token);
+
+    internal async Task<List<HistoryRecord>> SyncRemoteHistoryAsync(
+        IEnumerable<HistoryRecordDto> remoteRecords, bool supportsHistoryTags, bool supportsHistoryTitle,
+        CancellationToken token = default)
     {
         List<HistoryRecord> addedRecords = [];
         if (remoteRecords.Any() == false)
@@ -454,14 +464,16 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             {
                 await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
                 using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+                using var dbContext = _dbContextFactory();
 
-                var entity = await Query(dto.Type, dto.Hash, token).ConfigureAwait(false);
+                var entity = await Query(dbContext, dto.Type, dto.Hash, token).ConfigureAwait(false);
                 if (entity == null)
                 {
                     if (dto.IsDeleted == false)
                     {
                         var newRecord = dto.ToHistoryRecord();
-                        await _dbContext.HistoryRecords.AddAsync(newRecord, token).ConfigureAwait(false);
+                        await dbContext.HistoryRecords.AddAsync(newRecord, token).ConfigureAwait(false);
+                        await dbContext.SaveChangesAsync(token).ConfigureAwait(false);
                         HistoryAdded?.Invoke(newRecord);
                         addedRecords.Add(newRecord);
                     }
@@ -469,14 +481,15 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
                 else
                 {
                     ApplyRemoteHistory(entity, dto);
-                    if (supportsHistoryTags && dto.Tags is null && entity.Tags.Length > 0
-                        && !entity.IsDeleted && entity.SyncStatus == HistorySyncStatus.Synced)
+                    var missingTags = supportsHistoryTags && dto.Tags is null && entity.Tags is { Length: > 0 };
+                    var missingTitle = supportsHistoryTitle && dto.Title is null && !string.IsNullOrEmpty(entity.Title);
+                    if ((missingTags || missingTitle) && !entity.IsDeleted && entity.SyncStatus == HistorySyncStatus.Synced)
                     {
                         entity.SyncStatus = HistorySyncStatus.NeedSync;
                     }
+                    await dbContext.SaveChangesAsync(token).ConfigureAwait(false);
                     TriggleUpdateOrDeleteEvent(entity);
                 }
-                await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
             }
         }, token);
 
@@ -492,6 +505,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         }
         else if (entity.IsLocalNewerThanRemote(dto))
         {
+            // The pending PATCH omits unknown tags; its response supplies the current server value.
             entity.SyncStatus = HistorySyncStatus.NeedSync;
         }
         else
@@ -518,11 +532,12 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     {
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
         if (!EnableCleanup)
             return;
 
         var cutoffTime = DateTime.UtcNow.AddDays(-30);
-        var toDeletes = _dbContext.HistoryRecords
+        var toDeletes = dbContext.HistoryRecords
             .Where(r => r.IsDeleted && r.LastModified < cutoffTime);
 
         if (!toDeletes.Any())
@@ -530,18 +545,19 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             return;
         }
 
-        _dbContext.HistoryRecords.RemoveRange(toDeletes);
-        await _dbContext.SaveChangesAsync(token);
+        dbContext.HistoryRecords.RemoveRange(toDeletes);
+        await dbContext.SaveChangesAsync(token);
     }
 
     public async Task ClearDeletedHistoryData(CancellationToken token = default)
     {
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
         if (!EnableCleanup)
             return;
 
-        var deletedRecords = _dbContext.HistoryRecords
+        var deletedRecords = dbContext.HistoryRecords
             .Where(r => r.IsDeleted && (r.FilePath.Length > 0 || r.TransferDataFile != null) && r.IsLocalFileReady)
             .ToList();
 
@@ -564,7 +580,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             clearedCount++;
         }
 
-        await _dbContext.SaveChangesAsync(token);
+        await dbContext.SaveChangesAsync(token);
 
         _logger.Write("HistoryManager", $"Cleared attachment data for {clearedCount} deleted history records");
     }
@@ -579,22 +595,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         {
             foreach (var record in records)
             {
-                var syncStatusChanged = record.SyncStatus is HistorySyncStatus.Synced or HistorySyncStatus.NeedSync;
-                if (syncStatusChanged)
-                {
-                    record.SyncStatus = HistorySyncStatus.LocalOnly;
-                }
-
-                if (ShouldDeleteLocalRecord(record, cleanupConfig))
-                {
-                    await RemoveHistory(record, token).ConfigureAwait(false);
-                    continue;
-                }
-
-                if (syncStatusChanged)
-                {
-                    await PersistServerSyncedAsync(record, token).ConfigureAwait(false);
-                }
+                await UpdateLocalRecordAsync(HistoryRecordKey.From(record), true, cleanupConfig, token).ConfigureAwait(false);
             }
         }, token).ConfigureAwait(false);
 
@@ -608,7 +609,34 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
 
         foreach (var record in records.Where(r => ShouldDeleteLocalRecord(r, cleanupConfig)))
         {
-            await RemoveHistory(record, token);
+            await UpdateLocalRecordAsync(HistoryRecordKey.From(record), false, cleanupConfig, token).ConfigureAwait(false);
+        }
+    }
+
+    internal Task ConvertToLocalRecordAsync(HistoryRecordKey key, CancellationToken token)
+        => UpdateLocalRecordAsync(key, true, null, token);
+
+    private async Task UpdateLocalRecordAsync(
+        HistoryRecordKey key, bool convertToLocal, HistoryConfig? cleanupConfig, CancellationToken token)
+    {
+        await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
+        using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
+        // Earlier records can trigger edits while the caller processes its snapshot.
+        var record = await Query(dbContext, key.Type, key.Hash, token).ConfigureAwait(false);
+        if (record is null)
+            return;
+        var syncStatusChanged = convertToLocal && record.SyncStatus is HistorySyncStatus.Synced or HistorySyncStatus.NeedSync;
+        if (syncStatusChanged)
+            record.SyncStatus = HistorySyncStatus.LocalOnly;
+        if (cleanupConfig is not null && ShouldDeleteLocalRecord(record, cleanupConfig))
+        {
+            await RemoveHistoryNoLock(dbContext, record, token).ConfigureAwait(false);
+        }
+        else if (syncStatusChanged)
+        {
+            await dbContext.SaveChangesAsync(token).ConfigureAwait(false);
+            TriggleUpdateOrDeleteEvent(record);
         }
     }
 
@@ -618,7 +646,8 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     {
         return record.SyncStatus == HistorySyncStatus.LocalOnly &&
                (record.IsDeleted || (cleanupConfig.AutoDeleteMissingLocalFiles && !record.Stared && !record.Pinned
-                   && (!cleanupConfig.ProtectTaggedRecords || record.Tags.Length == 0) && !record.IsLocalFileReady));
+                   && (!cleanupConfig.ProtectTaggedRecords || record.Tags == null || record.Tags.Length == 0)
+                   && (!cleanupConfig.ProtectTitledRecords || string.IsNullOrEmpty(record.Title)) && !record.IsLocalFileReady));
     }
 
     public async Task CleanupExpiredHistory(CancellationToken token = default)
@@ -632,10 +661,11 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
 
             await _dbSemaphore.WaitAsync(token);
             using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+            using var dbContext = _dbContextFactory();
             if (!EnableCleanup)
                 return;
 
-            var deleted = await _historyManagerHelper.RemoveExpiredInBatchesAsync(token);
+            var deleted = await CreateCleanupHelper(dbContext).RemoveExpiredInBatchesAsync(token);
 
             if (deleted > 0)
             {
@@ -660,10 +690,11 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
 
             _dbSemaphore.Wait(token);
             using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+            using var dbContext = _dbContextFactory();
             if (!EnableCleanup)
                 return;
 
-            var existingDirectoryNames = _dbContext.HistoryRecords
+            var existingDirectoryNames = dbContext.HistoryRecords
                 .Select(r => new { r.Type, r.Hash })
                 .AsEnumerable()
                 .Select(r => Profile.GetWorkingDirName(r.Type, r.Hash))
@@ -706,31 +737,30 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         }
     }
 
-    [MemberNotNull(nameof(_dbContext))]
     private void InitDatabaseContext()
     {
-        _dbContext = new HistoryDbContext();
+        using var dbContext = _dbContextFactory();
         try
         {
-            _dbContext.Database.ExecuteSqlRaw("DELETE FROM __EFMigrationsLock;");
+            dbContext.Database.ExecuteSqlRaw("DELETE FROM __EFMigrationsLock;");
         }
         catch { }
 
-        var pendingMigrations = _dbContext.Database.GetPendingMigrations();
+        var pendingMigrations = dbContext.Database.GetPendingMigrations();
         if (pendingMigrations.Any())
         {
-            _dbContext.Database.Migrate();
+            dbContext.Database.Migrate();
         }
-        _dbContext.Database.EnsureCreated();
+        dbContext.Database.EnsureCreated();
     }
 
-    private IQueryable<HistoryRecord> BuildHistoryQuery(HistoryQueryPara queryPara)
+    private static IQueryable<HistoryRecord> BuildHistoryQuery(HistoryDbContext dbContext, HistoryQueryPara queryPara)
     {
         var names = HistoryTags.NormalizeNames(queryPara.Tags ?? []);
         if (names.Length > 0 && queryPara.OnlyUntagged)
             throw new ArgumentException("Tags and untagged filter cannot be combined.");
 
-        var query = _dbContext.HistoryRecords.Where(record => !record.IsDeleted);
+        var query = dbContext.HistoryRecords.Where(record => !record.IsDeleted);
 
         if (queryPara.TypeFilter != ProfileTypeFilter.All)
         {
@@ -744,13 +774,12 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         if (queryPara.Starred.HasValue)
             query = query.Where(record => record.Stared == queryPara.Starred.Value);
 
-        if (!string.IsNullOrEmpty(queryPara.SearchText))
-            query = query.Where(record => EF.Functions.Like(record.Text, $"%{queryPara.SearchText}%"));
+        query = HistorySearch.Apply(query, queryPara.SearchText, queryPara.SearchTitles);
 
         if (names.Length > 0)
-            query = query.Where(record => record.Tags.Any(name => names.Contains(name)));
+            query = query.Where(record => record.Tags != null && record.Tags.Any(name => names.Contains(name)));
         if (queryPara.OnlyUntagged)
-            query = query.Where(record => record.Tags.Length == 0);
+            query = query.Where(record => record.Tags == null || record.Tags.Length == 0);
 
         return query;
     }
@@ -764,8 +793,9 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     {
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
 
-        var query = BuildHistoryQuery(queryPara);
+        var query = BuildHistoryQuery(dbContext, queryPara);
 
         if (before.HasValue)
         {
@@ -819,8 +849,9 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     {
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
 
-        var query = BuildHistoryQuery(queryPara);
+        var query = BuildHistoryQuery(dbContext, queryPara);
 
         var totalCount = await query.CountAsync(token).ConfigureAwait(false);
         var selectedCount = 0;
@@ -849,7 +880,8 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
 
         await _dbSemaphore.WaitAsync(token).ConfigureAwait(false);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
-        var records = await GetRecordsByKeysAsync(lookup, token).ConfigureAwait(false);
+        using var dbContext = _dbContextFactory();
+        var records = await GetRecordsByKeysAsync(dbContext, lookup, token).ConfigureAwait(false);
         foreach (var record in records)
         {
             record.Stared = starred;
@@ -858,7 +890,7 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
             if (record.SyncStatus != HistorySyncStatus.LocalOnly)
                 record.SyncStatus = HistorySyncStatus.NeedSync;
         }
-        await _dbContext.SaveChangesAsync(token).ConfigureAwait(false);
+        await dbContext.SaveChangesAsync(token).ConfigureAwait(false);
         foreach (var record in records)
             HistoryUpdated?.Invoke(record);
     }
@@ -867,15 +899,15 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     /// Limits database work to the selected record types and hashes, then removes the small set of cross-product
     /// candidates that are not an exact composite key match.
     /// </summary>
-    private async Task<List<HistoryRecord>> GetRecordsByKeysAsync(
-        HashSet<HistoryRecordKey> lookup, CancellationToken token)
+    private static async Task<List<HistoryRecord>> GetRecordsByKeysAsync(
+        HistoryDbContext dbContext, HashSet<HistoryRecordKey> lookup, CancellationToken token)
     {
         var types = lookup.Select(key => key.Type).Distinct().ToArray();
         var hashes = lookup.Select(key => key.Hash).Distinct().ToArray();
         var records = new List<HistoryRecord>();
         foreach (var hashBatch in hashes.Chunk(HistoryKeyQueryBatchSize))
         {
-            var candidates = await _dbContext.HistoryRecords
+            var candidates = await dbContext.HistoryRecords
                 .Where(record => !record.IsDeleted
                     && Enumerable.Contains(types, record.Type) && Enumerable.Contains(hashBatch, record.Hash))
                 .ToListAsync(token)
@@ -890,14 +922,16 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
     {
         await _dbSemaphore.WaitAsync(token);
         using var guard = new ScopeGuard(() => _dbSemaphore.Release());
+        using var dbContext = _dbContextFactory();
 
-        var all = await _dbContext.HistoryRecords.ToListAsync(token);
+        var all = await dbContext.HistoryRecords.ToListAsync(token);
         foreach (var record in all)
         {
             try
             {
                 record.SyncStatus = HistorySyncStatus.LocalOnly;
-                await RemoveHistoryNoLock(record, token);
+                using var deleteContext = _dbContextFactory();
+                await RemoveHistoryNoLock(deleteContext, record, token);
             }
             catch (Exception ex)
             {
@@ -909,9 +943,10 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         {
             try
             {
-                if (Directory.Exists(Env.HistoryFileFolder))
+                var historyFolder = _profileEnv.GetHistoryPersistentDir();
+                if (Directory.Exists(historyFolder))
                 {
-                    foreach (var dir in Directory.GetDirectories(Env.HistoryFileFolder))
+                    foreach (var dir in Directory.GetDirectories(historyFolder))
                     {
                         try
                         {
@@ -969,51 +1004,19 @@ public partial class HistoryManager : IHistoryEntityRepository<HistoryRecord, Da
         target.TransferDataHash = source.TransferDataHash;
     }
 
-    private Task<HistoryRecord?> Query(ProfileType type, string hash, CancellationToken token)
+    private static Task<HistoryRecord?> Query(HistoryDbContext dbContext, ProfileType type, string hash, CancellationToken token)
     {
-        return _dbContext.HistoryRecords.FirstOrDefaultAsync(r => EF.Functions.Like(r.Hash, hash) && r.Type == type, token);
+        return dbContext.HistoryRecords.FirstOrDefaultAsync(r => EF.Functions.Like(r.Hash, hash) && r.Type == type, token);
     }
 
-    public async Task MarkForDeletionAsync(HistoryRecord entity, CancellationToken token)
-    {
-        if (_dbContext.Entry(entity).State == EntityState.Detached)
-        {
-            // 外部单独调用：Query 拿到被跟踪的 existing 再 Remove
-            var existing = await Query(entity.Type, entity.Hash, token);
-            if (existing is null)
-            {
-                return;
-            }
-            _dbContext.HistoryRecords.Remove(existing);
-            return;
-        }
-
-        // helper 路径：entity 已被 ToListAsync 跟踪，直接 Remove
-        _dbContext.HistoryRecords.Remove(entity);
-    }
-
-    public Task<int> SaveChangesAsync(CancellationToken token)
-    {
-        return _dbContext.SaveChangesAsync(token);
-    }
-
-    public async Task OnRecordDeletedAsync(HistoryRecord entity, CancellationToken token)
+    private async Task OnRecordDeletedAsync(HistoryRecord entity, CancellationToken token)
     {
         await DeleteWorkingDirAsync(entity, token);
         HistoryRemoved?.Invoke(entity);
     }
 
-    public Expression<Func<HistoryRecord, bool>> AutoDeletePredicate => entity => !entity.Stared &&
-        !entity.Pinned && (!_historyConfig.ProtectTaggedRecords || entity.Tags.Length == 0)
+    private Expression<Func<HistoryRecord, bool>> AutoDeletePredicate => entity => !entity.Stared &&
+        !entity.Pinned && (!_historyConfig.ProtectTaggedRecords || entity.Tags == null || entity.Tags.Length == 0)
+        && (!_historyConfig.ProtectTitledRecords || string.IsNullOrEmpty(entity.Title))
         && entity.SyncStatus == HistorySyncStatus.LocalOnly;
-
-    public Expression<Func<HistoryRecord, DateTime>> QueryLastActivityTime => entity =>
-        entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;
-
-    public uint HistoryRetentionMinutes => _historyConfig.HistoryRetentionMinutes;
-
-    public Expression<Func<HistoryRecord, DateTime>> QueryDeleteOrderBy => entity =>
-        entity.LastModified > entity.LastAccessed ? entity.LastModified : entity.LastAccessed;
-
-    public Expression<Func<HistoryRecord, bool>> QueryCount => entity => entity.SyncStatus == HistorySyncStatus.LocalOnly;
 }

@@ -8,7 +8,7 @@ using System.Net.Http.Json;
 using System.Reflection;
 using System.Text.Json;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Client.History;
 
 [TestClass]
 public class HistoryUploadResponseTests
@@ -60,6 +60,41 @@ public class HistoryUploadResponseTests
         CollectionAssert.AreEqual(expected, local.Tags);
     }
 
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("")]
+    [DataRow("应用图标")]
+    [DataRow("null")]
+    public async Task UploadHistoryAsync_PreservesTitleIntent(string? title)
+    {
+        using var handler = new TitleAcknowledgementHandler();
+        using var adapter = CreateAdapter(handler);
+        var incoming = new HistoryRecordDto { Hash = "hash", Title = title };
+
+        var accepted = await adapter.UploadHistoryAsync(incoming, null,
+            cancellationToken: TestContext.CancellationTokenSource.Token);
+
+        Assert.AreEqual(title is not null, handler.TitleProvided);
+        Assert.AreEqual(title ?? "server", accepted.Title);
+    }
+
+    private sealed class TitleAcknowledgementHandler : HttpMessageHandler
+    {
+        public bool TitleProvided { get; private set; }
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+        {
+            var form = (MultipartFormDataContent)request.Content!;
+            var field = form.SingleOrDefault(part => part.Headers.ContentDisposition?.Name?.Trim('"') == "title");
+            TitleProvided = field is not null;
+            var title = field is null ? "server" : await field.ReadAsStringAsync(token);
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = JsonContent.Create(new HistoryRecordDto { Hash = "hash", Title = title })
+            };
+        }
+    }
+
     private static OfficialAdapter CreateAdapter(HttpMessageHandler handler)
     {
         var adapter = new OfficialAdapter(Mock.Of<ILogger>(), Mock.Of<IAppConfig>());
@@ -74,7 +109,7 @@ public class HistoryUploadResponseTests
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
         {
             var form = (MultipartFormDataContent)request.Content!;
-            var tagField = form.SingleOrDefault(part => part.Headers.ContentDisposition?.Name?.Trim('"') == "Tags");
+            var tagField = form.SingleOrDefault(part => part.Headers.ContentDisposition?.Name?.Trim('"') == "tags");
             // Mirror the server's omitted/null-preserves, explicit-array-replaces contract.
             string[] savedTags = ["server"];
             if (tagField is not null)

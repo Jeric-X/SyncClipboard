@@ -15,6 +15,7 @@ public partial class HistoryRecordVM : ObservableObject
     {
         id = record.ID;
         text = record.Text;
+        title = record.Title;
         Type = record.Type;
         filePath = RestoreFilePath(record.FilePath, record.Type, record.Hash);
         Hash = record.Hash;
@@ -23,7 +24,7 @@ public partial class HistoryRecordVM : ObservableObject
         Size = record.Size;
         timestamp = record.Timestamp;
         lastAccessed = record.LastAccessed;
-        tags = [.. record.Tags];
+        tags = record.Tags?.ToArray();
         stared = record.Stared;
         pinned = record.Pinned;
         syncState = record.SyncStatus == HistorySyncStatus.LocalOnly ? SyncStatus.LocalOnly :
@@ -42,6 +43,14 @@ public partial class HistoryRecordVM : ObservableObject
 
     [ObservableProperty]
     private string text;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasTitle))]
+    [NotifyPropertyChangedFor(nameof(TitleActionText))]
+    private string? title;
+
+    public bool HasTitle => !string.IsNullOrEmpty(Title);
+    public string TitleActionText => HasTitle ? Strings.HistoryEditTitle : Strings.HistoryAddTitle;
+
     public ProfileType Type { get; set; }
     [ObservableProperty]
     private string[] filePath;
@@ -49,7 +58,7 @@ public partial class HistoryRecordVM : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PreviewTags))]
-    private string[] tags = [];
+    private string[]? tags;
 
     public IEnumerable<HistoryPreviewTag> PreviewTags => (Tags ?? []).Select(tag => new HistoryPreviewTag(Key, tag));
 
@@ -301,6 +310,7 @@ public partial class HistoryRecordVM : ObservableObject
         {
             ID = id,
             Text = Text,
+            Title = Title,
             Type = Type,
             FilePath = FilePath,
             Hash = Hash,
@@ -308,7 +318,7 @@ public partial class HistoryRecordVM : ObservableObject
             TransferDataHash = TransferDataHash,
             Timestamp = Timestamp,
             Stared = Stared,
-            Tags = [.. Tags],
+            Tags = Tags?.ToArray(),
             Pinned = Pinned,
             IsLocalFileReady = IsLocalFileReady,
             Size = Size
@@ -318,6 +328,7 @@ public partial class HistoryRecordVM : ObservableObject
     public void Update(HistoryRecordVM record)
     {
         Text = record.Text;
+        Title = record.Title;
         Type = record.Type;
         FilePath = RestoreFilePath(record.FilePath, record.Type, record.Hash);
         TransferDataFile = record.TransferDataFile;
@@ -326,7 +337,7 @@ public partial class HistoryRecordVM : ObservableObject
         Size = record.Size;
         Timestamp = record.Timestamp;
         Stared = record.Stared;
-        Tags = [.. record.Tags];
+        Tags = record.Tags?.ToArray();
         Pinned = record.Pinned;
         SyncState = record.SyncState;
         // IsDownloading = record.IsDownloading;
@@ -400,6 +411,7 @@ public partial class HistoryRecordVM : ObservableObject
         var copy = new HistoryRecordVM
         {
             Text = this.Text,
+            Title = this.Title,
             Type = this.Type,
             FilePath = this.FilePath,
             Hash = this.Hash,
@@ -408,7 +420,7 @@ public partial class HistoryRecordVM : ObservableObject
             Size = this.Size,
             Timestamp = this.Timestamp,
             Stared = this.Stared,
-            Tags = [.. this.Tags],
+            Tags = this.Tags?.ToArray(),
             Pinned = this.Pinned,
             SyncState = this.SyncState,
             IsDownloading = this.IsDownloading,

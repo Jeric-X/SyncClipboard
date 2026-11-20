@@ -9,4 +9,7 @@ public class ServerCapabilitiesDto
 
     [JsonPropertyName("historyTags")]
     public bool HistoryTags { get; init; }
+
+    [JsonPropertyName("historyTitle")]
+    public bool HistoryTitle { get; init; }
 }

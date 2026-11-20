@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace SyncClipboard.Core.Models;
 
-public class HistoryRecord
+public class HistoryRecord : IHistorySearchable
 {
     public int ID { get; set; }
     public string Text { get; set; } = string.Empty;
@@ -20,7 +20,8 @@ public class HistoryRecord
         set => DateTimePropertyHelper.SetDateTimeProperty(value, ref timestamp);
     }
 
-    public string[] Tags { get; set; } = [];
+    public string? Title { get; set; }
+    public string[]? Tags { get; set; }
     public bool Stared { get; set; }
     public bool Pinned { get; set; }
     public HistorySyncStatus SyncStatus { get; set; } = HistorySyncStatus.LocalOnly;

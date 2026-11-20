@@ -943,7 +943,7 @@ Shift + 左键：选中连续范围</value>
     <value>传输中</value>
   </data>
   <data name="HistorySearchPlaceholder" xml:space="preserve">
-    <value>搜索文字或文件名...</value>
+    <value>搜索标题、文字或文件名…</value>
   </data>
   <data name="ScrollToTop" xml:space="preserve">
     <value>回到顶部</value>
@@ -1478,6 +1478,9 @@ Shift + 左键：选中连续范围</value>
   <data name="UpdateInstallationUnsupported" xml:space="preserve">
     <value>暂不支持自动安装更新，请手动安装已下载的安装包。</value>
   </data>
+  <data name="UpdateCloseOtherInstances" xml:space="preserve">
+    <value>安装更新前，请关闭同一安装目录下的其他 SyncClipboard 实例。</value>
+  </data>
   <data name="UpdatedToVersion" xml:space="preserve">
     <value>已更新到 {0} 版本</value>
   </data>
@@ -1649,11 +1652,20 @@ Shift + 左键：选中连续范围</value>
   <data name="ExcludeFromLocalHistory" xml:space="preserve">
     <value>同时也不添加到历史记录</value>
   </data>
-  <data name="HistoryTagsSyncTitle" xml:space="preserve">
-    <value>标签不会同步</value>
+  <data name="HistoryCapabilitiesSyncTitle" xml:space="preserve">
+    <value>服务端不支持部分同步功能</value>
   </data>
-  <data name="HistoryTagsUpgrade" xml:space="preserve">
-    <value>当前服务器不支持标签同步，并且未收藏的记录可能会被服务器自动清理。建议升级服务端版本，以获得完整的标签支持。</value>
+  <data name="HistoryCapabilitiesUpgrade" xml:space="preserve">
+    <value>当前服务器不支持同步：{0}。建议升级服务端版本，以获得最佳同步体验。</value>
+  </data>
+  <data name="HistoryCapabilityTags" xml:space="preserve">
+    <value>标签</value>
+  </data>
+  <data name="HistoryCapabilityTitle" xml:space="preserve">
+    <value>历史记录标题</value>
+  </data>
+  <data name="HistoryCapabilitySeparator" xml:space="preserve">
+    <value>、</value>
   </data>
   <data name="HistorySyncUnsupported" xml:space="preserve">
     <value>服务器不支持历史记录同步。</value>
@@ -1665,10 +1677,10 @@ Shift + 左键：选中连续范围</value>
     <value>保护带标签的记录</value>
   </data>
   <data name="ServerProtectTaggedRecordsDescription" xml:space="preserve">
-    <value>带标签的记录视为收藏，不会被自动删除</value>
+    <value>带标签的记录不会被自动删除</value>
   </data>
   <data name="ProtectTaggedRecordsDescription" xml:space="preserve">
-    <value>带标签的记录视为收藏</value>
+    <value>带标签的记录不会被自动删除</value>
   </data>
   <data name="HistoryAutoDelete" xml:space="preserve">
     <value>自动删除</value>
@@ -1777,5 +1789,29 @@ Shift + 左键：选中连续范围</value>
   </data>
   <data name="HistoryTagMergeConfirmation" xml:space="preserve">
     <value>标签“{0}”已存在。确认后将合并到此标签，取消则保留原标签。</value>
+  </data>
+  <data name="HistoryAddTitle" xml:space="preserve">
+    <value>添加标题</value>
+  </data>
+  <data name="HistoryEditTitle" xml:space="preserve">
+    <value>编辑标题</value>
+  </data>
+  <data name="ProtectTitledRecords" xml:space="preserve">
+    <value>保护带标题的记录</value>
+  </data>
+  <data name="ProtectTitledRecordsDescription" xml:space="preserve">
+    <value>带标题的记录不会被自动删除</value>
+  </data>
+  <data name="HistoryTitleTooLong" xml:space="preserve">
+    <value>最多 {0} 个字符</value>
+  </data>
+  <data name="HistoryTitleLineBreak" xml:space="preserve">
+    <value>不能包含换行</value>
+  </data>
+  <data name="HistoryTitleControlCharacter" xml:space="preserve">
+    <value>不能包含控制字符</value>
+  </data>
+  <data name="HistoryTitleInvalidCharacter" xml:space="preserve">
+    <value>包含无效字符</value>
   </data>
 </root>

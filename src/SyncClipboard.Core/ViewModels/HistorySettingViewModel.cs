@@ -33,6 +33,7 @@ public partial class HistorySettingViewModel : ObservableObject
         enableSyncHistory = config.EnableSyncHistory;
         autoDeleteMissingLocalFiles = config.AutoDeleteMissingLocalFiles;
         protectTaggedRecords = config.ProtectTaggedRecords;
+        protectTitledRecords = config.ProtectTitledRecords;
         maxItemCount = config.MaxItemCount;
         historyRetentionMinutes = config.HistoryRetentionMinutes;
 
@@ -49,6 +50,7 @@ public partial class HistorySettingViewModel : ObservableObject
         EnableSyncHistory = config.EnableSyncHistory;
         AutoDeleteMissingLocalFiles = config.AutoDeleteMissingLocalFiles;
         ProtectTaggedRecords = config.ProtectTaggedRecords;
+        ProtectTitledRecords = config.ProtectTitledRecords;
         MaxItemCount = config.MaxItemCount;
         HistoryRetentionMinutes = config.HistoryRetentionMinutes;
     }
@@ -71,6 +73,7 @@ public partial class HistorySettingViewModel : ObservableObject
             EnableSyncHistory = EnableSyncHistory,
             AutoDeleteMissingLocalFiles = AutoDeleteMissingLocalFiles,
             ProtectTaggedRecords = ProtectTaggedRecords,
+            ProtectTitledRecords = ProtectTitledRecords,
             MaxItemCount = MaxItemCount,
             HistoryRetentionMinutes = HistoryRetentionMinutes
         };
@@ -91,6 +94,10 @@ public partial class HistorySettingViewModel : ObservableObject
     [ObservableProperty]
     private bool protectTaggedRecords;
     partial void OnProtectTaggedRecordsChanged(bool value) => _configManager.SetConfig(GetCurrentRecord() with { ProtectTaggedRecords = value });
+
+    [ObservableProperty]
+    private bool protectTitledRecords;
+    partial void OnProtectTitledRecordsChanged(bool value) => _configManager.SetConfig(GetCurrentRecord() with { ProtectTitledRecords = value });
 
     [ObservableProperty]
     private uint maxItemCount;

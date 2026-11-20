@@ -10,6 +10,8 @@ public sealed record HistoryExportRecord(
 {
     public string[]? Tags { get; init; }
 
+    public string? Title { get; init; }
+
     public bool HasTransferData => TransferData is not null;
 
     [JsonIgnore]
@@ -32,7 +34,8 @@ public sealed record HistoryExportRecord(
         record.Timestamp.ToUniversalTime(), record.LastModified.ToUniversalTime(), record.LastAccessed.ToUniversalTime(),
         record.Stared, record.Pinned, record.From)
     {
-        Tags = [.. record.Tags],
+        Tags = record.Tags?.ToArray(),
+        Title = record.Title,
         FilePaths = [.. record.FilePath],
         TransferDataFile = record.TransferDataFile,
         TransferDataHash = record.TransferDataHash?.ToUpperInvariant()

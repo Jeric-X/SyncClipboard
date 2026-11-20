@@ -46,6 +46,9 @@ public class HistoryQueryDto
     /// </summary>
     public string? SearchText { get; set; }
 
+    /// <summary>Also match SearchText against the record title.</summary>
+    public bool SearchTitles { get; set; }
+
     /// <summary>
     /// Filter by starred status. Null means no filter.
     /// </summary>

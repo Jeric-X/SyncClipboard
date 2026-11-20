@@ -750,7 +750,14 @@ public partial class HistoryViewModel : ObservableObject
             HistoryFilterType.File => ProfileTypeFilter.FileAndGroup,
             _ => ProfileTypeFilter.All,
         };
-        return new HistoryQueryPara { TypeFilter = types, Starred = starred, SearchText = searchText, Tags = SelectedTags };
+        return new HistoryQueryPara
+        {
+            TypeFilter = types,
+            Starred = starred,
+            SearchText = searchText,
+            SearchTitles = true,
+            Tags = SelectedTags
+        };
     }
 
     private int GetSelectedFilterOptionIndex()
@@ -937,9 +944,9 @@ public partial class HistoryViewModel : ObservableObject
         switch (action)
         {
             case HistoryShortcutAction.Search: window?.FocusSearch(); break;
+            case HistoryShortcutAction.EditTitle:
             case HistoryShortcutAction.EditTags:
-                if (!IsMultiSelecting && SelectedItem is not null && SelectedFilter != HistoryFilterType.Transferring)
-                    window?.ShowTagPicker();
+                HandleEditShortcut(action.Value);
                 break;
             case HistoryShortcutAction.PreviousItem: NavigateUp(); break;
             case HistoryShortcutAction.NextItem: NavigateDown(); break;
@@ -967,6 +974,17 @@ public partial class HistoryViewModel : ObservableObject
             default: return false;
         }
         return true;
+    }
+
+    private void HandleEditShortcut(HistoryShortcutAction action)
+    {
+        if (IsMultiSelecting || SelectedItem is null || SelectedFilter == HistoryFilterType.Transferring)
+            return;
+
+        if (action == HistoryShortcutAction.EditTitle)
+            window?.ShowTitleEditor();
+        else
+            window?.ShowTagPicker();
     }
 
     private async void HandleToggleStarShortcut()
@@ -1068,7 +1086,8 @@ public partial class HistoryViewModel : ObservableObject
             InitVMTransferStatus(newRecordVM);
             RecordUpdated(newRecordVM);
             RefreshSelectionSummaryForUpdatedRecord(newRecordVM);
-            if (SelectedFilter != HistoryFilterType.Transferring && SelectedTags.Length != 0)
+            if (SelectedFilter != HistoryFilterType.Transferring
+                && (SelectedTags.Length != 0 || !string.IsNullOrEmpty(SearchText)))
                 RequestSelectionSummaryRefresh(SelectionSummaryPart.Counts);
         });
     }
@@ -1208,7 +1227,7 @@ public partial class HistoryViewModel : ObservableObject
         return MatchesSelectedFilter(vm)
             && MatchesStarredFilter(vm, ignoreStarredFilter)
             && MatchesSearchFilter(vm)
-            && MatchesTagFilter(vm.Tags)
+            && MatchesTagFilter(vm.Tags ?? [])
             && IsWithinLoadedTimeRange(vm);
     }
 
@@ -1229,10 +1248,18 @@ public partial class HistoryViewModel : ObservableObject
         return ignoreStarredFilter || !IsStarredScopeActive || vm.Stared;
     }
 
+    public async Task SetTitleAsync(HistoryRecordKey key, string title)
+    {
+        await historyManager.SetTitleAsync(key, title);
+        if (await historyManager.GetSyncSnapshotAsync(key) is not { IsDeleted: false })
+            throw new InvalidOperationException(I18n.Strings.HistoryExportRemoved);
+    }
+
     private bool MatchesSearchFilter(HistoryRecordVM vm)
     {
         return string.IsNullOrEmpty(SearchText)
-            || vm.Text.Contains(SearchText, StringComparison.OrdinalIgnoreCase);
+            || HistorySearch.Contains(vm.Text, SearchText)
+            || (vm.Title is not null && HistorySearch.Contains(vm.Title, SearchText.Normalize()));
     }
 
     // 已加载范围是 >= _timeCursor 的记录，< _timeCursor 的记录还未加载

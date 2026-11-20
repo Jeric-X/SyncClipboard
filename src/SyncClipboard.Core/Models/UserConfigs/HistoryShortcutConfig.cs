@@ -7,7 +7,7 @@ public enum HistoryShortcutAction
 {
     Search, PreviousItem, NextItem, FirstItem, LastItem, ToggleStar, ToggleStarredFilter,
     ToggleTopmost, Delete, TogglePreview, NextFilter, PreviousFilter, CopyAndPaste, Copy, ExecuteRecommendedAction,
-    PreviousTag, NextTag, ToggleTagsExpanded, TagAbove, TagBelow, EditTags
+    PreviousTag, NextTag, ToggleTagsExpanded, TagAbove, TagBelow, EditTags, EditTitle
 }
 
 public enum HistoryMouseAction
@@ -47,6 +47,7 @@ public record HistoryShortcutConfig
     {
         HistoryShortcutAction.Search => new(Key.Ctrl, Key.F),
         HistoryShortcutAction.EditTags => new(Key.Ctrl, Key.T),
+        HistoryShortcutAction.EditTitle => new(Key.F2),
         HistoryShortcutAction.PreviousItem => new(Key.Up),
         HistoryShortcutAction.NextItem => new(Key.Down),
         HistoryShortcutAction.FirstItem => new(Key.Ctrl, Key.Home),

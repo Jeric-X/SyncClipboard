@@ -27,12 +27,12 @@ public class HistoryRetentionTests
     private static readonly string[] ExpectedAttachmentPaths = ["data.bin"];
 
     [TestMethod]
-    public async Task ChangingHistorySettings_PreservesConfiguredTagProtection()
+    public async Task ChangingHistorySettings_PreservesConfiguredProtection()
     {
         await using var f = await Fixture.CreateAsync(Token);
         using var configurationServices = new ConfigurationTestServices();
         var config = new ConfigManager(Path.Combine(f.GetPersistentDir(), "config.json"), configurationServices.Upgrader);
-        config.SetConfig(new HistoryConfig { ProtectTaggedRecords = false });
+        config.SetConfig(new HistoryConfig { ProtectTaggedRecords = false, ProtectTitledRecords = false });
         using var services = new ServiceCollection().AddSingleton(config).AddSingleton(Mock.Of<ILogger>())
             .AddSingleton<AccountManager>().BuildServiceProvider();
         using var factory = new RemoteClipboardServerFactory(services);
@@ -46,8 +46,30 @@ public class HistoryRetentionTests
 
         var saved = config.GetConfig<HistoryConfig>();
         Assert.IsFalse(saved.ProtectTaggedRecords);
+        Assert.IsFalse(saved.ProtectTitledRecords);
         Assert.AreEqual(250u, saved.MaxItemCount);
         Assert.AreEqual(120u, saved.HistoryRetentionMinutes);
+    }
+
+    [TestMethod]
+    public async Task ServerProtectionSettings_PersistIndependently()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        using var configurationServices = new ConfigurationTestServices();
+        var config = new ConfigManager(Path.Combine(f.GetPersistentDir(), "server-config.json"), configurationServices.Upgrader);
+        var viewModel = new ServerConfigViewModel(config);
+        Assert.IsTrue(viewModel.ProtectTitledRecords);
+        viewModel.ProtectTitledRecords = false;
+        viewModel.MaxHistoryCount = 250;
+        config.Reload();
+        Assert.IsFalse(config.GetConfig<ServerConfig>().ProtectTitledRecords);
+        Assert.IsTrue(config.GetConfig<ServerConfig>().ProtectTaggedRecords);
+        Assert.IsFalse(viewModel.ProtectTitledRecords);
+        viewModel.ProtectTitledRecords = true;
+        viewModel.ProtectTaggedRecords = false;
+        config.Reload();
+        Assert.IsTrue(config.GetConfig<ServerConfig>().ProtectTitledRecords);
+        Assert.IsFalse(config.GetConfig<ServerConfig>().ProtectTaggedRecords);
     }
 
     [TestMethod]
@@ -88,6 +110,51 @@ public class HistoryRetentionTests
     }
 
     [TestMethod]
+    [DataRow(null, false, false)]
+    [DataRow(null, false, true)]
+    [DataRow(false, true, false)]
+    [DataRow(false, true, true)]
+    [DataRow(true, true, false)]
+    [DataRow(true, true, true)]
+    public async Task TitledCleanup_RespectsIndependentSettings(bool? protectTitled, bool protectTagged, bool countLimit)
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        if (protectTitled.HasValue)
+            f.Config.ProtectTitledRecords = protectTitled.Value;
+        f.Config.ProtectTaggedRecords = protectTagged;
+        f.Config.MaxItemCount = 1;
+        var old = DateTime.UtcNow.AddDays(-10);
+        var titled = Record("titled", old, old);
+        titled.Title = "Keep this record";
+        var empty = Record("empty-title", old, old);
+        empty.Title = string.Empty;
+        var unknown = Record("unknown-title", old, old);
+        var tagged = Record("tagged", old, old);
+        tagged.Tags = ["work"];
+        var starred = Record("starred-title", old, old);
+        starred.Title = "Starred";
+        starred.Stared = true;
+        var pinned = Record("pinned-title", old, old);
+        pinned.Title = "Pinned";
+        pinned.Pinned = true;
+        f.Db.AddRange(titled, empty, unknown, tagged, starred, pinned);
+        await f.Db.SaveChangesAsync(Token);
+
+        if (countLimit)
+            await f.Manager.EnforceMaxItemCountAsync(Token);
+        else
+            await f.Manager.CleanupExpiredHistory(Token);
+
+        var hashes = await f.Db.HistoryRecords.Select(r => r.Hash).ToArrayAsync(Token);
+        Assert.AreEqual(protectTitled != false, hashes.Contains(titled.Hash));
+        Assert.AreEqual(protectTagged, hashes.Contains(tagged.Hash));
+        Assert.DoesNotContain(empty.Hash, hashes);
+        Assert.DoesNotContain(unknown.Hash, hashes);
+        Assert.Contains(starred.Hash, hashes);
+        Assert.Contains(pinned.Hash, hashes);
+    }
+
+    [TestMethod]
     [DataRow(true, true, false)]
     [DataRow(false, true, false)]
     [DataRow(true, true, true)]
@@ -99,10 +166,15 @@ public class HistoryRetentionTests
     {
         await using var f = await Fixture.CreateAsync(Token);
         f.Config.ProtectTaggedRecords = protectTagged;
+        f.Config.ProtectTitledRecords = !protectTagged;
         f.Config.AutoDeleteMissingLocalFiles = deleteMissing;
         var now = DateTime.UtcNow;
         var tagged = Record("missing-tagged", now, now);
         tagged.Tags = ["work"];
+        var titled = Record("missing-titled", now, now);
+        titled.Title = "Keep missing file";
+        var emptyTitle = Record("missing-empty-title", now, now);
+        emptyTitle.Title = string.Empty;
         var untagged = Record("missing-untagged", now, now);
         var starred = Record("missing-starred", now, now);
         starred.Stared = true;
@@ -115,10 +187,11 @@ public class HistoryRetentionTests
         var deleted = Record("explicitly-deleted", now, now);
         deleted.IsDeleted = true;
         deleted.Tags = ["work"];
+        deleted.Title = "Explicitly deleted";
         deleted.Stared = true;
         var ready = Record("ready", now, now);
         ready.IsLocalFileReady = true;
-        var records = new[] { tagged, untagged, starred, pinned, synced, pending, deleted, ready };
+        var records = new[] { tagged, titled, emptyTitle, untagged, starred, pinned, synced, pending, deleted, ready };
         foreach (var record in records)
         {
             record.Type = ProfileType.File;
@@ -133,14 +206,21 @@ public class HistoryRetentionTests
             await f.Manager.RemoveDeletedOrMissingLocalRecordsAsync(Token);
 
         var hashes = await f.Db.HistoryRecords.Select(record => record.Hash).ToArrayAsync(Token);
-        Assert.AreEqual(!deleteMissing || protectTagged, hashes.Contains(tagged.Hash));
-        Assert.AreEqual(!deleteMissing, hashes.Contains(untagged.Hash));
-        Assert.AreEqual(!disableSync || !deleteMissing, hashes.Contains(synced.Hash));
-        Assert.AreEqual(!disableSync || !deleteMissing, hashes.Contains(pending.Hash));
-        Assert.Contains(starred.Hash, hashes);
-        Assert.Contains(pinned.Hash, hashes);
-        Assert.Contains(ready.Hash, hashes);
-        Assert.DoesNotContain(deleted.Hash, hashes);
+        AssertMissingFileRetention(hashes, protectTagged, deleteMissing, disableSync);
+    }
+
+    private static void AssertMissingFileRetention(string[] hashes, bool protectTagged, bool deleteMissing, bool disableSync)
+    {
+        Assert.AreEqual(!deleteMissing || protectTagged, hashes.Contains("missing-tagged"));
+        Assert.AreEqual(!deleteMissing || !protectTagged, hashes.Contains("missing-titled"));
+        Assert.AreEqual(!deleteMissing, hashes.Contains("missing-empty-title"));
+        Assert.AreEqual(!deleteMissing, hashes.Contains("missing-untagged"));
+        Assert.AreEqual(!disableSync || !deleteMissing, hashes.Contains("missing-synced"));
+        Assert.AreEqual(!disableSync || !deleteMissing, hashes.Contains("missing-pending"));
+        Assert.Contains("missing-starred", hashes);
+        Assert.Contains("missing-pinned", hashes);
+        Assert.Contains("ready", hashes);
+        Assert.DoesNotContain("explicitly-deleted", hashes);
     }
 
     [TestMethod]
@@ -676,12 +756,12 @@ public class HistoryRetentionTests
         protected override void OnConfiguring(DbContextOptionsBuilder options) => options.UseSqlite("Data Source=:memory:");
     }
 
-    private sealed class Fixture : IProfileEnv, IAsyncDisposable
+    internal sealed class Fixture : IProfileEnv, IAsyncDisposable
     {
         private readonly DirectoryInfo root = Directory.CreateTempSubdirectory("SyncClipboard-Retention-");
         private readonly SemaphoreSlim semaphore = new(1, 1);
         public SemaphoreSlim DbSemaphore => semaphore;
-        public MemoryHistoryDbContext Db { get; } = new();
+        public HistoryDbContext Db { get; } = new MemoryHistoryDbContext();
         public HistoryConfig Config { get; } = new() { HistoryRetentionMinutes = 60, MaxItemCount = 0 };
         public HistoryManager Manager { get; }
         public RuntimeHistoryConfig RuntimeConfig { get; } = new();
@@ -690,13 +770,12 @@ public class HistoryRetentionTests
         {
             // Exercise real cleanup against SQLite without opening the application database or starting config listeners.
             Manager = (HistoryManager)RuntimeHelpers.GetUninitializedObject(typeof(HistoryManager));
-            SetField("_dbContext", Db);
+            SetField("_dbContextFactory", HistoryTestDatabase.CreateFactory(Db));
             SetField("_dbSemaphore", semaphore);
             SetField("_profileEnv", this);
             SetField("_logger", Mock.Of<ILogger>());
             SetField("_historyConfig", Config);
             SetField("_runtimeHistoryConfig", RuntimeConfig);
-            SetField("_historyManagerHelper", new HistoryManagerHelper<HistoryRecord, DateTime>(Manager));
         }
 
         private void SetField(string name, object value) => typeof(HistoryManager)
