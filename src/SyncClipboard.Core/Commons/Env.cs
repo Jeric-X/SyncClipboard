@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.Collections.Concurrent;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -24,6 +25,7 @@ namespace SyncClipboard.Core.Commons
         public static readonly string ProgramDirectory = AppDomain.CurrentDomain.BaseDirectory;
         public static readonly string PortableAppDataDirectory = Path.Combine(ProgramDirectory, PortableAppDataFolderName);
         public static readonly string ProgramPath = GetProgramPath();
+        public static string? AppBundlePath => OperatingSystem.IsMacOS() ? FindBundle(AppDomain.CurrentDomain.BaseDirectory) : null;
         public static readonly string PortableUserConfigFile =
             Path.Combine(AppDataDirectoryOptions.Current.AppDataDirectory ?? ProgramDirectory, "SyncClipboard.json");
         public static readonly string StaticConfigPath =
@@ -175,6 +177,27 @@ namespace SyncClipboard.Core.Commons
                 Directory.CreateDirectory(_templateFileFolder);
             }
             return _templateFileFolder;
+        }
+
+        // Bundle lookup is also used before startup options and the other Env fields are initialized.
+        private static class AppBundleCache
+        {
+            internal static readonly ConcurrentDictionary<string, Lazy<string?>> Paths = new(StringComparer.Ordinal);
+        }
+
+        internal static string? FindBundle(string programDirectory)
+        {
+            var path = Path.TrimEndingDirectorySeparator(Path.GetFullPath(programDirectory));
+            return AppBundleCache.Paths.GetOrAdd(path, static directoryPath => new Lazy<string?>(() =>
+            {
+                for (var directory = new DirectoryInfo(directoryPath); directory is not null; directory = directory.Parent)
+                {
+                    if (directory.Name.EndsWith(".app", StringComparison.OrdinalIgnoreCase)
+                        && File.Exists(Path.Combine(directory.FullName, "Contents", "Info.plist")))
+                        return directory.FullName;
+                }
+                return null;
+            })).Value;
         }
 
         private static string GetProgramPath()

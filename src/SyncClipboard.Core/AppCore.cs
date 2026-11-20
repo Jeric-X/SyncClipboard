@@ -276,9 +276,7 @@ namespace SyncClipboard.Core
             [
                 new MenuItem(I18n.Strings.OpenConfigFile, () => Sys.OpenWithDefaultApp(ConfigManager.Path)),
                 new MenuItem(I18n.Strings.ReloadConfigFile, ReloadConfig),
-#if !MACOS
-                new MenuItem(I18n.Strings.OpenInstallFolder, () => Sys.ShowPathInFileManager(Env.ProgramPath)),
-#endif
+                new MenuItem(I18n.Strings.OpenInstallFolder, () => Sys.ShowPathInFileManager(Env.AppBundlePath ?? Env.ProgramPath)),
                 new MenuItem(I18n.Strings.OpenConfigFileFolder, () => Sys.OpenFolderInFileManager(Env.AppDataDirectory)),
             ];
             contextMenu.AddMenuItemGroup(menu);

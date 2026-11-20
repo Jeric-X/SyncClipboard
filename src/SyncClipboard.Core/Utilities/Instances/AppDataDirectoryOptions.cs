@@ -1,5 +1,4 @@
 using SyncClipboard.Core.Commons;
-using SyncClipboard.Core.Utilities.Updater;
 using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -119,7 +118,7 @@ internal sealed record AppDataDirectoryOptions(string? AppDataDirectory)
         if (AppDataDirectory is null)
             return;
         var normalizedProgramDirectory = NormalizePath(programDirectory);
-        if (OperatingSystem.IsMacOS() && MacUpdaterFiles.FindBundle(normalizedProgramDirectory) is string bundle
+        if (OperatingSystem.IsMacOS() && Env.FindBundle(normalizedProgramDirectory) is string bundle
             && FileSystem.IsWithin(AppDataDirectory, bundle))
         {
             throw new ArgumentException("Choose an application data directory outside the .app bundle.");
