@@ -11,7 +11,7 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
     public async Task StartAsync(UpdateInstallRequest request, CancellationToken token)
     {
         AppInstance.CheckCanInstallUpdate();
-        var bundle = OperatingSystem.IsMacOS() ? MacUpdaterFiles.FindBundle(Env.ProgramDirectory) : null;
+        var bundle = Env.AppBundlePath;
         string workspace;
         if (OperatingSystem.IsLinux())
             workspace = await PrepareUnixUpdaterAsync(LinuxUpdaterFiles.GetFiles(Env.ProgramDirectory), token);
@@ -98,7 +98,7 @@ internal sealed class FileReplacementPackageInstaller : IUpdateInstaller
         programDirectory ??= Env.ProgramDirectory;
         var targetPath = Path.GetFullPath(programDirectory);
         if (OperatingSystem.IsMacOS())
-            targetPath = MacUpdaterFiles.FindBundle(programDirectory) ?? targetPath;
+            targetPath = Env.FindBundle(programDirectory) ?? targetPath;
         else if (OperatingSystem.IsLinux())
             targetPath = appImagePath ?? Env.GetAppImageExecPath()
                 ?? throw new InvalidOperationException("The running AppImage could not be located.");
