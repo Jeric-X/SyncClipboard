@@ -272,6 +272,12 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
                 continue;
             }
 
+            if (_s3Config.DeleteFilesIndividually)
+            {
+                await DeleteFilesIndividuallyAsync(listResponse.S3Objects, cancellationToken);
+                continue;
+            }
+
             var deleteRequest = new DeleteObjectsRequest
             {
                 BucketName = _s3Config.BucketName
@@ -285,25 +291,20 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
             {
                 await _s3Client.DeleteObjectsAsync(deleteRequest, cancellationToken);
             }
-            catch (AmazonS3Exception ex)
+            catch (AmazonS3Exception ex) when (ex.Message == "Missing required header for this request: Content-MD5")
             {
-                if (ex.Message != "Missing required header for this request: Content-MD5")
-                {
-                    throw;
-                }
-
-                foreach (var obj in listResponse.S3Objects)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    var deleteObj = new DeleteObjectRequest
-                    {
-                        BucketName = _s3Config.BucketName,
-                        Key = obj.Key
-                    };
-                    await _s3Client.DeleteObjectAsync(deleteObj, cancellationToken);
-                }
+                await DeleteFilesIndividuallyAsync(listResponse.S3Objects, cancellationToken);
             }
         } while (!string.IsNullOrEmpty(continuationToken));
+    }
+
+    private async Task DeleteFilesIndividuallyAsync(IEnumerable<S3Object> objects, CancellationToken cancellationToken)
+    {
+        foreach (var obj in objects)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await _s3Client.DeleteObjectAsync(_s3Config.BucketName, obj.Key, cancellationToken);
+        }
     }
 
     public void Dispose()
