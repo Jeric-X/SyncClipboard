@@ -43,10 +43,24 @@ public class ServerHistoryTagQueryTests
     }
 
     [TestMethod]
-    public async Task Query_MatchesTextWhenEscapingExceedsTheLikePatternLimit()
+    [DataRow("after!_%")]
+    [DataRow("\0after!_%")]
+    public async Task Query_MatchesClipboardTextAcrossEmbeddedNulls(string term)
     {
         await using var f = await Fixture.CreateAsync(Token);
-        var punctuation = new string('!', 25_000);
+        f.Add("match", []).Text = "before\0AFTER!_%";
+        f.Add("other", []).Text = "before\0AFTER!Xanything";
+        await f.Db.SaveChangesAsync(Token);
+
+        var query = new HistoryQueryDto { SearchText = term, SearchTitles = true };
+        Assert.AreEqual("match", (await f.QueryAsync(query)).Single().Hash);
+    }
+
+    [TestMethod]
+    public async Task Query_MatchesLongLiteralSearchTerms()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        var punctuation = new string('!', 50_001);
         f.Add("match", []).Text = "before" + punctuation + "éA";
         f.Add("other", []).Text = punctuation + "ÉA";
         await f.Db.SaveChangesAsync(Token);
