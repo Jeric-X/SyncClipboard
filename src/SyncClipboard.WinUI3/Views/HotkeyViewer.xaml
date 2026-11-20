@@ -22,11 +22,13 @@
             </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>
-    <ItemsRepeater HorizontalAlignment="Center" ItemsSource="{x:Bind Hotkey.Keys, Mode=OneWay}">
-        <ItemsRepeater.Layout>
-            <StackLayout Orientation="Horizontal" Spacing="4" />
-        </ItemsRepeater.Layout>
-        <ItemsRepeater.ItemTemplate>
+    <ItemsControl HorizontalAlignment="Center" ItemsSource="{x:Bind Hotkey.Keys, Mode=OneWay}">
+        <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" Spacing="4" />
+            </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="mk:Key">
                 <ToggleButton VerticalAlignment="Stretch"
                               Background="{ThemeResource KeybordButtonBackgoundColor}"
@@ -36,6 +38,6 @@
                               IsHitTestVisible="False"
                               Loaded="ToggleButton_Loaded" />
             </DataTemplate>
-        </ItemsRepeater.ItemTemplate>
-    </ItemsRepeater>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
 </UserControl>
