@@ -1258,8 +1258,8 @@ public partial class HistoryViewModel : ObservableObject
     private bool MatchesSearchFilter(HistoryRecordVM vm)
     {
         return string.IsNullOrEmpty(SearchText)
-            || vm.Text.Contains(SearchText, StringComparison.OrdinalIgnoreCase)
-            || vm.Title?.Contains(SearchText.Normalize(), StringComparison.OrdinalIgnoreCase) == true;
+            || HistorySearch.Contains(vm.Text, SearchText)
+            || (vm.Title is not null && HistorySearch.Contains(vm.Title, SearchText.Normalize()));
     }
 
     // 已加载范围是 >= _timeCursor 的记录，< _timeCursor 的记录还未加载

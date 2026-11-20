@@ -1,4 +1,4 @@
-
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
@@ -7,7 +7,11 @@ namespace SyncClipboard.Core.Utilities.History;
 
 public class HistoryDbContext : DbContext
 {
-    private const string dbName = "history.db";
+    private static string ConnectionString { get; } = new SqliteConnectionStringBuilder
+    {
+        DataSource = Path.Combine(Env.AppDataDbPath, "history.db")
+    }.ToString();
+
     public DbSet<HistoryRecord> HistoryRecords { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -17,5 +21,5 @@ public class HistoryDbContext : DbContext
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
-        => options.UseSqlite($"Data Source={Path.Combine(Env.AppDataDbPath, dbName)}");
+        => options.UseSqlite(ConnectionString);
 }

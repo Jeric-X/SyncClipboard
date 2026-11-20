@@ -155,6 +155,35 @@ public class HistoryImportTests
     }
 
     [TestMethod]
+    public async Task Import_InvalidTitleDoesNotRestoreDeletedRecord()
+    {
+        await using var f = new Fixture();
+        await f.InitializeAsync(Token);
+        var item = await f.RecordAsync(new TextProfile("existing content"), Token, new string('a', 257));
+        var backup = await f.ExportAsync([item], Token);
+        var existing = new HistoryRecord
+        {
+            Type = item.ProfileType,
+            Hash = item.Hash,
+            Text = item.Text,
+            Title = "本地标题",
+            IsDeleted = true,
+            Version = 4,
+            SyncStatus = HistorySyncStatus.Synced
+        };
+        f.Db.Add(existing);
+        await f.Db.SaveChangesAsync(Token);
+
+        var result = await f.ImportAsync(backup, Token);
+        Assert.AreEqual(1, result.FailureCount);
+        await f.Db.Entry(existing).ReloadAsync(Token);
+        Assert.IsTrue(existing.IsDeleted);
+        Assert.AreEqual(4, existing.Version);
+        Assert.AreEqual(HistorySyncStatus.Synced, existing.SyncStatus);
+        Assert.AreEqual("本地标题", existing.Title);
+    }
+
+    [TestMethod]
     public async Task ExportThenImport_RestoresAllTypesAttachmentsAndMetadata()
     {
         await using var f = new Fixture();

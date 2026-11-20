@@ -142,8 +142,10 @@ public class HistoryUploadCoordinationTests
         Assert.AreEqual(supportsTitle ? record.Title : null, f.RemoteRecord.Title);
         Assert.IsTrue(supportsTitle ? f.Updates > 0 : f.Updates == 0);
         Assert.AreEqual(0, f.Uploads);
-        Assert.AreEqual(HistorySyncStatus.Synced, record.SyncStatus);
-        Assert.AreEqual("应用图标", record.Title);
+        var snapshot = await f.Manager.GetSyncSnapshotAsync(HistoryRecordKey.From(record), Token);
+        Assert.IsNotNull(snapshot);
+        Assert.AreEqual(HistorySyncStatus.Synced, snapshot.SyncStatus);
+        Assert.AreEqual("应用图标", snapshot.Title);
     }
 
     [TestMethod]

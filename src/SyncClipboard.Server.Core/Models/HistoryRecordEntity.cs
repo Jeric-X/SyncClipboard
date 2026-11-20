@@ -2,11 +2,12 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
 using SyncClipboard.Shared.Models;
+using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Server.Core.Models;
 
 [Table("HistoryRecords")]
-public class HistoryRecordEntity
+public class HistoryRecordEntity : IHistorySearchable
 {
     [Key]
     public int ID { get; set; }
