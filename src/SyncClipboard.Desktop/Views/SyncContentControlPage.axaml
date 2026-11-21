@@ -70,12 +70,12 @@
                 </ui:FASettingsExpanderItem>
                 <ui:FASettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
                                            IsClickEnabled="True"
-                                           Command="{Binding SetFileSyncFilterCommand}"
-                                           Content="{x:Static i18n:Strings.FileSyncFilter}" />
-                <ui:FASettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
-                                           IsClickEnabled="True"
                                            Command="{Binding SetTextSyncFilterCommand}"
                                            Content="{x:Static i18n:Strings.TextSyncFilter}" />
+                <ui:FASettingsExpanderItem ActionIconSource="{StaticResource GoIcon}"
+                                           IsClickEnabled="True"
+                                           Command="{Binding SetFileSyncFilterCommand}"
+                                           Content="{x:Static i18n:Strings.FileSyncFilter}" />
             </ui:FASettingsExpander.Items>
         </ui:FASettingsExpander>
     </StackPanel>
