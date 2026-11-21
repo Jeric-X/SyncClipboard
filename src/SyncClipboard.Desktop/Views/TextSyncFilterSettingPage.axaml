@@ -1,4 +1,4 @@
-<UserControl x:Class="SyncClipboard.Desktop.Views.TextSyncFilterSettingPage"
+﻿<UserControl x:Class="SyncClipboard.Desktop.Views.TextSyncFilterSettingPage"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
@@ -17,21 +17,15 @@
                           AutomationProperties.Name="{x:Static i18n:Strings.FilterMode}" />
             </ui:FASettingsExpander.Footer>
         </ui:FASettingsExpander>
-        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-            <Button HorizontalAlignment="Left" Click="EditRuleClick" IsVisible="{Binding Enabled}">
-                <StackPanel Orientation="Horizontal" Spacing="8">
-                    <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="12" Text="&#xE710;" />
-                    <TextBlock Text="{x:Static i18n:Strings.AddRule}" />
-                </StackPanel>
-            </Button>
-            <TextBlock Grid.Column="1"
-                       Text="{Binding Error}"
-                       Foreground="{DynamicResource SystemFillColorCriticalBrush}"
-                       VerticalAlignment="Center"
-                       TextWrapping="Wrap"
-                       IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-            <Button Grid.Column="2" Content="{x:Static i18n:Strings.SaveSettings}" Command="{Binding ConfirmCommand}" />
-        </Grid>
+        <Button Grid.Row="1"
+                HorizontalAlignment="Left"
+                Click="EditRuleClick"
+                IsVisible="{Binding Enabled}">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="12" Text="&#xE710;" />
+                <TextBlock Text="{x:Static i18n:Strings.AddRule}" />
+            </StackPanel>
+        </Button>
         <ScrollViewer Grid.Row="2" IsVisible="{Binding Enabled}" VerticalScrollBarVisibility="Auto">
             <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"

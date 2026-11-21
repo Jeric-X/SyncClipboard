@@ -3,7 +3,6 @@ using Avalonia.Interactivity;
 using FluentAvalonia.UI.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.I18n;
-using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.ViewModels;
 
 namespace SyncClipboard.Desktop.Views;
@@ -27,23 +26,24 @@ public partial class TextSyncFilterSettingPage : UserControl
             return;
 
         var item = (sender as Button)?.DataContext as EditableTextFilterRule;
-        var rules = settings.Rules;
-        var draft = new EditableTextFilterRule(item?.ToRule() ?? new TextFilterRule(""), settings.FilterMode.Key == "BlackList");
+        var draft = settings.CreateEditor(item);
         var dialog = new TextFilterRuleEditDialog { Title = item is null ? Strings.AddRule : Strings.EditRule, DataContext = draft };
-        if (await dialog.ShowAsync(owner) != FAContentDialogResult.Primary)
-            return;
-
-        if (item is null)
-            rules.Add(draft);
-        else
-            rules[rules.IndexOf(item)] = draft;
+        dialog.PrimaryButtonClick += (_, args) =>
+        {
+            if (settings.TrySaveRule(item, draft))
+                return;
+            args.Cancel = true;
+            item = null;
+            dialog.Title = Strings.TextFilterRuleChanged;
+        };
+        await dialog.ShowAsync(owner);
     }
 
     private void DeleteRuleClick(object? sender, RoutedEventArgs e)
     {
         if (DataContext is TextSyncFilterSettingViewModel settings && sender is Button { DataContext: EditableTextFilterRule item })
         {
-            settings.Rules.Remove(item);
+            settings.DeleteRule(item);
         }
     }
 }

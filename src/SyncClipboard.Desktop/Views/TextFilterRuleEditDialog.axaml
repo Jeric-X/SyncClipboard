@@ -9,7 +9,7 @@
                     PrimaryButtonText="{x:Static i18n:Strings.Confirm}"
                     CloseButtonText="{x:Static i18n:Strings.Cancel}"
                     DefaultButton="Primary"
-                    IsPrimaryButtonEnabled="{Binding ValidationError, Converter={x:Static StringConverters.IsNullOrEmpty}}">
+                    IsPrimaryButtonEnabled="{Binding IsValid}">
     <StackPanel Spacing="12">
         <StackPanel Spacing="4">
             <TextBlock Text="{x:Static i18n:Strings.MatchMode}" />

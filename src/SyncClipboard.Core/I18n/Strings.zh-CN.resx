@@ -648,6 +648,12 @@ Shift + 左键：选中连续范围</value>
   <data name="KeywordMatch" xml:space="preserve">
     <value>包含关键词</value>
   </data>
+  <data name="TextFilterRuleChanged" xml:space="preserve">
+    <value>原规则已变更，要将当前内容添加为新规则吗？</value>
+  </data>
+  <data name="TextFilterListChanged" xml:space="preserve">
+    <value>规则列表已更新，请重新选择要删除的规则。</value>
+  </data>
   <data name="TextFilterPattern" xml:space="preserve">
     <value>关键词或正则表达式</value>
   </data>
