@@ -8,6 +8,7 @@
       xmlns:i18n="using:SyncClipboard.Core.I18n"
       MinWidth="550"
       BorderBrush="Transparent"
+      NavigationCacheMode="Enabled"
       mc:Ignorable="d">
     <StackPanel Spacing="10">
         <ui:SettingsExpander Header="{x:Bind i18n:Strings.ImageAssistant}" IsExpanded="True">

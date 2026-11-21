@@ -35,18 +35,7 @@ internal class TrayIconImpl : TrayIconBase<BitmapImage>
         _serviceStatusViewModel = serviceStatusViewModel;
     }
 
-    public override void Create()
-    {
-        try
-        {
-            _trayIcon.ForceCreate();
-        }
-        catch (Exception ex)
-        {
-            App.Current.Logger.Write("Set Efficiency Mode failed with exception: " + ex.Message);
-            _trayIcon.ForceCreate(false);
-        }
-    }
+    public override void Create() => _trayIcon.ForceCreate(false);
 
     protected override void PostToUIThread(Action action) => _trayIcon.DispatcherQueue.TryEnqueue(action.Invoke);
     protected override void StartAnimationTimer() => _animationTimer.Start();

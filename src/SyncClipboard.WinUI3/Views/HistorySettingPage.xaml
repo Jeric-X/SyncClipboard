@@ -9,6 +9,7 @@
       xmlns:ui="using:CommunityToolkit.WinUI.Controls"
       xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
       xmlns:i18n="using:SyncClipboard.Core.I18n"
+      NavigationCacheMode="Enabled"
       mc:Ignorable="d">
     <Page.Resources>
         <Style x:Key="HistoryShortcutActionStyle" TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">
@@ -70,7 +71,7 @@
                 </ui:SettingsCard>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>
-        <ui:SettingsExpander Header="{x:Bind i18n:Strings.HistoryShortcutSettings}" IsExpanded="True">
+        <ui:SettingsExpander Header="{x:Bind i18n:Strings.HistoryShortcutSettings}" IsExpanded="False">
             <ui:SettingsExpander.HeaderIcon>
                 <FontIcon Glyph="&#xE765;" />
             </ui:SettingsExpander.HeaderIcon>

@@ -8,6 +8,7 @@
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
       xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
       xmlns:local="using:SyncClipboard.WinUI3.Views"
+      NavigationCacheMode="Enabled"
       mc:Ignorable="d">
     <Page.Resources>
         <vc:BoolToPasswordIconConverter x:Key="BoolToPasswordIconConverter" />
