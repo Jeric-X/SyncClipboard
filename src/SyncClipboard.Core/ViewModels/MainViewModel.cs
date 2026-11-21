@@ -27,7 +27,7 @@ namespace SyncClipboard.Core.ViewModels
 
         public void NavigateTo(PageDefinition page, NavigationTransitionEffect effect, object? para = null)
         {
-            services.GetService<IMainWindow>()?.NavigateTo(page, effect, para);
+            services.GetService<IMainWindow>()?.NavigateTo(page, effect, para ?? page.NavigationParameter);
         }
 
         public void NavigateToLastLevel()

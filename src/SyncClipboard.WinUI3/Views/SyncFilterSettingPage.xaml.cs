@@ -9,14 +9,13 @@ using System;
 
 namespace SyncClipboard.WinUI3.Views;
 
-public sealed partial class TextSyncFilterSettingPage : Page
+public sealed partial class SyncFilterSettingPage : Page
 {
-    private readonly TextSyncFilterSettingViewModel _viewModel;
+    private SyncFilterSettingViewModel _viewModel = null!;
 
-    public TextSyncFilterSettingPage()
+    public SyncFilterSettingPage()
     {
         this.InitializeComponent();
-        _viewModel = App.Current.Services.GetRequiredService<TextSyncFilterSettingViewModel>();
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
@@ -25,14 +24,16 @@ public sealed partial class TextSyncFilterSettingPage : Page
         base.OnNavigatedFrom(e);
     }
 
-    protected override void OnNavigatedTo(NavigationEventArgs _)
+    protected override void OnNavigatedTo(NavigationEventArgs e)
     {
+        _viewModel = App.Current.Services.GetRequiredKeyedService<SyncFilterSettingViewModel>(e.Parameter);
+        Bindings.Update();
         ((MainWindow)App.Current.Services.GetRequiredService<IMainWindow>()).DispableScrollViewer();
     }
 
     private async void EditRuleClick(object sender, RoutedEventArgs _)
     {
-        var item = (sender as Button)?.DataContext as EditableTextFilterRule;
+        var item = (sender as Button)?.DataContext as FilterRuleEditor;
         var draft = _viewModel.CreateEditor(item);
         var dialog = new FilterRuleEditDialog(draft)
         {
@@ -45,7 +46,7 @@ public sealed partial class TextSyncFilterSettingPage : Page
 
     private void DeleteRuleClick(object sender, RoutedEventArgs _)
     {
-        if (sender is Button { DataContext: EditableTextFilterRule item })
+        if (sender is Button { DataContext: FilterRuleEditor item })
             _viewModel.DeleteRule(item);
     }
 }

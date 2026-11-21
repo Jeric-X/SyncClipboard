@@ -7,14 +7,14 @@ using SyncClipboard.Core.ViewModels;
 
 namespace SyncClipboard.Desktop.Views;
 
-public partial class TextSyncFilterSettingPage : UserControl
+public partial class SyncFilterSettingPage : UserControl
 {
-    public TextSyncFilterSettingPage()
+    public SyncFilterSettingPage()
     {
         InitializeComponent();
-        AddHandler(FAFrame.NavigatedToEvent, (_, _) =>
+        AddHandler(FAFrame.NavigatedToEvent, (_, e) =>
         {
-            DataContext = App.Current.Services.GetRequiredService<TextSyncFilterSettingViewModel>();
+            DataContext = App.Current.Services.GetRequiredKeyedService<SyncFilterSettingViewModel>(e.Parameter);
             App.Current.MainWindow.DispableScrollViewer();
         }, RoutingStrategies.Direct);
         AddHandler(FAFrame.NavigatedFromEvent, (_, _) => App.Current.MainWindow.EnableScrollViewer(), RoutingStrategies.Direct);
@@ -22,10 +22,10 @@ public partial class TextSyncFilterSettingPage : UserControl
 
     private async void EditRuleClick(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is not TextSyncFilterSettingViewModel settings || TopLevel.GetTopLevel(this) is not Window owner)
+        if (DataContext is not SyncFilterSettingViewModel settings || TopLevel.GetTopLevel(this) is not Window owner)
             return;
 
-        var item = (sender as Button)?.DataContext as EditableTextFilterRule;
+        var item = (sender as Button)?.DataContext as FilterRuleEditor;
         var draft = settings.CreateEditor(item);
         var dialog = new FilterRuleEditDialog(draft) { Title = item is null ? Strings.AddRule : Strings.EditRule };
         if (await dialog.ShowAsync(owner) == FAContentDialogResult.Primary)
@@ -34,7 +34,7 @@ public partial class TextSyncFilterSettingPage : UserControl
 
     private void DeleteRuleClick(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is TextSyncFilterSettingViewModel settings && sender is Button { DataContext: EditableTextFilterRule item })
+        if (DataContext is SyncFilterSettingViewModel settings && sender is Button { DataContext: FilterRuleEditor item })
         {
             settings.DeleteRule(item);
         }

@@ -1,17 +1,17 @@
-﻿<UserControl x:Class="SyncClipboard.Desktop.Views.TextSyncFilterSettingPage"
+﻿<UserControl x:Class="SyncClipboard.Desktop.Views.SyncFilterSettingPage"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:i18n="using:SyncClipboard.Core.I18n"
              xmlns:vm="using:SyncClipboard.Core.ViewModels"
-             x:DataType="vm:TextSyncFilterSettingViewModel">
+             x:DataType="vm:SyncFilterSettingViewModel">
     <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
         <ui:FASettingsExpander Header="{x:Static i18n:Strings.FilterMode}">
             <ui:FASettingsExpander.IconSource>
                 <ui:FAFontIconSource Glyph="&#xE71C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:FASettingsExpander.IconSource>
             <ui:FASettingsExpander.Footer>
-                <ComboBox ItemsSource="{x:Static vm:FileSyncFilterSettingViewModel.Modes}"
+                <ComboBox ItemsSource="{x:Static vm:SyncFilterSettingViewModel.Modes}"
                           SelectedItem="{Binding FilterMode, Mode=TwoWay}"
                           ItemTemplate="{StaticResource LocaleStringTemplate}"
                           AutomationProperties.Name="{x:Static i18n:Strings.FilterMode}" />
@@ -45,7 +45,7 @@
                     </Border>
                     <ItemsControl ItemsSource="{Binding Rules}">
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:EditableTextFilterRule">
+                            <DataTemplate x:DataType="vm:FilterRuleEditor">
                                 <Border Padding="12,8"
                                         Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
                                         BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
@@ -53,7 +53,7 @@
                                     <Grid ColumnDefinitions="2*,*,72" ColumnSpacing="10">
                                         <StackPanel VerticalAlignment="Center" Spacing="2">
                                             <TextBlock Text="{Binding Pattern}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Pattern}" />
-                                            <TextBlock IsVisible="{Binding ExcludeFromHistory}"
+                                            <TextBlock IsVisible="{Binding ShowHistoryExclusion}"
                                                        Text="{x:Static i18n:Strings.ExcludeFromLocalHistory}"
                                                        Foreground="{DynamicResource TextFillColorSecondaryBrush}"
                                                        FontSize="12"
