@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
+using SyncClipboard.Core.Utilities;
 using System.Collections.ObjectModel;
 
 namespace SyncClipboard.Core.ViewModels;
@@ -50,7 +51,7 @@ public partial class TextSyncFilterSettingViewModel : ObservableObject
         {
             foreach (var rule in rules)
             {
-                Error = rule.Validate();
+                Error = TextFilterHelper.ValidateRule(rule);
                 if (Error is not null)
                 {
                     FilterMode = LocaleString<string>.Match(FileSyncFilterSettingViewModel.Modes, mode);

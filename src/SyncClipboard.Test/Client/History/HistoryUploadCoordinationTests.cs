@@ -1433,6 +1433,26 @@ public class HistoryUploadCoordinationTests
     }
 
     [TestMethod]
+    public async Task MissingTextAttachment_DoesNotInterruptOtherHistoryUploads()
+    {
+        await using var f = await Fixture.CreateAsync(Token);
+        f.UserConfig.SetConfig(new TextFilterConfig { FilterMode = "BlackList", BlackList = [new("private")] });
+        var allowed = new TextProfile("plain text");
+        var missing = new TextProfile(new string('a', 12000));
+        await f.Manager.AddLocalProfile(allowed, token: Token);
+        await f.Manager.AddLocalProfile(missing, token: Token);
+        var attachment = await missing.PrepareTransferData(f.GetPersistentDir(), Token);
+        Assert.IsNotNull(attachment);
+        File.Delete(attachment.Path);
+        f.SetupHistoryQuery();
+
+        await f.CreateSyncer().SyncAllAsync(null, Token);
+        var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(record => record.Text == allowed.DisplayText, Token);
+        Assert.AreEqual(HistorySyncStatus.Synced, saved.SyncStatus);
+        Assert.AreEqual(1, f.Uploads);
+    }
+
+    [TestMethod]
     public async Task PulledSyncedRecord_DoesNotScheduleAnUpload()
     {
         await using var f = await Fixture.CreateAsync(Token);

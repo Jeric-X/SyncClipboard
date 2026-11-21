@@ -195,8 +195,8 @@ public class HistorySyncer
             return;
 
         var profile = record.ToProfile();
-        if (await profile.IsDataComplete(false, token) && await CanUploadLocalProfileAsync(profile, token))
-            await _historyTransferQueue.EnqueueUpload(profile, forceResume: true, token);
+        if (await profile.IsDataComplete(false, token))
+            await EnqueueLocalUploadAsync(profile, forceResume: true, token);
     }
 
     private static HistoryRecordUpdateDto CreateUpdateDto(HistoryRecord record) => new()
@@ -369,13 +369,7 @@ public class HistorySyncer
             if (token.IsCancellationRequested)
                 break;
 
-            var profile = record.ToProfile();
-            if (!await CanUploadLocalProfileAsync(profile, token))
-            {
-                continue;
-            }
-
-            await _historyTransferQueue.EnqueueUpload(profile, forceResume: false, token);
+            await EnqueueLocalUploadAsync(record.ToProfile(), forceResume: false, token);
         }
     }
 
@@ -408,13 +402,7 @@ public class HistorySyncer
             }
 
             var token = _syncSession.Token;
-            var profile = record.ToProfile();
-            if (!await CanUploadLocalProfileAsync(profile, token))
-            {
-                return;
-            }
-
-            await _historyTransferQueue.EnqueueUpload(profile, forceResume: true, token);
+            await EnqueueLocalUploadAsync(record.ToProfile(), forceResume: true, token);
             // _logger.Write("HistorySyncer", $"新增记录已加入传输队列[{record.Hash}]");
         }
         catch (OperationCanceledException) { }
@@ -424,12 +412,21 @@ public class HistorySyncer
         }
     }
 
-    private async Task<bool> CanUploadLocalProfileAsync(Profile profile, CancellationToken token)
+    private async Task EnqueueLocalUploadAsync(Profile profile, bool forceResume, CancellationToken token)
     {
-        var validationError = await ContentControlHelper.IsContentValid(profile, token);
-        if (validationError == ContentControlHelper.TextAttachmentMissing)
+        try
+        {
+            if (await ContentControlHelper.IsContentValid(profile, token) is null)
+                await _historyTransferQueue.EnqueueUpload(profile, forceResume, token);
+        }
+        catch (Exception ex) when (!token.IsCancellationRequested && ex is FileNotFoundException or DirectoryNotFoundException)
+        {
             await _historyManager.HandleLocalFileUnavailableAsync(profile.Type, await profile.GetHash(token), token);
-        return validationError is null;
+        }
+        catch (Exception ex) when (!token.IsCancellationRequested && ex is IOException or UnauthorizedAccessException)
+        {
+            _logger.Write("HistorySyncer", $"Could not enqueue local history upload: {ex.Message}");
+        }
     }
 
     private async void OnHistoryRemoved(HistoryRecord record)

@@ -1523,7 +1523,17 @@ public partial class HistoryViewModel : ObservableObject
             return;
         }
 
-        var validationError = await ContentControlHelper.IsContentValid(profile, CancellationToken.None);
+        string? validationError;
+        try
+        {
+            validationError = await ContentControlHelper.IsContentValid(profile, CancellationToken.None);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            ShowWindowToastInfo(string.Format(I18n.Strings.OperationFailedRetryMessage, ex.Message));
+            return;
+        }
+
         if (validationError != null)
         {
             var dialog = AppCore.Current.Services.GetRequiredKeyedService<IMainWindowDialog>("HistoryWindow");
