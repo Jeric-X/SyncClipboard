@@ -17,7 +17,7 @@
                   ItemsSource="{x:Bind Editor.MatchModes}"
                   SelectedItem="{x:Bind Editor.MatchMode, Mode=TwoWay}"
                   DisplayMemberPath="ShownString" />
-        <TextBox Header="{x:Bind i18n:Strings.FileFilterPattern}" PlaceholderText="{x:Bind Editor.PatternPlaceholder}" Text="{x:Bind Editor.Pattern, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <TextBox Header="{x:Bind i18n:Strings.FileFilterPattern}" Text="{x:Bind Editor.Pattern, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
         <HyperlinkButton HorizontalAlignment="Left"
                          Padding="0"
                          Content="{x:Bind i18n:Strings.RegularExpressionQuickReference}"

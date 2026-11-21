@@ -654,9 +654,6 @@ Shift + 左键：选中连续范围</value>
   <data name="TextFilterListChanged" xml:space="preserve">
     <value>规则列表已更新，请重新选择要删除的规则。</value>
   </data>
-  <data name="TextFilterPattern" xml:space="preserve">
-    <value>关键词或正则表达式</value>
-  </data>
   <data name="TextUploadFiltered" xml:space="preserve">
     <value>这段文本已被上传过滤规则拦截。</value>
   </data>

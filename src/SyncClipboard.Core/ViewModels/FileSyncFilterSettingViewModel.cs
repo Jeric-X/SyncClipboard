@@ -233,7 +233,6 @@ public class FileFilterRuleEditor : FilterRuleEditor
 {
     private static readonly LocaleString<bool>[] FileMatchModes = CreateMatchModes(Strings.SuffixMatch);
     public override IReadOnlyList<LocaleString<bool>> MatchModes => FileMatchModes;
-    public override string PatternPlaceholder => Strings.FileFilterPattern;
     public override string? ValidationError
     {
         get

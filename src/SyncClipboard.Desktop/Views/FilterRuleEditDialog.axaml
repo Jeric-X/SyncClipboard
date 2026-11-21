@@ -21,7 +21,7 @@
             </ComboBox.ItemTemplate>
         </ComboBox>
         <TextBlock Text="{x:Static i18n:Strings.FileFilterPattern}" />
-        <TextBox PlaceholderText="{Binding PatternPlaceholder}" Text="{Binding Pattern, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static i18n:Strings.FileFilterPattern}" />
+        <TextBox Text="{Binding Pattern, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="{x:Static i18n:Strings.FileFilterPattern}" />
         <HyperlinkButton HorizontalAlignment="Left"
                          Padding="0"
                          Content="{x:Static i18n:Strings.RegularExpressionQuickReference}"

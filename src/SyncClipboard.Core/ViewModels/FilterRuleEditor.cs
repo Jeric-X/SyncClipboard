@@ -7,7 +7,6 @@ namespace SyncClipboard.Core.ViewModels;
 public abstract partial class FilterRuleEditor : ObservableObject
 {
     public abstract IReadOnlyList<LocaleString<bool>> MatchModes { get; }
-    public abstract string PatternPlaceholder { get; }
     public abstract string? ValidationError { get; }
     public bool IsValid => ValidationError is null;
     public bool CanExcludeFromHistory { get; init; }

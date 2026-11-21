@@ -654,9 +654,6 @@ Shift + left click: Select a continuous range</value>
   <data name="TextFilterListChanged" xml:space="preserve">
     <value>The rules changed. Select the rule to delete from the updated list.</value>
   </data>
-  <data name="TextFilterPattern" xml:space="preserve">
-    <value>Keyword or regular expression</value>
-  </data>
   <data name="TextUploadFiltered" xml:space="preserve">
     <value>Text was blocked by an upload filter rule.</value>
   </data>

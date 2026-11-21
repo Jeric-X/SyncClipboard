@@ -91,7 +91,6 @@ public class EditableTextFilterRule : FilterRuleEditor
 {
     private static readonly LocaleString<bool>[] TextMatchModes = CreateMatchModes(Strings.KeywordMatch);
     public override IReadOnlyList<LocaleString<bool>> MatchModes => TextMatchModes;
-    public override string PatternPlaceholder => Strings.TextFilterPattern;
     public override string? ValidationError => TextFilterHelper.ValidateRule(ToRule());
 
     internal TextFilterRule OriginalRule { get; }
