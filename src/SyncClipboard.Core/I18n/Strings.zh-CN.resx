@@ -645,6 +645,9 @@ Shift + 左键：选中连续范围</value>
   <data name="TextSyncFilter" xml:space="preserve">
     <value>上传文本过滤</value>
   </data>
+  <data name="KeywordMatch" xml:space="preserve">
+    <value>包含关键词</value>
+  </data>
   <data name="TextFilterPattern" xml:space="preserve">
     <value>关键词或正则表达式</value>
   </data>

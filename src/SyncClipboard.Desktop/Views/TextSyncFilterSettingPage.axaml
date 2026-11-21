@@ -1,35 +1,103 @@
 <UserControl x:Class="SyncClipboard.Desktop.Views.TextSyncFilterSettingPage"
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:ui="using:FluentAvalonia.UI.Controls"
              xmlns:i18n="using:SyncClipboard.Core.I18n"
              xmlns:vm="using:SyncClipboard.Core.ViewModels"
-             x:DataType="vm:TextSyncFilterSettingViewModel"
-             d:DesignWidth="800"
-             d:DesignHeight="450"
-             mc:Ignorable="d">
-    <StackPanel Spacing="12">
-        <TextBlock Text="{x:Static i18n:Strings.FilterMode}" />
-        <ComboBox SelectedItem="{Binding FilterMode, Mode=TwoWay}" ItemsSource="{x:Static vm:FileSyncFilterSettingViewModel.Modes}" ItemTemplate="{StaticResource LocaleStringTemplate}" />
-        <StackPanel Spacing="8" IsVisible="{Binding Enabled}">
-            <ItemsControl ItemsSource="{Binding Rules, Mode=OneWay}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate x:DataType="vm:EditableTextFilterRule">
-                        <StackPanel Margin="0,0,0,8" Spacing="4">
-                            <TextBox Text="{Binding Pattern, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" PlaceholderText="{x:Static i18n:Strings.TextFilterPattern}" />
-                            <StackPanel Orientation="Horizontal" Spacing="12">
-                                <CheckBox Content="{x:Static i18n:Strings.RegularExpression}" IsChecked="{Binding UseRegex, Mode=TwoWay}" />
-                                <CheckBox Content="{x:Static i18n:Strings.ExcludeFromLocalHistory}" IsChecked="{Binding ExcludeFromHistory, Mode=TwoWay}" IsVisible="{Binding CanExcludeFromHistory}" />
-                                <Button Click="DeleteRuleClick" Content="{x:Static i18n:Strings.DeleteRule}" />
-                            </StackPanel>
-                        </StackPanel>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <Button Content="{x:Static i18n:Strings.AddRule}" Command="{Binding AddRuleCommand}" />
-        </StackPanel>
-        <TextBlock Text="{Binding Error, Mode=OneWay}" TextWrapping="Wrap" />
-        <Button Content="{x:Static i18n:Strings.Confirm}" Command="{Binding ConfirmCommand}" />
-    </StackPanel>
+             x:DataType="vm:TextSyncFilterSettingViewModel">
+    <Grid RowDefinitions="Auto,Auto,*" RowSpacing="10">
+        <ui:FASettingsExpander Header="{x:Static i18n:Strings.FilterMode}">
+            <ui:FASettingsExpander.IconSource>
+                <ui:FAFontIconSource Glyph="&#xE71C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
+            </ui:FASettingsExpander.IconSource>
+            <ui:FASettingsExpander.Footer>
+                <ComboBox ItemsSource="{x:Static vm:FileSyncFilterSettingViewModel.Modes}"
+                          SelectedItem="{Binding FilterMode, Mode=TwoWay}"
+                          ItemTemplate="{StaticResource LocaleStringTemplate}"
+                          AutomationProperties.Name="{x:Static i18n:Strings.FilterMode}" />
+            </ui:FASettingsExpander.Footer>
+        </ui:FASettingsExpander>
+        <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+            <Button HorizontalAlignment="Left" Click="EditRuleClick" IsVisible="{Binding Enabled}">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="12" Text="&#xE710;" />
+                    <TextBlock Text="{x:Static i18n:Strings.AddRule}" />
+                </StackPanel>
+            </Button>
+            <TextBlock Grid.Column="1"
+                       Text="{Binding Error}"
+                       Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                       VerticalAlignment="Center"
+                       TextWrapping="Wrap"
+                       IsVisible="{Binding Error, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+            <Button Grid.Column="2" Content="{x:Static i18n:Strings.SaveSettings}" Command="{Binding ConfirmCommand}" />
+        </Grid>
+        <ScrollViewer Grid.Row="2" IsVisible="{Binding Enabled}" VerticalScrollBarVisibility="Auto">
+            <Border BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    ClipToBounds="True"
+                    VerticalAlignment="Top">
+                <StackPanel>
+                    <Border Padding="12,8" Background="{DynamicResource CardBackgroundFillColorSecondaryBrush}">
+                        <Grid ColumnDefinitions="2*,*,72" ColumnSpacing="10">
+                            <TextBlock FontWeight="SemiBold" Text="{x:Static i18n:Strings.FileFilterPattern}" />
+                            <TextBlock Grid.Column="1" FontWeight="SemiBold" Text="{x:Static i18n:Strings.MatchMode}" />
+                            <TextBlock Grid.Column="2"
+                                       HorizontalAlignment="Center"
+                                       FontWeight="SemiBold"
+                                       Text="{x:Static i18n:Strings.Operation}" />
+                        </Grid>
+                    </Border>
+                    <ItemsControl ItemsSource="{Binding Rules}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:EditableTextFilterRule">
+                                <Border Padding="12,8"
+                                        Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+                                        BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                        BorderThickness="0,1,0,0">
+                                    <Grid ColumnDefinitions="2*,*,72" ColumnSpacing="10">
+                                        <StackPanel VerticalAlignment="Center" Spacing="2">
+                                            <TextBlock Text="{Binding Pattern}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Pattern}" />
+                                            <TextBlock IsVisible="{Binding ExcludeFromHistory}"
+                                                       Text="{x:Static i18n:Strings.ExcludeFromLocalHistory}"
+                                                       Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                       FontSize="12"
+                                                       TextWrapping="Wrap" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1"
+                                                   VerticalAlignment="Center"
+                                                   Text="{Binding MatchMode.ShownString}"
+                                                   TextWrapping="Wrap" />
+                                        <StackPanel Grid.Column="2"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Orientation="Horizontal"
+                                                    Spacing="4">
+                                            <Button Width="32"
+                                                    Height="32"
+                                                    Padding="0"
+                                                    Click="EditRuleClick"
+                                                    ToolTip.Tip="{x:Static i18n:Strings.EditRule}"
+                                                    AutomationProperties.Name="{x:Static i18n:Strings.EditRule}">
+                                                <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="14" Text="&#xE70F;" />
+                                            </Button>
+                                            <Button Width="32"
+                                                    Height="32"
+                                                    Padding="0"
+                                                    Click="DeleteRuleClick"
+                                                    ToolTip.Tip="{x:Static i18n:Strings.DeleteRule}"
+                                                    AutomationProperties.Name="{x:Static i18n:Strings.DeleteRule}">
+                                                <TextBlock FontFamily="{StaticResource SymbolThemeFontFamily}" FontSize="14" Text="&#xE74D;" />
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+        </ScrollViewer>
+    </Grid>
 </UserControl>

@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
@@ -51,15 +52,16 @@ public partial class TextSyncFilterSettingViewModel : ObservableObject
         {
             foreach (var rule in rules)
             {
-                Error = TextFilterHelper.ValidateRule(rule);
-                if (Error is not null)
+                if (TextFilterHelper.ValidateRule(rule) is { } error)
                 {
+                    Error = string.Format(Strings.SaveConfigFailed, error);
                     FilterMode = LocaleString<string>.Match(FileSyncFilterSettingViewModel.Modes, mode);
                     return;
                 }
             }
         }
 
+        Error = null;
         _configManager.SetConfig(config);
         AppCore.Current.Services.GetRequiredService<MainViewModel>().NavigateToLastLevel();
     }
@@ -68,9 +70,23 @@ public partial class TextSyncFilterSettingViewModel : ObservableObject
 public partial class EditableTextFilterRule(TextFilterRule rule, bool canExcludeFromHistory) : ObservableObject
 {
     public bool CanExcludeFromHistory { get; } = canExcludeFromHistory;
-    [ObservableProperty] private string pattern = rule.Pattern;
-    [ObservableProperty] private bool useRegex = rule.UseRegex;
-    [ObservableProperty] private bool excludeFromHistory = rule.ExcludeFromHistory;
+    public static readonly LocaleString<bool>[] MatchModes = [new(false, Strings.KeywordMatch), new(true, Strings.RegularExpression)];
+
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ValidationError))]
+    private string pattern = rule.Pattern;
+
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(MatchMode), nameof(ValidationError))]
+    private bool useRegex = rule.UseRegex;
+
+    [ObservableProperty] private bool excludeFromHistory = canExcludeFromHistory && rule.ExcludeFromHistory;
+
+    public LocaleString<bool> MatchMode
+    {
+        get => LocaleString<bool>.Match(MatchModes, UseRegex);
+        set => UseRegex = value.Key;
+    }
+
+    public string? ValidationError => TextFilterHelper.ValidateRule(ToRule());
 
     public TextFilterRule ToRule() => new(Pattern, UseRegex, CanExcludeFromHistory && ExcludeFromHistory);
 }
