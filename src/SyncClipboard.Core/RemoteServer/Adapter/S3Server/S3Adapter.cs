@@ -1,11 +1,13 @@
 using Amazon;
 using Amazon.Runtime;
+using Amazon.Runtime.Internal;
 using Amazon.S3;
 using Amazon.S3.Model;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.UserConfigs;
 using System.Net;
+using System.Security.Cryptography;
 using System.Text.Json;
 
 namespace SyncClipboard.Core.RemoteServer.Adapter.S3Server;
@@ -311,7 +313,7 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
         _s3Client.Dispose();
     }
 
-    private AmazonS3Client CreateClient()
+    private S3Client CreateClient()
     {
         var credentials = new BasicAWSCredentials(_s3Config.AccessKeyId, _s3Config.SecretAccessKey);
         var config = new AmazonS3Config();
@@ -343,7 +345,37 @@ public sealed class S3Adapter : IServerAdapter<S3Config>, IStorageBasedServerAda
 
         config.HttpClientFactory = new S3ProxyHttpClientFactory(_proxy);
 
-        return new AmazonS3Client(credentials, config);
+        return new S3Client(credentials, config);
+    }
+
+    private sealed class S3Client(AWSCredentials credentials, AmazonS3Config config) : AmazonS3Client(credentials, config)
+    {
+        protected override void CustomizeRuntimePipeline(RuntimePipeline pipeline)
+        {
+            base.CustomizeRuntimePipeline(pipeline);
+            pipeline.AddHandlerBefore<Signer>(new DeleteObjectsMd5Handler());
+        }
+    }
+
+    private sealed class DeleteObjectsMd5Handler : PipelineHandler
+    {
+        public override Task<T> InvokeAsync<T>(IExecutionContext context)
+        {
+            var request = context.RequestContext.Request;
+            if (request.OriginalRequest is DeleteObjectsRequest)
+            {
+                // Some S3-compatible services require Content-MD5 for the serialized delete list.
+                try
+                {
+                    request.Headers["Content-MD5"] = Convert.ToBase64String(MD5.HashData(request.Content));
+                }
+                catch (CryptographicException)
+                {
+                    // The system may disable MD5. Let the SDK send its usual checksum in that case.
+                }
+            }
+            return base.InvokeAsync<T>(context);
+        }
     }
 
     /// <summary>
