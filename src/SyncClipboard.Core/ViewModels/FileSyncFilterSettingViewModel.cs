@@ -78,22 +78,6 @@ public partial class FileSyncFilterSettingViewModel : ObservableObject
         CanExcludeFromHistory = FilterMode.Key == "BlackList",
     };
 
-    public static string? ValidateRuleEditor(FileFilterRuleEditor editor)
-    {
-        if (string.IsNullOrWhiteSpace(editor.Pattern))
-        {
-            return Strings.FileFilterPatternRequired;
-        }
-
-        var rule = editor.ToRule();
-        if (!FileFilterHelper.TryValidateRule(rule, out var error))
-        {
-            return string.Format(Strings.InvalidRegularExpression, error);
-        }
-
-        return null;
-    }
-
     public void AddItem(FileFilterRule rule)
     {
         rule = NormalizeRule(rule);
@@ -245,35 +229,36 @@ public partial class EditableFileFilterRule : ObservableObject
     };
 }
 
-public partial class FileFilterRuleEditor : ObservableObject
+public class FileFilterRuleEditor : FilterRuleEditor
 {
-    public bool CanExcludeFromHistory { get; init; }
-
-    [ObservableProperty]
-    private bool excludeFromHistory;
-
-    [ObservableProperty]
-    private string pattern = "";
-
-    [ObservableProperty]
-    private LocaleString<FileFilterMatchMode> matchMode = FileSyncFilterSettingViewModel.MatchModes[0];
+    private static readonly LocaleString<bool>[] FileMatchModes = CreateMatchModes(Strings.SuffixMatch);
+    public override IReadOnlyList<LocaleString<bool>> MatchModes => FileMatchModes;
+    public override string PatternPlaceholder => Strings.FileFilterPattern;
+    public override string? ValidationError
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(Pattern))
+                return Strings.FileFilterPatternRequired;
+            return FileFilterHelper.TryValidateRule(ToRule(), out var error)
+                ? null : string.Format(Strings.InvalidRegularExpression, error);
+        }
+    }
 
     public FileFilterRuleEditor(FileFilterRule? rule = null)
     {
         if (rule is null)
-        {
             return;
-        }
 
         Pattern = rule.Pattern;
-        MatchMode = LocaleString<FileFilterMatchMode>.Match(FileSyncFilterSettingViewModel.MatchModes, rule.MatchMode);
+        UseRegex = rule.MatchMode == FileFilterMatchMode.Regex;
         ExcludeFromHistory = rule.ExcludeFromHistory;
     }
 
     public FileFilterRule ToRule() => new()
     {
-        Pattern = MatchMode.Key == FileFilterMatchMode.Regex ? Pattern : Pattern.Trim(),
-        MatchMode = MatchMode.Key,
+        Pattern = UseRegex ? Pattern : Pattern.Trim(),
+        MatchMode = UseRegex ? FileFilterMatchMode.Regex : FileFilterMatchMode.Suffix,
         ExcludeFromHistory = ExcludeFromHistory,
     };
 }

@@ -32,7 +32,7 @@ public sealed partial class FileSyncFilterSettingPage : Page
     private async void AddItemClick(object _, RoutedEventArgs __)
     {
         var editor = _viewModel.CreateRuleEditor();
-        var dialog = new FileFilterRuleEditDialog(editor)
+        var dialog = new FilterRuleEditDialog(editor)
         {
             XamlRoot = XamlRoot,
         };
@@ -51,7 +51,7 @@ public sealed partial class FileSyncFilterSettingPage : Page
         }
 
         var editor = _viewModel.CreateRuleEditor(item.ToRule());
-        var dialog = new FileFilterRuleEditDialog(editor)
+        var dialog = new FilterRuleEditDialog(editor)
         {
             XamlRoot = XamlRoot,
         };

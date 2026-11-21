@@ -87,32 +87,23 @@ public partial class TextSyncFilterSettingViewModel : ObservableObject
     }
 }
 
-public partial class EditableTextFilterRule(TextFilterRule rule, bool canExcludeFromHistory) : ObservableObject
+public class EditableTextFilterRule : FilterRuleEditor
 {
-    internal TextFilterRule OriginalRule { get; } = rule;
-    public bool CanExcludeFromHistory { get; } = canExcludeFromHistory;
-    public static readonly LocaleString<bool>[] MatchModes = [new(false, Strings.KeywordMatch), new(true, Strings.RegularExpression)];
+    private static readonly LocaleString<bool>[] TextMatchModes = CreateMatchModes(Strings.KeywordMatch);
+    public override IReadOnlyList<LocaleString<bool>> MatchModes => TextMatchModes;
+    public override string PatternPlaceholder => Strings.TextFilterPattern;
+    public override string? ValidationError => TextFilterHelper.ValidateRule(ToRule());
 
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(ValidationError), nameof(IsValid))]
-    private string pattern = rule.Pattern;
+    internal TextFilterRule OriginalRule { get; }
 
-    [ObservableProperty, NotifyPropertyChangedFor(nameof(MatchMode), nameof(ValidationError), nameof(IsValid))]
-    private bool useRegex = rule.UseRegex;
-
-    [ObservableProperty] private bool excludeFromHistory = canExcludeFromHistory && rule.ExcludeFromHistory;
-
-    public LocaleString<bool> MatchMode
+    public EditableTextFilterRule(TextFilterRule rule, bool canExcludeFromHistory)
     {
-        get => LocaleString<bool>.Match(MatchModes, UseRegex);
-        set
-        {
-            if (value is not null)
-                UseRegex = value.Key;
-        }
+        OriginalRule = rule;
+        Pattern = rule.Pattern;
+        UseRegex = rule.UseRegex;
+        CanExcludeFromHistory = canExcludeFromHistory;
+        ExcludeFromHistory = canExcludeFromHistory && rule.ExcludeFromHistory;
     }
-
-    public bool IsValid => ValidationError is null;
-    public string? ValidationError => TextFilterHelper.ValidateRule(ToRule());
 
     public TextFilterRule ToRule() => new(Pattern, UseRegex, CanExcludeFromHistory && ExcludeFromHistory);
 }

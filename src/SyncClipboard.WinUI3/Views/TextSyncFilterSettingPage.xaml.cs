@@ -2,9 +2,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.ViewModels;
-using SyncClipboard.Core.I18n;
+using System;
 
 namespace SyncClipboard.WinUI3.Views;
 
@@ -33,7 +34,7 @@ public sealed partial class TextSyncFilterSettingPage : Page
     {
         var item = (sender as Button)?.DataContext as EditableTextFilterRule;
         var draft = _viewModel.CreateEditor(item);
-        var dialog = new TextFilterRuleEditDialog(draft)
+        var dialog = new FilterRuleEditDialog(draft)
         {
             Title = item is null ? Strings.AddRule : Strings.EditRule,
             XamlRoot = XamlRoot,
