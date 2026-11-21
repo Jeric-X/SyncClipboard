@@ -68,7 +68,7 @@
                               Margin="0,10,0,0"
                               VerticalScrollMode="Enabled"
                               VerticalScrollBarVisibility="Auto">
-                    <Frame x:Name="SettingContentFrame" Margin="20,0,20,20" />
+                    <Frame x:Name="SettingContentFrame" Margin="20,0,20,20" CacheSize="10" />
                 </ScrollViewer>
             </Grid>
             <SplitView.Pane>

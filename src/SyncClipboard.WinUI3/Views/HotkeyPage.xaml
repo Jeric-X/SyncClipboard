@@ -9,6 +9,7 @@
       xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
       xmlns:local="using:SyncClipboard.WinUI3.Views"
       xmlns:i18n="using:SyncClipboard.Core.I18n"
+      NavigationCacheMode="Enabled"
       mc:Ignorable="d">
     <Page.Resources>
         <Style TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">

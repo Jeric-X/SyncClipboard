@@ -11,6 +11,7 @@
       xmlns:i18n="using:SyncClipboard.Core.I18n"
       MinWidth="550"
       BorderBrush="Transparent"
+      NavigationCacheMode="Enabled"
       mc:Ignorable="d">
     <StackPanel Spacing="10">
         <ui:SettingsExpander Header="SyncClipboard" IsExpanded="True" Description="{x:Bind _aboutViewModel.Version}">
@@ -18,8 +19,14 @@
                 <ImageIcon Source="{ThemeResource AppLogo}" />
             </ui:SettingsExpander.HeaderIcon>
             <StackPanel Orientation="Horizontal" Spacing="10">
-                <HyperlinkButton FontWeight="SemiBold" Padding="0" Content="{x:Bind i18n:Strings.HomePage}" Command="{x:Bind _aboutViewModel.OpenHomePageCommand}" />
-                <HyperlinkButton FontWeight="SemiBold" Padding="0" Content="{x:Bind i18n:Strings.DownloadPage}" Command="{x:Bind _aboutViewModel.OpenReleasePageCommand}" />
+                <HyperlinkButton FontWeight="SemiBold"
+                                 Padding="0"
+                                 Content="{x:Bind i18n:Strings.HomePage}"
+                                 Command="{x:Bind _aboutViewModel.OpenHomePageCommand}" />
+                <HyperlinkButton FontWeight="SemiBold"
+                                 Padding="0"
+                                 Content="{x:Bind i18n:Strings.DownloadPage}"
+                                 Command="{x:Bind _aboutViewModel.OpenReleasePageCommand}" />
                 <Button Content="{x:Bind i18n:Strings.CheckUpdate}" Command="{x:Bind _aboutViewModel.CheckForUpdateCommand}" />
             </StackPanel>
             <ui:SettingsExpander.Items>

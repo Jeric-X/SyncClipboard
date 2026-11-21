@@ -10,6 +10,7 @@
       xmlns:vc="using:SyncClipboard.WinUI3.ValueConverters"
       MinWidth="550"
       BorderBrush="Transparent"
+      NavigationCacheMode="Enabled"
       mc:Ignorable="d">
     <StackPanel Spacing="10">
         <ui:SettingsExpander Header="{x:Bind i18n:Strings.General}" IsExpanded="True">

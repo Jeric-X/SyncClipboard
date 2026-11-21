@@ -9,6 +9,7 @@
       xmlns:vm="using:SyncClipboard.Core.ViewModels"
       MinWidth="550"
       BorderBrush="Transparent"
+      NavigationCacheMode="Enabled"
       mc:Ignorable="d">
     <Grid>
         <ItemsRepeater ItemsSource="{x:Bind _viewModel.StatusList, Mode=OneWay}">
