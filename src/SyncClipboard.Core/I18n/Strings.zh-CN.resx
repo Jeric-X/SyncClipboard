@@ -642,6 +642,15 @@ Shift + 左键：选中连续范围</value>
   <data name="RetryTimes" xml:space="preserve">
     <value>重试次数</value>
   </data>
+  <data name="TextSyncFilter" xml:space="preserve">
+    <value>上传文本过滤</value>
+  </data>
+  <data name="KeywordMatch" xml:space="preserve">
+    <value>包含关键词</value>
+  </data>
+  <data name="TextUploadFiltered" xml:space="preserve">
+    <value>这段文本已被上传过滤规则拦截。</value>
+  </data>
   <data name="FileSyncFilter" xml:space="preserve">
     <value>上传文件过滤</value>
   </data>

@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="utf-8" ?>
-<Page x:Class="SyncClipboard.WinUI3.Views.FileSyncFilterSettingPage"
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Page x:Class="SyncClipboard.WinUI3.Views.SyncFilterSettingPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -18,9 +18,9 @@
             <ui:SettingsCard.HeaderIcon>
                 <FontIcon Glyph="&#xE71C;" />
             </ui:SettingsCard.HeaderIcon>
-            <ComboBox SelectedItem="{x:Bind _viewModel.FilterMode, Mode=TwoWay}" ItemsSource="{x:Bind vm:FileSyncFilterSettingViewModel.Modes}" DisplayMemberPath="ShownString" />
+            <ComboBox SelectedItem="{x:Bind _viewModel.FilterMode, Mode=TwoWay}" ItemsSource="{x:Bind vm:SyncFilterSettingViewModel.Modes}" DisplayMemberPath="ShownString" />
         </ui:SettingsCard>
-        <Grid Grid.Row="1" Margin="0,10,0,0" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.EnableList), Mode=OneWay}">
+        <Grid Grid.Row="1" Margin="0,10,0,0" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.Enabled), Mode=OneWay}">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
@@ -28,10 +28,10 @@
             <Button Grid.Row="0"
                     Margin="0,0,0,10"
                     HorizontalAlignment="Left"
-                    Click="AddItemClick">
+                    Click="EditRuleClick">
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <FontIcon Glyph="&#xE710;" FontSize="12" />
-                    <TextBlock Text="{x:Bind i18n:Strings.AddItem}" />
+                    <TextBlock Text="{x:Bind i18n:Strings.AddRule}" />
                 </StackPanel>
             </Button>
             <ScrollViewer Grid.Row="1" VerticalScrollMode="Enabled" VerticalScrollBarVisibility="Auto">
@@ -53,9 +53,9 @@
                                    FontWeight="SemiBold"
                                    HorizontalAlignment="Center" />
                     </Grid>
-                    <ItemsControl ItemsSource="{x:Bind _viewModel.FilterList, Mode=OneWay}">
+                    <ItemsControl ItemsSource="{x:Bind _viewModel.Rules, Mode=OneWay}">
                         <ItemsControl.ItemTemplate>
-                            <DataTemplate x:DataType="vm:EditableFileFilterRule">
+                            <DataTemplate x:DataType="vm:FilterRuleEditor">
                                 <Grid Padding="12,8"
                                       Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                                       BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
@@ -65,12 +65,16 @@
                                         <ColumnDefinition Width="1*" />
                                         <ColumnDefinition Width="80" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0"
-                                               Text="{Binding Pattern}"
-                                               TextWrapping="Wrap"
-                                               VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                                        <TextBlock Text="{x:Bind Pattern}" TextTrimming="CharacterEllipsis" ToolTipService.ToolTip="{x:Bind Pattern}" />
+                                        <TextBlock Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowHistoryExclusion)}"
+                                                   Text="{x:Bind i18n:Strings.ExcludeFromLocalHistory}"
+                                                   FontSize="12"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   TextWrapping="Wrap" />
+                                    </StackPanel>
                                     <TextBlock Grid.Column="1"
-                                               Text="{Binding MatchMode.ShownString}"
+                                               Text="{x:Bind MatchMode.ShownString}"
                                                TextWrapping="Wrap"
                                                VerticalAlignment="Center" />
                                     <StackPanel Grid.Column="2"
@@ -78,19 +82,21 @@
                                                 Spacing="4"
                                                 VerticalAlignment="Center"
                                                 HorizontalAlignment="Center">
-                                        <Button Click="EditItemClick"
+                                        <Button Click="EditRuleClick"
                                                 DataContext="{Binding}"
                                                 Width="32"
                                                 Height="32"
                                                 Padding="0"
+                                                AutomationProperties.Name="{x:Bind i18n:Strings.EditRule}"
                                                 ToolTipService.ToolTip="{x:Bind i18n:Strings.EditRule}">
                                             <FontIcon Glyph="&#xE70F;" FontSize="14" />
                                         </Button>
-                                        <Button Click="DeleteItemClick"
+                                        <Button Click="DeleteRuleClick"
                                                 DataContext="{Binding}"
                                                 Width="32"
                                                 Height="32"
                                                 Padding="0"
+                                                AutomationProperties.Name="{x:Bind i18n:Strings.DeleteRule}"
                                                 ToolTipService.ToolTip="{x:Bind i18n:Strings.DeleteRule}">
                                             <FontIcon Glyph="&#xE74D;" FontSize="14" />
                                         </Button>

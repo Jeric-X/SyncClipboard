@@ -3,9 +3,8 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using SyncClipboard.Shared.Models;
 using SyncClipboard.Shared.Utilities;
-using SyncClipboard.Core.ViewModels;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Shared.Clipboard;
 
 [TestClass]
 public class FileFilterHelperTests
@@ -124,22 +123,5 @@ public class FileFilterHelperTests
         var fileName = new string('a', 10_000) + "!";
 
         Assert.IsFalse(FileFilterHelper.IsFileAvailableAfterFilter(fileName, config));
-    }
-
-    [TestMethod]
-    public void RuleEditors_PreserveRegexWhitespaceAndTrimSuffixWhitespace()
-    {
-        const string regexPattern = @" ^report\.txt$ ";
-        var regexRule = new FileFilterRule
-        {
-            Pattern = regexPattern,
-            MatchMode = FileFilterMatchMode.Regex,
-        };
-
-        Assert.AreEqual(regexPattern, new FileFilterRuleEditor(regexRule).ToRule().Pattern);
-        Assert.AreEqual(regexPattern, new EditableFileFilterRule(regexRule).ToRule().Pattern);
-        Assert.AreEqual(
-            ".tmp",
-            new FileFilterRuleEditor(new FileFilterRule { Pattern = " .tmp " }).ToRule().Pattern);
     }
 }

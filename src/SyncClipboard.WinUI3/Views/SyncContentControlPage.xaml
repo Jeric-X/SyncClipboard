@@ -45,6 +45,7 @@
                                SpinButtonPlacementMode="Inline"
                                SmallChange="1" />
                 </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.TextSyncFilter}" IsClickEnabled="True" Command="{x:Bind _viewModel.SetTextSyncFilterCommand}" />
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.FileSyncFilter}" IsClickEnabled="True" Command="{x:Bind _viewModel.SetFileSyncFilterCommand}" />
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>

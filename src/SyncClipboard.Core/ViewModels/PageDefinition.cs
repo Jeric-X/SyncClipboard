@@ -1,7 +1,10 @@
+using SyncClipboard.Core.Models.UserConfigs;
+
 namespace SyncClipboard.Core.ViewModels;
 
 public class PageDefinition(string name, string title, string? fontIcon = null)
 {
+    public object? NavigationParameter { get; init; }
     public string Name { get; set; } = name;
     public string Title { get; set; } = title;
     public string? FontIcon { get; set; } = fontIcon ?? "\uE115";
@@ -21,7 +24,10 @@ public class PageDefinition(string name, string title, string? fontIcon = null)
     public static readonly PageDefinition DefaultAddAccount = new("AccountConfigEdit", I18n.Strings.EditAccountConfig);
     public static readonly PageDefinition NetworkAccountSwitch = new("NetworkAccountSwitch", I18n.Strings.AutoSwitchAccount);
     public static readonly PageDefinition CurrentNetworkStatus = new("CurrentNetworkStatus", I18n.Strings.CurrentNetworkStatus);
-    public static readonly PageDefinition FileSyncFilterSetting = new("FileSyncFilterSetting", I18n.Strings.FileSyncFilter);
+    public static readonly PageDefinition FileSyncFilterSetting =
+        new("SyncFilterSetting", I18n.Strings.FileSyncFilter) { NavigationParameter = FileFilterConfig.ConfigKey };
+    public static readonly PageDefinition TextSyncFilterSetting =
+        new("SyncFilterSetting", I18n.Strings.TextSyncFilter) { NavigationParameter = TextFilterConfig.ConfigKey };
     public static readonly PageDefinition ClipboardOwnerFilterSetting = new("ClipboardOwnerFilterSetting", I18n.Strings.ClipboardOwnerFilter);
     public static readonly PageDefinition SyncContentControl = new("SyncContentControl", I18n.Strings.SyncContentControl);
     public static readonly PageDefinition Hotkey = new("Hotkey", I18n.Strings.Hotkeys, "\uE144");

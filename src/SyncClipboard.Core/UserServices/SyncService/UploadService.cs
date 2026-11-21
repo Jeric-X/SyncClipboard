@@ -237,7 +237,7 @@ public class UploadService : ClipboardHander
             return "Skipped: Sensitive content marked by system.";
         }
 
-        return await ContentControlHelper.IsContentValid(profile, token);
+        return await ContentControlHelper.IsContentValid(profile, token, meta.Text);
     }
 
     protected override async Task HandleClipboard(ClipboardMetaInfomation meta, Profile profile, CancellationToken token)

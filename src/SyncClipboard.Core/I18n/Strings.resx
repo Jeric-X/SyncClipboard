@@ -642,6 +642,15 @@ Shift + left click: Select a continuous range</value>
   <data name="RetryTimes" xml:space="preserve">
     <value>Retry Times</value>
   </data>
+  <data name="TextSyncFilter" xml:space="preserve">
+    <value>Upload text filter</value>
+  </data>
+  <data name="KeywordMatch" xml:space="preserve">
+    <value>Contains keyword</value>
+  </data>
+  <data name="TextUploadFiltered" xml:space="preserve">
+    <value>Text was blocked by an upload filter rule.</value>
+  </data>
   <data name="FileSyncFilter" xml:space="preserve">
     <value>Uploading File Filter</value>
   </data>

@@ -29,7 +29,7 @@ public class SyncClipboardConfigRegistryTests
     [TestMethod]
     public void ConfigRegistry_ScansBaseAndOptionalKeyAttributes()
     {
-        Assert.HasCount(24, SyncClipboardConfigRegistry.Configurations);
+        Assert.HasCount(25, SyncClipboardConfigRegistry.Configurations);
 
         foreach (var registration in SyncClipboardConfigRegistry.Configurations)
         {

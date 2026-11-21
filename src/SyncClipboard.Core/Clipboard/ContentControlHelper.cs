@@ -1,5 +1,6 @@
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace SyncClipboard.Core.Clipboard;
@@ -9,7 +10,7 @@ public static class ContentControlHelper
     private static SyncConfig GetSyncConfig() => AppCore.Current.Services.GetRequiredService<ConfigManager>().GetConfig<SyncConfig>();
     private static FileFilterConfig GetFileFilterConfig() => AppCore.Current.Services.GetRequiredService<ConfigManager>().GetConfig<FileFilterConfig>();
 
-    public static async Task<string?> IsContentValid(Profile profile, CancellationToken token)
+    public static async Task<string?> IsContentValid(Profile profile, CancellationToken token, string? clipboardText = null)
     {
         var syncConfig = GetSyncConfig();
 
@@ -25,7 +26,12 @@ public static class ContentControlHelper
         if (typeValidationError != null)
             return typeValidationError;
 
-        return await ValidateSize(profile, syncConfig, token);
+        var sizeError = await ValidateSize(profile, syncConfig, token);
+        if (sizeError is not null || profile is not TextProfile text)
+            return sizeError;
+
+        var filter = AppCore.Current.Services.GetRequiredService<ConfigManager>().GetConfig<TextFilterConfig>();
+        return await TextFilterHelper.AllowsUploadAsync(text, filter, token, clipboardText) ? null : I18n.Strings.TextUploadFiltered;
     }
 
     private static string? ValidateTextUpload(SyncConfig config) =>

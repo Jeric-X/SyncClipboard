@@ -2,7 +2,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Shared.Models;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Client.Clipboard;
 
 [TestClass]
 public class FileSyncFilterSettingViewModelTests
@@ -37,20 +37,20 @@ public class FileSyncFilterSettingViewModelTests
     {
         _config.SetConfig(new FileFilterConfig { FileFilterMode = "BlackList" });
         var viewModel = new FileSyncFilterSettingViewModel(_config);
-        var editor = viewModel.CreateRuleEditor();
+        var editor = viewModel.CreateEditor();
         editor.Pattern = " .tmp ";
         editor.ExcludeFromHistory = true;
 
-        viewModel.AddItem(editor.ToRule());
+        viewModel.SaveRule(null, editor);
         var reloaded = new FileSyncFilterSettingViewModel(new ConfigBase(_configPath));
-        var saved = reloaded.FilterList.Single();
+        var saved = reloaded.Rules.Single();
         Assert.AreEqual(".tmp", saved.Pattern);
         Assert.IsTrue(saved.ExcludeFromHistory);
 
-        editor = reloaded.CreateRuleEditor(saved.ToRule());
+        editor = reloaded.CreateEditor(saved);
         Assert.IsTrue(editor.ExcludeFromHistory);
         editor.ExcludeFromHistory = false;
-        reloaded.UpdateItem(saved, editor.ToRule());
+        reloaded.SaveRule(saved, editor);
 
         var config = new ConfigBase(_configPath).GetConfig<FileFilterConfig>();
         Assert.HasCount(1, config.BlackList);
@@ -62,10 +62,10 @@ public class FileSyncFilterSettingViewModelTests
     {
         _config.SetConfig(new FileFilterConfig { FileFilterMode = "BlackList" });
         var viewModel = new FileSyncFilterSettingViewModel(_config);
-        viewModel.AddItem(new FileFilterRule { Pattern = ".tmp" });
-        viewModel.AddItem(new FileFilterRule { Pattern = ".tmp", ExcludeFromHistory = true });
+        viewModel.SaveRule(null, new FileFilterRuleEditor { Pattern = ".tmp", CanExcludeFromHistory = true });
+        viewModel.SaveRule(null, new FileFilterRuleEditor { Pattern = ".tmp", CanExcludeFromHistory = true, ExcludeFromHistory = true });
 
-        Assert.HasCount(1, viewModel.FilterList);
+        Assert.HasCount(1, viewModel.Rules);
         Assert.HasCount(1, _config.GetConfig<FileFilterConfig>().BlackList);
     }
 
@@ -74,12 +74,13 @@ public class FileSyncFilterSettingViewModelTests
     {
         _config.SetConfig(new FileFilterConfig { FileFilterMode = "BlackList" });
         var viewModel = new FileSyncFilterSettingViewModel(_config);
-        var rule = new FileFilterRule { Pattern = ".tmp" };
+        var rule = viewModel.CreateEditor();
+        rule.Pattern = ".tmp";
 
-        viewModel.AddItem(rule);
-        viewModel.AddItem(rule);
+        viewModel.SaveRule(null, rule);
+        viewModel.SaveRule(null, rule);
 
-        Assert.HasCount(1, viewModel.FilterList);
+        Assert.HasCount(1, viewModel.Rules);
         Assert.HasCount(1, _config.GetConfig<FileFilterConfig>().BlackList);
     }
 
@@ -88,11 +89,13 @@ public class FileSyncFilterSettingViewModelTests
     {
         _config.SetConfig(new FileFilterConfig { FileFilterMode = "BlackList" });
         var viewModel = new FileSyncFilterSettingViewModel(_config);
-        viewModel.AddItem(new FileFilterRule { Pattern = ".tmp" });
-        viewModel.AddItem(new FileFilterRule { Pattern = ".log" });
-        var itemToUpdate = viewModel.FilterList[1];
+        viewModel.SaveRule(null, new FileFilterRuleEditor { Pattern = ".tmp", CanExcludeFromHistory = true });
+        viewModel.SaveRule(null, new FileFilterRuleEditor { Pattern = ".log", CanExcludeFromHistory = true });
+        var itemToUpdate = viewModel.Rules[1];
 
-        viewModel.UpdateItem(itemToUpdate, new FileFilterRule { Pattern = ".tmp" });
+        var edit = viewModel.CreateEditor(itemToUpdate);
+        edit.Pattern = ".tmp";
+        viewModel.SaveRule(itemToUpdate, edit);
 
         Assert.AreEqual(".log", itemToUpdate.Pattern);
         CollectionAssert.AreEqual(
@@ -101,7 +104,7 @@ public class FileSyncFilterSettingViewModelTests
     }
 
     [TestMethod]
-    public void SaveToConfig_ReconcilesPreexistingDuplicateRules()
+    public void SavingRule_ReconcilesPreexistingDuplicateRules()
     {
         var duplicateRule = new FileFilterRule { Pattern = ".tmp" };
         _config.SetConfig(new FileFilterConfig
@@ -111,9 +114,27 @@ public class FileSyncFilterSettingViewModelTests
         });
         var viewModel = new FileSyncFilterSettingViewModel(_config);
 
-        viewModel.SaveToConfig();
+        var addition = viewModel.CreateEditor();
+        addition.Pattern = ".log";
+        viewModel.SaveRule(null, addition);
 
-        Assert.HasCount(1, viewModel.FilterList);
-        Assert.HasCount(1, _config.GetConfig<FileFilterConfig>().BlackList);
+        CollectionAssert.AreEqual(ExpectedDistinctPatterns, viewModel.Rules.Select(item => item.Pattern).ToArray());
+        CollectionAssert.AreEqual(ExpectedDistinctPatterns, _config.GetConfig<FileFilterConfig>().BlackList.Select(rule => rule.Pattern).ToArray());
+    }
+
+    [TestMethod]
+    public void RuleEditor_PreservesRegexWhitespaceAndTrimsSuffixWhitespace()
+    {
+        const string regexPattern = @" ^report\.txt$ ";
+        var regexRule = new FileFilterRule
+        {
+            Pattern = regexPattern,
+            MatchMode = FileFilterMatchMode.Regex,
+        };
+
+        Assert.AreEqual(regexPattern, new FileFilterRuleEditor(regexRule).ToRule().Pattern);
+        Assert.AreEqual(
+            ".tmp",
+            new FileFilterRuleEditor(new FileFilterRule { Pattern = " .tmp " }).ToRule().Pattern);
     }
 }

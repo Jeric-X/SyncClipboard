@@ -293,6 +293,9 @@ public partial class SyncSettingViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void SetTextSyncFilter() => _mainVM.NavigateToNextLevel(PageDefinition.TextSyncFilterSetting);
+
+    [RelayCommand]
     private void SetFileSyncFilter()
     {
         _mainVM.NavigateToNextLevel(PageDefinition.FileSyncFilterSetting);
