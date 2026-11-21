@@ -11,15 +11,15 @@ namespace SyncClipboard.Core.ViewModels;
 public partial class TextSyncFilterSettingViewModel : ObservableObject
 {
     private readonly ConfigManager _configManager;
-    private LocaleString<string> _filterMode = FileSyncFilterSettingViewModel.Modes[0];
+    private TextFilterConfig _config = new();
 
     public LocaleString<string> FilterMode
     {
-        get => _filterMode;
+        get => LocaleString<string>.Match(FileSyncFilterSettingViewModel.Modes, _config.FilterMode);
         set
         {
-            if (value is not null && value != _filterMode)
-                Save(_configManager.GetConfig<TextFilterConfig>() with { FilterMode = value.Key });
+            if (value is not null && value.Key != _config.FilterMode)
+                _configManager.SetConfig(_config with { FilterMode = value.Key });
         }
     }
 
@@ -29,59 +29,51 @@ public partial class TextSyncFilterSettingViewModel : ObservableObject
     public TextSyncFilterSettingViewModel(ConfigManager configManager)
     {
         _configManager = configManager;
-        Refresh(configManager.GetConfig<TextFilterConfig>());
+        configManager.ConfigChanged += Refresh;
+        Refresh();
     }
 
     public EditableTextFilterRule CreateEditor(EditableTextFilterRule? item) =>
         new(item?.ToRule() ?? new TextFilterRule(""), FilterMode.Key == "BlackList");
 
-    public bool TrySaveRule(EditableTextFilterRule? item, EditableTextFilterRule editor) =>
-        editor.IsValid && ChangeRule(item, editor.ToRule(), editor.CanExcludeFromHistory);
+    public void SaveRule(EditableTextFilterRule? item, EditableTextFilterRule editor)
+    {
+        if (!editor.IsValid)
+            return;
+
+        var config = _configManager.GetConfig<TextFilterConfig>();
+        var rules = editor.CanExcludeFromHistory ? config.BlackList : config.WhiteList;
+        if (item is null)
+            rules.Add(editor.ToRule());
+        else
+        {
+            var index = Rules.IndexOf(item);
+            if (index < 0 || index >= rules.Count)
+                return;
+            rules[index] = editor.ToRule();
+        }
+        _configManager.SetConfig(config);
+    }
 
     public void DeleteRule(EditableTextFilterRule item)
     {
-        if (!ChangeRule(item, null, item.CanExcludeFromHistory))
-            AppCore.Current.NotificationManager.ShowText(Strings.TextSyncFilter, Strings.TextFilterListChanged);
+        var config = _configManager.GetConfig<TextFilterConfig>();
+        var rules = item.CanExcludeFromHistory ? config.BlackList : config.WhiteList;
+        var index = Rules.IndexOf(item);
+        if (index < 0 || index >= rules.Count)
+            return;
+        rules.RemoveAt(index);
+        _configManager.SetConfig(config);
     }
 
-    private bool ChangeRule(EditableTextFilterRule? item, TextFilterRule? replacement, bool blackList)
+    private void Refresh()
     {
         var config = _configManager.GetConfig<TextFilterConfig>();
-        var rules = blackList ? config.BlackList : config.WhiteList;
-        if (item is null && replacement is not null)
-        {
-            rules.Add(replacement);
-        }
-        else if (item is not null)
-        {
-            var index = Rules.IndexOf(item);
-            if (index < 0 || index >= rules.Count || rules[index] != item.OriginalRule)
-            {
-                Refresh(config);
-                return false;
-            }
-            if (replacement is null)
-                rules.RemoveAt(index);
-            else
-                rules[index] = replacement;
-        }
-        Save(config);
-        return true;
-    }
-
-    private void Save(TextFilterConfig config)
-    {
-        _configManager.SetConfig(config);
-        Refresh(_configManager.GetConfig<TextFilterConfig>());
-    }
-
-    private void Refresh(TextFilterConfig config)
-    {
-        _filterMode = LocaleString<string>.Match(FileSyncFilterSettingViewModel.Modes, config.FilterMode);
+        if (!SetProperty(ref _config, config, nameof(FilterMode)))
+            return;
         var blackList = FilterMode.Key == "BlackList";
         var rules = blackList ? config.BlackList : config.WhiteList;
         Rules = Enabled ? rules.Select(rule => new EditableTextFilterRule(rule, blackList)).ToList().AsReadOnly() : new([]);
-        OnPropertyChanged(nameof(FilterMode));
         OnPropertyChanged(nameof(Enabled));
         OnPropertyChanged(nameof(Rules));
     }
@@ -93,11 +85,8 @@ public class EditableTextFilterRule : FilterRuleEditor
     public override IReadOnlyList<LocaleString<bool>> MatchModes => TextMatchModes;
     public override string? ValidationError => TextFilterHelper.ValidateRule(ToRule());
 
-    internal TextFilterRule OriginalRule { get; }
-
     public EditableTextFilterRule(TextFilterRule rule, bool canExcludeFromHistory)
     {
-        OriginalRule = rule;
         Pattern = rule.Pattern;
         UseRegex = rule.UseRegex;
         CanExcludeFromHistory = canExcludeFromHistory;

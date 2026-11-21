@@ -648,12 +648,6 @@ Shift + left click: Select a continuous range</value>
   <data name="KeywordMatch" xml:space="preserve">
     <value>Contains keyword</value>
   </data>
-  <data name="TextFilterRuleChanged" xml:space="preserve">
-    <value>The original rule changed. Add this as a new rule?</value>
-  </data>
-  <data name="TextFilterListChanged" xml:space="preserve">
-    <value>The rules changed. Select the rule to delete from the updated list.</value>
-  </data>
   <data name="TextUploadFiltered" xml:space="preserve">
     <value>Text was blocked by an upload filter rule.</value>
   </data>

@@ -28,15 +28,8 @@ public partial class TextSyncFilterSettingPage : UserControl
         var item = (sender as Button)?.DataContext as EditableTextFilterRule;
         var draft = settings.CreateEditor(item);
         var dialog = new FilterRuleEditDialog(draft) { Title = item is null ? Strings.AddRule : Strings.EditRule };
-        dialog.PrimaryButtonClick += (_, args) =>
-        {
-            if (settings.TrySaveRule(item, draft))
-                return;
-            args.Cancel = true;
-            item = null;
-            dialog.Title = Strings.TextFilterRuleChanged;
-        };
-        await dialog.ShowAsync(owner);
+        if (await dialog.ShowAsync(owner) == FAContentDialogResult.Primary)
+            settings.SaveRule(item, draft);
     }
 
     private void DeleteRuleClick(object? sender, RoutedEventArgs e)

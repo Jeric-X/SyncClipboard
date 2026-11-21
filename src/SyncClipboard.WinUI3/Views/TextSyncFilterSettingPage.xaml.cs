@@ -39,15 +39,8 @@ public sealed partial class TextSyncFilterSettingPage : Page
             Title = item is null ? Strings.AddRule : Strings.EditRule,
             XamlRoot = XamlRoot,
         };
-        dialog.PrimaryButtonClick += (_, args) =>
-        {
-            if (_viewModel.TrySaveRule(item, draft))
-                return;
-            args.Cancel = true;
-            item = null;
-            dialog.Title = Strings.TextFilterRuleChanged;
-        };
-        await dialog.ShowAsync();
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            _viewModel.SaveRule(item, draft);
     }
 
     private void DeleteRuleClick(object sender, RoutedEventArgs _)
