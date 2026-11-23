@@ -48,6 +48,7 @@ public record HistoryShortcutConfig
 
     public static Hotkey GetDefault(HistoryShortcutAction action) => action switch
     {
+        HistoryShortcutAction.QuickPastePrefix when OperatingSystem.IsWindows() => new(Key.Ctrl),
         HistoryShortcutAction.QuickPastePrefix => new(OperatingSystem.IsMacOS() ? Key.Meta : Key.Alt),
         HistoryShortcutAction.Search => new(Key.Ctrl, Key.F),
         HistoryShortcutAction.EditTags => new(Key.Ctrl, Key.T),
@@ -79,7 +80,9 @@ public record HistoryShortcutConfig
             return hotkey;
         var fallback = GetDefault(action);
         // Older configurations can already use the new default prefix with a digit.
-        if (action == HistoryShortcutAction.QuickPastePrefix && Shortcuts.Values.Any(value => GetQuickPasteNumber(fallback, value) != 0))
+        if (action == HistoryShortcutAction.QuickPastePrefix &&
+            (Shortcuts.Values.Any(value => GetQuickPasteNumber(fallback, value) != 0) ||
+             RecordShortcuts.Any(binding => GetQuickPasteNumber(fallback, binding.Hotkey) != 0)))
             return Hotkey.Nothing;
         return fallback;
     }
