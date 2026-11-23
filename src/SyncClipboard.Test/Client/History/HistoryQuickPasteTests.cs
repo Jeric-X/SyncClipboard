@@ -74,20 +74,24 @@ public class HistoryQuickPasteTests
     {
         var custom = visible[10];
         var editor = Model.CreateRecordShortcutEditor(custom.Key);
-        editor.EditingShortcut = new(Key.F8);
+        editor.EditingShortcut = new(Key.Meta, Key.Alt, Key.K);
         editor.SaveCommand.Execute(null);
         Model.HandleKeyPress(Key.Shift, prefix);
         CollectionAssert.AreEqual(Enumerable.Range(1, 9).Select(i => i.ToString()).ToArray(),
-            visible.Take(9).Select(r => r.TimeOrShortcut).ToArray());
-        Assert.AreEqual(visible[9].RelativeTime, visible[9].TimeOrShortcut);
-        Assert.AreEqual("F8", custom.TimeOrShortcut);
+            visible.Take(9).Select(r => r.QuickPasteKeys.Single().Label).ToArray());
+        Assert.IsFalse(visible[9].HasQuickPasteKeys);
+        var expectedLabels = OperatingSystem.IsMacOS() ? new[] { "⌥", "⌘", "K" }
+            : [OperatingSystem.IsWindows() ? "Win" : "Super", "Alt", "K"];
+        CollectionAssert.AreEqual(expectedLabels, custom.QuickPasteKeys.Select(key => key.Label).ToArray());
+        Assert.AreEqual(OperatingSystem.IsWindows(), custom.QuickPasteKeys[0].ShowWindowsLogo);
+        Assert.AreEqual(OperatingSystem.IsMacOS() ? "Option+Cmd+K" : string.Join("+", expectedLabels), custom.QuickPasteShortcutName);
 
         var oldFirst = visible[0];
         visible = visible.Skip(2).ToArray();
         Model.RefreshQuickPasteHints();
-        Assert.AreEqual(oldFirst.RelativeTime, oldFirst.TimeOrShortcut);
-        Assert.AreEqual("1", visible[0].TimeOrShortcut);
-        Assert.AreEqual("F8", visible[8].TimeOrShortcut);
+        Assert.IsFalse(oldFirst.HasQuickPasteKeys);
+        Assert.AreEqual("1", visible[0].QuickPasteKeys.Single().Label);
+        CollectionAssert.AreEqual(expectedLabels, visible[8].QuickPasteKeys.Select(key => key.Label).ToArray());
 
         var target = visible[1].Text;
         Assert.IsTrue(Model.HandleKeyPress(Key.NumPad2, prefix));
@@ -100,7 +104,7 @@ public class HistoryQuickPasteTests
         await Model.HandleKeyReleaseAsync(Key.Ctrl, Hotkey.Nothing);
         CollectionAssert.AreEqual(new[] { target }, copied);
         simulator.Verify(s => s.SimulateKeyPress(KeyCode.VcV), Times.Once);
-        Assert.IsTrue(visible.All(row => row.TimeOrShortcut == row.RelativeTime));
+        Assert.IsTrue(visible.All(row => !row.HasQuickPasteKeys));
     }
 
     [TestMethod]

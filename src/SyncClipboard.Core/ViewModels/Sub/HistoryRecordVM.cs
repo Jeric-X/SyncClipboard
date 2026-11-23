@@ -86,13 +86,13 @@ public partial class HistoryRecordVM : ObservableObject
     partial void OnSortByLastAccessedChanged(bool oldValue, bool newValue) => UpdateRelativeTime();
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(TimeOrShortcut))]
     private string relativeTime = string.Empty;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(TimeOrShortcut))]
-    private string? quickPasteHint;
-    public string TimeOrShortcut => QuickPasteHint ?? RelativeTime;
+    [NotifyPropertyChangedFor(nameof(HasQuickPasteKeys), nameof(QuickPasteShortcutName))]
+    private HistoryKeycap[] quickPasteKeys = [];
+    public bool HasQuickPasteKeys => QuickPasteKeys.Length != 0;
+    public string QuickPasteShortcutName => string.Join("+", QuickPasteKeys.Select(key => key.Name));
 
     public string FullDateTime
     {

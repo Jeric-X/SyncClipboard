@@ -1,7 +1,6 @@
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.ViewModels.Sub;
 
 namespace SyncClipboard.Core.ViewModels;
@@ -48,9 +47,9 @@ public partial class HistoryViewModel
             var row = visible[i];
             var binding = hintConfig.RecordShortcuts.FirstOrDefault(binding => binding.Record == row.Key);
             if (binding is not null)
-                row.QuickPasteHint = HistoryShortcutDescriptions.Format(binding.Hotkey);
+                row.QuickPasteKeys = HistoryKeycap.FromHotkey(binding.Hotkey);
             else if (i < 9)
-                row.QuickPasteHint = (i + 1).ToString();
+                row.QuickPasteKeys = [new HistoryKeycap(Key._1 + i)];
         }
     }
 
@@ -59,7 +58,7 @@ public partial class HistoryViewModel
         if (visibleQuickPasteRecords is null)
             return;
         foreach (var record in visibleQuickPasteRecords)
-            record.QuickPasteHint = null;
+            record.QuickPasteKeys = [];
         visibleQuickPasteRecords = null;
     }
 

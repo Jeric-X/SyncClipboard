@@ -25,6 +25,28 @@
           KeyboardAcceleratorPlacementMode="Hidden"
           RowDefinitions="Auto, Auto, Auto, *">
         <Grid.Resources>
+            <DataTemplate x:Key="HistoryKeycapTemplate" x:DataType="vms:HistoryKeycap">
+                <Border MinWidth="20"
+                        Height="21"
+                        Padding="4,0"
+                        CornerRadius="4"
+                        Background="{ThemeResource ControlFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource ControlStrokeColorDefaultBrush}"
+                        BorderThickness="1,1,1,2">
+                    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="{x:Bind Label, Mode=OneWay}"
+                                   FontSize="12"
+                                   FontWeight="Medium"
+                                   Visibility="{x:Bind vc:ConvertMethod.BoolToVisibilityNegate(ShowWindowsLogo), Mode=OneWay}" />
+                        <Path Width="11"
+                              Height="11"
+                              Stretch="Uniform"
+                              Fill="{ThemeResource TextFillColorPrimaryBrush}"
+                              Data="M0,0h5v5H0z M6,0h5v5H6z M0,6h5v5H0z M6,6h5v5H6z"
+                              Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(ShowWindowsLogo), Mode=OneWay}" />
+                    </Grid>
+                </Border>
+            </DataTemplate>
             <local:HotkeyEditDialog x:Key="RecordShortcutEditor"
                                     Title="{x:Bind i18n:Strings.RecordPasteShortcut}"
                                     Hotkey="{Binding EditingShortcut, Mode=TwoWay}"
@@ -338,12 +360,26 @@
                                     VerticalAlignment="Top"
                                     Padding="12,0,0,0">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="{x:Bind TimeOrShortcut, Mode=OneWay}"
+                                    <TextBlock Text="{x:Bind RelativeTime, Mode=OneWay}"
+                                               Visibility="{x:Bind vc:ConvertMethod.BoolToVisibilityNegate(HasQuickPasteKeys), Mode=OneWay}"
                                                VerticalAlignment="Center"
                                                Margin="0,0,8,0"
                                                Opacity="0.6"
                                                FontSize="12"
                                                ToolTipService.ToolTip="{x:Bind FullDateTime, Mode=OneWay}" />
+                                    <ItemsControl ItemsSource="{x:Bind QuickPasteKeys, Mode=OneWay}"
+                                                  ItemTemplate="{StaticResource HistoryKeycapTemplate}"
+                                                  Margin="0,0,8,0"
+                                                  VerticalAlignment="Center"
+                                                  Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(HasQuickPasteKeys), Mode=OneWay}"
+                                                  AutomationProperties.Name="{x:Bind QuickPasteShortcutName, Mode=OneWay}"
+                                                  ToolTipService.ToolTip="{x:Bind QuickPasteShortcutName, Mode=OneWay}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <StackPanel Orientation="Horizontal" Spacing="3" />
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                    </ItemsControl>
                                     <!--  Control buttons - hidden when preview panel is open  -->
                                     <local:RecordControlBar Record="{x:Bind}" Loaded="RecordControlBarLoaded" />
                                 </StackPanel>
