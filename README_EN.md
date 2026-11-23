@@ -10,7 +10,13 @@
   <img src="docs/image/intro-history-light.webp" width="80%" alt="SyncClipboard history panels on Windows, Linux, and macOS">
 </p>
 
-SyncClipboard syncs the clipboard across Windows, macOS, Linux, and Android, with support for iOS and iPadOS through Shortcuts. Copy text, images, or files on one device and paste them directly on another. SyncClipboard also lets you manage and sync clipboard history and improves local clipboard compatibility with different image formats. For more information, see the [documentation](https://syncclipboard.top/en/).
+SyncClipboard is a cross-platform clipboard sync tool. Copy text, images, or files on one device and paste them directly on another.
+
+The official clients support Windows, macOS, Linux, and Android. On iOS, you can sync using Shortcuts.
+
+SyncClipboard also lets you manage and sync clipboard history and improves clipboard compatibility with different image formats.
+
+[Start syncing](https://syncclipboard.top/en/getting-started.html).
 
 ## Open Source Dependencies
 
