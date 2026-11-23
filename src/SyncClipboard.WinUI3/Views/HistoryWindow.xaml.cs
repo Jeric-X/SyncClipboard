@@ -594,13 +594,19 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
             return;
         }
 
-        e.Handled = _viewModel.HandleKeyPress(key.Value, GetModifiers());
+        e.Handled = _viewModel.HandleKeyPress(key.Value, GetModifiers(), GetPhysicalKey(e));
     }
 
     private async void Grid_KeyUp(object _, KeyRoutedEventArgs e)
     {
-        if (KeyboardMap.ConvertFromVirtualKey(e.Key) is { } key)
-            await _viewModel.HandleKeyReleaseAsync(key, GetModifiers());
+        var key = KeyboardMap.ConvertFromVirtualKey(e.Key);
+        await _viewModel.HandleKeyReleaseAsync(key, GetModifiers(), GetPhysicalKey(e));
+    }
+
+    private static int GetPhysicalKey(KeyRoutedEventArgs e)
+    {
+        var status = e.KeyStatus;
+        return status.ScanCode == 0 ? 0 : (int)status.ScanCode | (status.IsExtendedKey ? 0x100 : 0);
     }
 
     private static Hotkey GetModifiers()

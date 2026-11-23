@@ -909,7 +909,7 @@ public partial class HistoryViewModel : ObservableObject
         bool isMetaPressed = false)
         => HandleKeyPress(key, Hotkey.FromModifiers(isShiftPressed, isAltPressed, isCtrlPressed, isMetaPressed));
 
-    public bool HandleKeyPress(Key key, Hotkey modifiers)
+    public bool HandleKeyPress(Key key, Hotkey modifiers, int physicalKey = 0)
     {
         if (HasModalOperation)
             return false;
@@ -938,7 +938,7 @@ public partial class HistoryViewModel : ObservableObject
             return hintConfig is not null;
         }
         UpdateQuickPastePrefix(config, modifiers);
-        if (!IsMultiSelecting && TryStartQuickPaste(config, key, hotkey))
+        if (!IsMultiSelecting && TryStartQuickPaste(config, physicalKey == 0 ? ~(int)key : physicalKey, hotkey))
             return true;
         return HandleShortcut(config.Match(hotkey));
     }

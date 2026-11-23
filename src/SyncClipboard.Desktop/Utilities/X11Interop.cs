@@ -1,3 +1,4 @@
+using Avalonia.Input;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
@@ -17,6 +18,40 @@ internal static class X11Interop
             return _isAvailable.Value;
         }
     }
+
+    internal static bool? IsModifierDown(nint display, KeyModifiers modifier)
+    {
+        const uint coreKeyboard = 0x0100;
+        if (display == nint.Zero || XkbGetState(display, coreKeyboard, out var state) != 0)
+            return null;
+        // Use the server's modifier mapping, including additional keys mapped to the same modifier.
+        var (left, right) = modifier switch
+        {
+            KeyModifiers.Shift => (0xffe1u, 0xffe2u),
+            KeyModifiers.Control => (0xffe3u, 0xffe4u),
+            KeyModifiers.Alt => (0xffe9u, 0xffeau),
+            KeyModifiers.Meta => (0xffebu, 0xffecu),
+            _ => (0u, 0u)
+        };
+        var mask = XkbKeysymToModifiers(display, left) | XkbKeysymToModifiers(display, right);
+        return mask == 0 ? null : (state.Modifiers & mask) != 0;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct XkbState
+    {
+        public byte Group, LockedGroup;
+        public ushort BaseGroup, LatchedGroup;
+        public byte Modifiers, BaseModifiers, LatchedModifiers, LockedModifiers, CompatState;
+        public byte GrabModifiers, CompatGrabModifiers, LookupModifiers, CompatLookupModifiers;
+        public ushort PointerButtons;
+    }
+
+    [DllImport(LibX11)]
+    private static extern int XkbGetState(nint display, uint deviceSpec, out XkbState state);
+
+    [DllImport(LibX11)]
+    private static extern uint XkbKeysymToModifiers(nint display, nuint keysym);
 
     [DllImport(LibX11)]
     internal static extern nint XOpenDisplay(nint display);

@@ -90,7 +90,7 @@ public class HistoryQuickPasteTests
 
         var oldFirst = visible[0];
         var target = visible[1].Text;
-        Model.HandleKeyPress(Key.Alt, new(Key.Ctrl, Key.Shift, Key.Alt));
+        Model.HandleKeyPress(Key.Alt, new Hotkey(Key.Ctrl, Key.Shift, Key.Alt));
         visible = fixture.Records.Skip(6).Take(12).ToArray();
         Model.RefreshQuickPasteHints();
         Assert.IsFalse(oldFirst.HasQuickPasteKeys);
@@ -113,6 +113,34 @@ public class HistoryQuickPasteTests
 
         Model.HandleKeyPress(Key.Shift, prefix);
         Assert.AreEqual("1", visible[0].QuickPasteKeys.Single().Label);
+    }
+
+    [TestMethod]
+    public async Task ReleasingPrefixFirstWaitsForTheDigitBeforePasting()
+    {
+        // The prefix may already be held when the panel gains focus.
+        Assert.IsTrue(Model.HandleKeyPress(Key.NumPad1, prefix, physicalKey: 42));
+        await Model.HandleKeyReleaseAsync(Key.Shift, new(Key.Ctrl));
+        await Model.HandleKeyReleaseAsync(Key.Ctrl, Hotkey.Nothing);
+        Assert.IsEmpty(copied);
+        await Model.HandleKeyReleaseAsync(Key.End, Hotkey.Nothing, physicalKey: 42);
+        Assert.AreEqual(visible[0].Text, copied.Single());
+    }
+
+    [TestMethod]
+    public async Task UnidentifiableKeyReleaseCancelsPasteAndAllowsNextShortcut()
+    {
+        Assert.IsTrue(Model.HandleKeyPress(Key.NumPad1, prefix));
+        await Model.HandleKeyReleaseAsync(Key.Shift, new(Key.Ctrl));
+        await Model.HandleKeyReleaseAsync(Key.Ctrl, Hotkey.Nothing);
+        await Model.HandleKeyReleaseAsync(Key.End, Hotkey.Nothing);
+        Assert.IsEmpty(copied);
+        Assert.IsFalse(Model.HandleKeyPress(Key.A));
+        Assert.IsTrue(Model.HandleKeyPress(Key._2, prefix));
+        await Model.HandleKeyReleaseAsync(Key._2, prefix);
+        await Model.HandleKeyReleaseAsync(Key.Shift, new(Key.Ctrl));
+        await Model.HandleKeyReleaseAsync(Key.Ctrl, Hotkey.Nothing);
+        Assert.AreEqual(visible[1].Text, copied.Single());
     }
 
     [TestMethod]
@@ -143,6 +171,28 @@ public class HistoryQuickPasteTests
         editor.EditingShortcut = Hotkey.Nothing;
         Assert.IsTrue(await editor.TrySaveAsync(dialog.Object));
         Assert.IsFalse(Model.HandleKeyPress(Key.F7));
+    }
+
+    [TestMethod]
+    public async Task LosingFocusWhileClipboardIsBusyCancelsPaste()
+    {
+        var shortcut = new Hotkey(Key.F7);
+        config.SetConfig(config.GetConfig<HistoryShortcutConfig>().WithRecordShortcut(visible[0].Key, shortcut));
+        Task paste;
+        await LocalClipboard.Semaphore.WaitAsync(TestContext.CancellationTokenSource.Token);
+        try
+        {
+            Assert.IsTrue(Model.HandleKeyPress(Key.F7));
+            paste = Model.HandleKeyReleaseAsync(Key.F7, Hotkey.Nothing);
+            Model.OnLostFocus();
+        }
+        finally
+        {
+            LocalClipboard.Semaphore.Release();
+        }
+        await paste.WaitAsync(TestContext.CancellationTokenSource.Token);
+        Assert.IsEmpty(copied);
+        simulator.Verify(s => s.SimulateKeyPress(KeyCode.VcV), Times.Never);
     }
 
     [TestMethod]
@@ -209,6 +259,26 @@ public class HistoryQuickPasteTests
 
         Assert.IsFalse(await editor.TrySaveAsync(dialog.Object));
         Assert.AreEqual(new HistoryRecordShortcut(second.Key, shortcut), config.GetConfig<HistoryShortcutConfig>().RecordShortcuts.Single());
+    }
+
+    [TestMethod]
+    public async Task DeletingTargetDuringConfirmationPreservesOriginalBinding()
+    {
+        var target = visible[0];
+        var owner = visible[1];
+        var shortcut = new Hotkey(Key.F8);
+        config.SetConfig(config.GetConfig<HistoryShortcutConfig>().WithRecordShortcut(owner.Key, shortcut));
+        var editor = Model.CreateRecordShortcutEditor(target.Key);
+        editor.EditingShortcut = shortcut;
+        dialog.Setup(d => d.ShowConfirmationAsync(Strings.HistoryShortcutReassignTitle, It.IsAny<string>()))
+            .Returns(async () =>
+            {
+                await fixture.Manager.DeleteHistory(target.ToHistoryRecord(), TestContext.CancellationTokenSource.Token);
+                return true;
+            });
+
+        await Assert.ThrowsExactlyAsync<InvalidOperationException>(() => editor.TrySaveAsync(dialog.Object));
+        Assert.AreEqual(new HistoryRecordShortcut(owner.Key, shortcut), config.GetConfig<HistoryShortcutConfig>().RecordShortcuts.Single());
     }
 
     [TestMethod]

@@ -49,6 +49,10 @@ public partial class HistoryRecordShortcutEditor : ObservableObject
         var approved = new HashSet<HistoryRecordKey>();
         while (true)
         {
+            if (shortcut != Hotkey.Nothing &&
+                await historyManager.GetHistoryRecord(record.Hash, record.Type, CancellationToken.None) is not { IsDeleted: false })
+                throw new InvalidOperationException(Strings.HistoryExportRemoved);
+
             var config = configManager.GetConfig<HistoryShortcutConfig>();
             Validate(config);
             if (!CanSave || EditingShortcut != shortcut)

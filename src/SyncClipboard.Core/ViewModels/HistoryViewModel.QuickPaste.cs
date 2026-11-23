@@ -11,8 +11,11 @@ public partial class HistoryViewModel
     private IReadOnlyList<HistoryRecordVM>? visibleQuickPasteRecords;
     private HistoryRecordKey[]? numberedQuickPasteRecords;
     private HistoryRecordKey? pendingPasteRecord;
-    private Key? pendingPasteKey;
+    private int? pendingPasteKey;
     private bool pastingRecord;
+    private CancellationTokenSource? pastePreparation;
+
+    public bool IsTrackingQuickPaste => hintConfig is not null || pendingPasteRecord.HasValue;
 
     private void UpdateQuickPastePrefix(HistoryShortcutConfig config, Hotkey modifiers)
     {
@@ -78,14 +81,15 @@ public partial class HistoryViewModel
         ClearVisibleHints();
     }
 
-    private void CancelQuickPaste()
+    public void CancelQuickPaste()
     {
+        pastePreparation?.Cancel();
         ClearQuickPasteHints();
         pendingPasteKey = null;
         pendingPasteRecord = null;
     }
 
-    private bool TryStartQuickPaste(HistoryShortcutConfig config, Key key, Hotkey hotkey)
+    private bool TryStartQuickPaste(HistoryShortcutConfig config, int keyIdentity, Hotkey hotkey)
     {
         if (pendingPasteRecord.HasValue)
             return true;
@@ -101,11 +105,11 @@ public partial class HistoryViewModel
 
         // Wait for the physical modifiers to be released before sending Ctrl/Cmd+V.
         pendingPasteRecord = target;
-        pendingPasteKey = hotkey.Keys.Length == 1 ? key : null;
+        pendingPasteKey = keyIdentity;
         return true;
     }
 
-    public async Task HandleKeyReleaseAsync(Key key, Hotkey modifiers)
+    public async Task HandleKeyReleaseAsync(Key? key, Hotkey modifiers, int physicalKey = 0)
     {
         if (HasModalOperation || IsMultiSelecting)
         {
@@ -117,21 +121,35 @@ public partial class HistoryViewModel
         else
             UpdateQuickPastePrefix(_configManager.GetConfig<HistoryShortcutConfig>(), modifiers);
 
-        if (key == pendingPasteKey)
+        if ((physicalKey == 0 ? ~(int?)key : physicalKey) == pendingPasteKey)
             pendingPasteKey = null;
+        else if (pendingPasteKey.HasValue && (physicalKey == 0 || pendingPasteKey < 0) &&
+            key is not (Key.Ctrl or Key.Shift or Key.Alt or Key.Meta))
+        {
+            // With no scan code, a layout change can make the release impossible to match reliably.
+            CancelQuickPaste();
+            return;
+        }
         if (pendingPasteKey.HasValue || modifiers != Hotkey.Nothing || pendingPasteRecord is not { } target)
             return;
         pendingPasteRecord = null;
         pastingRecord = true;
+        using var preparation = new CancellationTokenSource();
+        pastePreparation = preparation;
 
         try
         {
             await RunWithOperationTimeoutAsync("quick paste", async token =>
             {
                 var record = await historyManager.GetHistoryRecord(target.Hash, target.Type, token);
-                if (record is { IsDeleted: false })
-                    await CopyToClipboard(new HistoryRecordVM(record), true, token);
-            });
+                if (record is not { IsDeleted: false } || IsMultiSelecting ||
+                    !await SetRecordClipboardAsync(new HistoryRecordVM(record), closeAfterCopy: false, token))
+                    return;
+                token.ThrowIfCancellationRequested();
+                // Changing focus is intentional from here onward.
+                pastePreparation = null;
+                await PasteToLastExternalWindowAsync(token);
+            }, preparation.Token);
         }
         catch (Exception ex)
         {
@@ -139,6 +157,7 @@ public partial class HistoryViewModel
         }
         finally
         {
+            pastePreparation = null;
             pastingRecord = false;
         }
     }

@@ -32,6 +32,9 @@ namespace SyncClipboard.Desktop.Views;
 
 public partial class HistoryWindow : Window, IWindow
 {
+    private nint x11KeyboardDisplay;
+    private readonly Dictionary<PhysicalKey, KeyModifiers> x11PressedModifiers = [];
+
     public async void ShowTagPicker()
     {
         if (_viewModel.HasModalOperation || _viewModel.IsMultiSelecting || _viewModel.SelectedItem is not { } record)
@@ -167,6 +170,7 @@ public partial class HistoryWindow : Window, IWindow
         // Handle configured keys before the search box, without intercepting modal dialog input.
         _HistoryContent.AddHandler(KeyDownEvent, HistoryWindow_KeyDown, RoutingStrategies.Tunnel);
         _HistoryContent.AddHandler(KeyUpEvent, HistoryWindow_KeyUp, RoutingStrategies.Tunnel);
+        _HistoryContent.AddHandler(LostFocusEvent, (_, _) => x11PressedModifiers.Clear(), RoutingStrategies.Bubble, handledEventsToo: true);
         _ListBox.LayoutUpdated += (_, _) => _viewModel.RefreshQuickPasteHints();
         if (OperatingSystem.IsLinux())
             WindowDecorationsTheme = (ControlTheme)this.FindResource("LinuxHistoryWindowDecorationsTheme")!;
@@ -178,9 +182,15 @@ public partial class HistoryWindow : Window, IWindow
         UpdateSelectAllIcon();
         UpdateToggleStarIcon();
 
+        Closed += (_, _) =>
+        {
+            if (OperatingSystem.IsLinux() && x11KeyboardDisplay != nint.Zero)
+                _ = X11Interop.XCloseDisplay(x11KeyboardDisplay);
+        };
         this.Deactivated += (_, _) =>
         {
             ResetPointerInteractionState();
+            x11PressedModifiers.Clear();
             _viewModel.OnLostFocus();
         };
         this.Activated += (_, _) =>
@@ -254,13 +264,39 @@ public partial class HistoryWindow : Window, IWindow
             return;
         }
 
-        e.Handled = _viewModel.HandleKeyPress(key.Value, GetModifiers(e.KeyModifiers));
+        if (OperatingSystem.IsLinux() && Utilities.KeyboardMap.ModifierMap.TryGetValue(key.Value, out var modifier) &&
+            e.PhysicalKey != PhysicalKey.None && this.TryGetPlatformHandle()?.HandleDescriptor == "XID")
+            x11PressedModifiers[e.PhysicalKey] = modifier;
+        e.Handled = _viewModel.HandleKeyPress(key.Value, GetModifiers(e.KeyModifiers), (int)e.PhysicalKey);
     }
 
     private async void HistoryWindow_KeyUp(object? sender, KeyEventArgs e)
     {
-        if (Utilities.KeyboardMap.ConvertFromAvalonia(e.Key) is { } key)
-            await _viewModel.HandleKeyReleaseAsync(key, GetModifiers(e.KeyModifiers));
+        var key = Utilities.KeyboardMap.ConvertFromAvalonia(e.Key);
+        var modifiers = e.KeyModifiers;
+        x11PressedModifiers.Remove(e.PhysicalKey);
+        if (OperatingSystem.IsLinux() && key.HasValue &&
+            Utilities.KeyboardMap.ModifierMap.TryGetValue(key.Value, out var released) && modifiers.HasFlag(released) &&
+            !x11PressedModifiers.ContainsValue(released) && this.TryGetPlatformHandle()?.HandleDescriptor == "XID")
+        {
+            // X11 reports pre-release modifiers. The other side may already have been held when the window gained focus.
+            if (!_viewModel.IsTrackingQuickPaste && modifiers == released)
+                modifiers = KeyModifiers.None;
+            else
+            {
+                if (x11KeyboardDisplay == nint.Zero)
+                    x11KeyboardDisplay = X11Interop.XOpenDisplay(nint.Zero);
+                var stillDown = X11Interop.IsModifierDown(x11KeyboardDisplay, released);
+                if (stillDown is null)
+                {
+                    _viewModel.CancelQuickPaste();
+                    return;
+                }
+                if (!stillDown.Value)
+                    modifiers &= ~released;
+            }
+        }
+        await _viewModel.HandleKeyReleaseAsync(key, GetModifiers(modifiers), (int)e.PhysicalKey);
     }
 
     private static Hotkey GetModifiers(KeyModifiers modifiers)
