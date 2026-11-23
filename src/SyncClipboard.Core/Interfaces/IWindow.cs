@@ -1,4 +1,5 @@
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.ViewModels.Sub;
 
 namespace SyncClipboard.Core.Interfaces;
 
@@ -15,6 +16,7 @@ public interface IWindow
     void NavigateTagFilter(bool forward) { }
     void NavigateTagFilterVertically(bool down) { }
     void ToggleTagBarExpanded() { }
+    IReadOnlyList<HistoryRecordVM> GetVisibleHistoryRecords() => [];
     void ScrollToTop() { }
     void ScrollToSelectedItem() { }
     void SetTopmost(bool topmost) { }

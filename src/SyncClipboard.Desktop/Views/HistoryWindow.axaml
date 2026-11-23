@@ -34,6 +34,14 @@
                     <SolidColorBrush x:Key="HistoryMultiSelectBarBackground" Color="#66252525" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
+            <local:HotkeyEditDialog x:Key="RecordShortcutEditor"
+                                    x:DataType="vm:HistoryRecordShortcutEditor"
+                                    Title="{x:Static i18n:Strings.RecordPasteShortcut}"
+                                    Hotkey="{Binding EditingShortcut, Mode=TwoWay}"
+                                    IsError="{Binding HasError}"
+                                    IsPrimaryButtonEnabled="{Binding CanSave}"
+                                    SaveCommand="{Binding SaveCommand}"
+                                    ErrorMessage="{Binding ErrorMessage}" />
             <x:Double x:Key="TabItemMinHeight">38</x:Double>
             <ControlTheme x:Key="LinuxHistoryWindowDecorationsTheme" TargetType="WindowDrawnDecorations" BasedOn="{StaticResource {x:Type WindowDrawnDecorations}}">
                 <Setter Property="DefaultShadowThickness" Value="0" />
@@ -388,7 +396,7 @@
                                         VerticalAlignment="Top"
                                         Padding="12,0,0,0">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="2">
-                                        <TextBlock Text="{Binding RelativeTime}"
+                                        <TextBlock Text="{Binding TimeOrShortcut}"
                                                    VerticalAlignment="Center"
                                                    Margin="0,0,8,0"
                                                    Opacity="0.6"

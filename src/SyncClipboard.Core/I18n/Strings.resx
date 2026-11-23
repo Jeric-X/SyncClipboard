@@ -1823,4 +1823,19 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryTitleInvalidCharacter" xml:space="preserve">
     <value>Contains invalid characters.</value>
   </data>
+  <data name="QuickPastePrefix" xml:space="preserve">
+    <value>Quick paste prefix</value>
+  </data>
+  <data name="QuickPasteVisibleRecord" xml:space="preserve">
+    <value>Paste a visible history record</value>
+  </data>
+  <data name="RecordPasteShortcut" xml:space="preserve">
+    <value>Set paste shortcut</value>
+  </data>
+  <data name="QuickPasteModifiersOnly" xml:space="preserve">
+    <value>Use one or more modifier keys for the quick paste prefix.</value>
+  </data>
+  <data name="HistoryRecordPasteBinding" xml:space="preserve">
+    <value>Paste a specific history record</value>
+  </data>
 </root>

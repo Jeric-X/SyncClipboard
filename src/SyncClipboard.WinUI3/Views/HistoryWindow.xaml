@@ -21,9 +21,17 @@
     </Window.SystemBackdrop>
     <Grid x:Name="_HistoryWindowGrid"
           PreviewKeyDown="Grid_KeyDown"
+          PreviewKeyUp="Grid_KeyUp"
           KeyboardAcceleratorPlacementMode="Hidden"
           RowDefinitions="Auto, Auto, Auto, *">
         <Grid.Resources>
+            <local:HotkeyEditDialog x:Key="RecordShortcutEditor"
+                                    Title="{x:Bind i18n:Strings.RecordPasteShortcut}"
+                                    Hotkey="{Binding EditingShortcut, Mode=TwoWay}"
+                                    IsError="{Binding HasError}"
+                                    IsPrimaryButtonEnabled="{Binding CanSave}"
+                                    SaveCommand="{Binding SaveCommand}"
+                                    ErrorMessage="{Binding ErrorMessage}" />
             <!--  Keep focus on the search box so history keyboard shortcuts remain available.  -->
             <Style TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">
                 <Setter Property="Height" Value="28" />
@@ -330,7 +338,7 @@
                                     VerticalAlignment="Top"
                                     Padding="12,0,0,0">
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                    <TextBlock Text="{x:Bind RelativeTime, Mode=OneWay}"
+                                    <TextBlock Text="{x:Bind TimeOrShortcut, Mode=OneWay}"
                                                VerticalAlignment="Center"
                                                Margin="0,0,8,0"
                                                Opacity="0.6"

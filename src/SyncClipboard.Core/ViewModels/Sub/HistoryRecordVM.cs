@@ -86,7 +86,13 @@ public partial class HistoryRecordVM : ObservableObject
     partial void OnSortByLastAccessedChanged(bool oldValue, bool newValue) => UpdateRelativeTime();
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TimeOrShortcut))]
     private string relativeTime = string.Empty;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(TimeOrShortcut))]
+    private string? quickPasteHint;
+    public string TimeOrShortcut => QuickPasteHint ?? RelativeTime;
 
     public string FullDateTime
     {
