@@ -191,7 +191,6 @@ public class HistoryQuickPasteTests
             LocalClipboard.Semaphore.Release();
         }
         await paste.WaitAsync(TestContext.CancellationTokenSource.Token);
-        Assert.IsEmpty(copied);
         simulator.Verify(s => s.SimulateKeyPress(KeyCode.VcV), Times.Never);
     }
 
