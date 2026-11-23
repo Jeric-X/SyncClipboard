@@ -1830,7 +1830,7 @@ Shift + 左键：选中连续范围</value>
     <value>粘贴当前可见的历史记录</value>
   </data>
   <data name="RecordPasteShortcut" xml:space="preserve">
-    <value>设置粘贴快捷键</value>
+    <value>设置快捷键</value>
   </data>
   <data name="QuickPasteModifiersOnly" xml:space="preserve">
     <value>请使用一个或多个修饰键作为快速粘贴前缀。</value>

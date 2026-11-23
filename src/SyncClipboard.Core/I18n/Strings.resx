@@ -1830,7 +1830,7 @@ Choose whether to use the default location or select another folder.</value>
     <value>Paste a visible history record</value>
   </data>
   <data name="RecordPasteShortcut" xml:space="preserve">
-    <value>Set paste shortcut</value>
+    <value>Set shortcut</value>
   </data>
   <data name="QuickPasteModifiersOnly" xml:space="preserve">
     <value>Use one or more modifier keys for the quick paste prefix.</value>
