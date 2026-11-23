@@ -597,7 +597,7 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         e.Handled = _viewModel.HandleKeyPress(key.Value, GetModifiers());
     }
 
-    private void Grid_KeyUp(object _, KeyRoutedEventArgs e) => _viewModel.UpdateQuickPasteModifiers(GetModifiers());
+    private void Grid_KeyUp(object _, KeyRoutedEventArgs _1) => _viewModel.UpdateQuickPasteModifiers(GetModifiers());
 
     private static Hotkey GetModifiers()
     {
