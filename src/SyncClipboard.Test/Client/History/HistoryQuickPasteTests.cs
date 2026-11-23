@@ -94,53 +94,29 @@ public class HistoryQuickPasteTests
         visible = fixture.Records.Skip(6).Take(12).ToArray();
         Model.RefreshQuickPasteHints();
         Assert.IsFalse(oldFirst.HasQuickPasteKeys);
-        await Model.HandleKeyReleaseAsync(Key.Alt, prefix);
+        Model.UpdateQuickPasteModifiers(prefix);
         Assert.AreEqual("3", visible[0].QuickPasteKeys.Single().Label);
         Assert.IsFalse(visible[^1].HasQuickPasteKeys);
         CollectionAssert.AreEqual(expectedLabels, visible[8].QuickPasteKeys.Select(key => key.Label).ToArray());
 
         Assert.IsTrue(Model.HandleKeyPress(Key.NumPad2, prefix));
         Assert.IsTrue(Model.HandleKeyPress(Key.NumPad2, prefix));
-        visible = visible.Skip(1).ToArray();
-        Model.RefreshQuickPasteHints();
-        await Model.HandleKeyReleaseAsync(Key.NumPad2, prefix);
-        Assert.IsEmpty(copied);
-        await Model.HandleKeyReleaseAsync(Key.Shift, new(Key.Ctrl));
-        await Model.HandleKeyReleaseAsync(Key.Ctrl, Hotkey.Nothing);
+        await Model.ActiveQuickPaste!;
+        var calls = simulator.Invocations.ToList();
+        var pasteIndex = calls.FindIndex(call => call.Method.Name == nameof(IEventSimulator.SimulateKeyPress) &&
+            Equals(call.Arguments[0], KeyCode.VcV));
+        foreach (var key in new[] { KeyCode.VcLeftControl, KeyCode.VcRightControl, KeyCode.VcLeftShift, KeyCode.VcRightShift, KeyCode.VcNumPad2 })
+        {
+            Assert.IsTrue(calls.Take(pasteIndex).Any(call => call.Method.Name == nameof(IEventSimulator.SimulateKeyRelease) &&
+                Equals(call.Arguments[0], key)));
+        }
         CollectionAssert.AreEqual(new[] { target }, copied);
         simulator.Verify(s => s.SimulateKeyPress(KeyCode.VcV), Times.Once);
+        Model.UpdateQuickPasteModifiers(Hotkey.Nothing);
         Assert.IsTrue(visible.All(row => !row.HasQuickPasteKeys));
 
         Model.HandleKeyPress(Key.Shift, prefix);
         Assert.AreEqual("1", visible[0].QuickPasteKeys.Single().Label);
-    }
-
-    [TestMethod]
-    public async Task ReleasingPrefixFirstWaitsForTheDigitBeforePasting()
-    {
-        // The prefix may already be held when the panel gains focus.
-        Assert.IsTrue(Model.HandleKeyPress(Key.NumPad1, prefix, physicalKey: 42));
-        await Model.HandleKeyReleaseAsync(Key.Shift, new(Key.Ctrl));
-        await Model.HandleKeyReleaseAsync(Key.Ctrl, Hotkey.Nothing);
-        Assert.IsEmpty(copied);
-        await Model.HandleKeyReleaseAsync(Key.End, Hotkey.Nothing, physicalKey: 42);
-        Assert.AreEqual(visible[0].Text, copied.Single());
-    }
-
-    [TestMethod]
-    public async Task UnidentifiableKeyReleaseCancelsPasteAndAllowsNextShortcut()
-    {
-        Assert.IsTrue(Model.HandleKeyPress(Key.NumPad1, prefix));
-        await Model.HandleKeyReleaseAsync(Key.Shift, new(Key.Ctrl));
-        await Model.HandleKeyReleaseAsync(Key.Ctrl, Hotkey.Nothing);
-        await Model.HandleKeyReleaseAsync(Key.End, Hotkey.Nothing);
-        Assert.IsEmpty(copied);
-        Assert.IsFalse(Model.HandleKeyPress(Key.A));
-        Assert.IsTrue(Model.HandleKeyPress(Key._2, prefix));
-        await Model.HandleKeyReleaseAsync(Key._2, prefix);
-        await Model.HandleKeyReleaseAsync(Key.Shift, new(Key.Ctrl));
-        await Model.HandleKeyReleaseAsync(Key.Ctrl, Hotkey.Nothing);
-        Assert.AreEqual(visible[1].Text, copied.Single());
     }
 
     [TestMethod]
@@ -157,12 +133,8 @@ public class HistoryQuickPasteTests
         using (Model.HoldForModalOperation())
             Assert.IsFalse(Model.HandleKeyPress(Key.F7));
         Assert.IsTrue(Model.HandleKeyPress(Key.F7));
-        Model.OnLostFocus();
-        await Model.HandleKeyReleaseAsync(Key.F7, Hotkey.Nothing);
-        Assert.IsEmpty(copied);
-
-        Assert.IsTrue(Model.HandleKeyPress(Key.F7));
-        await Model.HandleKeyReleaseAsync(Key.F7, Hotkey.Nothing);
+        await Model.ActiveQuickPaste!;
+        simulator.Verify(s => s.SimulateKeyRelease(KeyCode.VcF7), Times.Once);
         Assert.AreEqual("record 99", copied.Single());
         simulator.Verify(s => s.SimulateKeyPress(KeyCode.VcV), Times.Once);
 
@@ -178,19 +150,18 @@ public class HistoryQuickPasteTests
     {
         var shortcut = new Hotkey(Key.F7);
         config.SetConfig(config.GetConfig<HistoryShortcutConfig>().WithRecordShortcut(visible[0].Key, shortcut));
-        Task paste;
         await LocalClipboard.Semaphore.WaitAsync(TestContext.CancellationTokenSource.Token);
         try
         {
             Assert.IsTrue(Model.HandleKeyPress(Key.F7));
-            paste = Model.HandleKeyReleaseAsync(Key.F7, Hotkey.Nothing);
+            simulator.Verify(s => s.SimulateKeyRelease(KeyCode.VcF7), Times.Once);
             Model.OnLostFocus();
         }
         finally
         {
             LocalClipboard.Semaphore.Release();
         }
-        await paste.WaitAsync(TestContext.CancellationTokenSource.Token);
+        await Model.ActiveQuickPaste!.WaitAsync(TestContext.CancellationTokenSource.Token);
         simulator.Verify(s => s.SimulateKeyPress(KeyCode.VcV), Times.Never);
     }
 

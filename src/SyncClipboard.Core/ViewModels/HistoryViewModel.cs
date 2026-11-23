@@ -909,7 +909,7 @@ public partial class HistoryViewModel : ObservableObject
         bool isMetaPressed = false)
         => HandleKeyPress(key, Hotkey.FromModifiers(isShiftPressed, isAltPressed, isCtrlPressed, isMetaPressed));
 
-    public bool HandleKeyPress(Key key, Hotkey modifiers, int physicalKey = 0)
+    public bool HandleKeyPress(Key key, Hotkey modifiers)
     {
         if (HasModalOperation)
             return false;
@@ -938,12 +938,12 @@ public partial class HistoryViewModel : ObservableObject
             return hintConfig is not null;
         }
         UpdateQuickPastePrefix(config, modifiers);
-        if (!IsMultiSelecting && TryStartQuickPaste(config, physicalKey == 0 ? ~(int)key : physicalKey, hotkey))
+        if (!IsMultiSelecting && TryStartQuickPaste(config, hotkey))
             return true;
-        return HandleShortcut(config.Match(hotkey));
+        return HandleShortcut(config.Match(hotkey), hotkey);
     }
 
-    private bool HandleShortcut(HistoryShortcutAction? action)
+    private bool HandleShortcut(HistoryShortcutAction? action, Hotkey hotkey)
     {
         switch (action)
         {
@@ -969,8 +969,11 @@ public partial class HistoryViewModel : ObservableObject
             case HistoryShortcutAction.TagBelow:
             case HistoryShortcutAction.ToggleTagsExpanded:
                 return HandleTagShortcut(action.Value);
-            case HistoryShortcutAction.CopyAndPaste: HandleEnterKey(false); break;
-            case HistoryShortcutAction.Copy: HandleEnterKey(true); break;
+            case HistoryShortcutAction.CopyAndPaste:
+            case HistoryShortcutAction.Copy:
+                if (SelectedItem is { } record)
+                    _ = HandleCopyButtonAsync(record, action == HistoryShortcutAction.CopyAndPaste, hotkey);
+                break;
             case HistoryShortcutAction.ExecuteRecommendedAction:
                 if (SelectedItem is { } selectedItem)
                     _ = HandleRecommendedActionAsync(selectedItem);
@@ -1021,16 +1024,6 @@ public partial class HistoryViewModel : ObservableObject
             return;
 
         await DeleteItem(selectedItem);
-    }
-
-    private async void HandleEnterKey(bool isAltPressed)
-    {
-        if (SelectedItem is not { } selectedItem)
-            return;
-
-        // Alt键表示不粘贴到剪贴板，只是复制操作
-        var paste = !isAltPressed;
-        await HandleCopyButtonAsync(selectedItem, paste);
     }
 
     public void ViewImage(HistoryRecordVM record)

@@ -1,4 +1,5 @@
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Core.ViewModels.Sub;
@@ -12,11 +13,13 @@ public partial class HistoryViewModel
     private static readonly TimeSpan ForegroundCheckInterval = TimeSpan.FromMilliseconds(20);
     private static readonly TimeSpan PasteDispatchDelay = TimeSpan.FromMilliseconds(150);
 
-    public async Task HandleCopyButtonAsync(HistoryRecordVM record, bool paste)
+    public async Task HandleCopyButtonAsync(HistoryRecordVM record, bool paste, Hotkey? shortcut = null)
     {
         var operationName = paste ? "paste history record" : "copy history record";
         try
         {
+            if (paste && shortcut is not null)
+                paste = TryReleasePasteShortcut(shortcut);
             await RunWithOperationTimeoutAsync(
                 operationName,
                 token => CopyToClipboard(record, paste, token));
@@ -64,6 +67,20 @@ public partial class HistoryViewModel
         if (ScrollToTopOnReopen)
             ScrollToTop();
         window.Hide();
+    }
+
+    private bool TryReleasePasteShortcut(Hotkey shortcut)
+    {
+        try
+        {
+            keyboard.ReleaseKeys(shortcut, includeAlternateMappings: true);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger.Write($"Failed to release history shortcut: {ex.Message}");
+            return false;
+        }
     }
 
     private async Task PasteToLastExternalWindowAsync(CancellationToken token)

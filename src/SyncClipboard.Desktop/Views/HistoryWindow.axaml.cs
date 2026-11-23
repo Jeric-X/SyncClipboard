@@ -267,10 +267,10 @@ public partial class HistoryWindow : Window, IWindow
         if (OperatingSystem.IsLinux() && Utilities.KeyboardMap.ModifierMap.TryGetValue(key.Value, out var modifier) &&
             e.PhysicalKey != PhysicalKey.None && this.TryGetPlatformHandle()?.HandleDescriptor == "XID")
             x11PressedModifiers[e.PhysicalKey] = modifier;
-        e.Handled = _viewModel.HandleKeyPress(key.Value, GetModifiers(e.KeyModifiers), (int)e.PhysicalKey);
+        e.Handled = _viewModel.HandleKeyPress(key.Value, GetModifiers(e.KeyModifiers));
     }
 
-    private async void HistoryWindow_KeyUp(object? sender, KeyEventArgs e)
+    private void HistoryWindow_KeyUp(object? sender, KeyEventArgs e)
     {
         var key = Utilities.KeyboardMap.ConvertFromAvalonia(e.Key);
         var modifiers = e.KeyModifiers;
@@ -280,7 +280,7 @@ public partial class HistoryWindow : Window, IWindow
             !x11PressedModifiers.ContainsValue(released) && this.TryGetPlatformHandle()?.HandleDescriptor == "XID")
         {
             // X11 reports pre-release modifiers. The other side may already have been held when the window gained focus.
-            if (!_viewModel.IsTrackingQuickPaste && modifiers == released)
+            if (!_viewModel.ShowingQuickPasteHints && modifiers == released)
                 modifiers = KeyModifiers.None;
             else
             {
@@ -289,14 +289,14 @@ public partial class HistoryWindow : Window, IWindow
                 var stillDown = X11Interop.IsModifierDown(x11KeyboardDisplay, released);
                 if (stillDown is null)
                 {
-                    _viewModel.CancelQuickPaste();
+                    _viewModel.UpdateQuickPasteModifiers(Hotkey.Nothing);
                     return;
                 }
                 if (!stillDown.Value)
                     modifiers &= ~released;
             }
         }
-        await _viewModel.HandleKeyReleaseAsync(key, GetModifiers(modifiers), (int)e.PhysicalKey);
+        _viewModel.UpdateQuickPasteModifiers(GetModifiers(modifiers));
     }
 
     private static Hotkey GetModifiers(KeyModifiers modifiers)
