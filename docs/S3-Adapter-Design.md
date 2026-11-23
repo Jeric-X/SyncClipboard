@@ -46,7 +46,7 @@
 
 ## 3. Profile 元数据格式（`SyncClipboard.json`）
 
-参照 [API 说明](../README.md#syncclipboardjson)。
+参照 [API 说明](https://syncclipboard.pages.dev/api#syncclipboard-json)。
 
 ---
 
