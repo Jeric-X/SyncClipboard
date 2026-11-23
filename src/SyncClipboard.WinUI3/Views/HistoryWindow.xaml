@@ -52,7 +52,6 @@
                                     Hotkey="{Binding EditingShortcut, Mode=TwoWay}"
                                     IsError="{Binding HasError}"
                                     IsPrimaryButtonEnabled="{Binding CanSave}"
-                                    SaveCommand="{Binding SaveCommand}"
                                     ErrorMessage="{Binding ErrorMessage}" />
             <!--  Keep focus on the search box so history keyboard shortcuts remain available.  -->
             <Style TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">

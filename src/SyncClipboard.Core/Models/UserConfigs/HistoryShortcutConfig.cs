@@ -95,13 +95,13 @@ public record HistoryShortcutConfig
         Validate(action, hotkey).Error == HistoryShortcutError.None;
 
     public (HistoryShortcutError Error, HistoryShortcutAction? ConflictingAction) Validate(
-        HistoryShortcutAction action, Hotkey hotkey) => ValidateBinding(action, null, hotkey);
+        HistoryShortcutAction action, Hotkey hotkey) => ValidateBinding(action, hotkey);
 
-    public (HistoryShortcutError Error, HistoryShortcutAction? ConflictingAction) ValidateRecordShortcut(
-        HistoryRecordKey record, Hotkey hotkey) => ValidateBinding(null, record, hotkey);
+    public (HistoryShortcutError Error, HistoryShortcutAction? ConflictingAction) ValidateRecordShortcut(Hotkey hotkey) =>
+        ValidateBinding(null, hotkey);
 
     private (HistoryShortcutError Error, HistoryShortcutAction? ConflictingAction) ValidateBinding(
-        HistoryShortcutAction? action, HistoryRecordKey? record, Hotkey hotkey)
+        HistoryShortcutAction? action, Hotkey hotkey)
     {
         if (hotkey == Hotkey.Nothing)
             return (HistoryShortcutError.None, null);
@@ -129,7 +129,7 @@ public record HistoryShortcutConfig
         if (action.HasValue && IsSingleInputCharacter(hotkey))
             return (HistoryShortcutError.SingleInputCharacter, null);
 
-        if (RecordShortcuts.Any(binding => binding.Record != record && binding.Hotkey == hotkey))
+        if (action.HasValue && RecordShortcuts.Any(binding => binding.Hotkey == hotkey))
             return (HistoryShortcutError.RecordConflict, null);
         if (GetQuickPasteNumber(GetShortcut(HistoryShortcutAction.QuickPastePrefix), hotkey) != 0)
             return (HistoryShortcutError.Conflict, HistoryShortcutAction.QuickPastePrefix);
@@ -160,7 +160,7 @@ public record HistoryShortcutConfig
     {
         var bindings = RecordShortcuts.Where(binding => binding.Record != record);
         if (hotkey != Hotkey.Nothing)
-            bindings = bindings.Append(new(record, hotkey));
+            bindings = bindings.Where(binding => binding.Hotkey != hotkey).Append(new(record, hotkey));
         return this with { RecordShortcuts = bindings.ToArray() };
     }
 

@@ -1838,4 +1838,10 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryRecordPasteBinding" xml:space="preserve">
     <value>Paste a specific history record</value>
   </data>
+  <data name="HistoryShortcutReassignTitle" xml:space="preserve">
+    <value>Reassign paste shortcut?</value>
+  </data>
+  <data name="HistoryShortcutReassignMessage" xml:space="preserve">
+    <value>{0} is assigned to this record:&#xA;&#xA;{1}&#xA;&#xA;Move the shortcut to the record you are editing?</value>
+  </data>
 </root>

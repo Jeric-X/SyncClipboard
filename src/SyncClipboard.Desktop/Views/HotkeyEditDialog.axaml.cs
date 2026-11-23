@@ -82,12 +82,12 @@ public partial class HotkeyEditDialog : FAContentDialog
 
     private void ConfirmClick(FAContentDialog _, FAContentDialogButtonClickEventArgs args)
     {
-        if (SaveCommand?.CanExecute(null) != true)
+        if (SaveCommand?.CanExecute(null) == false)
         {
             args.Cancel = true;
             return;
         }
-        SaveCommand.Execute(null);
+        SaveCommand?.Execute(null);
         args.Cancel = IsError;
     }
 }

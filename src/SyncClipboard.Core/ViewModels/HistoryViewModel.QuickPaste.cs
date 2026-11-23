@@ -154,5 +154,5 @@ public partial class HistoryViewModel
         });
     }
 
-    public HistoryRecordShortcutEditor CreateRecordShortcutEditor(HistoryRecordKey record) => new(_configManager, record);
+    public HistoryRecordShortcutEditor CreateRecordShortcutEditor(HistoryRecordKey record) => new(_configManager, historyManager, record);
 }

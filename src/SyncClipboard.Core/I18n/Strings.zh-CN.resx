@@ -1838,4 +1838,10 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryRecordPasteBinding" xml:space="preserve">
     <value>粘贴指定的历史记录</value>
   </data>
+  <data name="HistoryShortcutReassignTitle" xml:space="preserve">
+    <value>覆盖粘贴快捷键？</value>
+  </data>
+  <data name="HistoryShortcutReassignMessage" xml:space="preserve">
+    <value>{0} 已绑定到以下记录：&#xA;&#xA;{1}&#xA;&#xA;是否将这个快捷键改绑到当前记录？</value>
+  </data>
 </root>

@@ -992,15 +992,21 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
             return;
         using var hold = _viewModel.HoldForModalOperation();
         var dialog = (HotkeyEditDialog)_HistoryWindowGrid.Resources["RecordShortcutEditor"];
-        dialog.DataContext = _viewModel.CreateRecordShortcutEditor(record.Key);
+        var editor = _viewModel.CreateRecordShortcutEditor(record.Key);
+        dialog.DataContext = editor;
+        var messages = new WinUIDialog(this);
         try
         {
             dialog.XamlRoot = Content.XamlRoot;
-            await dialog.ShowAsync();
+            while (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            {
+                if (await editor.TrySaveAsync(messages))
+                    break;
+            }
         }
         catch (Exception ex)
         {
-            await new WinUIDialog(this).ShowMessageAsync(Strings.RecordPasteShortcut, ex.Message);
+            await messages.ShowMessageAsync(Strings.RecordPasteShortcut, ex.Message);
         }
         finally
         {

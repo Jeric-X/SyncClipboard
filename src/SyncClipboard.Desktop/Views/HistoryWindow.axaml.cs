@@ -597,14 +597,20 @@ public partial class HistoryWindow : Window, IWindow
             return;
         using var hold = _viewModel.HoldForModalOperation();
         var dialog = (HotkeyEditDialog)Resources["RecordShortcutEditor"]!;
-        dialog.DataContext = _viewModel.CreateRecordShortcutEditor(record.Key);
+        var editor = _viewModel.CreateRecordShortcutEditor(record.Key);
+        dialog.DataContext = editor;
+        var messages = new AvaloniaDialog(this);
         try
         {
-            await dialog.ShowAsync(this);
+            while (await dialog.ShowAsync(this) == FAContentDialogResult.Primary)
+            {
+                if (await editor.TrySaveAsync(messages))
+                    break;
+            }
         }
         catch (Exception ex)
         {
-            await new AvaloniaDialog(this).ShowMessageAsync(Strings.RecordPasteShortcut, ex.Message);
+            await messages.ShowMessageAsync(Strings.RecordPasteShortcut, ex.Message);
         }
         finally
         {

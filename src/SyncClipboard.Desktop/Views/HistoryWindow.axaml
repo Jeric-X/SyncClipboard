@@ -63,7 +63,6 @@
                                     Hotkey="{Binding EditingShortcut, Mode=TwoWay}"
                                     IsError="{Binding HasError}"
                                     IsPrimaryButtonEnabled="{Binding CanSave}"
-                                    SaveCommand="{Binding SaveCommand}"
                                     ErrorMessage="{Binding ErrorMessage}" />
             <x:Double x:Key="TabItemMinHeight">38</x:Double>
             <ControlTheme x:Key="LinuxHistoryWindowDecorationsTheme" TargetType="WindowDrawnDecorations" BasedOn="{StaticResource {x:Type WindowDrawnDecorations}}">

@@ -4,6 +4,7 @@ using SharpHook.Data;
 using SharpHook.Simulation;
 using SyncClipboard.Core.Clipboard;
 using SyncClipboard.Core.Commons;
+using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.Keyboard;
@@ -23,6 +24,7 @@ public class HistoryQuickPasteTests
 {
     private Fixture fixture = null!;
     private readonly Mock<IWindow> window = new();
+    private readonly Mock<IMainWindowDialog> dialog = new(MockBehavior.Strict);
     private HistoryRecordVM[] visible = [];
     private readonly Hotkey prefix = new(Key.Ctrl, Key.Shift);
     private ConfigurationTestServices configServices = null!;
@@ -75,7 +77,7 @@ public class HistoryQuickPasteTests
         var custom = visible[10];
         var editor = Model.CreateRecordShortcutEditor(custom.Key);
         editor.EditingShortcut = new(Key.Meta, Key.Alt, Key.K);
-        editor.SaveCommand.Execute(null);
+        Assert.IsTrue(await editor.TrySaveAsync(dialog.Object));
         Model.HandleKeyPress(Key.Shift, prefix);
         CollectionAssert.AreEqual(Enumerable.Range(1, 9).Select(i => i.ToString()).ToArray(),
             visible.Take(9).Select(r => r.QuickPasteKeys.Single().Label).ToArray());
@@ -120,7 +122,7 @@ public class HistoryQuickPasteTests
         Assert.IsFalse(fixture.Records.Any(record => record.Key == key));
         var editor = Model.CreateRecordShortcutEditor(key);
         editor.EditingShortcut = new(Key.F7);
-        editor.SaveCommand.Execute(null);
+        Assert.IsTrue(await editor.TrySaveAsync(dialog.Object));
         config = new ConfigManager(config.Path, configServices.Upgrader);
         Fixture.SetField(Model, "_configManager", config);
 
@@ -139,25 +141,96 @@ public class HistoryQuickPasteTests
         editor = Model.CreateRecordShortcutEditor(key);
         Assert.AreEqual(new Hotkey(Key.F7), editor.EditingShortcut);
         editor.EditingShortcut = Hotkey.Nothing;
-        editor.SaveCommand.Execute(null);
+        Assert.IsTrue(await editor.TrySaveAsync(dialog.Object));
         Assert.IsFalse(Model.HandleKeyPress(Key.F7));
     }
 
     [TestMethod]
-    public void RejectsConflictsBetweenRecordsActionsAndNumberedShortcuts()
+    public async Task RejectsConflictsWithFixedActionsAndNumberedShortcuts()
     {
         var editor = Model.CreateRecordShortcutEditor(visible[0].Key);
         editor.EditingShortcut = new(Key.Alt, Key.F8);
-        editor.SaveCommand.Execute(null);
+        Assert.IsTrue(await editor.TrySaveAsync(dialog.Object));
         var other = Model.CreateRecordShortcutEditor(visible[1].Key);
-        foreach (var conflict in new Hotkey[] { editor.EditingShortcut, new(Key.Ctrl, Key.F), new(Key.Ctrl, Key.Shift, Key._1) })
+        foreach (var conflict in new Hotkey[] { new(Key.Ctrl, Key.F), new(Key.Ctrl, Key.Shift, Key._1) })
         {
             other.EditingShortcut = conflict;
-            Assert.IsFalse(other.SaveCommand.CanExecute(null));
+            Assert.IsFalse(other.CanSave);
+            Assert.IsFalse(await other.TrySaveAsync(dialog.Object));
         }
         var current = config.GetConfig<HistoryShortcutConfig>();
         Assert.IsFalse(current.CanAssign(HistoryShortcutAction.Search, editor.EditingShortcut));
         Assert.IsFalse(current.CanAssign(HistoryShortcutAction.QuickPastePrefix, new(Key.Alt, Key.F)));
         Assert.IsTrue(current.CanAssign(HistoryShortcutAction.QuickPastePrefix, new(Key.Alt, Key.Shift)));
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ReassigningLiveShortcutShowsOwnerPreviewAndOnlyTransfersOnConfirmation(bool confirm)
+    {
+        var owner = new HistoryRecordKey(ProfileType.Text, 99.ToString("D64"));
+        var shortcut = new Hotkey(Key.F8);
+        var target = visible[0].Key;
+        var before = config.GetConfig<HistoryShortcutConfig>()
+            .WithRecordShortcut(owner, shortcut).WithRecordShortcut(target, new(Key.F7));
+        config.SetConfig(before);
+        var editor = Model.CreateRecordShortcutEditor(target);
+        editor.EditingShortcut = shortcut;
+        Assert.IsTrue(editor.CanSave);
+        var message = string.Format(Strings.HistoryShortcutReassignMessage, "F8", "record 99");
+        dialog.Setup(d => d.ShowConfirmationAsync(Strings.HistoryShortcutReassignTitle, message)).ReturnsAsync(confirm);
+
+        Assert.AreEqual(confirm, await editor.TrySaveAsync(dialog.Object));
+
+        dialog.Verify(d => d.ShowConfirmationAsync(Strings.HistoryShortcutReassignTitle, message), Times.Once);
+        var saved = config.GetConfig<HistoryShortcutConfig>();
+        if (confirm)
+            Assert.AreEqual(new HistoryRecordShortcut(target, shortcut), saved.RecordShortcuts.Single());
+        else
+            Assert.AreEqual(before, saved);
+    }
+
+    [TestMethod]
+    public async Task ConfirmationForOneRecordDoesNotOverwriteANewOwner()
+    {
+        var shortcut = new Hotkey(Key.F8);
+        var first = visible[1];
+        var second = visible[2];
+        config.SetConfig(config.GetConfig<HistoryShortcutConfig>().WithRecordShortcut(first.Key, shortcut));
+        var editor = Model.CreateRecordShortcutEditor(visible[0].Key);
+        editor.EditingShortcut = shortcut;
+        var firstMessage = string.Format(Strings.HistoryShortcutReassignMessage, "F8", first.Text);
+        var secondMessage = string.Format(Strings.HistoryShortcutReassignMessage, "F8", second.Text);
+        dialog.Setup(d => d.ShowConfirmationAsync(Strings.HistoryShortcutReassignTitle, firstMessage))
+            .Callback(() => config.SetConfig(config.GetConfig<HistoryShortcutConfig>().WithRecordShortcut(second.Key, shortcut)))
+            .ReturnsAsync(true);
+        dialog.Setup(d => d.ShowConfirmationAsync(Strings.HistoryShortcutReassignTitle, secondMessage)).ReturnsAsync(false);
+
+        Assert.IsFalse(await editor.TrySaveAsync(dialog.Object));
+        Assert.AreEqual(new HistoryRecordShortcut(second.Key, shortcut), config.GetConfig<HistoryShortcutConfig>().RecordShortcuts.Single());
+    }
+
+    [TestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public async Task ReclaimingShortcutFromDeletedOrMissingOwnerSkipsConfirmation(bool softDeleted)
+    {
+        var owner = new HistoryRecordKey(ProfileType.Text, "missing");
+        if (softDeleted)
+        {
+            var deleted = visible[1];
+            await fixture.Manager.DeleteHistory(deleted.ToHistoryRecord(), TestContext.CancellationTokenSource.Token);
+            owner = deleted.Key;
+        }
+        var shortcut = new Hotkey(Key.F8);
+        config.SetConfig(config.GetConfig<HistoryShortcutConfig>().WithRecordShortcut(owner, shortcut));
+        var editor = Model.CreateRecordShortcutEditor(visible[0].Key);
+        editor.EditingShortcut = shortcut;
+
+        Assert.IsTrue(await editor.TrySaveAsync(dialog.Object));
+        Assert.AreEqual(new HistoryRecordShortcut(visible[0].Key, shortcut),
+            config.GetConfig<HistoryShortcutConfig>().RecordShortcuts.Single());
+        dialog.VerifyNoOtherCalls();
     }
 }

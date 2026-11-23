@@ -109,7 +109,7 @@ public partial class HistorySettingViewModel
         var defaults = _configManager.GetConfig<HistoryShortcutConfig>() with { Shortcuts = [] };
         foreach (var binding in defaults.RecordShortcuts)
         {
-            var (error, action) = defaults.ValidateRecordShortcut(binding.Record, binding.Hotkey);
+            var (error, action) = defaults.ValidateRecordShortcut(binding.Hotkey);
             if (error == HistoryShortcutError.None)
                 continue;
             await _dialog.ShowMessageAsync(Strings.ResetToDefault,
