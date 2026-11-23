@@ -66,17 +66,21 @@ public partial class HistoryRecordShortcutEditor : ObservableObject
                 return true;
             }
 
-            var existing = await historyManager.GetHistoryRecord(owner.Record.Hash, owner.Record.Type, CancellationToken.None);
-            if (existing is { IsDeleted: false })
-            {
-                var message = string.Format(Strings.HistoryShortcutReassignMessage,
-                    HistoryShortcutDescriptions.Format(shortcut), GetPreview(existing));
-                if (!await dialog.ShowConfirmationAsync(Strings.HistoryShortcutReassignTitle, message))
-                    return false;
-            }
+            if (!await ConfirmReassignmentAsync(owner.Record, shortcut, dialog))
+                return false;
             // Re-read the bindings after the lookup or prompt so a new owner requires its own confirmation.
             approved.Add(owner.Record);
         }
+    }
+
+    private async Task<bool> ConfirmReassignmentAsync(HistoryRecordKey owner, Hotkey shortcut, IMainWindowDialog dialog)
+    {
+        var existing = await historyManager.GetHistoryRecord(owner.Hash, owner.Type, CancellationToken.None);
+        if (existing is not { IsDeleted: false })
+            return true;
+        var message = string.Format(Strings.HistoryShortcutReassignMessage,
+            HistoryShortcutDescriptions.Format(shortcut), GetPreview(existing));
+        return await dialog.ShowConfirmationAsync(Strings.HistoryShortcutReassignTitle, message);
     }
 
     private static string GetPreview(HistoryRecord record)

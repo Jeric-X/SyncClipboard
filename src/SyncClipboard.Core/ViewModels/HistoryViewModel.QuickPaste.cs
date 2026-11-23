@@ -121,6 +121,15 @@ public partial class HistoryViewModel
         else
             UpdateQuickPastePrefix(_configManager.GetConfig<HistoryShortcutConfig>(), modifiers);
 
+        ReleasePendingPasteKey(key, physicalKey);
+        if (pendingPasteKey.HasValue || modifiers != Hotkey.Nothing || pendingPasteRecord is not { } target)
+            return;
+        pendingPasteRecord = null;
+        await PasteRecordAsync(target);
+    }
+
+    private void ReleasePendingPasteKey(Key? key, int physicalKey)
+    {
         if ((physicalKey == 0 ? ~(int?)key : physicalKey) == pendingPasteKey)
             pendingPasteKey = null;
         else if (pendingPasteKey.HasValue && (physicalKey == 0 || pendingPasteKey < 0) &&
@@ -128,11 +137,11 @@ public partial class HistoryViewModel
         {
             // With no scan code, a layout change can make the release impossible to match reliably.
             CancelQuickPaste();
-            return;
         }
-        if (pendingPasteKey.HasValue || modifiers != Hotkey.Nothing || pendingPasteRecord is not { } target)
-            return;
-        pendingPasteRecord = null;
+    }
+
+    private async Task PasteRecordAsync(HistoryRecordKey target)
+    {
         pastingRecord = true;
         using var preparation = new CancellationTokenSource();
         pastePreparation = preparation;

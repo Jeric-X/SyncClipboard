@@ -49,7 +49,7 @@ public class HistoryQuickPasteViewportTests
                 window.UpdateLayout();
 
                 var visible = HistoryWindow.GetVisibleHistoryRecords(list);
-                var count = (int)Math.Ceiling((scroll.Viewport.Height + rowHeight / 2) / rowHeight);
+                var count = (int)Math.Ceiling((scroll.Viewport.Height + (rowHeight / 2)) / rowHeight);
                 CollectionAssert.AreEqual(records.Skip(7).Take(count).ToArray(), visible.ToArray());
             }
             finally
