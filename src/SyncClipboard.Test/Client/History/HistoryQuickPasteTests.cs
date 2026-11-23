@@ -70,7 +70,7 @@ public class HistoryQuickPasteTests
     }
 
     [TestMethod]
-    public async Task VisibleNumbersFollowScrollAndPasteTheTargetShownWhenPressed()
+    public async Task NumberedTargetsStayFixedUntilThePrefixIsReleased()
     {
         var custom = visible[10];
         var editor = Model.CreateRecordShortcutEditor(custom.Key);
@@ -87,13 +87,16 @@ public class HistoryQuickPasteTests
         Assert.AreEqual(OperatingSystem.IsMacOS() ? "Option+Cmd+K" : string.Join("+", expectedLabels), custom.QuickPasteShortcutName);
 
         var oldFirst = visible[0];
-        visible = visible.Skip(2).ToArray();
+        var target = visible[1].Text;
+        Model.HandleKeyPress(Key.Alt, new(Key.Ctrl, Key.Shift, Key.Alt));
+        visible = fixture.Records.Skip(6).Take(12).ToArray();
         Model.RefreshQuickPasteHints();
         Assert.IsFalse(oldFirst.HasQuickPasteKeys);
-        Assert.AreEqual("1", visible[0].QuickPasteKeys.Single().Label);
+        await Model.HandleKeyReleaseAsync(Key.Alt, prefix);
+        Assert.AreEqual("3", visible[0].QuickPasteKeys.Single().Label);
+        Assert.IsFalse(visible[^1].HasQuickPasteKeys);
         CollectionAssert.AreEqual(expectedLabels, visible[8].QuickPasteKeys.Select(key => key.Label).ToArray());
 
-        var target = visible[1].Text;
         Assert.IsTrue(Model.HandleKeyPress(Key.NumPad2, prefix));
         Assert.IsTrue(Model.HandleKeyPress(Key.NumPad2, prefix));
         visible = visible.Skip(1).ToArray();
@@ -105,6 +108,9 @@ public class HistoryQuickPasteTests
         CollectionAssert.AreEqual(new[] { target }, copied);
         simulator.Verify(s => s.SimulateKeyPress(KeyCode.VcV), Times.Once);
         Assert.IsTrue(visible.All(row => !row.HasQuickPasteKeys));
+
+        Model.HandleKeyPress(Key.Shift, prefix);
+        Assert.AreEqual("1", visible[0].QuickPasteKeys.Single().Label);
     }
 
     [TestMethod]

@@ -9,17 +9,21 @@ public partial class HistoryViewModel
 {
     private HistoryShortcutConfig? hintConfig;
     private IReadOnlyList<HistoryRecordVM>? visibleQuickPasteRecords;
+    private HistoryRecordKey[]? numberedQuickPasteRecords;
     private HistoryRecordKey? pendingPasteRecord;
     private Key? pendingPasteKey;
     private bool pastingRecord;
 
     private void UpdateQuickPastePrefix(HistoryShortcutConfig config, Hotkey modifiers)
     {
-        if (IsMultiSelecting || modifiers == Hotkey.Nothing || modifiers != config.GetShortcut(HistoryShortcutAction.QuickPastePrefix))
+        var prefix = config.GetShortcut(HistoryShortcutAction.QuickPastePrefix);
+        if (IsMultiSelecting || prefix == Hotkey.Nothing || !prefix.Keys.All(modifiers.Keys.Contains))
         {
             ClearQuickPasteHints();
             return;
         }
+        if (hintConfig is null && modifiers != prefix)
+            return;
         if (hintConfig is not null && !hintConfig.Equals(config))
             ClearVisibleHints();
         hintConfig = config;
@@ -37,19 +41,24 @@ public partial class HistoryViewModel
         }
 
         var visible = window.GetVisibleHistoryRecords();
+        numberedQuickPasteRecords ??= visible.Take(9).Select(row => row.Key).ToArray();
         if (visibleQuickPasteRecords is not null && visible.SequenceEqual(visibleQuickPasteRecords, ReferenceEqualityComparer.Instance))
             return;
 
         ClearVisibleHints();
         visibleQuickPasteRecords = visible;
-        for (var i = 0; i < visible.Count; i++)
+        foreach (var row in visible)
         {
-            var row = visible[i];
             var binding = hintConfig.RecordShortcuts.FirstOrDefault(binding => binding.Record == row.Key);
             if (binding is not null)
+            {
                 row.QuickPasteKeys = HistoryKeycap.FromHotkey(binding.Hotkey);
-            else if (i < 9)
-                row.QuickPasteKeys = [new HistoryKeycap(Key._1 + i)];
+                continue;
+            }
+
+            var index = Array.IndexOf(numberedQuickPasteRecords, row.Key);
+            if (index >= 0)
+                row.QuickPasteKeys = [new HistoryKeycap(Key._1 + index)];
         }
     }
 
@@ -65,6 +74,7 @@ public partial class HistoryViewModel
     private void ClearQuickPasteHints()
     {
         hintConfig = null;
+        numberedQuickPasteRecords = null;
         ClearVisibleHints();
     }
 
@@ -82,14 +92,14 @@ public partial class HistoryViewModel
 
         var target = config.RecordShortcuts.FirstOrDefault(binding => binding.Hotkey == hotkey)?.Record;
         var number = HistoryShortcutConfig.GetQuickPasteNumber(config.GetShortcut(HistoryShortcutAction.QuickPastePrefix), hotkey);
-        if (number > 0 && visibleQuickPasteRecords is { } rows && number <= rows.Count)
-            target = rows[number - 1].Key;
+        if (number > 0 && numberedQuickPasteRecords is { } records && number <= records.Length)
+            target = records[number - 1];
         if (!target.HasValue)
             return false;
         if (pastingRecord)
             return true;
 
-        // Capture the displayed target now. Release the physical modifiers before sending Ctrl/Cmd+V.
+        // Wait for the physical modifiers to be released before sending Ctrl/Cmd+V.
         pendingPasteRecord = target;
         pendingPasteKey = hotkey.Keys.Length == 1 ? key : null;
         return true;
