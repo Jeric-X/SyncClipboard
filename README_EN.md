@@ -4,13 +4,13 @@
 
 <p align="center"><strong>A cross-platform tool for real-time clipboard sync and history management</strong></p>
 
-<p align="center"><a href="https://syncclipboard.pages.dev/en/">Documentation</a> · <a href="https://github.com/Jeric-X/SyncClipboard/releases/latest">Download the latest release</a></p>
+<p align="center"><a href="https://syncclipboard.top/en/">Documentation</a> · <a href="https://github.com/Jeric-X/SyncClipboard/releases/latest">Download the latest release</a></p>
 
 <p align="center">
   <img src="docs/image/intro-history-light.webp" width="80%" alt="SyncClipboard history panels on Windows, Linux, and macOS">
 </p>
 
-SyncClipboard syncs the clipboard across Windows, macOS, Linux, and Android, with support for iOS and iPadOS through Shortcuts. Copy text, images, or files on one device and paste them directly on another. SyncClipboard also lets you manage and sync clipboard history and improves local clipboard compatibility with different image formats. For more information, see the [documentation](https://syncclipboard.pages.dev/en/).
+SyncClipboard syncs the clipboard across Windows, macOS, Linux, and Android, with support for iOS and iPadOS through Shortcuts. Copy text, images, or files on one device and paste them directly on another. SyncClipboard also lets you manage and sync clipboard history and improves local clipboard compatibility with different image formats. For more information, see the [documentation](https://syncclipboard.top/en/).
 
 ## Open Source Dependencies
 

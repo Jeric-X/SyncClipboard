@@ -4,13 +4,13 @@
 
 <p align="center"><strong>跨平台剪贴板实时同步、历史记录管理工具</strong></p>
 
-<p align="center"><a href="https://syncclipboard.pages.dev/">使用文档</a> · <a href="https://github.com/Jeric-X/SyncClipboard/releases/latest">下载最新版本</a></p>
+<p align="center"><a href="https://syncclipboard.top/">使用文档</a> · <a href="https://github.com/Jeric-X/SyncClipboard/releases/latest">下载最新版本</a></p>
 
 <p align="center">
   <img src="docs/image/intro-history-light.webp" width="80%" alt="Windows、Linux 和 macOS 上的 SyncClipboard 历史记录面板">
 </p>
 
-SyncClipboard 是一款跨设备剪贴板同步工具，支持 Windows、macOS、Linux 和 Android，也可通过快捷指令在 iOS 和 iPadOS 上使用。在一台设备上复制的文本、图片和文件，可以直接在另一台设备上粘贴。SyncClipboard 还支持剪贴板历史记录管理与同步，并提供图片格式兼容等本机剪贴板优化功能。更多信息请参阅[使用文档](https://syncclipboard.pages.dev/)。
+SyncClipboard 是一款跨设备剪贴板同步工具，支持 Windows、macOS、Linux 和 Android，也可通过快捷指令在 iOS 和 iPadOS 上使用。在一台设备上复制的文本、图片和文件，可以直接在另一台设备上粘贴。SyncClipboard 还支持剪贴板历史记录管理与同步，并提供图片格式兼容等本机剪贴板优化功能。更多信息请参阅[使用文档](https://syncclipboard.top/)。
 
 ## 项目依赖
 

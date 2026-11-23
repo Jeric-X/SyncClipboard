@@ -784,7 +784,7 @@ Shift + 左键：选中连续范围</value>
     <value>用户名和密码不会从自定义配置文件读取</value>
   </data>
   <data name="CustomConfigFileLink" xml:space="preserve">
-    <value>https://syncclipboard.pages.dev/server/#服务器配置</value>
+    <value>https://syncclipboard.top/server/#服务器配置</value>
   </data>
   <data name="RestartApp" xml:space="preserve">
     <value>重新启动</value>
