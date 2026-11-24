@@ -916,7 +916,7 @@ public partial class HistoryViewModel : ObservableObject
 
         if (key == Key.Esc)
         {
-            ClearQuickPasteHints();
+            ClearQuickActionHints();
             if (IsMultiSelecting)
                 ExitMultiSelect();
             else
@@ -934,10 +934,10 @@ public partial class HistoryViewModel : ObservableObject
         var config = _configManager.GetConfig<HistoryShortcutConfig>();
         if (key is Key.Shift or Key.Ctrl or Key.Alt or Key.Meta)
         {
-            UpdateQuickPastePrefix(config, hotkey);
+            UpdateQuickActionPrefix(config, hotkey);
             return hintConfig is not null;
         }
-        UpdateQuickPastePrefix(config, modifiers);
+        UpdateQuickActionPrefix(config, modifiers);
         if (config.Match(hotkey) is { } action)
             return HandleShortcut(action, hotkey);
         return !IsMultiSelecting && TryStartQuickAction(config, hotkey);
@@ -1560,7 +1560,7 @@ public partial class HistoryViewModel : ObservableObject
 
     public void OnLostFocus()
     {
-        ClearQuickPasteHints();
+        ClearQuickActionHints();
         if (!_remainWindowForFolderPicker && !_remainWindowForViewDetail && !IsTopmost && CloseWhenLostFocus)
         {
             window.Hide();

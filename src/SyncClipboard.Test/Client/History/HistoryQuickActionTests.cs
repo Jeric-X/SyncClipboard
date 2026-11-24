@@ -20,7 +20,7 @@ namespace SyncClipboard.Test.Client.History;
 
 [TestClass]
 [DoNotParallelize]
-public class HistoryQuickPasteTests
+public class HistoryQuickActionTests
 {
     private Fixture fixture = null!;
     private readonly Mock<IHistoryWindow> window = new();
@@ -80,24 +80,24 @@ public class HistoryQuickPasteTests
         Assert.IsTrue(await editor.TrySaveAsync(dialog.Object));
         Model.HandleKeyPress(Key.Shift, prefix);
         CollectionAssert.AreEqual(Enumerable.Range(1, 9).Select(i => i.ToString()).ToArray(),
-            visible.Take(9).Select(r => r.QuickPasteKeys.Single().Label).ToArray());
-        Assert.IsFalse(visible[9].HasQuickPasteKeys);
+            visible.Take(9).Select(r => r.QuickActionKeys.Single().Label).ToArray());
+        Assert.IsFalse(visible[9].HasQuickActionKeys);
         var expectedLabels = OperatingSystem.IsMacOS() ? new[] { "⌥", "⌘", "K" }
             : [OperatingSystem.IsWindows() ? "Win" : "Super", "Alt", "K"];
-        CollectionAssert.AreEqual(expectedLabels, custom.QuickPasteKeys.Select(key => key.Label).ToArray());
-        Assert.AreEqual(OperatingSystem.IsWindows(), custom.QuickPasteKeys[0].ShowWindowsLogo);
-        Assert.AreEqual(OperatingSystem.IsMacOS() ? "Option+Cmd+K" : string.Join("+", expectedLabels), custom.QuickPasteShortcutName);
+        CollectionAssert.AreEqual(expectedLabels, custom.QuickActionKeys.Select(key => key.Label).ToArray());
+        Assert.AreEqual(OperatingSystem.IsWindows(), custom.QuickActionKeys[0].ShowWindowsLogo);
+        Assert.AreEqual(OperatingSystem.IsMacOS() ? "Option+Cmd+K" : string.Join("+", expectedLabels), custom.QuickActionShortcutName);
 
         var oldFirst = visible[0];
         var target = visible[1].Text;
         Model.HandleKeyPress(Key.Alt, new Hotkey(Key.Ctrl, Key.Shift, Key.Alt));
         visible = fixture.Records.Skip(6).Take(12).ToArray();
-        Model.RefreshQuickPasteHints();
-        Assert.IsFalse(oldFirst.HasQuickPasteKeys);
-        Model.UpdateQuickPasteModifiers(prefix);
-        Assert.AreEqual("3", visible[0].QuickPasteKeys.Single().Label);
-        Assert.IsFalse(visible[^1].HasQuickPasteKeys);
-        CollectionAssert.AreEqual(expectedLabels, visible[8].QuickPasteKeys.Select(key => key.Label).ToArray());
+        Model.RefreshQuickActionHints();
+        Assert.IsFalse(oldFirst.HasQuickActionKeys);
+        Model.UpdateQuickActionModifiers(prefix);
+        Assert.AreEqual("3", visible[0].QuickActionKeys.Single().Label);
+        Assert.IsFalse(visible[^1].HasQuickActionKeys);
+        CollectionAssert.AreEqual(expectedLabels, visible[8].QuickActionKeys.Select(key => key.Label).ToArray());
 
         Assert.IsTrue(Model.HandleKeyPress(Key.NumPad2, prefix));
         Assert.IsTrue(Model.HandleKeyPress(Key.NumPad2, prefix));
@@ -112,11 +112,11 @@ public class HistoryQuickPasteTests
         }
         CollectionAssert.AreEqual(new[] { target }, copied);
         simulator.Verify(s => s.SimulateKeyPress(KeyCode.VcV), Times.Once);
-        Model.UpdateQuickPasteModifiers(Hotkey.Nothing);
-        Assert.IsTrue(visible.All(row => !row.HasQuickPasteKeys));
+        Model.UpdateQuickActionModifiers(Hotkey.Nothing);
+        Assert.IsTrue(visible.All(row => !row.HasQuickActionKeys));
 
         Model.HandleKeyPress(Key.Shift, prefix);
-        Assert.AreEqual("1", visible[0].QuickPasteKeys.Single().Label);
+        Assert.AreEqual("1", visible[0].QuickActionKeys.Single().Label);
     }
 
     [TestMethod]
@@ -178,11 +178,11 @@ public class HistoryQuickPasteTests
         Assert.IsFalse(shortcuts.CanAssign(HistoryShortcutAction.QuickActionPrefix, new(Key.Alt, Key.F)));
         Assert.IsTrue(shortcuts.CanAssign(HistoryShortcutAction.QuickActionPrefix, modifiers));
 
-        Model.UpdateQuickPasteModifiers(modifiers);
-        Assert.IsFalse(visible[0].HasQuickPasteKeys);
-        Assert.AreEqual("2", visible[1].QuickPasteKeys.Single().Label);
-        Assert.AreEqual("NumPad3", visible[2].QuickPasteKeys.Single().Label);
-        Assert.AreEqual("1", visible[9].QuickPasteKeys.Last().Label);
+        Model.UpdateQuickActionModifiers(modifiers);
+        Assert.IsFalse(visible[0].HasQuickActionKeys);
+        Assert.AreEqual("2", visible[1].QuickActionKeys.Single().Label);
+        Assert.AreEqual("NumPad3", visible[2].QuickActionKeys.Single().Label);
+        Assert.AreEqual("1", visible[9].QuickActionKeys.Last().Label);
         Assert.IsTrue(Model.HandleKeyPress(Key._3, modifiers));
         window.Verify(w => w.FocusSearch(), Times.Once);
         Assert.IsTrue(Model.HandleKeyPress(Key._1, modifiers));

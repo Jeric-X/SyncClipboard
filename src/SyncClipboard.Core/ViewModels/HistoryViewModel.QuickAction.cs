@@ -8,18 +8,18 @@ namespace SyncClipboard.Core.ViewModels;
 public partial class HistoryViewModel
 {
     private HistoryShortcutConfig? hintConfig;
-    private IReadOnlyList<HistoryRecordVM>? visibleQuickPasteRecords;
-    private HistoryRecordKey[]? numberedQuickPasteRecords;
+    private IReadOnlyList<HistoryRecordVM>? visibleQuickActionRecords;
+    private HistoryRecordKey[]? numberedQuickActionRecords;
     internal Task? ActiveQuickAction { get; private set; }
 
-    public bool ShowingQuickPasteHints => hintConfig is not null;
+    public bool ShowingQuickActionHints => hintConfig is not null;
 
-    private void UpdateQuickPastePrefix(HistoryShortcutConfig config, Hotkey modifiers)
+    private void UpdateQuickActionPrefix(HistoryShortcutConfig config, Hotkey modifiers)
     {
         var prefix = config.GetShortcut(HistoryShortcutAction.QuickActionPrefix);
         if (IsMultiSelecting || prefix == Hotkey.Nothing || !prefix.Keys.All(modifiers.Keys.Contains))
         {
-            ClearQuickPasteHints();
+            ClearQuickActionHints();
             return;
         }
         if (hintConfig is null && modifiers != prefix)
@@ -27,45 +27,45 @@ public partial class HistoryViewModel
         if (hintConfig is not null && !hintConfig.Equals(config))
             ClearVisibleHints();
         hintConfig = config;
-        RefreshQuickPasteHints();
+        RefreshQuickActionHints();
     }
 
-    public void RefreshQuickPasteHints()
+    public void RefreshQuickActionHints()
     {
         if (hintConfig is null)
             return;
         if (IsMultiSelecting || HasModalOperation)
         {
-            ClearQuickPasteHints();
+            ClearQuickActionHints();
             return;
         }
 
         var visible = window.GetVisibleHistoryRecords();
-        numberedQuickPasteRecords ??= visible.Take(9).Select(row => row.Key).ToArray();
-        if (visibleQuickPasteRecords is not null && visible.SequenceEqual(visibleQuickPasteRecords, ReferenceEqualityComparer.Instance))
+        numberedQuickActionRecords ??= visible.Take(9).Select(row => row.Key).ToArray();
+        if (visibleQuickActionRecords is not null && visible.SequenceEqual(visibleQuickActionRecords, ReferenceEqualityComparer.Instance))
             return;
 
         ClearVisibleHints();
-        visibleQuickPasteRecords = visible;
+        visibleQuickActionRecords = visible;
         var prefix = hintConfig.GetShortcut(HistoryShortcutAction.QuickActionPrefix);
         foreach (var row in visible)
         {
             var binding = hintConfig.RecordShortcuts.FirstOrDefault(binding => binding.Record == row.Key);
             if (binding is not null && hintConfig.Match(binding.Hotkey) is null)
             {
-                row.QuickPasteKeys = HistoryKeycap.FromHotkey(binding.Hotkey);
+                row.QuickActionKeys = HistoryKeycap.FromHotkey(binding.Hotkey);
                 continue;
             }
 
-            var index = Array.IndexOf(numberedQuickPasteRecords, row.Key);
+            var index = Array.IndexOf(numberedQuickActionRecords, row.Key);
             if (index < 0)
                 continue;
             var digit = Key._1 + index;
             var keypadDigit = Key.NumPad1 + index;
             if (IsNumberKeyAvailable(hintConfig, prefix, digit))
-                row.QuickPasteKeys = [new HistoryKeycap(digit)];
+                row.QuickActionKeys = [new HistoryKeycap(digit)];
             else if (IsNumberKeyAvailable(hintConfig, prefix, keypadDigit))
-                row.QuickPasteKeys = [new HistoryKeycap(keypadDigit)];
+                row.QuickActionKeys = [new HistoryKeycap(keypadDigit)];
         }
     }
 
@@ -77,24 +77,30 @@ public partial class HistoryViewModel
 
     private void ClearVisibleHints()
     {
-        if (visibleQuickPasteRecords is null)
+        if (visibleQuickActionRecords is null)
             return;
-        foreach (var record in visibleQuickPasteRecords)
-            record.QuickPasteKeys = [];
-        visibleQuickPasteRecords = null;
+        foreach (var record in visibleQuickActionRecords)
+            record.QuickActionKeys = [];
+        visibleQuickActionRecords = null;
     }
 
-    private void ClearQuickPasteHints()
+    partial void OnIsMultiSelectingChanged(bool value)
+    {
+        if (value)
+            ClearQuickActionHints();
+    }
+
+    private void ClearQuickActionHints()
     {
         hintConfig = null;
-        numberedQuickPasteRecords = null;
+        numberedQuickActionRecords = null;
         ClearVisibleHints();
     }
 
     private bool TryStartQuickAction(HistoryShortcutConfig config, Hotkey hotkey)
     {
         var target = config.RecordShortcuts.FirstOrDefault(binding => binding.Hotkey == hotkey)?.Record;
-        if (target is null && numberedQuickPasteRecords is { } records)
+        if (target is null && numberedQuickActionRecords is { } records)
         {
             var prefix = config.GetShortcut(HistoryShortcutAction.QuickActionPrefix);
             var number = HistoryShortcutConfig.GetQuickActionNumber(prefix, hotkey);
@@ -108,12 +114,12 @@ public partial class HistoryViewModel
         return true;
     }
 
-    public void UpdateQuickPasteModifiers(Hotkey modifiers)
+    public void UpdateQuickActionModifiers(Hotkey modifiers)
     {
         if (HasModalOperation || IsMultiSelecting || modifiers == Hotkey.Nothing)
-            ClearQuickPasteHints();
+            ClearQuickActionHints();
         else
-            UpdateQuickPastePrefix(_configManager.GetConfig<HistoryShortcutConfig>(), modifiers);
+            UpdateQuickActionPrefix(_configManager.GetConfig<HistoryShortcutConfig>(), modifiers);
     }
 
     private async Task RunQuickActionAsync(HistoryQuickAction action, HistoryRecordKey target, Hotkey hotkey)

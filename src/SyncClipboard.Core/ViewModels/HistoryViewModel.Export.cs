@@ -27,7 +27,7 @@ public partial class HistoryViewModel
 
     public IDisposable HoldForModalOperation()
     {
-        ClearQuickPasteHints();
+        ClearQuickActionHints();
         _modalOperations++;
         return new ScopeGuard(() => _modalOperations--);
     }

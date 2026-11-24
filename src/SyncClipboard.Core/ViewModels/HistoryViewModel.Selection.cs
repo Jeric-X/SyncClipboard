@@ -80,12 +80,6 @@ public partial class HistoryViewModel
     [ObservableProperty]
     private bool isMultiSelecting;
 
-    partial void OnIsMultiSelectingChanged(bool value)
-    {
-        if (value)
-            ClearQuickPasteHints();
-    }
-
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSelectedRecords))]
     [NotifyCanExecuteChangedFor(nameof(ExportSelectedCommand), nameof(ConfirmDeleteSelectedCommand), nameof(ConfirmToggleSelectedStarredCommand))]
