@@ -82,18 +82,7 @@ public partial class HistorySettingViewModel
     private void ValidateEditingShortcut()
     {
         var (error, conflictingAction) = _configManager.GetConfig<HistoryShortcutConfig>().Validate(editingAction, EditingShortcut);
-        var keys = string.Join("+", EditingShortcut.Keys.Select(key => key.ToEnumMemberValue()));
-        ShortcutErrorMessage = error switch
-        {
-            HistoryShortcutError.None => string.Empty,
-            HistoryShortcutError.Reserved => string.Format(Strings.HistoryShortcutReserved, keys),
-            HistoryShortcutError.ModifierOnly => Strings.HistoryShortcutModifierOnly,
-            HistoryShortcutError.MultipleMainKeys => Strings.HistoryShortcutMultipleMainKeys,
-            HistoryShortcutError.SingleInputCharacter => string.Format(Strings.HistoryShortcutInputCharacter, keys),
-            HistoryShortcutError.Conflict => string.Format(Strings.HistoryShortcutConflict,
-                keys, HistoryShortcutDescriptions.GetActionName(conflictingAction!.Value)),
-            _ => throw new ArgumentOutOfRangeException(nameof(error))
-        };
+        ShortcutErrorMessage = HistoryShortcutDescriptions.GetErrorMessage(EditingShortcut, error, conflictingAction);
     }
 
     [RelayCommand(CanExecute = nameof(CanSaveShortcut))]
@@ -117,7 +106,17 @@ public partial class HistorySettingViewModel
             Strings.ResetAllHistoryKeyboardShortcutsConfirmMessage))
             return;
 
-        _configManager.SetConfig(_configManager.GetConfig<HistoryShortcutConfig>() with { Shortcuts = [] });
+        var defaults = _configManager.GetConfig<HistoryShortcutConfig>() with { Shortcuts = [] };
+        foreach (var binding in defaults.RecordShortcuts)
+        {
+            var (error, action) = defaults.ValidateRecordShortcut(binding.Hotkey);
+            if (error == HistoryShortcutError.None)
+                continue;
+            await _dialog.ShowMessageAsync(Strings.ResetToDefault,
+                HistoryShortcutDescriptions.GetErrorMessage(binding.Hotkey, error, action));
+            return;
+        }
+        _configManager.SetConfig(defaults);
     }
 
     [RelayCommand]
@@ -128,13 +127,14 @@ public partial class HistorySettingViewModel
         if (config.GetShortcut(setting.Action) == defaultHotkey)
             return;
 
-        if (!config.CanAssign(setting.Action, defaultHotkey))
+        var (error, conflictingAction) = config.Validate(setting.Action, defaultHotkey);
+        if (error != HistoryShortcutError.None)
         {
-            var conflictingSetting = ShortcutSettings.First(other =>
-                other.Action != setting.Action && config.GetShortcut(other.Action) == defaultHotkey);
-            var keys = string.Join("+", defaultHotkey.Keys.Select(key => key.ToEnumMemberValue()));
+            var conflictingName = conflictingAction.HasValue
+                ? HistoryShortcutDescriptions.GetActionName(conflictingAction.Value) : Strings.HistoryRecordPasteBinding;
+            var keys = HistoryShortcutDescriptions.Format(defaultHotkey);
             await _dialog.ShowMessageAsync(Strings.ResetToDefault,
-                string.Format(Strings.HistoryShortcutResetConflict, keys, conflictingSetting.Name));
+                string.Format(Strings.HistoryShortcutResetConflict, keys, conflictingName));
             return;
         }
 

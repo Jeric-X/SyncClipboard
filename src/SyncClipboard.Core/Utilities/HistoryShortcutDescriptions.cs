@@ -1,4 +1,5 @@
 using SyncClipboard.Core.I18n;
+using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
 
 namespace SyncClipboard.Core.Utilities;
@@ -7,6 +8,7 @@ public static class HistoryShortcutDescriptions
 {
     public static string GetActionName(HistoryShortcutAction action) => action switch
     {
+        HistoryShortcutAction.QuickPastePrefix => Strings.QuickPastePrefix,
         HistoryShortcutAction.Search => Strings.HistoryShortcutSearch,
         HistoryShortcutAction.EditTags => Strings.HistoryTagsEdit,
         HistoryShortcutAction.EditTitle => Strings.HistoryEditTitle,
@@ -32,6 +34,26 @@ public static class HistoryShortcutDescriptions
         _ => throw new ArgumentOutOfRangeException(nameof(action))
     };
 
+    public static string Format(Hotkey hotkey) => string.Join("+", hotkey.Keys.Select(key => key.ToEnumMemberValue()));
+
+    public static string GetErrorMessage(Hotkey hotkey, HistoryShortcutError error, HistoryShortcutAction? conflictingAction)
+    {
+        var keys = Format(hotkey);
+        return error switch
+        {
+            HistoryShortcutError.PrefixModifiersOnly => Strings.QuickPasteModifiersOnly,
+            HistoryShortcutError.RecordConflict => string.Format(Strings.HistoryShortcutConflict, keys, Strings.HistoryRecordPasteBinding),
+            HistoryShortcutError.None => string.Empty,
+            HistoryShortcutError.Reserved => string.Format(Strings.HistoryShortcutReserved, keys),
+            HistoryShortcutError.ModifierOnly => Strings.HistoryShortcutModifierOnly,
+            HistoryShortcutError.MultipleMainKeys => Strings.HistoryShortcutMultipleMainKeys,
+            HistoryShortcutError.SingleInputCharacter => string.Format(Strings.HistoryShortcutInputCharacter, keys),
+            HistoryShortcutError.Conflict => string.Format(Strings.HistoryShortcutConflict,
+                keys, GetActionName(conflictingAction!.Value)),
+            _ => throw new ArgumentOutOfRangeException(nameof(error))
+        };
+    }
+
     public static string GetMouseActionName(HistoryMouseAction action) => action switch
     {
         HistoryMouseAction.Copy => Strings.HistoryShortcutCopy,
@@ -46,9 +68,14 @@ public static class HistoryShortcutDescriptions
         foreach (var action in Enum.GetValues<HistoryShortcutAction>())
         {
             var hotkey = config.GetShortcut(action);
+            if (action == HistoryShortcutAction.QuickPastePrefix && hotkey != Hotkey.Nothing)
+            {
+                var prefix = Format(hotkey);
+                keyboardLines.Add(string.Format(Strings.HistoryWindowOperationFormat, $"{prefix}+1–9", Strings.QuickPasteVisibleRecord));
+            }
             if (config.Match(hotkey) != action)
                 continue;
-            var keys = string.Join("+", hotkey.Keys.Select(key => key.ToEnumMemberValue()));
+            var keys = Format(hotkey);
             keyboardLines.Add(string.Format(Strings.HistoryWindowOperationFormat, keys, GetActionName(action)));
         }
 
