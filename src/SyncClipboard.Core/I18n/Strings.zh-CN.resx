@@ -1827,7 +1827,7 @@ Shift + 左键：选中连续范围</value>
     <value>快速粘贴前缀</value>
   </data>
   <data name="QuickPasteVisibleRecord" xml:space="preserve">
-    <value>粘贴当前可见的历史记录</value>
+    <value>用尚未绑定的数字键粘贴当前可见的历史记录</value>
   </data>
   <data name="RecordPasteShortcut" xml:space="preserve">
     <value>设置快捷键</value>

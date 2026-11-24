@@ -85,18 +85,8 @@ public record HistoryShortcutConfig
         return new(Key.Alt);
     }
 
-    public Hotkey GetShortcut(HistoryShortcutAction action)
-    {
-        if (Shortcuts.TryGetValue(action, out var hotkey))
-            return hotkey;
-        var fallback = GetDefault(action);
-        // Older configurations can already use the new default prefix with a digit.
-        if (action == HistoryShortcutAction.QuickPastePrefix &&
-            (Shortcuts.Values.Any(value => GetQuickPasteNumber(fallback, value) != 0) ||
-             RecordShortcuts.Any(binding => GetQuickPasteNumber(fallback, binding.Hotkey) != 0)))
-            return Hotkey.Nothing;
-        return fallback;
-    }
+    public Hotkey GetShortcut(HistoryShortcutAction action) =>
+        Shortcuts.TryGetValue(action, out var hotkey) ? hotkey : GetDefault(action);
 
     public static bool IsReserved(Hotkey hotkey) => hotkey.Keys.Contains(Key.Esc)
         || hotkey == new Hotkey(Key.Ctrl, Key.W)
@@ -121,7 +111,8 @@ public record HistoryShortcutConfig
 
         var mainKeyCount = hotkey.Keys.Count(key => key is not (Key.Ctrl or Key.Shift or Key.Alt or Key.Meta));
         if (action == HistoryShortcutAction.QuickPastePrefix)
-            return ValidatePrefix(hotkey, mainKeyCount);
+            return mainKeyCount == 0
+                ? (HistoryShortcutError.None, null) : (HistoryShortcutError.PrefixModifiersOnly, null);
         if (mainKeyCount == 0)
             return (HistoryShortcutError.ModifierOnly, null);
         if (mainKeyCount > 1)
@@ -132,25 +123,10 @@ public record HistoryShortcutConfig
         return FindBindingConflict(action, hotkey);
     }
 
-    private (HistoryShortcutError, HistoryShortcutAction?) ValidatePrefix(Hotkey hotkey, int mainKeyCount)
-    {
-        if (mainKeyCount != 0)
-            return (HistoryShortcutError.PrefixModifiersOnly, null);
-        foreach (var other in Enum.GetValues<HistoryShortcutAction>())
-        {
-            if (GetQuickPasteNumber(hotkey, GetShortcut(other)) != 0)
-                return (HistoryShortcutError.Conflict, other);
-        }
-        return RecordShortcuts.Any(binding => GetQuickPasteNumber(hotkey, binding.Hotkey) != 0)
-            ? (HistoryShortcutError.RecordConflict, null) : (HistoryShortcutError.None, null);
-    }
-
     private (HistoryShortcutError, HistoryShortcutAction?) FindBindingConflict(HistoryShortcutAction? action, Hotkey hotkey)
     {
         if (action.HasValue && RecordShortcuts.Any(binding => binding.Hotkey == hotkey))
             return (HistoryShortcutError.RecordConflict, null);
-        if (GetQuickPasteNumber(GetShortcut(HistoryShortcutAction.QuickPastePrefix), hotkey) != 0)
-            return (HistoryShortcutError.Conflict, HistoryShortcutAction.QuickPastePrefix);
 
         foreach (var other in Enum.GetValues<HistoryShortcutAction>())
         {
