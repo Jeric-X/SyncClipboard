@@ -10,14 +10,13 @@ public partial class HistoryViewModel
     private HistoryShortcutConfig? hintConfig;
     private IReadOnlyList<HistoryRecordVM>? visibleQuickPasteRecords;
     private HistoryRecordKey[]? numberedQuickPasteRecords;
-    private CancellationTokenSource? pastePreparation;
-    internal Task? ActiveQuickPaste { get; private set; }
+    internal Task? ActiveQuickAction { get; private set; }
 
     public bool ShowingQuickPasteHints => hintConfig is not null;
 
     private void UpdateQuickPastePrefix(HistoryShortcutConfig config, Hotkey modifiers)
     {
-        var prefix = config.GetShortcut(HistoryShortcutAction.QuickPastePrefix);
+        var prefix = config.GetShortcut(HistoryShortcutAction.QuickActionPrefix);
         if (IsMultiSelecting || prefix == Hotkey.Nothing || !prefix.Keys.All(modifiers.Keys.Contains))
         {
             ClearQuickPasteHints();
@@ -37,7 +36,7 @@ public partial class HistoryViewModel
             return;
         if (IsMultiSelecting || HasModalOperation)
         {
-            CancelQuickPaste();
+            ClearQuickPasteHints();
             return;
         }
 
@@ -48,19 +47,32 @@ public partial class HistoryViewModel
 
         ClearVisibleHints();
         visibleQuickPasteRecords = visible;
+        var prefix = hintConfig.GetShortcut(HistoryShortcutAction.QuickActionPrefix);
         foreach (var row in visible)
         {
             var binding = hintConfig.RecordShortcuts.FirstOrDefault(binding => binding.Record == row.Key);
-            if (binding is not null)
+            if (binding is not null && hintConfig.Match(binding.Hotkey) is null)
             {
                 row.QuickPasteKeys = HistoryKeycap.FromHotkey(binding.Hotkey);
                 continue;
             }
 
             var index = Array.IndexOf(numberedQuickPasteRecords, row.Key);
-            if (index >= 0)
-                row.QuickPasteKeys = [new HistoryKeycap(Key._1 + index)];
+            if (index < 0)
+                continue;
+            var digit = Key._1 + index;
+            var keypadDigit = Key.NumPad1 + index;
+            if (IsNumberKeyAvailable(hintConfig, prefix, digit))
+                row.QuickPasteKeys = [new HistoryKeycap(digit)];
+            else if (IsNumberKeyAvailable(hintConfig, prefix, keypadDigit))
+                row.QuickPasteKeys = [new HistoryKeycap(keypadDigit)];
         }
+    }
+
+    private static bool IsNumberKeyAvailable(HistoryShortcutConfig config, Hotkey prefix, Key digit)
+    {
+        var hotkey = new Hotkey([.. prefix.Keys, digit]);
+        return config.Match(hotkey) is null && !config.RecordShortcuts.Any(binding => binding.Hotkey == hotkey);
     }
 
     private void ClearVisibleHints()
@@ -79,22 +91,20 @@ public partial class HistoryViewModel
         ClearVisibleHints();
     }
 
-    public void CancelQuickPaste()
-    {
-        pastePreparation?.Cancel();
-        ClearQuickPasteHints();
-    }
-
-    private bool TryStartQuickPaste(HistoryShortcutConfig config, Hotkey hotkey)
+    private bool TryStartQuickAction(HistoryShortcutConfig config, Hotkey hotkey)
     {
         var target = config.RecordShortcuts.FirstOrDefault(binding => binding.Hotkey == hotkey)?.Record;
-        var number = HistoryShortcutConfig.GetQuickPasteNumber(config.GetShortcut(HistoryShortcutAction.QuickPastePrefix), hotkey);
-        if (number > 0 && numberedQuickPasteRecords is { } records && number <= records.Length)
-            target = records[number - 1];
+        if (target is null && numberedQuickPasteRecords is { } records)
+        {
+            var prefix = config.GetShortcut(HistoryShortcutAction.QuickActionPrefix);
+            var number = HistoryShortcutConfig.GetQuickActionNumber(prefix, hotkey);
+            if (number > 0 && number <= records.Length)
+                target = records[number - 1];
+        }
         if (!target.HasValue)
             return false;
-        if (ActiveQuickPaste is not { IsCompleted: false })
-            ActiveQuickPaste = PasteRecordAsync(target.Value, hotkey);
+        if (ActiveQuickAction is not { IsCompleted: false })
+            ActiveQuickAction = RunQuickActionAsync(config.QuickAction, target.Value, hotkey);
         return true;
     }
 
@@ -106,33 +116,19 @@ public partial class HistoryViewModel
             UpdateQuickPastePrefix(_configManager.GetConfig<HistoryShortcutConfig>(), modifiers);
     }
 
-    private async Task PasteRecordAsync(HistoryRecordKey target, Hotkey hotkey)
+    private async Task RunQuickActionAsync(HistoryQuickAction action, HistoryRecordKey target, Hotkey hotkey)
     {
-        using var preparation = new CancellationTokenSource();
-        pastePreparation = preparation;
-
         try
         {
-            var canPaste = TryReleasePasteShortcut(hotkey);
-            await RunWithOperationTimeoutAsync("quick paste", async token =>
-            {
-                var record = await historyManager.GetHistoryRecord(target.Hash, target.Type, token);
-                if (record is not { IsDeleted: false } || IsMultiSelecting ||
-                    !await SetRecordClipboardAsync(new HistoryRecordVM(record), closeAfterCopy: false, token) || !canPaste)
-                    return;
-                token.ThrowIfCancellationRequested();
-                // Changing focus is intentional from here onward.
-                pastePreparation = null;
-                await PasteToLastExternalWindowAsync(token);
-            }, preparation.Token);
+            var paste = action == HistoryQuickAction.Paste && TryReleasePasteShortcut(hotkey);
+            var record = await RunWithOperationTimeoutAsync("load history record",
+                token => historyManager.GetHistoryRecord(target.Hash, target.Type, token), canceledResult: null);
+            if (record is { IsDeleted: false })
+                await HandleCopyButtonAsync(new HistoryRecordVM(record), paste);
         }
         catch (Exception ex)
         {
-            await logger.WriteAsync("Failed to paste history record:", ex.Message);
-        }
-        finally
-        {
-            pastePreparation = null;
+            await logger.WriteAsync("Failed to run history quick action:", ex.Message);
         }
     }
 
@@ -143,7 +139,7 @@ public partial class HistoryViewModel
         {
             var config = _configManager.GetConfig<HistoryShortcutConfig>();
             if (config.RecordShortcuts.Any(binding => binding.Record == key))
-                _configManager.SetConfig(config.WithRecordShortcut(key, Hotkey.Nothing));
+                _configManager.SetConfig(config.SetRecordShortcut(key, Hotkey.Nothing));
         });
     }
 

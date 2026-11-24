@@ -83,7 +83,7 @@ public partial class HistoryViewModel
     partial void OnIsMultiSelectingChanged(bool value)
     {
         if (value)
-            CancelQuickPaste();
+            ClearQuickPasteHints();
     }
 
     [ObservableProperty]

@@ -23,7 +23,7 @@ namespace SyncClipboard.Test.Client.History;
 public class HistoryQuickPasteTests
 {
     private Fixture fixture = null!;
-    private readonly Mock<IWindow> window = new();
+    private readonly Mock<IHistoryWindow> window = new();
     private readonly Mock<IMainWindowDialog> dialog = new(MockBehavior.Strict);
     private HistoryRecordVM[] visible = [];
     private readonly Hotkey prefix = new(Key.Ctrl, Key.Shift);
@@ -43,7 +43,7 @@ public class HistoryQuickPasteTests
         await fixture.LoadAsync();
         configServices = new ConfigurationTestServices();
         config = new ConfigManager(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName()), configServices.Upgrader);
-        config.SetConfig(new HistoryShortcutConfig { Shortcuts = { [HistoryShortcutAction.QuickPastePrefix] = prefix } });
+        config.SetConfig(new HistoryShortcutConfig { Shortcuts = { [HistoryShortcutAction.QuickActionPrefix] = prefix } });
         window.Setup(w => w.GetVisibleHistoryRecords()).Returns(() => visible);
         visible = fixture.Records.Skip(4).Take(12).ToArray();
 
@@ -101,7 +101,7 @@ public class HistoryQuickPasteTests
 
         Assert.IsTrue(Model.HandleKeyPress(Key.NumPad2, prefix));
         Assert.IsTrue(Model.HandleKeyPress(Key.NumPad2, prefix));
-        await Model.ActiveQuickPaste!;
+        await Model.ActiveQuickAction!;
         var calls = simulator.Invocations.ToList();
         var pasteIndex = calls.FindIndex(call => call.Method.Name == nameof(IEventSimulator.SimulateKeyPress) &&
             Equals(call.Arguments[0], KeyCode.VcV));
@@ -133,7 +133,7 @@ public class HistoryQuickPasteTests
         using (Model.HoldForModalOperation())
             Assert.IsFalse(Model.HandleKeyPress(Key.F7));
         Assert.IsTrue(Model.HandleKeyPress(Key.F7));
-        await Model.ActiveQuickPaste!;
+        await Model.ActiveQuickAction!;
         simulator.Verify(s => s.SimulateKeyRelease(KeyCode.VcF7), Times.Once);
         Assert.AreEqual("record 99", copied.Single());
         simulator.Verify(s => s.SimulateKeyPress(KeyCode.VcV), Times.Once);
@@ -146,42 +146,52 @@ public class HistoryQuickPasteTests
     }
 
     [TestMethod]
-    public async Task LosingFocusWhileClipboardIsBusyCancelsPaste()
+    public async Task CopyQuickActionCopiesNumberedRecordWithoutSimulatingKeys()
     {
-        var shortcut = new Hotkey(Key.F7);
-        config.SetConfig(config.GetConfig<HistoryShortcutConfig>().WithRecordShortcut(visible[0].Key, shortcut));
-        await LocalClipboard.Semaphore.WaitAsync(TestContext.CancellationTokenSource.Token);
-        try
-        {
-            Assert.IsTrue(Model.HandleKeyPress(Key.F7));
-            simulator.Verify(s => s.SimulateKeyRelease(KeyCode.VcF7), Times.Once);
-            Model.OnLostFocus();
-        }
-        finally
-        {
-            LocalClipboard.Semaphore.Release();
-        }
-        await Model.ActiveQuickPaste!.WaitAsync(TestContext.CancellationTokenSource.Token);
-        simulator.Verify(s => s.SimulateKeyPress(KeyCode.VcV), Times.Never);
+        config.SetConfig(config.GetConfig<HistoryShortcutConfig>() with { QuickAction = HistoryQuickAction.Copy });
+        Assert.IsTrue(Model.HandleKeyPress(Key._2, prefix));
+        await Model.ActiveQuickAction!;
+        CollectionAssert.AreEqual(new[] { visible[1].Text }, copied);
+        simulator.VerifyNoOtherCalls();
     }
 
     [TestMethod]
-    public async Task RejectsConflictsWithFixedActionsAndNumberedShortcuts()
+    public async Task BoundDigitsTriggerTheirActionOrRecordAndLeaveOtherNumbersAvailable()
     {
-        var editor = Model.CreateRecordShortcutEditor(visible[0].Key);
-        editor.EditingShortcut = new(Key.Alt, Key.F8);
+        var shortcuts = new HistoryShortcutConfig();
+        var modifiers = shortcuts.GetShortcut(HistoryShortcutAction.QuickActionPrefix);
+        var search = new Hotkey([.. modifiers.Keys, Key._3]);
+        var custom = new Hotkey([.. modifiers.Keys, Key._1]);
+        Assert.IsTrue(shortcuts.CanAssign(HistoryShortcutAction.Search, search));
+        shortcuts.Shortcuts[HistoryShortcutAction.Search] = search;
+        shortcuts.Shortcuts[HistoryShortcutAction.TogglePreview] = new([.. modifiers.Keys, Key.NumPad1]);
+        config.SetConfig(shortcuts);
+
+        var editor = Model.CreateRecordShortcutEditor(visible[9].Key);
+        editor.EditingShortcut = search;
+        Assert.IsFalse(editor.CanSave);
+        Assert.IsFalse(await editor.TrySaveAsync(dialog.Object));
+        editor.EditingShortcut = custom;
         Assert.IsTrue(await editor.TrySaveAsync(dialog.Object));
-        var other = Model.CreateRecordShortcutEditor(visible[1].Key);
-        foreach (var conflict in new Hotkey[] { new(Key.Ctrl, Key.F), new(Key.Ctrl, Key.Shift, Key._1) })
-        {
-            other.EditingShortcut = conflict;
-            Assert.IsFalse(other.CanSave);
-            Assert.IsFalse(await other.TrySaveAsync(dialog.Object));
-        }
-        var current = config.GetConfig<HistoryShortcutConfig>();
-        Assert.IsFalse(current.CanAssign(HistoryShortcutAction.Search, editor.EditingShortcut));
-        Assert.IsFalse(current.CanAssign(HistoryShortcutAction.QuickPastePrefix, new(Key.Alt, Key.F)));
-        Assert.IsTrue(current.CanAssign(HistoryShortcutAction.QuickPastePrefix, new(Key.Alt, Key.Shift)));
+        shortcuts = config.GetConfig<HistoryShortcutConfig>();
+        Assert.IsFalse(shortcuts.CanAssign(HistoryShortcutAction.Search, custom));
+        Assert.IsFalse(shortcuts.CanAssign(HistoryShortcutAction.QuickActionPrefix, new(Key.Alt, Key.F)));
+        Assert.IsTrue(shortcuts.CanAssign(HistoryShortcutAction.QuickActionPrefix, modifiers));
+
+        Model.UpdateQuickPasteModifiers(modifiers);
+        Assert.IsFalse(visible[0].HasQuickPasteKeys);
+        Assert.AreEqual("2", visible[1].QuickPasteKeys.Single().Label);
+        Assert.AreEqual("NumPad3", visible[2].QuickPasteKeys.Single().Label);
+        Assert.AreEqual("1", visible[9].QuickPasteKeys.Last().Label);
+        Assert.IsTrue(Model.HandleKeyPress(Key._3, modifiers));
+        window.Verify(w => w.FocusSearch(), Times.Once);
+        Assert.IsTrue(Model.HandleKeyPress(Key._1, modifiers));
+        await Model.ActiveQuickAction!;
+        Assert.IsTrue(Model.HandleKeyPress(Key._2, modifiers));
+        await Model.ActiveQuickAction!;
+        Assert.IsTrue(Model.HandleKeyPress(Key.NumPad3, modifiers));
+        await Model.ActiveQuickAction!;
+        CollectionAssert.AreEqual(new[] { visible[9].Text, visible[1].Text, visible[2].Text }, copied);
     }
 
     [TestMethod]
@@ -193,7 +203,7 @@ public class HistoryQuickPasteTests
         var shortcut = new Hotkey(Key.F8);
         var target = visible[0].Key;
         var before = config.GetConfig<HistoryShortcutConfig>()
-            .WithRecordShortcut(owner, shortcut).WithRecordShortcut(target, new(Key.F7));
+            .SetRecordShortcut(owner, shortcut).SetRecordShortcut(target, new(Key.F7));
         config.SetConfig(before);
         var editor = Model.CreateRecordShortcutEditor(target);
         editor.EditingShortcut = shortcut;
@@ -217,13 +227,13 @@ public class HistoryQuickPasteTests
         var shortcut = new Hotkey(Key.F8);
         var first = visible[1];
         var second = visible[2];
-        config.SetConfig(config.GetConfig<HistoryShortcutConfig>().WithRecordShortcut(first.Key, shortcut));
+        config.SetConfig(config.GetConfig<HistoryShortcutConfig>().SetRecordShortcut(first.Key, shortcut));
         var editor = Model.CreateRecordShortcutEditor(visible[0].Key);
         editor.EditingShortcut = shortcut;
         var firstMessage = string.Format(Strings.HistoryShortcutReassignMessage, "F8", first.Text);
         var secondMessage = string.Format(Strings.HistoryShortcutReassignMessage, "F8", second.Text);
         dialog.Setup(d => d.ShowConfirmationAsync(Strings.HistoryShortcutReassignTitle, firstMessage))
-            .Callback(() => config.SetConfig(config.GetConfig<HistoryShortcutConfig>().WithRecordShortcut(second.Key, shortcut)))
+            .Callback(() => config.SetConfig(config.GetConfig<HistoryShortcutConfig>().SetRecordShortcut(second.Key, shortcut)))
             .ReturnsAsync(true);
         dialog.Setup(d => d.ShowConfirmationAsync(Strings.HistoryShortcutReassignTitle, secondMessage)).ReturnsAsync(false);
 
@@ -237,7 +247,7 @@ public class HistoryQuickPasteTests
         var target = visible[0];
         var owner = visible[1];
         var shortcut = new Hotkey(Key.F8);
-        config.SetConfig(config.GetConfig<HistoryShortcutConfig>().WithRecordShortcut(owner.Key, shortcut));
+        config.SetConfig(config.GetConfig<HistoryShortcutConfig>().SetRecordShortcut(owner.Key, shortcut));
         var editor = Model.CreateRecordShortcutEditor(target.Key);
         editor.EditingShortcut = shortcut;
         dialog.Setup(d => d.ShowConfirmationAsync(Strings.HistoryShortcutReassignTitle, It.IsAny<string>()))
@@ -264,7 +274,7 @@ public class HistoryQuickPasteTests
             owner = deleted.Key;
         }
         var shortcut = new Hotkey(Key.F8);
-        config.SetConfig(config.GetConfig<HistoryShortcutConfig>().WithRecordShortcut(owner, shortcut));
+        config.SetConfig(config.GetConfig<HistoryShortcutConfig>().SetRecordShortcut(owner, shortcut));
         var editor = Model.CreateRecordShortcutEditor(visible[0].Key);
         editor.EditingShortcut = shortcut;
 
