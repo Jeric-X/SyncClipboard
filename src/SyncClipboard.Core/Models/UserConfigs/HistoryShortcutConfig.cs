@@ -88,14 +88,10 @@ public record HistoryShortcutConfig
 
     private static Hotkey GetDefaultQuickActionPrefix()
     {
-        if (OperatingSystem.IsWindows())
-            return new(Key.Ctrl);
         if (OperatingSystem.IsMacOS())
             return new(Key.Meta);
-        if (OperatingSystem.IsLinux())
-            return new(Key.Ctrl);
 
-        return new(Key.Alt);
+        return new(Key.Ctrl);
     }
 
     public Hotkey GetShortcut(HistoryShortcutAction action) =>
