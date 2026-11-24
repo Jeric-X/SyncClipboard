@@ -48,8 +48,7 @@ public record HistoryShortcutConfig
 
     public static Hotkey GetDefault(HistoryShortcutAction action) => action switch
     {
-        HistoryShortcutAction.QuickPastePrefix when OperatingSystem.IsWindows() => new(Key.Ctrl),
-        HistoryShortcutAction.QuickPastePrefix => new(OperatingSystem.IsMacOS() ? Key.Meta : Key.Alt),
+        HistoryShortcutAction.QuickPastePrefix => GetDefaultQuickPastePrefix(),
         HistoryShortcutAction.Search => new(Key.Ctrl, Key.F),
         HistoryShortcutAction.EditTags => new(Key.Ctrl, Key.T),
         HistoryShortcutAction.EditTitle => new(Key.F2),
@@ -73,6 +72,18 @@ public record HistoryShortcutConfig
         HistoryShortcutAction.Copy => new(Key.Alt, Key.Enter),
         _ => Hotkey.Nothing
     };
+
+    private static Hotkey GetDefaultQuickPastePrefix()
+    {
+        if (OperatingSystem.IsWindows())
+            return new(Key.Ctrl);
+        if (OperatingSystem.IsMacOS())
+            return new(Key.Meta);
+        if (OperatingSystem.IsLinux())
+            return new(Key.Ctrl);
+
+        return new(Key.Alt);
+    }
 
     public Hotkey GetShortcut(HistoryShortcutAction action)
     {
