@@ -58,7 +58,8 @@ public sealed class VirtualKeyboard : IDisposable
         Execute(simulator =>
         {
             var result = UioHookResult.Success;
-            var primaryCodes = hotkey.Keys.Select(key => KeyCodeMap.MapReverse[key]);
+            var primaryCodes = hotkey.Keys.Where(KeyCodeMap.MapReverse.ContainsKey)
+                .Select(key => KeyCodeMap.MapReverse[key]);
             var alternateCodes = KeyCodeMap.Map.Where(pair => hotkey.Keys.Contains(pair.Value) ||
                 (pair.Value == Key.NumPadReturn && hotkey.Keys.Contains(Key.Enter)));
             foreach (var code in primaryCodes.Union(alternateCodes.Select(pair => pair.Key)))

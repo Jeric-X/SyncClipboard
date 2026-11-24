@@ -459,6 +459,19 @@ public class KeyboardSimulationTests
         simulator.VerifyNoOtherCalls();
     }
 
+    [TestMethod]
+    public void ReleaseKeys_ReleasesModifiersForAnUnmappedKey()
+    {
+        var simulator = new Mock<IEventSimulator>();
+        using var keyboard = new VirtualKeyboard(CreatePermissions().Object, () => simulator.Object);
+
+        keyboard.ReleaseKeys(new Hotkey(Key.Ctrl, Key.Select));
+
+        simulator.Verify(x => x.SimulateKeyRelease(KeyCode.VcLeftControl), Times.Once);
+        simulator.Verify(x => x.SimulateKeyRelease(KeyCode.VcRightControl), Times.Once);
+        simulator.VerifyNoOtherCalls();
+    }
+
     private static Mock<IPermissionProvider> CreatePermissions()
     {
         var permissions = new Mock<IPermissionProvider>();

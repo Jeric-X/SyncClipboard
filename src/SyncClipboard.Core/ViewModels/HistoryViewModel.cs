@@ -936,10 +936,10 @@ public partial class HistoryViewModel : ObservableObject
         }
 
         var action = _configManager.GetConfig<HistoryShortcutConfig>().Match(hotkey);
-        return HandleShortcut(action);
+        return HandleShortcut(action, hotkey);
     }
 
-    private bool HandleShortcut(HistoryShortcutAction? action)
+    private bool HandleShortcut(HistoryShortcutAction? action, Hotkey hotkey)
     {
         switch (action)
         {
@@ -965,8 +965,11 @@ public partial class HistoryViewModel : ObservableObject
             case HistoryShortcutAction.TagBelow:
             case HistoryShortcutAction.ToggleTagsExpanded:
                 return HandleTagShortcut(action.Value);
-            case HistoryShortcutAction.CopyAndPaste: HandleEnterKey(false); break;
-            case HistoryShortcutAction.Copy: HandleEnterKey(true); break;
+            case HistoryShortcutAction.CopyAndPaste:
+            case HistoryShortcutAction.Copy:
+                if (SelectedItem is { } record)
+                    _ = HandleCopyButtonAsync(record, action == HistoryShortcutAction.CopyAndPaste, hotkey);
+                break;
             case HistoryShortcutAction.ExecuteRecommendedAction:
                 if (SelectedItem is { } selectedItem)
                     _ = HandleRecommendedActionAsync(selectedItem);
@@ -1017,16 +1020,6 @@ public partial class HistoryViewModel : ObservableObject
             return;
 
         await DeleteItem(selectedItem);
-    }
-
-    private async void HandleEnterKey(bool isAltPressed)
-    {
-        if (SelectedItem is not { } selectedItem)
-            return;
-
-        // Alt键表示不粘贴到剪贴板，只是复制操作
-        var paste = !isAltPressed;
-        await HandleCopyButtonAsync(selectedItem, paste);
     }
 
     public void ViewImage(HistoryRecordVM record)
