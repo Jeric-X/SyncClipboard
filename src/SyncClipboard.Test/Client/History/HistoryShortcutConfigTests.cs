@@ -1,7 +1,6 @@
 using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
-using SyncClipboard.Shared.Profiles;
 using System.Text.Json;
 
 namespace SyncClipboard.Test.Client.History;
@@ -25,16 +24,16 @@ public class HistoryShortcutConfigTests
     }
 
     [TestMethod]
-    public void DefaultQuickPastePrefix_RespectsSavedDigitBindingsAndExplicitPrefix()
+    public void QuickActionPrefix_UsesPlatformDefaultOrConfiguredModifiers()
     {
-        const HistoryShortcutAction action = HistoryShortcutAction.QuickPastePrefix;
+        const HistoryShortcutAction action = HistoryShortcutAction.QuickActionPrefix;
         var config = new HistoryShortcutConfig();
-        var prefix = HistoryShortcutConfig.GetDefault(action);
-        Assert.AreEqual(OperatingSystem.IsWindows() ? Key.Ctrl : OperatingSystem.IsMacOS() ? Key.Meta : Key.Alt, prefix.Keys.Single());
+        var prefix = config.GetShortcut(action);
+        if (OperatingSystem.IsMacOS())
+            Assert.AreEqual(new Hotkey(Key.Meta), prefix);
+        else
+            Assert.AreEqual(new Hotkey(Key.Ctrl), prefix);
 
-        var digitBinding = new Hotkey([.. prefix.Keys, Key._1]);
-        config = config.WithRecordShortcut(new(ProfileType.Text, "sample"), digitBinding);
-        Assert.AreEqual(Hotkey.Nothing, config.GetShortcut(action));
         var customPrefix = new Hotkey(Key.Ctrl, Key.Shift);
         config.Shortcuts[action] = customPrefix;
         Assert.AreEqual(customPrefix, config.GetShortcut(action));

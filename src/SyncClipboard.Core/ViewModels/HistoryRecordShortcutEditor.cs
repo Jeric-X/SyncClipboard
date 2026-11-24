@@ -62,7 +62,7 @@ public partial class HistoryRecordShortcutEditor : ObservableObject
                 && binding.Hotkey == shortcut && binding.Record != record && !approved.Contains(binding.Record));
             if (owner is null)
             {
-                configManager.SetConfig(config.WithRecordShortcut(record, shortcut));
+                configManager.SetConfig(config.SetRecordShortcut(record, shortcut));
                 return true;
             }
 
@@ -85,13 +85,18 @@ public partial class HistoryRecordShortcutEditor : ObservableObject
 
     private static string GetPreview(HistoryRecord record)
     {
-        var text = record.Text.ReplaceLineEndings(" ").Trim();
+        var text = record.Text.ReplaceLineEndings("\n").Trim();
         const int maxLength = 160;
         if (text.Length > maxLength)
         {
             var end = char.IsHighSurrogate(text[maxLength - 1]) ? maxLength - 1 : maxLength;
             text = text[..end] + "…";
         }
+        const int maxLines = 3;
+        var lines = text.Split('\n', maxLines + 1);
+        if (lines.Length > maxLines)
+            text = string.Join("\n", lines, 0, maxLines) + "…";
+
         return string.IsNullOrWhiteSpace(record.Title) ? text : $"{record.Title}\n{text}".TrimEnd();
     }
 }
