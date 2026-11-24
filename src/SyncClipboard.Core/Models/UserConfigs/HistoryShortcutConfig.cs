@@ -7,7 +7,12 @@ public enum HistoryShortcutAction
 {
     Search, PreviousItem, NextItem, FirstItem, LastItem, ToggleStar, ToggleStarredFilter,
     ToggleTopmost, Delete, TogglePreview, NextFilter, PreviousFilter, CopyAndPaste, Copy, ExecuteRecommendedAction,
-    PreviousTag, NextTag, ToggleTagsExpanded, TagAbove, TagBelow, EditTags, EditTitle
+    PreviousTag, NextTag, ToggleTagsExpanded, TagAbove, TagBelow, EditTags, EditTitle, QuickActionPrefix
+}
+
+public enum HistoryQuickAction
+{
+    Copy, Paste
 }
 
 public enum HistoryMouseAction
@@ -19,8 +24,10 @@ public enum HistoryMouseAction
 
 public enum HistoryShortcutError
 {
-    None, Reserved, ModifierOnly, MultipleMainKeys, SingleInputCharacter, Conflict
+    None, Reserved, ModifierOnly, MultipleMainKeys, SingleInputCharacter, Conflict, PrefixModifiersOnly, RecordConflict
 }
+
+public sealed record HistoryRecordShortcut(HistoryRecordKey Record, Hotkey Hotkey);
 
 [ConfigKey(ConfigKey, ConfigStorage.SyncClipboard)]
 public record HistoryShortcutConfig
@@ -28,6 +35,15 @@ public record HistoryShortcutConfig
     public const string ConfigKey = "HistoryShortcuts";
 
     public Dictionary<HistoryShortcutAction, Hotkey> Shortcuts { get; set; } = [];
+    public HistoryRecordShortcut[] RecordShortcuts { get; init; } = [];
+    private HistoryQuickAction quickAction = HistoryQuickAction.Paste;
+
+    public HistoryQuickAction QuickAction
+    {
+        get => quickAction;
+        init => quickAction = Enum.IsDefined(value) ? value : HistoryQuickAction.Paste;
+    }
+
     private HistoryMouseAction doubleClickAction = HistoryMouseAction.Copy;
     private HistoryMouseAction middleClickAction = HistoryMouseAction.CopyAndPaste;
 
@@ -45,6 +61,7 @@ public record HistoryShortcutConfig
 
     public static Hotkey GetDefault(HistoryShortcutAction action) => action switch
     {
+        HistoryShortcutAction.QuickActionPrefix => GetDefaultQuickActionPrefix(),
         HistoryShortcutAction.Search => new(Key.Ctrl, Key.F),
         HistoryShortcutAction.EditTags => new(Key.Ctrl, Key.T),
         HistoryShortcutAction.EditTitle => new(Key.F2),
@@ -69,6 +86,14 @@ public record HistoryShortcutConfig
         _ => Hotkey.Nothing
     };
 
+    private static Hotkey GetDefaultQuickActionPrefix()
+    {
+        if (OperatingSystem.IsMacOS())
+            return new(Key.Meta);
+
+        return new(Key.Ctrl);
+    }
+
     public Hotkey GetShortcut(HistoryShortcutAction action) =>
         Shortcuts.TryGetValue(action, out var hotkey) ? hotkey : GetDefault(action);
 
@@ -80,7 +105,13 @@ public record HistoryShortcutConfig
         Validate(action, hotkey).Error == HistoryShortcutError.None;
 
     public (HistoryShortcutError Error, HistoryShortcutAction? ConflictingAction) Validate(
-        HistoryShortcutAction action, Hotkey hotkey)
+        HistoryShortcutAction action, Hotkey hotkey) => ValidateBinding(action, hotkey);
+
+    public (HistoryShortcutError Error, HistoryShortcutAction? ConflictingAction) ValidateRecordShortcut(Hotkey hotkey) =>
+        ValidateBinding(null, hotkey);
+
+    private (HistoryShortcutError Error, HistoryShortcutAction? ConflictingAction) ValidateBinding(
+        HistoryShortcutAction? action, Hotkey hotkey)
     {
         if (hotkey == Hotkey.Nothing)
             return (HistoryShortcutError.None, null);
@@ -88,12 +119,23 @@ public record HistoryShortcutConfig
             return (HistoryShortcutError.Reserved, null);
 
         var mainKeyCount = hotkey.Keys.Count(key => key is not (Key.Ctrl or Key.Shift or Key.Alt or Key.Meta));
+        if (action == HistoryShortcutAction.QuickActionPrefix)
+            return mainKeyCount == 0
+                ? (HistoryShortcutError.None, null) : (HistoryShortcutError.PrefixModifiersOnly, null);
         if (mainKeyCount == 0)
             return (HistoryShortcutError.ModifierOnly, null);
         if (mainKeyCount > 1)
             return (HistoryShortcutError.MultipleMainKeys, null);
-        if (IsSingleInputCharacter(hotkey))
+        if (action.HasValue && IsSingleInputCharacter(hotkey))
             return (HistoryShortcutError.SingleInputCharacter, null);
+
+        return FindBindingConflict(action, hotkey);
+    }
+
+    private (HistoryShortcutError, HistoryShortcutAction?) FindBindingConflict(HistoryShortcutAction? action, Hotkey hotkey)
+    {
+        if (action.HasValue && RecordShortcuts.Any(binding => binding.Hotkey == hotkey))
+            return (HistoryShortcutError.RecordConflict, null);
 
         foreach (var other in Enum.GetValues<HistoryShortcutAction>())
         {
@@ -101,6 +143,29 @@ public record HistoryShortcutConfig
                 return (HistoryShortcutError.Conflict, other);
         }
         return (HistoryShortcutError.None, null);
+    }
+
+    public static int GetQuickActionNumber(Hotkey prefix, Hotkey hotkey)
+    {
+        if (prefix.Keys.Length == 0 || hotkey.Keys.Length != prefix.Keys.Length + 1 ||
+            !hotkey.Keys.AsSpan(0, prefix.Keys.Length).SequenceEqual(prefix.Keys))
+            return 0;
+
+        return hotkey.Keys[^1] switch
+        {
+            >= Key._1 and <= Key._9 => hotkey.Keys[^1] - Key._1 + 1,
+            >= Key.NumPad1 and <= Key.NumPad9 => hotkey.Keys[^1] - Key.NumPad1 + 1,
+            _ => 0
+        };
+    }
+
+    /// <summary>Returns a new configuration with the shortcut assigned to the record, or cleared for <see cref="Hotkey.Nothing"/>.</summary>
+    public HistoryShortcutConfig SetRecordShortcut(HistoryRecordKey record, Hotkey hotkey)
+    {
+        var bindings = RecordShortcuts.Where(binding => binding.Record != record);
+        if (hotkey != Hotkey.Nothing)
+            bindings = bindings.Where(binding => binding.Hotkey != hotkey).Append(new(record, hotkey));
+        return this with { RecordShortcuts = bindings.ToArray() };
     }
 
     private static bool IsSingleInputCharacter(Hotkey hotkey)
@@ -121,19 +186,21 @@ public record HistoryShortcutConfig
             return null;
         foreach (var action in Enum.GetValues<HistoryShortcutAction>())
         {
-            if (GetShortcut(action) == hotkey)
+            if (action != HistoryShortcutAction.QuickActionPrefix && GetShortcut(action) == hotkey)
                 return action;
         }
         return null;
     }
 
     public virtual bool Equals(HistoryShortcutConfig? other) => other is not null
+        && RecordShortcuts.SequenceEqual(other.RecordShortcuts)
+        && QuickAction == other.QuickAction
         && DoubleClickAction == other.DoubleClickAction
         && MiddleClickAction == other.MiddleClickAction
         && Shortcuts.Count == other.Shortcuts.Count
         && !Shortcuts.Except(other.Shortcuts).Any();
 
     public override int GetHashCode() => HashCode.Combine(
-        DoubleClickAction, MiddleClickAction,
+        QuickAction, DoubleClickAction, MiddleClickAction, RecordShortcuts.Aggregate(0, HashCode.Combine),
         Shortcuts.Aggregate(0, (hash, pair) => hash ^ pair.GetHashCode()));
 }

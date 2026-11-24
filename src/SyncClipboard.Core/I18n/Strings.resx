@@ -1823,4 +1823,31 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryTitleInvalidCharacter" xml:space="preserve">
     <value>Contains invalid characters.</value>
   </data>
+  <data name="HistoryQuickActionSetting" xml:space="preserve">
+    <value>Quick action</value>
+  </data>
+  <data name="HistoryQuickActionPaste" xml:space="preserve">
+    <value>Paste</value>
+  </data>
+  <data name="QuickActionPrefix" xml:space="preserve">
+    <value>Quick action prefix</value>
+  </data>
+  <data name="QuickActionVisibleRecord" xml:space="preserve">
+    <value>{0} a visible history record (unassigned number keys only)</value>
+  </data>
+  <data name="RecordPasteShortcut" xml:space="preserve">
+    <value>Set shortcut</value>
+  </data>
+  <data name="QuickActionModifiersOnly" xml:space="preserve">
+    <value>Use one or more modifier keys for the quick action prefix.</value>
+  </data>
+  <data name="HistoryRecordPasteBinding" xml:space="preserve">
+    <value>Record shortcut</value>
+  </data>
+  <data name="HistoryShortcutReassignTitle" xml:space="preserve">
+    <value>Reassign record shortcut?</value>
+  </data>
+  <data name="HistoryShortcutReassignMessage" xml:space="preserve">
+    <value>{0} is assigned to this record:&#xA;&#xA;{1}&#xA;&#xA;Move the shortcut to the record you are editing?</value>
+  </data>
 </root>
