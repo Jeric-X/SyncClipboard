@@ -8,6 +8,21 @@ public class Hotkey
     public static readonly Hotkey Nothing = new Hotkey();
 
     public Key[] Keys { get; }
+
+    public static Hotkey FromModifiers(bool shift, bool alt, bool ctrl, bool meta)
+    {
+        var keys = new List<Key>(4);
+        if (shift)
+            keys.Add(Key.Shift);
+        if (alt)
+            keys.Add(Key.Alt);
+        if (ctrl)
+            keys.Add(Key.Ctrl);
+        if (meta)
+            keys.Add(Key.Meta);
+        return new(keys);
+    }
+
     public Hotkey(IEnumerable<Key> keys)
     {
         Keys = keys.Distinct().ToArray();
