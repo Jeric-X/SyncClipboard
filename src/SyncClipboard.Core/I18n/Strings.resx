@@ -1833,7 +1833,7 @@ Choose whether to use the default location or select another folder.</value>
     <value>Quick action prefix</value>
   </data>
   <data name="QuickActionVisibleRecord" xml:space="preserve">
-    <value>{0} a visible history record (unassigned number keys only)</value>
+    <value>{0} a visible history record</value>
   </data>
   <data name="RecordPasteShortcut" xml:space="preserve">
     <value>Set shortcut</value>

@@ -24,6 +24,22 @@ public class HistoryShortcutConfigTests
     }
 
     [TestMethod]
+    public void QuickActionPrefix_UsesPlatformDefaultOrConfiguredModifiers()
+    {
+        const HistoryShortcutAction action = HistoryShortcutAction.QuickActionPrefix;
+        var config = new HistoryShortcutConfig();
+        var prefix = config.GetShortcut(action);
+        if (OperatingSystem.IsMacOS())
+            Assert.AreEqual(new Hotkey(Key.Meta), prefix);
+        else
+            Assert.AreEqual(new Hotkey(Key.Ctrl), prefix);
+
+        var customPrefix = new Hotkey(Key.Ctrl, Key.Shift);
+        config.Shortcuts[action] = customPrefix;
+        Assert.AreEqual(customPrefix, config.GetShortcut(action));
+    }
+
+    [TestMethod]
     public void ReassigningShortcut_RemovesOldBindingAndRequiresExactModifiers()
     {
         var config = new HistoryShortcutConfig

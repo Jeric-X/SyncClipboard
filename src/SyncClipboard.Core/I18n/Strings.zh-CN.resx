@@ -1833,7 +1833,7 @@ Shift + 左键：选中连续范围</value>
     <value>快速操作前缀</value>
   </data>
   <data name="QuickActionVisibleRecord" xml:space="preserve">
-    <value>{0}当前可见的历史记录（仅限未绑定的数字键）</value>
+    <value>{0}当前可见的历史记录</value>
   </data>
   <data name="RecordPasteShortcut" xml:space="preserve">
     <value>设置快捷键</value>
