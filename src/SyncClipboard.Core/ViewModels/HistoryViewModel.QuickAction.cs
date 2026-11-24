@@ -47,26 +47,28 @@ public partial class HistoryViewModel
 
         ClearVisibleHints();
         visibleQuickActionRecords = visible;
-        var prefix = hintConfig.GetShortcut(HistoryShortcutAction.QuickActionPrefix);
         foreach (var row in visible)
-        {
-            var binding = hintConfig.RecordShortcuts.FirstOrDefault(binding => binding.Record == row.Key);
-            if (binding is not null && hintConfig.Match(binding.Hotkey) is null)
-            {
-                row.QuickActionKeys = HistoryKeycap.FromHotkey(binding.Hotkey);
-                continue;
-            }
+            row.QuickActionKeys = GetQuickActionKeycaps(row.Key, numberedQuickActionRecords, hintConfig);
+    }
 
-            var index = Array.IndexOf(numberedQuickActionRecords, row.Key);
-            if (index < 0)
-                continue;
-            var digit = Key._1 + index;
-            var keypadDigit = Key.NumPad1 + index;
-            if (IsNumberKeyAvailable(hintConfig, prefix, digit))
-                row.QuickActionKeys = [new HistoryKeycap(digit)];
-            else if (IsNumberKeyAvailable(hintConfig, prefix, keypadDigit))
-                row.QuickActionKeys = [new HistoryKeycap(keypadDigit)];
-        }
+    private static HistoryKeycap[] GetQuickActionKeycaps(
+        HistoryRecordKey record, HistoryRecordKey[] numberedRecords, HistoryShortcutConfig config)
+    {
+        var binding = config.RecordShortcuts.FirstOrDefault(binding => binding.Record == record);
+        if (binding is not null && config.Match(binding.Hotkey) is null)
+            return HistoryKeycap.FromHotkey(binding.Hotkey);
+
+        var index = Array.IndexOf(numberedRecords, record);
+        if (index < 0)
+            return [];
+
+        var prefix = config.GetShortcut(HistoryShortcutAction.QuickActionPrefix);
+        var digit = Key._1 + index;
+        if (IsNumberKeyAvailable(config, prefix, digit))
+            return [new HistoryKeycap(digit)];
+
+        var keypadDigit = Key.NumPad1 + index;
+        return IsNumberKeyAvailable(config, prefix, keypadDigit) ? [new HistoryKeycap(keypadDigit)] : [];
     }
 
     private static bool IsNumberKeyAvailable(HistoryShortcutConfig config, Hotkey prefix, Key digit)
