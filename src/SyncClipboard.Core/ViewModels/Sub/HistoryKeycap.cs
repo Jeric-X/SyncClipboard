@@ -14,11 +14,7 @@ public sealed class HistoryKeycap(Key key)
         Key.Alt => "⌥",
         Key.Shift => "⇧",
         Key.Meta => "⌘",
-        Key.Enter => "↩",
-        Key.Backspace => "⌫",
-        Key.Delete => "⌦",
-        Key.Tab => "⇥",
-        Key.Esc => "⎋",
+        Key.Enter => "⏎",
         _ => Name
     } : Name;
 
