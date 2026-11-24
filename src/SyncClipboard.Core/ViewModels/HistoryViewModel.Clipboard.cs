@@ -73,7 +73,7 @@ public partial class HistoryViewModel
     {
         try
         {
-            keyboard.ReleaseKeys(shortcut, includeAlternateMappings: true);
+            keyboard.ReleaseKeys(shortcut);
             return true;
         }
         catch (Exception ex)

@@ -11,7 +11,7 @@ using SyncClipboard.Core.Models.Permissions;
 using SyncClipboard.Core.Utilities.Keyboard;
 using SyncClipboard.Core.Utilities.Permissions;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Client.Keyboard;
 
 [TestClass]
 public class KeyboardSimulationTests
@@ -442,6 +442,21 @@ public class KeyboardSimulationTests
         simulator.Verify(x => x.SimulateKeyRelease(KeyCode.VcKana), Times.Once);
         simulator.Verify(x => x.SimulateKeyRelease(KeyCode.VcSection), Times.Once);
         Assert.AreEqual(Key.OEM_102, KeyCodeMap.Map[KeyCode.VcSection]);
+    }
+
+    [TestMethod]
+    public void ReleaseKeys_ReleasesBothCtrlKeysAndBothEnterKeysOnce()
+    {
+        var simulator = new Mock<IEventSimulator>();
+        using var keyboard = new VirtualKeyboard(CreatePermissions().Object, () => simulator.Object);
+
+        keyboard.ReleaseKeys(new Hotkey(Key.Ctrl, Key.Enter));
+
+        simulator.Verify(x => x.SimulateKeyRelease(KeyCode.VcLeftControl), Times.Once);
+        simulator.Verify(x => x.SimulateKeyRelease(KeyCode.VcRightControl), Times.Once);
+        simulator.Verify(x => x.SimulateKeyRelease(KeyCode.VcEnter), Times.Once);
+        simulator.Verify(x => x.SimulateKeyRelease(KeyCode.VcNumPadEnter), Times.Once);
+        simulator.VerifyNoOtherCalls();
     }
 
     private static Mock<IPermissionProvider> CreatePermissions()

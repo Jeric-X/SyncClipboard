@@ -50,9 +50,7 @@ public sealed class VirtualKeyboard : IDisposable
         SendShortcut(modifier, KeyCode.VcV);
     }
 
-    public void ReleaseKeys(Hotkey hotkey) => ReleaseKeys(hotkey, includeAlternateMappings: false);
-
-    internal void ReleaseKeys(Hotkey hotkey, bool includeAlternateMappings)
+    public void ReleaseKeys(Hotkey hotkey)
     {
         if (hotkey.Keys.Length == 0)
             return;
@@ -60,15 +58,10 @@ public sealed class VirtualKeyboard : IDisposable
         Execute(simulator =>
         {
             var result = UioHookResult.Success;
-            var codes = hotkey.Keys.Select(key => KeyCodeMap.MapReverse[key]);
-            if (includeAlternateMappings)
-            {
-                // History windows normalize modifier sides and keypad Enter to their logical keys.
-                var alternates = KeyCodeMap.Map.Where(pair => hotkey.Keys.Contains(pair.Value) ||
-                    (pair.Value == Key.NumPadReturn && hotkey.Keys.Contains(Key.Enter)));
-                codes = codes.Union(alternates.Select(pair => pair.Key));
-            }
-            foreach (var code in codes)
+            var primaryCodes = hotkey.Keys.Select(key => KeyCodeMap.MapReverse[key]);
+            var alternateCodes = KeyCodeMap.Map.Where(pair => hotkey.Keys.Contains(pair.Value) ||
+                (pair.Value == Key.NumPadReturn && hotkey.Keys.Contains(Key.Enter)));
+            foreach (var code in primaryCodes.Union(alternateCodes.Select(pair => pair.Key)))
             {
                 var releaseResult = simulator.SimulateKeyRelease(code);
                 if (result == UioHookResult.Success)
