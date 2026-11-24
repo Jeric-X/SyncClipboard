@@ -29,7 +29,7 @@ using System.Threading.Tasks;
 
 namespace SyncClipboard.Desktop.Views;
 
-public partial class HistoryWindow : Window, IWindow
+public partial class HistoryWindow : Window, IHistoryWindow
 {
     public async void ShowTagPicker()
     {
@@ -442,6 +442,19 @@ public partial class HistoryWindow : Window, IWindow
                     SetVisibleRecordSelected(record, true);
             }
         });
+    }
+
+    IReadOnlyList<HistoryRecordVM> IHistoryWindow.GetVisibleHistoryRecords() => GetVisibleHistoryRecords(_ListBox);
+
+    internal static IReadOnlyList<HistoryRecordVM> GetVisibleHistoryRecords(ListBox list)
+    {
+        if (list.Scroll is not ScrollViewer scroll)
+            return [];
+        return list.GetRealizedContainers()
+            .Where(row => row.Bounds.Height > 0 && row.TranslatePoint(default, scroll) is { } position &&
+                position.Y < scroll.Viewport.Height && position.Y + row.Bounds.Height > 0)
+            .OrderBy(list.IndexFromContainer)
+            .Select(row => row.DataContext).OfType<HistoryRecordVM>().ToArray();
     }
 
     public bool GetScrollViewMetrics(out double offsetY, out double viewportHeight, out double extentHeight)
