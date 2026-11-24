@@ -1,4 +1,5 @@
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Core.ViewModels.Sub;
@@ -12,11 +13,13 @@ public partial class HistoryViewModel
     private static readonly TimeSpan ForegroundCheckInterval = TimeSpan.FromMilliseconds(20);
     private static readonly TimeSpan PasteDispatchDelay = TimeSpan.FromMilliseconds(150);
 
-    public async Task HandleCopyButtonAsync(HistoryRecordVM record, bool paste)
+    public async Task HandleCopyButtonAsync(HistoryRecordVM record, bool paste, Hotkey? shortcut = null)
     {
         var operationName = paste ? "paste history record" : "copy history record";
         try
         {
+            if (paste && shortcut is not null)
+                paste = TryReleasePasteShortcut(shortcut);
             await RunWithOperationTimeoutAsync(
                 operationName,
                 token => CopyToClipboard(record, paste, token));
@@ -29,6 +32,12 @@ public partial class HistoryViewModel
 
     public async Task CopyToClipboard(HistoryRecordVM record, bool paste, CancellationToken token)
     {
+        if (await SetRecordClipboardAsync(record, closeAfterCopy: !paste, token) && paste)
+            await PasteToLastExternalWindowAsync(token);
+    }
+
+    private async Task<bool> SetRecordClipboardAsync(HistoryRecordVM record, bool closeAfterCopy, CancellationToken token)
+    {
         var historyRecord = record.ToHistoryRecord();
         var profile = historyRecord.ToProfile();
         var valid = await profile.IsDataComplete(true, token);
@@ -38,18 +47,14 @@ public partial class HistoryViewModel
             await historyManager.UpdateHistoryLocalInfo(historyRecord, token);
 
             ShowWindowToastInfo(I18n.Strings.UnableToCopyByMissingFile);
-            return;
+            return false;
         }
 
-        if (!paste)
-        {
+        if (closeAfterCopy)
             CloseHistoryWindowAfterCopyIfNeeded();
-            await localClipboardSetter.Set(profile, token);
-            return;
-        }
 
         await localClipboardSetter.Set(profile, token);
-        await PasteToLastExternalWindowAsync(token);
+        return true;
     }
 
     private void CloseHistoryWindowAfterCopyIfNeeded()
@@ -62,6 +67,20 @@ public partial class HistoryViewModel
         if (ScrollToTopOnReopen)
             ScrollToTop();
         window.Hide();
+    }
+
+    private bool TryReleasePasteShortcut(Hotkey shortcut)
+    {
+        try
+        {
+            keyboard.ReleaseKeys(shortcut, includeAlternateMappings: true);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger.Write($"Failed to release history shortcut: {ex.Message}");
+            return false;
+        }
     }
 
     private async Task PasteToLastExternalWindowAsync(CancellationToken token)
