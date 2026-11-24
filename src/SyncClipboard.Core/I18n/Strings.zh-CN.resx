@@ -1829,9 +1829,6 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryQuickActionPaste" xml:space="preserve">
     <value>粘贴</value>
   </data>
-  <data name="HistoryQuickActionSelect" xml:space="preserve">
-    <value>选中</value>
-  </data>
   <data name="QuickPastePrefix" xml:space="preserve">
     <value>快速操作前缀</value>
   </data>

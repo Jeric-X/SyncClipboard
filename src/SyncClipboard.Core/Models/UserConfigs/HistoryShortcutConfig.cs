@@ -12,7 +12,7 @@ public enum HistoryShortcutAction
 
 public enum HistoryQuickAction
 {
-    Copy, Paste, Select
+    Copy, Paste
 }
 
 public enum HistoryMouseAction

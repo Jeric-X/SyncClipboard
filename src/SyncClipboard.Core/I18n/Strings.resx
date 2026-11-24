@@ -1829,9 +1829,6 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryQuickActionPaste" xml:space="preserve">
     <value>Paste</value>
   </data>
-  <data name="HistoryQuickActionSelect" xml:space="preserve">
-    <value>Select</value>
-  </data>
   <data name="QuickPastePrefix" xml:space="preserve">
     <value>Quick action prefix</value>
   </data>

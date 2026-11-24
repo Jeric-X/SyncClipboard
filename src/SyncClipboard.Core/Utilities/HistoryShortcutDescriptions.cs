@@ -58,7 +58,6 @@ public static class HistoryShortcutDescriptions
     {
         HistoryQuickAction.Copy => Strings.HistoryShortcutCopy,
         HistoryQuickAction.Paste => Strings.HistoryQuickActionPaste,
-        HistoryQuickAction.Select => Strings.HistoryQuickActionSelect,
         _ => throw new ArgumentOutOfRangeException(nameof(action))
     };
 
