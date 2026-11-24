@@ -10,6 +10,11 @@ public enum HistoryShortcutAction
     PreviousTag, NextTag, ToggleTagsExpanded, TagAbove, TagBelow, EditTags, EditTitle, QuickPastePrefix
 }
 
+public enum HistoryQuickAction
+{
+    Copy, Paste, Select
+}
+
 public enum HistoryMouseAction
 {
     Copy = 1,
@@ -31,6 +36,14 @@ public record HistoryShortcutConfig
 
     public Dictionary<HistoryShortcutAction, Hotkey> Shortcuts { get; set; } = [];
     public HistoryRecordShortcut[] RecordShortcuts { get; init; } = [];
+    private HistoryQuickAction quickAction = HistoryQuickAction.Paste;
+
+    public HistoryQuickAction QuickAction
+    {
+        get => quickAction;
+        init => quickAction = Enum.IsDefined(value) ? value : HistoryQuickAction.Paste;
+    }
+
     private HistoryMouseAction doubleClickAction = HistoryMouseAction.Copy;
     private HistoryMouseAction middleClickAction = HistoryMouseAction.CopyAndPaste;
 
@@ -184,12 +197,13 @@ public record HistoryShortcutConfig
 
     public virtual bool Equals(HistoryShortcutConfig? other) => other is not null
         && RecordShortcuts.SequenceEqual(other.RecordShortcuts)
+        && QuickAction == other.QuickAction
         && DoubleClickAction == other.DoubleClickAction
         && MiddleClickAction == other.MiddleClickAction
         && Shortcuts.Count == other.Shortcuts.Count
         && !Shortcuts.Except(other.Shortcuts).Any();
 
     public override int GetHashCode() => HashCode.Combine(
-        DoubleClickAction, MiddleClickAction, RecordShortcuts.Aggregate(0, HashCode.Combine),
+        QuickAction, DoubleClickAction, MiddleClickAction, RecordShortcuts.Aggregate(0, HashCode.Combine),
         Shortcuts.Aggregate(0, (hash, pair) => hash ^ pair.GetHashCode()));
 }

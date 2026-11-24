@@ -54,6 +54,14 @@ public static class HistoryShortcutDescriptions
         };
     }
 
+    public static string GetQuickActionName(HistoryQuickAction action) => action switch
+    {
+        HistoryQuickAction.Copy => Strings.HistoryShortcutCopy,
+        HistoryQuickAction.Paste => Strings.HistoryQuickActionPaste,
+        HistoryQuickAction.Select => Strings.HistoryQuickActionSelect,
+        _ => throw new ArgumentOutOfRangeException(nameof(action))
+    };
+
     public static string GetMouseActionName(HistoryMouseAction action) => action switch
     {
         HistoryMouseAction.Copy => Strings.HistoryShortcutCopy,
@@ -71,7 +79,8 @@ public static class HistoryShortcutDescriptions
             if (action == HistoryShortcutAction.QuickPastePrefix && hotkey != Hotkey.Nothing)
             {
                 var prefix = Format(hotkey);
-                keyboardLines.Add(string.Format(Strings.HistoryWindowOperationFormat, $"{prefix}+1–9", Strings.QuickPasteVisibleRecord));
+                var description = string.Format(Strings.QuickPasteVisibleRecord, GetQuickActionName(config.QuickAction));
+                keyboardLines.Add(string.Format(Strings.HistoryWindowOperationFormat, $"{prefix}+1–9", description));
             }
             if (config.Match(hotkey) != action)
                 continue;

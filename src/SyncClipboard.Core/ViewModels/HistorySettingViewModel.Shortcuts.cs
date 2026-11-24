@@ -17,6 +17,19 @@ public partial class HistorySettingViewModel
         .Select(action => new LocaleString<HistoryMouseAction>(action, HistoryShortcutDescriptions.GetMouseActionName(action)))
         .ToArray();
 
+    public IReadOnlyList<LocaleString<HistoryQuickAction>> QuickActions { get; } = Enum.GetValues<HistoryQuickAction>()
+        .Select(action => new LocaleString<HistoryQuickAction>(action, HistoryShortcutDescriptions.GetQuickActionName(action)))
+        .ToArray();
+
+    [ObservableProperty]
+    private LocaleString<HistoryQuickAction> quickAction = null!;
+
+    partial void OnQuickActionChanged(LocaleString<HistoryQuickAction> value)
+    {
+        if (!updatingShortcuts && value is not null)
+            _configManager.SetConfig(_configManager.GetConfig<HistoryShortcutConfig>() with { QuickAction = value.Key });
+    }
+
     private bool updatingShortcuts;
     private HistoryShortcutAction editingAction;
 
@@ -62,6 +75,7 @@ public partial class HistorySettingViewModel
         {
             foreach (var setting in ShortcutSettings)
                 setting.Hotkey = config.GetShortcut(setting.Action);
+            QuickAction = LocaleString<HistoryQuickAction>.Match(QuickActions, config.QuickAction);
             DoubleClickAction = LocaleString<HistoryMouseAction>.Match(MouseActions, config.DoubleClickAction);
             MiddleClickAction = LocaleString<HistoryMouseAction>.Match(MouseActions, config.MiddleClickAction);
             ValidateEditingShortcut();
