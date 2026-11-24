@@ -163,7 +163,8 @@ public record HistoryShortcutConfig
         };
     }
 
-    public HistoryShortcutConfig WithRecordShortcut(HistoryRecordKey record, Hotkey hotkey)
+    /// <summary>Returns a new configuration with the shortcut assigned to the record, or cleared for <see cref="Hotkey.Nothing"/>.</summary>
+    public HistoryShortcutConfig SetRecordShortcut(HistoryRecordKey record, Hotkey hotkey)
     {
         var bindings = RecordShortcuts.Where(binding => binding.Record != record);
         if (hotkey != Hotkey.Nothing)
