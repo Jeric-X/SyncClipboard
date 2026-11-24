@@ -156,6 +156,7 @@ public partial class HistoryViewModel : ObservableObject
         this._foregroundWindowTrackingService = foregroundWindowTrackingService;
         this._serviceProvider = serviceProvider;
 
+        historyManager.HistoryRemoved += RemoveRecordShortcut;
         _transferQueue.TaskStatusChanged += OnTransferTaskStatusChanged;
 
         var currentServer = remoteServerFactory.Current;
@@ -906,12 +907,16 @@ public partial class HistoryViewModel : ObservableObject
         bool isAltPressed = false,
         bool isCtrlPressed = false,
         bool isMetaPressed = false)
+        => HandleKeyPress(key, Hotkey.FromModifiers(isShiftPressed, isAltPressed, isCtrlPressed, isMetaPressed));
+
+    public bool HandleKeyPress(Key key, Hotkey modifiers)
     {
         if (HasModalOperation)
             return false;
 
         if (key == Key.Esc)
         {
+            CancelQuickPaste();
             if (IsMultiSelecting)
                 ExitMultiSelect();
             else
@@ -919,24 +924,23 @@ public partial class HistoryViewModel : ObservableObject
             return true;
         }
 
-        var keys = new List<Key> { key };
-        if (isShiftPressed)
-            keys.Add(Key.Shift);
-        if (isAltPressed)
-            keys.Add(Key.Alt);
-        if (isCtrlPressed)
-            keys.Add(Key.Ctrl);
-        if (isMetaPressed)
-            keys.Add(Key.Meta);
-        var hotkey = new Hotkey(keys);
+        var hotkey = new Hotkey([.. modifiers.Keys, key]);
         if (HistoryShortcutConfig.IsReserved(hotkey))
         {
             Close();
             return true;
         }
 
-        var action = _configManager.GetConfig<HistoryShortcutConfig>().Match(hotkey);
-        return HandleShortcut(action, hotkey);
+        var config = _configManager.GetConfig<HistoryShortcutConfig>();
+        if (key is Key.Shift or Key.Ctrl or Key.Alt or Key.Meta)
+        {
+            UpdateQuickPastePrefix(config, hotkey);
+            return hintConfig is not null;
+        }
+        UpdateQuickPastePrefix(config, modifiers);
+        if (!IsMultiSelecting && TryStartQuickPaste(config, hotkey))
+            return true;
+        return HandleShortcut(config.Match(hotkey), hotkey);
     }
 
     private bool HandleShortcut(HistoryShortcutAction? action, Hotkey hotkey)
@@ -1556,6 +1560,7 @@ public partial class HistoryViewModel : ObservableObject
 
     public void OnLostFocus()
     {
+        CancelQuickPaste();
         if (!_remainWindowForFolderPicker && !_remainWindowForViewDetail && !IsTopmost && CloseWhenLostFocus)
         {
             window.Hide();
