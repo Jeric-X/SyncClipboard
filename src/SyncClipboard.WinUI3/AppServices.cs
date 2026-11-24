@@ -39,11 +39,11 @@ public class AppServices
         services.AddSingleton<IHistoryImportDialog, HistoryImportDialogPresenter>();
         services.AddKeyedSingleton<IMainWindowDialog>(nameof(HistoryWindow), (sp, key) =>
         {
-            var historyWindow = sp.GetRequiredKeyedService<IWindow>(nameof(HistoryWindow)) as HistoryWindow;
+            var historyWindow = sp.GetRequiredService<IHistoryWindow>() as HistoryWindow;
             return new Services.WinUIDialog(historyWindow!);
         });
         services.AddSingleton<IMainWindow, MainWindow>();
-        services.AddKeyedSingleton<IWindow, HistoryWindow>(nameof(HistoryWindow));
+        services.AddSingleton<IHistoryWindow, HistoryWindow>();
         services.AddSingleton<ClipboardListener>();
         services.AddSingleton<IClipboardChangingListener>(sp => sp.GetRequiredService<ClipboardListener>());
         services.AddSingleton<IClipboardMoniter>(sp => sp.GetRequiredService<ClipboardListener>());

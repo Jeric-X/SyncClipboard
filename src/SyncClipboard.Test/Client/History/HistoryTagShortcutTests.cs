@@ -26,7 +26,7 @@ public class HistoryTagShortcutTests
             File.WriteAllText(path, "{}");
             var config = new ConfigManager(path, services.Upgrader);
             config.SetConfig(new HistoryShortcutConfig { Shortcuts = { [HistoryShortcutAction.QuickActionPrefix] = Hotkey.Nothing } });
-            var window = new Mock<IWindow>();
+            var window = new Mock<IHistoryWindow>();
             var model = fixture.ViewModel;
             Fixture.SetField(model, "_configManager", config);
             Fixture.SetField(model, "window", window.Object);
@@ -92,7 +92,7 @@ public class HistoryTagShortcutTests
             File.WriteAllText(path, "{}");
             var config = new ConfigManager(path, services.Upgrader);
             config.SetConfig(new HistoryShortcutConfig { Shortcuts = { [HistoryShortcutAction.QuickActionPrefix] = Hotkey.Nothing } });
-            var window = new Mock<IWindow>();
+            var window = new Mock<IHistoryWindow>();
             var model = fixture.ViewModel;
             Fixture.SetField(model, "_configManager", config);
             Fixture.SetField(model, "window", window.Object);
