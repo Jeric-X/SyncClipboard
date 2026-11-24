@@ -1829,16 +1829,16 @@ Choose whether to use the default location or select another folder.</value>
   <data name="HistoryQuickActionPaste" xml:space="preserve">
     <value>Paste</value>
   </data>
-  <data name="QuickPastePrefix" xml:space="preserve">
+  <data name="QuickActionPrefix" xml:space="preserve">
     <value>Quick action prefix</value>
   </data>
-  <data name="QuickPasteVisibleRecord" xml:space="preserve">
+  <data name="QuickActionVisibleRecord" xml:space="preserve">
     <value>{0} a visible history record (unassigned number keys only)</value>
   </data>
   <data name="RecordPasteShortcut" xml:space="preserve">
     <value>Set shortcut</value>
   </data>
-  <data name="QuickPasteModifiersOnly" xml:space="preserve">
+  <data name="QuickActionModifiersOnly" xml:space="preserve">
     <value>Use one or more modifier keys for the quick action prefix.</value>
   </data>
   <data name="HistoryRecordPasteBinding" xml:space="preserve">

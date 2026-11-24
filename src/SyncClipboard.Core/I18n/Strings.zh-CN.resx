@@ -1829,16 +1829,16 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryQuickActionPaste" xml:space="preserve">
     <value>粘贴</value>
   </data>
-  <data name="QuickPastePrefix" xml:space="preserve">
+  <data name="QuickActionPrefix" xml:space="preserve">
     <value>快速操作前缀</value>
   </data>
-  <data name="QuickPasteVisibleRecord" xml:space="preserve">
+  <data name="QuickActionVisibleRecord" xml:space="preserve">
     <value>{0}当前可见的历史记录（仅限未绑定的数字键）</value>
   </data>
   <data name="RecordPasteShortcut" xml:space="preserve">
     <value>设置快捷键</value>
   </data>
-  <data name="QuickPasteModifiersOnly" xml:space="preserve">
+  <data name="QuickActionModifiersOnly" xml:space="preserve">
     <value>请使用一个或多个修饰键作为快速操作前缀。</value>
   </data>
   <data name="HistoryRecordPasteBinding" xml:space="preserve">

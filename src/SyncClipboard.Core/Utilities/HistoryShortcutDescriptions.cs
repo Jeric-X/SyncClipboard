@@ -8,7 +8,7 @@ public static class HistoryShortcutDescriptions
 {
     public static string GetActionName(HistoryShortcutAction action) => action switch
     {
-        HistoryShortcutAction.QuickPastePrefix => Strings.QuickPastePrefix,
+        HistoryShortcutAction.QuickActionPrefix => Strings.QuickActionPrefix,
         HistoryShortcutAction.Search => Strings.HistoryShortcutSearch,
         HistoryShortcutAction.EditTags => Strings.HistoryTagsEdit,
         HistoryShortcutAction.EditTitle => Strings.HistoryEditTitle,
@@ -41,7 +41,7 @@ public static class HistoryShortcutDescriptions
         var keys = Format(hotkey);
         return error switch
         {
-            HistoryShortcutError.PrefixModifiersOnly => Strings.QuickPasteModifiersOnly,
+            HistoryShortcutError.PrefixModifiersOnly => Strings.QuickActionModifiersOnly,
             HistoryShortcutError.RecordConflict => string.Format(Strings.HistoryShortcutConflict, keys, Strings.HistoryRecordPasteBinding),
             HistoryShortcutError.None => string.Empty,
             HistoryShortcutError.Reserved => string.Format(Strings.HistoryShortcutReserved, keys),
@@ -75,10 +75,10 @@ public static class HistoryShortcutDescriptions
         foreach (var action in Enum.GetValues<HistoryShortcutAction>())
         {
             var hotkey = config.GetShortcut(action);
-            if (action == HistoryShortcutAction.QuickPastePrefix && hotkey != Hotkey.Nothing)
+            if (action == HistoryShortcutAction.QuickActionPrefix && hotkey != Hotkey.Nothing)
             {
                 var prefix = Format(hotkey);
-                var description = string.Format(Strings.QuickPasteVisibleRecord, GetQuickActionName(config.QuickAction));
+                var description = string.Format(Strings.QuickActionVisibleRecord, GetQuickActionName(config.QuickAction));
                 keyboardLines.Add(string.Format(Strings.HistoryWindowOperationFormat, $"{prefix}+1–9", description));
             }
             if (config.Match(hotkey) != action)

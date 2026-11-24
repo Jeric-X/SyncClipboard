@@ -7,7 +7,7 @@ public enum HistoryShortcutAction
 {
     Search, PreviousItem, NextItem, FirstItem, LastItem, ToggleStar, ToggleStarredFilter,
     ToggleTopmost, Delete, TogglePreview, NextFilter, PreviousFilter, CopyAndPaste, Copy, ExecuteRecommendedAction,
-    PreviousTag, NextTag, ToggleTagsExpanded, TagAbove, TagBelow, EditTags, EditTitle, QuickPastePrefix
+    PreviousTag, NextTag, ToggleTagsExpanded, TagAbove, TagBelow, EditTags, EditTitle, QuickActionPrefix
 }
 
 public enum HistoryQuickAction
@@ -61,7 +61,7 @@ public record HistoryShortcutConfig
 
     public static Hotkey GetDefault(HistoryShortcutAction action) => action switch
     {
-        HistoryShortcutAction.QuickPastePrefix => GetDefaultQuickPastePrefix(),
+        HistoryShortcutAction.QuickActionPrefix => GetDefaultQuickActionPrefix(),
         HistoryShortcutAction.Search => new(Key.Ctrl, Key.F),
         HistoryShortcutAction.EditTags => new(Key.Ctrl, Key.T),
         HistoryShortcutAction.EditTitle => new(Key.F2),
@@ -86,7 +86,7 @@ public record HistoryShortcutConfig
         _ => Hotkey.Nothing
     };
 
-    private static Hotkey GetDefaultQuickPastePrefix()
+    private static Hotkey GetDefaultQuickActionPrefix()
     {
         if (OperatingSystem.IsWindows())
             return new(Key.Ctrl);
@@ -123,7 +123,7 @@ public record HistoryShortcutConfig
             return (HistoryShortcutError.Reserved, null);
 
         var mainKeyCount = hotkey.Keys.Count(key => key is not (Key.Ctrl or Key.Shift or Key.Alt or Key.Meta));
-        if (action == HistoryShortcutAction.QuickPastePrefix)
+        if (action == HistoryShortcutAction.QuickActionPrefix)
             return mainKeyCount == 0
                 ? (HistoryShortcutError.None, null) : (HistoryShortcutError.PrefixModifiersOnly, null);
         if (mainKeyCount == 0)
@@ -149,7 +149,7 @@ public record HistoryShortcutConfig
         return (HistoryShortcutError.None, null);
     }
 
-    public static int GetQuickPasteNumber(Hotkey prefix, Hotkey hotkey)
+    public static int GetQuickActionNumber(Hotkey prefix, Hotkey hotkey)
     {
         if (prefix.Keys.Length == 0 || hotkey.Keys.Length != prefix.Keys.Length + 1 ||
             !hotkey.Keys.AsSpan(0, prefix.Keys.Length).SequenceEqual(prefix.Keys))
@@ -190,7 +190,7 @@ public record HistoryShortcutConfig
             return null;
         foreach (var action in Enum.GetValues<HistoryShortcutAction>())
         {
-            if (action != HistoryShortcutAction.QuickPastePrefix && GetShortcut(action) == hotkey)
+            if (action != HistoryShortcutAction.QuickActionPrefix && GetShortcut(action) == hotkey)
                 return action;
         }
         return null;
