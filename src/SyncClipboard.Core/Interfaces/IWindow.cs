@@ -9,24 +9,8 @@ public interface IWindow
     void Show(bool activate);
     void Hide();
     void CenterOnScreen(int width, int height);
-    void FocusSearch();
-    void ShowTagPicker() { }
-    void ShowTitleEditor() { }
-    void NavigateTagFilter(bool forward) { }
-    void NavigateTagFilterVertically(bool down) { }
-    void ToggleTagBarExpanded() { }
-    void ScrollToTop() { }
-    void ScrollToSelectedItem() { }
-    void SetTopmost(bool topmost) { }
-    NativeWindowInfo? GetNativeWindowInfo() => null;
-    bool GetScrollViewMetrics(out double offsetY, out double viewportHeight, out double extentHeight)
-    {
-        offsetY = 0;
-        viewportHeight = 0;
-        extentHeight = 0;
-        return false;
-    }
-
+    void SetTopmost(bool topmost);
+    NativeWindowInfo? GetNativeWindowInfo();
     bool SetNearCaretPosition(ScreenPosition caretPosition);
     bool SetNearMousePosition(ScreenPosition mousePosition);
     bool SetPositionOnScreen(int screenX, int screenY);

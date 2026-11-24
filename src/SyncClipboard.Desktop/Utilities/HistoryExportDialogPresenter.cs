@@ -19,7 +19,7 @@ public sealed class HistoryExportDialogPresenter(IServiceProvider services, Hist
     public async Task ShowAsync(IReadOnlyList<HistoryRecordKey>? selected = null, bool fromHistoryWindow = false)
     {
         var owner = fromHistoryWindow
-            ? (Window)services.GetRequiredKeyedService<IWindow>("HistoryWindow")
+            ? (Window)services.GetRequiredService<IHistoryWindow>()
             : (Window)services.GetRequiredService<IMainWindow>();
         var messages = new AvaloniaDialog(owner);
         using var session = manager.TryBeginBackupSession();

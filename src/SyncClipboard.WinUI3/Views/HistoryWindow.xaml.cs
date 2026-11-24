@@ -44,7 +44,7 @@ using XamlWindowSizeChangedEventArgs = Microsoft.UI.Xaml.WindowSizeChangedEventA
 
 namespace SyncClipboard.WinUI3.Views;
 
-public sealed partial class HistoryWindow : Window, IWindow, IDisposable
+public sealed partial class HistoryWindow : Window, IHistoryWindow, IDisposable
 {
     public async void ShowTagPicker()
     {
@@ -1163,6 +1163,19 @@ public sealed partial class HistoryWindow : Window, IWindow, IDisposable
         {
             NotifyScrollViewerChange();
         });
+    }
+
+    public IReadOnlyList<HistoryRecordVM> GetVisibleHistoryRecords()
+    {
+        var rows = new List<HistoryRecordVM>();
+        if (_ListView.ItemsPanelRoot is not ItemsStackPanel panel)
+            return rows;
+        for (var i = Math.Max(0, panel.FirstVisibleIndex); i <= panel.LastVisibleIndex && i < _ListView.Items.Count; i++)
+        {
+            if (_ListView.Items[i] is HistoryRecordVM record)
+                rows.Add(record);
+        }
+        return rows;
     }
 
     public bool GetScrollViewMetrics(out double offsetY, out double viewportHeight, out double extentHeight)

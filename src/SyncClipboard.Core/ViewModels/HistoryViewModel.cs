@@ -27,7 +27,7 @@ public partial class HistoryViewModel : ObservableObject
 {
     private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(30);
 
-    private IWindow window = null!;
+    private IHistoryWindow window = null!;
     private bool _hasShownWindow;
 
     [ObservableProperty]
@@ -1058,7 +1058,7 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
-    public async Task Init(IWindow window)
+    public async Task Init(IHistoryWindow window)
     {
         this.window = window;
         HistoryItems.CollectionChanged -= OnHistoryItemsCollectionChanged;
