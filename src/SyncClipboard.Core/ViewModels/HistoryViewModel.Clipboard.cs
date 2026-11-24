@@ -32,12 +32,6 @@ public partial class HistoryViewModel
 
     public async Task CopyToClipboard(HistoryRecordVM record, bool paste, CancellationToken token)
     {
-        if (await SetRecordClipboardAsync(record, closeAfterCopy: !paste, token) && paste)
-            await PasteToLastExternalWindowAsync(token);
-    }
-
-    private async Task<bool> SetRecordClipboardAsync(HistoryRecordVM record, bool closeAfterCopy, CancellationToken token)
-    {
         var historyRecord = record.ToHistoryRecord();
         var profile = historyRecord.ToProfile();
         var valid = await profile.IsDataComplete(true, token);
@@ -47,14 +41,18 @@ public partial class HistoryViewModel
             await historyManager.UpdateHistoryLocalInfo(historyRecord, token);
 
             ShowWindowToastInfo(I18n.Strings.UnableToCopyByMissingFile);
-            return false;
+            return;
         }
 
-        if (closeAfterCopy)
+        if (!paste)
+        {
             CloseHistoryWindowAfterCopyIfNeeded();
+            await localClipboardSetter.Set(profile, token);
+            return;
+        }
 
         await localClipboardSetter.Set(profile, token);
-        return true;
+        await PasteToLastExternalWindowAsync(token);
     }
 
     private void CloseHistoryWindowAfterCopyIfNeeded()
