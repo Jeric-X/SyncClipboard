@@ -25,6 +25,7 @@ public class HistoryTagShortcutTests
         {
             File.WriteAllText(path, "{}");
             var config = new ConfigManager(path, services.Upgrader);
+            config.SetConfig(new HistoryShortcutConfig { Shortcuts = { [HistoryShortcutAction.QuickPastePrefix] = Hotkey.Nothing } });
             var window = new Mock<IWindow>();
             var model = fixture.ViewModel;
             Fixture.SetField(model, "_configManager", config);
@@ -53,7 +54,8 @@ public class HistoryTagShortcutTests
             model.HandleKeyPress(Key.T, isCtrlPressed: true);
             window.VerifyNoOtherCalls();
 
-            config.SetConfig(new HistoryShortcutConfig { Shortcuts = { [HistoryShortcutAction.EditTags] = new(Key.F2) } });
+            var shortcuts = config.GetConfig<HistoryShortcutConfig>();
+            config.SetConfig(shortcuts with { Shortcuts = new(shortcuts.Shortcuts) { [HistoryShortcutAction.EditTags] = new(Key.F2) } });
             model.SelectedItem = fixture.Records[0];
             Assert.IsFalse(model.HandleKeyPress(Key.T, isCtrlPressed: true));
             Assert.IsTrue(model.HandleKeyPress(Key.F2));
@@ -89,6 +91,7 @@ public class HistoryTagShortcutTests
         {
             File.WriteAllText(path, "{}");
             var config = new ConfigManager(path, services.Upgrader);
+            config.SetConfig(new HistoryShortcutConfig { Shortcuts = { [HistoryShortcutAction.QuickPastePrefix] = Hotkey.Nothing } });
             var window = new Mock<IWindow>();
             var model = fixture.ViewModel;
             Fixture.SetField(model, "_configManager", config);
