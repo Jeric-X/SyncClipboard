@@ -5,6 +5,7 @@ using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
+using SyncClipboard.Core.ViewModels.Sub;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -23,6 +24,9 @@ public partial class HistorySettingViewModel
 
     [ObservableProperty]
     private LocaleString<HistoryQuickAction> quickAction = null!;
+
+    [ObservableProperty]
+    private string quickActionDescription = string.Empty;
 
     partial void OnQuickActionChanged(LocaleString<HistoryQuickAction> value)
     {
@@ -76,6 +80,10 @@ public partial class HistorySettingViewModel
             foreach (var setting in ShortcutSettings)
                 setting.Hotkey = config.GetShortcut(setting.Action);
             QuickAction = LocaleString<HistoryQuickAction>.Match(QuickActions, config.QuickAction);
+            var prefix = config.GetShortcut(HistoryShortcutAction.QuickActionPrefix);
+            QuickActionDescription = prefix == Hotkey.Nothing ? Strings.HistoryQuickActionWithoutPrefixDescription
+                : string.Format(Strings.HistoryQuickActionDescription, string.Format(Strings.QuickActionVisibleRecord, QuickAction.ShownString),
+                    string.Join("+", HistoryKeycap.FromHotkey(prefix).Select(key => key.Name)));
             DoubleClickAction = LocaleString<HistoryMouseAction>.Match(MouseActions, config.DoubleClickAction);
             MiddleClickAction = LocaleString<HistoryMouseAction>.Match(MouseActions, config.MiddleClickAction);
             ValidateEditingShortcut();
