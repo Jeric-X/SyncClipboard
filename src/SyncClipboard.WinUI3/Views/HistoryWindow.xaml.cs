@@ -364,7 +364,7 @@ public sealed partial class HistoryWindow : Window, IHistoryWindow, IDisposable
         ((Flyout)_HistoryWindowGrid.Resources["FontScaleFlyout"]).ShowAt(_MenuButton);
     }
 
-    private void HistoryFlyout_Opening(object sender, object args) => _viewModel.OnPopupOpened();
+    private void HistoryFlyout_Opening(object? sender, object args) => _viewModel.OnPopupOpened();
 
     private void FontScaleFlyout_Opening(object sender, object _)
     {
@@ -993,14 +993,13 @@ public sealed partial class HistoryWindow : Window, IHistoryWindow, IDisposable
         if (_viewModel.HasModalOperation || _viewModel.IsMultiSelecting)
             return;
         using var hold = _viewModel.HoldForModalOperation();
-        var dialog = (HotkeyEditDialog)_HistoryWindowGrid.Resources["RecordShortcutEditor"];
         var editor = _viewModel.CreateRecordShortcutEditor(record.Key);
-        dialog.DataContext = editor;
+        _RecordShortcutEditor.DataContext = editor;
         var messages = new WinUIDialog(this);
         try
         {
-            dialog.XamlRoot = Content.XamlRoot;
-            while (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            _RecordShortcutEditor.XamlRoot = Content.XamlRoot;
+            while (await _RecordShortcutEditor.ShowAsync() == ContentDialogResult.Primary)
             {
                 if (await editor.TrySaveAsync(messages))
                     break;
