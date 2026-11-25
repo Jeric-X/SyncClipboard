@@ -364,8 +364,24 @@ public sealed partial class HistoryWindow : Window, IHistoryWindow, IDisposable
         ((Flyout)_HistoryWindowGrid.Resources["FontScaleFlyout"]).ShowAt(_MenuButton);
     }
 
+    private void HistoryFlyout_Opening(object sender, object args) => _viewModel.OnPopupOpened();
+
+    private void HistoryContent_LostFocus(object sender, RoutedEventArgs args)
+    {
+        if (_HistoryWindowGrid.XamlRoot is not { } root)
+            return;
+        var focused = FocusManager.GetFocusedElement(root) as DependencyObject;
+        for (var current = focused; current is UIElement; current = VisualTreeHelper.GetParent(current))
+        {
+            if (current == _HistoryWindowGrid)
+                return;
+        }
+        _viewModel.OnPopupOpened();
+    }
+
     private void FontScaleFlyout_Opening(object sender, object _)
     {
+        _viewModel.OnPopupOpened();
         var panel = (StackPanel)((Flyout)sender).Content;
         ((TextBlock)panel.Children[0]).Text = Strings.FontScale;
         ((NumberBox)panel.Children[1]).Value = _viewModel.FontScalePercent;
@@ -904,6 +920,7 @@ public sealed partial class HistoryWindow : Window, IHistoryWindow, IDisposable
             return;
 
         var flyout = new MenuFlyout();
+        flyout.Opening += HistoryFlyout_Opening;
         AddContextActions(flyout, actions);
         if (flyout.Items.Count > 0)
             flyout.Items.Add(new MenuFlyoutSeparator());
@@ -959,6 +976,7 @@ public sealed partial class HistoryWindow : Window, IHistoryWindow, IDisposable
 
     private void TagContextFlyout_Opening(object sender, object _)
     {
+        _viewModel.OnPopupOpened();
         if (sender is not MenuFlyout flyout)
             return;
         flyout.Items.Clear();

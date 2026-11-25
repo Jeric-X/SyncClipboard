@@ -20,6 +20,7 @@
         <DesktopAcrylicBackdrop />
     </Window.SystemBackdrop>
     <Grid x:Name="_HistoryWindowGrid"
+          LostFocus="HistoryContent_LostFocus"
           PreviewKeyDown="Grid_KeyDown"
           PreviewKeyUp="Grid_KeyUp"
           KeyboardAcceleratorPlacementMode="Hidden"
@@ -155,7 +156,7 @@
                         VerticalAlignment="Center">
                     <FontIcon Glyph="&#xE10C;" />
                     <Button.Flyout>
-                        <MenuFlyout Placement="Bottom">
+                        <MenuFlyout Placement="Bottom" Opening="HistoryFlyout_Opening">
                             <MenuFlyoutItem Text="{x:Bind i18n:Strings.OperationInstructions}" Command="{x:Bind _viewModel.ShowOperationInstructionsCommand}" />
                             <MenuFlyoutSeparator />
                             <ToggleMenuFlyoutItem Text="{x:Bind i18n:Strings.ScrollToTopOnReopen}" IsChecked="{x:Bind _viewModel.ScrollToTopOnReopen, Mode=TwoWay}" />
@@ -221,7 +222,7 @@
               Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.IsTagBarVisible), Mode=OneWay}"
               Background="Transparent">
             <Grid.ContextFlyout>
-                <MenuFlyout>
+                <MenuFlyout Opening="HistoryFlyout_Opening">
                     <MenuFlyoutItem Text="{x:Bind i18n:Strings.HistoryTagBarEditPins}" Click="TagBarSettings_Click" />
                 </MenuFlyout>
             </Grid.ContextFlyout>
