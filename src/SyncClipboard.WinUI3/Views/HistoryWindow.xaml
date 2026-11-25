@@ -20,7 +20,6 @@
         <DesktopAcrylicBackdrop />
     </Window.SystemBackdrop>
     <Grid x:Name="_HistoryWindowGrid"
-          LostFocus="HistoryContent_LostFocus"
           PreviewKeyDown="Grid_KeyDown"
           PreviewKeyUp="Grid_KeyUp"
           KeyboardAcceleratorPlacementMode="Hidden"

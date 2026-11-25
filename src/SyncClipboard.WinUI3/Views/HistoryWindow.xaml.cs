@@ -366,19 +366,6 @@ public sealed partial class HistoryWindow : Window, IHistoryWindow, IDisposable
 
     private void HistoryFlyout_Opening(object sender, object args) => _viewModel.OnPopupOpened();
 
-    private void HistoryContent_LostFocus(object sender, RoutedEventArgs args)
-    {
-        if (_HistoryWindowGrid.XamlRoot is not { } root)
-            return;
-        var focused = FocusManager.GetFocusedElement(root) as DependencyObject;
-        for (var current = focused; current is UIElement; current = VisualTreeHelper.GetParent(current))
-        {
-            if (current == _HistoryWindowGrid)
-                return;
-        }
-        _viewModel.OnPopupOpened();
-    }
-
     private void FontScaleFlyout_Opening(object sender, object _)
     {
         _viewModel.OnPopupOpened();
