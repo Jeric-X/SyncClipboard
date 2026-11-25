@@ -47,12 +47,6 @@
                     </Grid>
                 </Border>
             </DataTemplate>
-            <local:HotkeyEditDialog x:Key="RecordShortcutEditor"
-                                    Title="{x:Bind i18n:Strings.RecordPasteShortcut}"
-                                    Hotkey="{Binding EditingShortcut, Mode=TwoWay}"
-                                    IsError="{Binding HasError}"
-                                    IsPrimaryButtonEnabled="{Binding CanSave}"
-                                    ErrorMessage="{Binding ErrorMessage}" />
             <!--  Keep focus on the search box so history keyboard shortcuts remain available.  -->
             <Style TargetType="Button" BasedOn="{StaticResource DateTimePickerFlyoutButtonStyle}">
                 <Setter Property="Height" Value="28" />
@@ -471,5 +465,11 @@
                  Message="{x:Bind _viewModel.InfoBarMessage, Mode=OneWay}"
                  Severity="Warning"
                  IsClosable="True" />
+        <local:HotkeyEditDialog x:Name="_RecordShortcutEditor"
+                                Title="{x:Bind i18n:Strings.RecordPasteShortcut}"
+                                Hotkey="{Binding EditingShortcut, Mode=TwoWay}"
+                                IsError="{Binding HasError}"
+                                IsPrimaryButtonEnabled="{Binding CanSave}"
+                                ErrorMessage="{Binding ErrorMessage}" />
     </Grid>
 </Window>
