@@ -31,6 +31,7 @@ public class HistoryTagShortcutTests
             Fixture.SetField(model, "_configManager", config);
             Fixture.SetField(model, "window", window.Object);
             model.SelectedItem = fixture.Records[0];
+            model.HandleKeyPress(Key.Ctrl, isCtrlPressed: true);
             Assert.IsTrue(model.HandleKeyPress(Key.T, isCtrlPressed: true));
             window.Verify(value => value.ShowTagPicker(), Times.Once);
             window.Invocations.Clear();
@@ -44,6 +45,7 @@ public class HistoryTagShortcutTests
                 Assert.IsFalse(model.HandleKeyPress(Key.Esc));
                 Assert.AreSame(selected, model.SelectedItem);
             }
+            model.HandleKeyPress(Key.Ctrl, isCtrlPressed: true);
             model.IsMultiSelecting = true;
             model.HandleKeyPress(Key.T, isCtrlPressed: true);
             model.IsMultiSelecting = false;
@@ -96,6 +98,7 @@ public class HistoryTagShortcutTests
             var model = fixture.ViewModel;
             Fixture.SetField(model, "_configManager", config);
             Fixture.SetField(model, "window", window.Object);
+            model.HandleKeyPress(Key.Ctrl, isCtrlPressed: true);
             Assert.IsTrue(model.HandleKeyPress(Key.Right, isCtrlPressed: true));
             window.Verify(value => value.NavigateTagFilter(true), Times.Once);
             window.Invocations.Clear();
