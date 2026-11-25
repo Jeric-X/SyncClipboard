@@ -71,7 +71,7 @@
                     <Setter Property="BoxShadow" Value="none" />
                 </Style>
             </ControlTheme>
-            <Flyout x:Key="FontScaleFlyout">
+            <Flyout x:Key="FontScaleFlyout" Opening="HistoryFlyout_Opening">
                 <StackPanel Orientation="Horizontal" Spacing="8" Margin="4">
                     <TextBlock VerticalAlignment="Center" />
                     <NumericUpDown Minimum="25"
@@ -201,7 +201,7 @@
                         VerticalAlignment="Center">
                     <ui:FAFontIcon Glyph="&#xE10C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                     <Button.Flyout>
-                        <ui:FAMenuFlyout>
+                        <ui:FAMenuFlyout Opening="HistoryFlyout_Opening">
                             <ui:FAMenuFlyoutItem Text="{x:Static i18n:Strings.OperationInstructions}" Command="{Binding ShowOperationInstructionsCommand}" />
                             <ui:FAMenuFlyoutSeparator />
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ScrollToTopOnReopen}" IsChecked="{Binding ScrollToTopOnReopen, Mode=TwoWay}" />
@@ -272,7 +272,7 @@
                   IsVisible="{Binding IsTagBarVisible}"
                   Background="Transparent">
                 <Grid.ContextFlyout>
-                    <ui:FAMenuFlyout>
+                    <ui:FAMenuFlyout Opening="HistoryFlyout_Opening">
                         <ui:FAMenuFlyoutItem Text="{x:Static i18n:Strings.HistoryTagBarEditPins}" Click="TagBarSettings_Click" />
                     </ui:FAMenuFlyout>
                 </Grid.ContextFlyout>
