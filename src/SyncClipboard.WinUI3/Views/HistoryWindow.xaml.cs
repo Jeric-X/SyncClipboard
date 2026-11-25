@@ -15,6 +15,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.Utilities.Runner;
@@ -243,6 +244,7 @@ public sealed partial class HistoryWindow : Window, IHistoryWindow, IDisposable
         // 初始化 SelectorBar 选项
         InitializeSelectorBar();
 
+        _ListView.LayoutUpdated += (_, _) => _viewModel.RefreshQuickActionHints();
         _ListView.SizeChanged += OnListViewSizeChanged;
 
         InitializeScrollWatcher();
@@ -584,12 +586,6 @@ public sealed partial class HistoryWindow : Window, IHistoryWindow, IDisposable
         if (_viewModel.HasModalOperation || e.Key == VirtualKey.None)
             return;
 
-        var isCtrlPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(CoreVirtualKeyStates.Down);
-        var isMetaPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.LeftWindows).HasFlag(CoreVirtualKeyStates.Down)
-            || InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.RightWindows).HasFlag(CoreVirtualKeyStates.Down);
-        var isShiftPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(CoreVirtualKeyStates.Down);
-        var isAltPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Menu).HasFlag(CoreVirtualKeyStates.Down);
-
         var key = KeyboardMap.ConvertFromVirtualKey(e.Key);
 
         if (!key.HasValue)
@@ -598,9 +594,20 @@ public sealed partial class HistoryWindow : Window, IHistoryWindow, IDisposable
             return;
         }
 
-        var handled = _viewModel.HandleKeyPress(key.Value, isShiftPressed, isAltPressed, isCtrlPressed, isMetaPressed);
+        e.Handled = _viewModel.HandleKeyPress(key.Value, GetModifiers(), e.KeyStatus.WasKeyDown);
+    }
 
-        e.Handled = handled;
+    private void Grid_KeyUp(object _, KeyRoutedEventArgs e) =>
+        _viewModel.HandleKeyRelease(KeyboardMap.ConvertFromVirtualKey(e.Key), GetModifiers());
+
+    private static Hotkey GetModifiers()
+    {
+        var isCtrlPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Control).HasFlag(CoreVirtualKeyStates.Down);
+        var isMetaPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.LeftWindows).HasFlag(CoreVirtualKeyStates.Down)
+            || InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.RightWindows).HasFlag(CoreVirtualKeyStates.Down);
+        var isShiftPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Shift).HasFlag(CoreVirtualKeyStates.Down);
+        var isAltPressed = InputKeyboardSource.GetKeyStateForCurrentThread(VirtualKey.Menu).HasFlag(CoreVirtualKeyStates.Down);
+        return Hotkey.FromModifiers(isShiftPressed, isAltPressed, isCtrlPressed, isMetaPressed);
     }
 
     public void ScrollToSelectedItem()
@@ -905,6 +912,9 @@ public sealed partial class HistoryWindow : Window, IHistoryWindow, IDisposable
             var editTitle = new MenuFlyoutItem { Text = record.TitleActionText };
             editTitle.Click += async (_, _) => await EditTitleAsync(record);
             flyout.Items.Add(editTitle);
+            var shortcut = new MenuFlyoutItem { Text = Strings.RecordPasteShortcut };
+            shortcut.Click += async (_, _) => await EditRecordShortcutAsync(record);
+            flyout.Items.Add(shortcut);
         }
         var editTags = new MenuFlyoutItem
         {
@@ -971,6 +981,34 @@ public sealed partial class HistoryWindow : Window, IHistoryWindow, IDisposable
     {
         if (_viewModel.SelectedItem is { } record)
             await EditTitleAsync(record);
+    }
+
+    private async Task EditRecordShortcutAsync(HistoryRecordVM record)
+    {
+        if (_viewModel.HasModalOperation || _viewModel.IsMultiSelecting)
+            return;
+        using var hold = _viewModel.HoldForModalOperation();
+        var dialog = (HotkeyEditDialog)_HistoryWindowGrid.Resources["RecordShortcutEditor"];
+        var editor = _viewModel.CreateRecordShortcutEditor(record.Key);
+        dialog.DataContext = editor;
+        var messages = new WinUIDialog(this);
+        try
+        {
+            dialog.XamlRoot = Content.XamlRoot;
+            while (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            {
+                if (await editor.TrySaveAsync(messages))
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            await messages.ShowMessageAsync(Strings.RecordPasteShortcut, ex.Message);
+        }
+        finally
+        {
+            _SearchTextBox.Focus(FocusState.Programmatic);
+        }
     }
 
     private async Task EditTitleAsync(HistoryRecordVM record)
@@ -1139,6 +1177,7 @@ public sealed partial class HistoryWindow : Window, IHistoryWindow, IDisposable
     private void AttachScrollViewerWatcher(ScrollViewer scroll)
     {
         _scrollViewer = scroll;
+        scroll.ViewChanged += (_, _) => _viewModel.RefreshQuickActionHints();
 
         async void NotifyScrollViewerChange()
         {
@@ -1168,11 +1207,15 @@ public sealed partial class HistoryWindow : Window, IHistoryWindow, IDisposable
     public IReadOnlyList<HistoryRecordVM> GetVisibleHistoryRecords()
     {
         var rows = new List<HistoryRecordVM>();
-        if (_ListView.ItemsPanelRoot is not ItemsStackPanel panel)
+        if (_ListView.ItemsPanelRoot is not ItemsStackPanel panel || _scrollViewer is not { } scroll)
             return rows;
         for (var i = Math.Max(0, panel.FirstVisibleIndex); i <= panel.LastVisibleIndex && i < _ListView.Items.Count; i++)
         {
-            if (_ListView.Items[i] is HistoryRecordVM record)
+            if (_ListView.ContainerFromIndex(i) is not ListViewItem row || row.Content is not HistoryRecordVM record || row.ActualHeight <= 0)
+                continue;
+            var top = row.TransformToVisual(scroll).TransformPoint(default).Y;
+            var visibleHeight = Math.Min(top + row.ActualHeight, scroll.ViewportHeight) - Math.Max(top, 0);
+            if (visibleHeight >= row.ActualHeight * 0.6)
                 rows.Add(record);
         }
         return rows;
