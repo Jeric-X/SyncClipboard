@@ -5,6 +5,7 @@ using SyncClipboard.Core.Models;
 using SyncClipboard.Core.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -26,7 +27,7 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     private readonly IThreadDispatcher _dispatcher;
     private const string LOG_TAG = nameof(ClipboardFactory);
 
-    private delegate Task FormatHandler(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk);
+    internal delegate Task FormatHandler(DataPackageView ClipboardData, ClipboardMetaInfomation meta, CancellationToken ctk);
     private static readonly List<KeyValuePair<string, FormatHandler>> FormatHandlerlist =
     [
         new (StandardDataFormats.Text, HanleText),
@@ -173,12 +174,16 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
     }
 
     public override async Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk)
+        => (await GetMetaInfomation(default, ctk))!;
+
+    public override async Task<ClipboardMetaInfomation?> GetMetaInfomation(ClipboardChangeToken changeToken, CancellationToken ctk)
     {
         using var nativeClipboardAccessGuard = await NativeClipboardAccess.AcquireAsync(ctk);
-        return await _dispatcher.RunOnMainThreadAsync(() => GetMetaInfomationCurrentThread(ctk));
+        return await _dispatcher.RunOnMainThreadAsync(() => GetMetaInfomationCurrentThread(changeToken, ctk));
     }
 
-    private async Task<ClipboardMetaInfomation> GetMetaInfomationCurrentThread(CancellationToken ctk)
+    private async Task<ClipboardMetaInfomation?> GetMetaInfomationCurrentThread(
+        ClipboardChangeToken changeToken, CancellationToken ctk)
     {
         ClipboardMetaInfomation meta = new();
         DataPackageView ClipboardData = Clipboard.GetContent();
@@ -189,13 +194,17 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
 
         // Snapshot the WinRT collection before awaiting: the source can disconnect during image conversion.
         var formats = ClipboardData.AvailableFormats.ToHashSet(StringComparer.Ordinal);
-        for (int i = 0; formats.Count == 0 && i < 10; i++)
+        var formatWaitStart = Stopwatch.GetTimestamp();
+        int formatRetryCount = 0;
+        while (formats.Count == 0 && Stopwatch.GetElapsedTime(formatWaitStart) < TimeSpan.FromSeconds(2))
         {
-            await Task.Delay(200, ctk);
+            await Task.Delay(20, ctk);
             ClipboardData = Clipboard.GetContent();
             formats = ClipboardData.AvailableFormats.ToHashSet(StringComparer.Ordinal);
-            await Logger.WriteAsync(LOG_TAG, "retry times: " + (i + 1));
+            formatRetryCount++;
         }
+        if (formatRetryCount > 0)
+            await Logger.WriteAsync(LOG_TAG, "retry times: " + formatRetryCount);
 
         if (formats.Count == 0)
         {
@@ -204,30 +213,50 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
             return meta;
         }
 
-        const int maxAttempts = 3;
         foreach (var handler in FormatHandlerlist)
         {
             if (!formats.Contains(handler.Key))
                 continue;
-            for (int i = 0; i < maxAttempts; i++)
-            {
-                try
-                {
-                    ctk.ThrowIfCancellationRequested();
-                    await handler.Value(ClipboardData, meta, ctk);
-                    break;
-                }
-                catch (Exception ex) when (ctk.IsCancellationRequested is false)
-                {
-                    await Logger.WriteAsync(LOG_TAG, ex.ToString());
-                    if (i < maxAttempts - 1)
-                        await Task.Delay(100, ctk);
-                }
-            }
+            if (!await ReadFormatWithRetryAsync(handler.Value, ClipboardData, meta, changeToken, ctk))
+                return null;
         }
 
         await Logger.WriteAsync(LOG_TAG, "Text: " + meta.Text ?? "");
         SetClipboardOwner(meta);
         return meta;
+    }
+
+    // False abandons the entire read; ordinary format failures still allow other formats to be read.
+    internal async Task<bool> ReadFormatWithRetryAsync(
+        FormatHandler handler, DataPackageView clipboardData, ClipboardMetaInfomation meta,
+        ClipboardChangeToken changeToken, CancellationToken token)
+    {
+        const int rpcServerUnavailable = unchecked((int)0x800706BA);
+        const int rpcCallFailed = unchecked((int)0x800706BE);
+        const int rpcDisconnected = unchecked((int)0x80010108);
+        const int maxAttempts = 3;
+        for (int i = 0; i < maxAttempts; i++)
+        {
+            try
+            {
+                token.ThrowIfCancellationRequested();
+                await handler.Invoke(clipboardData, meta, token);
+                return true;
+            }
+            catch (Exception ex) when (!token.IsCancellationRequested)
+            {
+                bool rpcFailure = ex is COMException { HResult: rpcServerUnavailable or rpcCallFailed or rpcDisconnected };
+                if (rpcFailure && changeToken.IsSuperseded)
+                    return false;
+
+                await Logger.WriteAsync(LOG_TAG, ex.ToString());
+                if (i < maxAttempts - 1)
+                    await Task.Delay(100, token);
+
+                if (rpcFailure && changeToken.IsSuperseded)
+                    return false;
+            }
+        }
+        return true;
     }
 }
