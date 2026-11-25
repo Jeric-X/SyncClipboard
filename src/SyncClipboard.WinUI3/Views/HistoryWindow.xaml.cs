@@ -364,7 +364,7 @@ public sealed partial class HistoryWindow : Window, IHistoryWindow, IDisposable
         ((Flyout)_HistoryWindowGrid.Resources["FontScaleFlyout"]).ShowAt(_MenuButton);
     }
 
-    private void HistoryFlyout_Opening(object sender, object args) => _viewModel.OnPopupOpened();
+    private void HistoryFlyout_Opening(object? sender, object args) => _viewModel.OnPopupOpened();
 
     private void FontScaleFlyout_Opening(object sender, object _)
     {
