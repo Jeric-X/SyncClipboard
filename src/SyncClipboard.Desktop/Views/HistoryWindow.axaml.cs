@@ -16,6 +16,7 @@ using SyncClipboard.Core.Commons;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
+using Hotkey = SyncClipboard.Core.Models.Keyboard.Hotkey;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
@@ -164,7 +165,14 @@ public partial class HistoryWindow : Window, IHistoryWindow
         _TagFilterScroll.AddHandler(PointerWheelChangedEvent, TagFilterScroll_PointerWheelChanged, RoutingStrategies.Tunnel);
         _TagFilterScroll.ScrollChanged += (_, _) => _tagNavigation.SnapToRow(_TagFilterItems, _TagFilterScroll);
         // Handle configured keys before the search box, without intercepting modal dialog input.
+        _HistoryContent.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == IsKeyboardFocusWithinProperty && !_HistoryContent.IsKeyboardFocusWithin)
+                _viewModel.OnPopupOpened();
+        };
         _HistoryContent.AddHandler(KeyDownEvent, HistoryWindow_KeyDown, RoutingStrategies.Tunnel);
+        _HistoryContent.AddHandler(KeyUpEvent, HistoryWindow_KeyUp, RoutingStrategies.Tunnel);
+        _ListBox.LayoutUpdated += (_, _) => _viewModel.RefreshQuickActionHints();
         if (OperatingSystem.IsLinux())
             WindowDecorationsTheme = (ControlTheme)this.FindResource("LinuxHistoryWindowDecorationsTheme")!;
 
@@ -243,11 +251,6 @@ public partial class HistoryWindow : Window, IHistoryWindow
         if (_viewModel.HasModalOperation)
             return;
 
-        var isShiftPressed = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
-        var isAltPressed = e.KeyModifiers.HasFlag(KeyModifiers.Alt);
-        var isCtrlPressed = e.KeyModifiers.HasFlag(KeyModifiers.Control);
-        var isMetaPressed = e.KeyModifiers.HasFlag(KeyModifiers.Meta);
-
         var key = Utilities.KeyboardMap.ConvertFromAvalonia(e.Key);
 
         if (!key.HasValue)
@@ -256,7 +259,22 @@ public partial class HistoryWindow : Window, IHistoryWindow
             return;
         }
 
-        e.Handled = _viewModel.HandleKeyPress(key.Value, isShiftPressed, isAltPressed, isCtrlPressed, isMetaPressed);
+        e.Handled = _viewModel.HandleKeyPress(key.Value, GetModifiers(e.KeyModifiers));
+    }
+
+    private void HistoryWindow_KeyUp(object? sender, KeyEventArgs e)
+    {
+        var key = Utilities.KeyboardMap.ConvertFromAvalonia(e.Key);
+        _viewModel.HandleKeyRelease(key, GetModifiers(e.KeyModifiers));
+    }
+
+    private static Hotkey GetModifiers(KeyModifiers modifiers)
+    {
+        var isShiftPressed = modifiers.HasFlag(KeyModifiers.Shift);
+        var isAltPressed = modifiers.HasFlag(KeyModifiers.Alt);
+        var isCtrlPressed = modifiers.HasFlag(KeyModifiers.Control);
+        var isMetaPressed = modifiers.HasFlag(KeyModifiers.Meta);
+        return Hotkey.FromModifiers(isShiftPressed, isAltPressed, isCtrlPressed, isMetaPressed);
     }
 
     protected override void OnClosing(WindowClosingEventArgs e)
@@ -452,7 +470,7 @@ public partial class HistoryWindow : Window, IHistoryWindow
             return [];
         return list.GetRealizedContainers()
             .Where(row => row.Bounds.Height > 0 && row.TranslatePoint(default, scroll) is { } position &&
-                position.Y < scroll.Viewport.Height && position.Y + row.Bounds.Height > 0)
+                Math.Min(position.Y + row.Bounds.Height, scroll.Viewport.Height) - Math.Max(position.Y, 0) >= row.Bounds.Height * 0.6)
             .OrderBy(list.IndexFromContainer)
             .Select(row => row.DataContext).OfType<HistoryRecordVM>().ToArray();
     }
@@ -473,8 +491,11 @@ public partial class HistoryWindow : Window, IHistoryWindow
         return false;
     }
 
+    private void HistoryFlyout_Opening(object? sender, EventArgs e) => _viewModel.OnPopupOpened();
+
     private async void ItemContextFlyout_Opening(object? sender, EventArgs e)
     {
+        _viewModel.OnPopupOpened();
         if (sender is not FAMenuFlyout flyout)
         {
             return;
@@ -513,6 +534,9 @@ public partial class HistoryWindow : Window, IHistoryWindow
             var editTitle = new FAMenuFlyoutItem { Text = record.TitleActionText };
             editTitle.Click += async (_, _) => await EditTitleAsync(record);
             flyout.Items.Add(editTitle);
+            var shortcut = new FAMenuFlyoutItem { Text = Strings.RecordPasteShortcut };
+            shortcut.Click += async (_, _) => await EditRecordShortcutAsync(record);
+            flyout.Items.Add(shortcut);
         }
         var editTags = new FAMenuFlyoutItem
         {
@@ -551,6 +575,7 @@ public partial class HistoryWindow : Window, IHistoryWindow
 
     private void TagContextFlyout_Opening(object? sender, EventArgs e)
     {
+        _viewModel.OnPopupOpened();
         if (sender is not FAMenuFlyout flyout)
             return;
         flyout.Items.Clear();
@@ -573,6 +598,33 @@ public partial class HistoryWindow : Window, IHistoryWindow
     {
         if (_viewModel.SelectedItem is { } record)
             await EditTitleAsync(record);
+    }
+
+    private async Task EditRecordShortcutAsync(HistoryRecordVM record)
+    {
+        if (_viewModel.HasModalOperation || _viewModel.IsMultiSelecting)
+            return;
+        using var hold = _viewModel.HoldForModalOperation();
+        var dialog = (HotkeyEditDialog)Resources["RecordShortcutEditor"]!;
+        var editor = _viewModel.CreateRecordShortcutEditor(record.Key);
+        dialog.DataContext = editor;
+        var messages = new AvaloniaDialog(this);
+        try
+        {
+            while (await dialog.ShowAsync(this) == FAContentDialogResult.Primary)
+            {
+                if (await editor.TrySaveAsync(messages))
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            await messages.ShowMessageAsync(Strings.RecordPasteShortcut, ex.Message);
+        }
+        finally
+        {
+            _SearchTextBox.Focus();
+        }
     }
 
     private async Task EditTitleAsync(HistoryRecordVM record)

@@ -34,6 +34,36 @@
                     <SolidColorBrush x:Key="HistoryMultiSelectBarBackground" Color="#66252525" />
                 </ResourceDictionary>
             </ResourceDictionary.ThemeDictionaries>
+            <DataTemplate x:Key="HistoryKeycapTemplate" x:DataType="vms:HistoryKeycap">
+                <Border MinWidth="20"
+                        Height="21"
+                        Padding="4,0"
+                        CornerRadius="4"
+                        Background="{DynamicResource ControlFillColorDefaultBrush}"
+                        BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                        BorderThickness="1,1,1,2">
+                    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <TextBlock Text="{Binding Label}"
+                                   FontSize="{OnPlatform Default=12,
+                                                         macOS=14}"
+                                   FontWeight="Medium"
+                                   IsVisible="{Binding !ShowWindowsLogo}" />
+                        <Path Width="11"
+                              Height="11"
+                              Stretch="Uniform"
+                              Fill="{DynamicResource TextFillColorPrimaryBrush}"
+                              Data="M0,0h5v5H0z M6,0h5v5H6z M0,6h5v5H0z M6,6h5v5H6z"
+                              IsVisible="{Binding ShowWindowsLogo}" />
+                    </Grid>
+                </Border>
+            </DataTemplate>
+            <local:HotkeyEditDialog x:Key="RecordShortcutEditor"
+                                    x:DataType="vm:HistoryRecordShortcutEditor"
+                                    Title="{x:Static i18n:Strings.RecordPasteShortcut}"
+                                    Hotkey="{Binding EditingShortcut, Mode=TwoWay}"
+                                    IsError="{Binding HasError}"
+                                    IsPrimaryButtonEnabled="{Binding CanSave}"
+                                    ErrorMessage="{Binding ErrorMessage}" />
             <x:Double x:Key="TabItemMinHeight">38</x:Double>
             <ControlTheme x:Key="LinuxHistoryWindowDecorationsTheme" TargetType="WindowDrawnDecorations" BasedOn="{StaticResource {x:Type WindowDrawnDecorations}}">
                 <Setter Property="DefaultShadowThickness" Value="0" />
@@ -41,7 +71,7 @@
                     <Setter Property="BoxShadow" Value="none" />
                 </Style>
             </ControlTheme>
-            <Flyout x:Key="FontScaleFlyout">
+            <Flyout x:Key="FontScaleFlyout" Opening="HistoryFlyout_Opening">
                 <StackPanel Orientation="Horizontal" Spacing="8" Margin="4">
                     <TextBlock VerticalAlignment="Center" />
                     <NumericUpDown Minimum="25"
@@ -171,7 +201,7 @@
                         VerticalAlignment="Center">
                     <ui:FAFontIcon Glyph="&#xE10C;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                     <Button.Flyout>
-                        <ui:FAMenuFlyout>
+                        <ui:FAMenuFlyout Opening="HistoryFlyout_Opening">
                             <ui:FAMenuFlyoutItem Text="{x:Static i18n:Strings.OperationInstructions}" Command="{Binding ShowOperationInstructionsCommand}" />
                             <ui:FAMenuFlyoutSeparator />
                             <ui:FAToggleMenuFlyoutItem Text="{x:Static i18n:Strings.ScrollToTopOnReopen}" IsChecked="{Binding ScrollToTopOnReopen, Mode=TwoWay}" />
@@ -242,7 +272,7 @@
                   IsVisible="{Binding IsTagBarVisible}"
                   Background="Transparent">
                 <Grid.ContextFlyout>
-                    <ui:FAMenuFlyout>
+                    <ui:FAMenuFlyout Opening="HistoryFlyout_Opening">
                         <ui:FAMenuFlyoutItem Text="{x:Static i18n:Strings.HistoryTagBarEditPins}" Click="TagBarSettings_Click" />
                     </ui:FAMenuFlyout>
                 </Grid.ContextFlyout>
@@ -389,11 +419,25 @@
                                         Padding="12,0,0,0">
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="2">
                                         <TextBlock Text="{Binding RelativeTime}"
+                                                   IsVisible="{Binding !HasQuickActionKeys}"
                                                    VerticalAlignment="Center"
                                                    Margin="0,0,8,0"
                                                    Opacity="0.6"
                                                    FontSize="12"
                                                    ToolTip.Tip="{Binding FullDateTime}" />
+                                        <ItemsControl ItemsSource="{Binding QuickActionKeys}"
+                                                      ItemTemplate="{StaticResource HistoryKeycapTemplate}"
+                                                      Margin="0,0,8,0"
+                                                      VerticalAlignment="Center"
+                                                      IsVisible="{Binding HasQuickActionKeys}"
+                                                      AutomationProperties.Name="{Binding QuickActionShortcutName}"
+                                                      ToolTip.Tip="{Binding QuickActionShortcutName}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal" Spacing="3" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                        </ItemsControl>
                                         <!--  Control buttons - hidden when preview panel is open  -->
                                         <views:RecordControlBar IsVisible="{Binding !#_HistoryWindow.ViewModel.ShowPreviewPanel}" Record="{Binding .}" ViewModel="{Binding #_HistoryWindow.ViewModel}" />
                                     </StackPanel>
