@@ -39,13 +39,26 @@ public class HistoryTagShortcutTests
             using (model.HoldForModalOperation())
             {
                 var selected = model.SelectedItem;
+                Assert.IsFalse(model.HandleKeyPress(Key.Ctrl, isCtrlPressed: true));
                 Assert.IsFalse(model.HandleKeyPress(Key.T, isCtrlPressed: true));
                 Assert.IsFalse(model.HandleKeyPress(Key.Down));
                 Assert.IsFalse(model.HandleKeyPress(Key.Enter));
                 Assert.IsFalse(model.HandleKeyPress(Key.Esc));
                 Assert.AreSame(selected, model.SelectedItem);
             }
-            model.HandleKeyPress(Key.Ctrl, isCtrlPressed: true);
+            var ctrl = new Hotkey(Key.Ctrl);
+            Assert.IsFalse(model.HandleKeyPress(Key.T, ctrl));
+            Assert.IsFalse(model.HandleKeyPress(Key.Enter, new Hotkey(Key.Alt)));
+            window.VerifyNoOtherCalls();
+            model.HandleKeyRelease(Key.Ctrl, Hotkey.Nothing);
+            model.HandleKeyPress(Key.Ctrl, ctrl);
+            Assert.IsTrue(model.HandleKeyPress(Key.T, ctrl));
+            window.Verify(value => value.ShowTagPicker(), Times.Once);
+            window.Invocations.Clear();
+
+            model.HandleKeyRelease(Key.Ctrl, ctrl);
+            Assert.IsFalse(model.HandleKeyPress(Key.T, ctrl));
+            model.HandleKeyPress(Key.Ctrl, ctrl);
             model.IsMultiSelecting = true;
             model.HandleKeyPress(Key.T, isCtrlPressed: true);
             model.IsMultiSelecting = false;
