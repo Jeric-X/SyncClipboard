@@ -25,11 +25,13 @@ public class HistoryTagShortcutTests
         {
             File.WriteAllText(path, "{}");
             var config = new ConfigManager(path, services.Upgrader);
-            var window = new Mock<IWindow>();
+            config.SetConfig(new HistoryShortcutConfig { Shortcuts = { [HistoryShortcutAction.QuickActionPrefix] = Hotkey.Nothing } });
+            var window = new Mock<IHistoryWindow>();
             var model = fixture.ViewModel;
             Fixture.SetField(model, "_configManager", config);
             Fixture.SetField(model, "window", window.Object);
             model.SelectedItem = fixture.Records[0];
+            model.HandleKeyPress(Key.Ctrl, isCtrlPressed: true);
             Assert.IsTrue(model.HandleKeyPress(Key.T, isCtrlPressed: true));
             window.Verify(value => value.ShowTagPicker(), Times.Once);
             window.Invocations.Clear();
@@ -37,12 +39,26 @@ public class HistoryTagShortcutTests
             using (model.HoldForModalOperation())
             {
                 var selected = model.SelectedItem;
+                Assert.IsFalse(model.HandleKeyPress(Key.Ctrl, isCtrlPressed: true));
                 Assert.IsFalse(model.HandleKeyPress(Key.T, isCtrlPressed: true));
                 Assert.IsFalse(model.HandleKeyPress(Key.Down));
                 Assert.IsFalse(model.HandleKeyPress(Key.Enter));
                 Assert.IsFalse(model.HandleKeyPress(Key.Esc));
                 Assert.AreSame(selected, model.SelectedItem);
             }
+            var ctrl = new Hotkey(Key.Ctrl);
+            Assert.IsFalse(model.HandleKeyPress(Key.T, ctrl));
+            Assert.IsFalse(model.HandleKeyPress(Key.Enter, new Hotkey(Key.Alt)));
+            window.VerifyNoOtherCalls();
+            model.HandleKeyRelease(Key.Ctrl, Hotkey.Nothing);
+            model.HandleKeyPress(Key.Ctrl, ctrl);
+            Assert.IsTrue(model.HandleKeyPress(Key.T, ctrl));
+            window.Verify(value => value.ShowTagPicker(), Times.Once);
+            window.Invocations.Clear();
+
+            model.HandleKeyRelease(Key.Ctrl, ctrl);
+            Assert.IsFalse(model.HandleKeyPress(Key.T, ctrl));
+            model.HandleKeyPress(Key.Ctrl, ctrl);
             model.IsMultiSelecting = true;
             model.HandleKeyPress(Key.T, isCtrlPressed: true);
             model.IsMultiSelecting = false;
@@ -53,7 +69,8 @@ public class HistoryTagShortcutTests
             model.HandleKeyPress(Key.T, isCtrlPressed: true);
             window.VerifyNoOtherCalls();
 
-            config.SetConfig(new HistoryShortcutConfig { Shortcuts = { [HistoryShortcutAction.EditTags] = new(Key.F2) } });
+            var shortcuts = config.GetConfig<HistoryShortcutConfig>();
+            config.SetConfig(shortcuts with { Shortcuts = new(shortcuts.Shortcuts) { [HistoryShortcutAction.EditTags] = new(Key.F2) } });
             model.SelectedItem = fixture.Records[0];
             Assert.IsFalse(model.HandleKeyPress(Key.T, isCtrlPressed: true));
             Assert.IsTrue(model.HandleKeyPress(Key.F2));
@@ -89,10 +106,12 @@ public class HistoryTagShortcutTests
         {
             File.WriteAllText(path, "{}");
             var config = new ConfigManager(path, services.Upgrader);
-            var window = new Mock<IWindow>();
+            config.SetConfig(new HistoryShortcutConfig { Shortcuts = { [HistoryShortcutAction.QuickActionPrefix] = Hotkey.Nothing } });
+            var window = new Mock<IHistoryWindow>();
             var model = fixture.ViewModel;
             Fixture.SetField(model, "_configManager", config);
             Fixture.SetField(model, "window", window.Object);
+            model.HandleKeyPress(Key.Ctrl, isCtrlPressed: true);
             Assert.IsTrue(model.HandleKeyPress(Key.Right, isCtrlPressed: true));
             window.Verify(value => value.NavigateTagFilter(true), Times.Once);
             window.Invocations.Clear();

@@ -57,12 +57,12 @@ public sealed partial class HotkeyEditDialog : ContentDialog
 
     private void ConfirmClick(ContentDialog _, ContentDialogButtonClickEventArgs args)
     {
-        if (SaveCommand?.CanExecute(null) != true)
+        if (SaveCommand?.CanExecute(null) == false)
         {
             args.Cancel = true;
             return;
         }
-        SaveCommand.Execute(null);
+        SaveCommand?.Execute(null);
         args.Cancel = IsError;
     }
 }

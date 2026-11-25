@@ -17,7 +17,7 @@ public class HistoryViewModelSelectionTests
     public void NativeFolderPickerKeepsHistoryVisibleAcrossFocusChanges()
     {
         var viewModel = (HistoryViewModel)RuntimeHelpers.GetUninitializedObject(typeof(HistoryViewModel));
-        var window = new Mock<IWindow>();
+        var window = new Mock<IHistoryWindow>();
         typeof(HistoryViewModel).GetField("window", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(viewModel, window.Object);
         using (viewModel.HoldForNativeFolderPicker())
@@ -73,7 +73,7 @@ public class HistoryViewModelSelectionTests
         var logger = new Mock<ILogger>();
         SetField("_updateQueueCts", new CancellationTokenSource());
         SetField("allHistoryItems", records);
-        SetField("window", Mock.Of<IWindow>());
+        SetField("window", Mock.Of<IHistoryWindow>());
         SetField("_loader", runner);
         SetField("logger", logger.Object);
         var context = new QueuedSynchronizationContext();
@@ -129,7 +129,7 @@ public class HistoryViewModelSelectionTests
         var runner = new SingletonTask();
         var logger = new Mock<ILogger>();
         logger.Setup(value => value.WriteAsync(It.IsAny<string>(), It.IsAny<string>())).Returns(Task.CompletedTask);
-        var window = new Mock<IWindow>();
+        var window = new Mock<IHistoryWindow>();
         window.Setup(value => value.ScrollToTop()).Throws(new InvalidOperationException("Reset failed"));
         SetField("_loader", runner);
         SetField("logger", logger.Object);

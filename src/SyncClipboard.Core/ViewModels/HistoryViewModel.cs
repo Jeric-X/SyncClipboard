@@ -27,7 +27,7 @@ public partial class HistoryViewModel : ObservableObject
 {
     private static readonly TimeSpan OperationTimeout = TimeSpan.FromSeconds(30);
 
-    private IWindow window = null!;
+    private IHistoryWindow window = null!;
     private bool _hasShownWindow;
 
     [ObservableProperty]
@@ -156,6 +156,7 @@ public partial class HistoryViewModel : ObservableObject
         this._foregroundWindowTrackingService = foregroundWindowTrackingService;
         this._serviceProvider = serviceProvider;
 
+        historyManager.HistoryRemoved += RemoveRecordShortcut;
         _transferQueue.TaskStatusChanged += OnTransferTaskStatusChanged;
 
         var currentServer = remoteServerFactory.Current;
@@ -906,12 +907,37 @@ public partial class HistoryViewModel : ObservableObject
         bool isAltPressed = false,
         bool isCtrlPressed = false,
         bool isMetaPressed = false)
+        => HandleKeyPress(key, Hotkey.FromModifiers(isShiftPressed, isAltPressed, isCtrlPressed, isMetaPressed));
+
+    private HashSet<Key>? pressedModifiers;
+
+    private bool HasUntrackedModifier(Hotkey modifiers, Key? releasedKey = null) =>
+        modifiers.Keys.Any(modifier => modifier != releasedKey && pressedModifiers?.Contains(modifier) != true);
+
+    public void HandleKeyRelease(Key? key, Hotkey modifiers)
+    {
+        pressedModifiers?.IntersectWith(modifiers.Keys);
+        if (key.HasValue)
+            pressedModifiers?.Remove(key.Value);
+        UpdatePressedModifierHints(HasUntrackedModifier(modifiers, key));
+    }
+
+    private void UpdatePressedModifierHints(bool hasUntrackedModifier)
+    {
+        if (pressedModifiers is { Count: > 0 } && (ShowingQuickActionHints || !hasUntrackedModifier))
+            UpdateQuickActionModifiers(new Hotkey(pressedModifiers));
+        else
+            ClearQuickActionHints();
+    }
+
+    public bool HandleKeyPress(Key key, Hotkey modifiers, bool isRepeat = false)
     {
         if (HasModalOperation)
             return false;
 
         if (key == Key.Esc)
         {
+            ClearQuickActionHints();
             if (IsMultiSelecting)
                 ExitMultiSelect();
             else
@@ -919,27 +945,40 @@ public partial class HistoryViewModel : ObservableObject
             return true;
         }
 
-        var keys = new List<Key> { key };
-        if (isShiftPressed)
-            keys.Add(Key.Shift);
-        if (isAltPressed)
-            keys.Add(Key.Alt);
-        if (isCtrlPressed)
-            keys.Add(Key.Ctrl);
-        if (isMetaPressed)
-            keys.Add(Key.Meta);
-        var hotkey = new Hotkey(keys);
+        pressedModifiers?.IntersectWith(modifiers.Keys);
+        var isModifier = key is Key.Ctrl or Key.Shift or Key.Alt or Key.Meta;
+        if (isModifier)
+        {
+            if (isRepeat)
+                return false;
+            (pressedModifiers ??= []).Add(key);
+        }
+        if (HasUntrackedModifier(modifiers))
+        {
+            UpdatePressedModifierHints(hasUntrackedModifier: true);
+            return false;
+        }
+
+        var hotkey = new Hotkey([.. modifiers.Keys, key]);
         if (HistoryShortcutConfig.IsReserved(hotkey))
         {
             Close();
             return true;
         }
 
-        var action = _configManager.GetConfig<HistoryShortcutConfig>().Match(hotkey);
-        return HandleShortcut(action);
+        var config = _configManager.GetConfig<HistoryShortcutConfig>();
+        if (isModifier)
+        {
+            UpdateQuickActionPrefix(config, hotkey);
+            return hintConfig is not null;
+        }
+        UpdateQuickActionPrefix(config, modifiers);
+        if (config.Match(hotkey) is { } action)
+            return HandleShortcut(action, hotkey);
+        return !IsMultiSelecting && TryStartQuickAction(config, hotkey);
     }
 
-    private bool HandleShortcut(HistoryShortcutAction? action)
+    private bool HandleShortcut(HistoryShortcutAction? action, Hotkey hotkey)
     {
         switch (action)
         {
@@ -965,8 +1004,11 @@ public partial class HistoryViewModel : ObservableObject
             case HistoryShortcutAction.TagBelow:
             case HistoryShortcutAction.ToggleTagsExpanded:
                 return HandleTagShortcut(action.Value);
-            case HistoryShortcutAction.CopyAndPaste: HandleEnterKey(false); break;
-            case HistoryShortcutAction.Copy: HandleEnterKey(true); break;
+            case HistoryShortcutAction.CopyAndPaste:
+            case HistoryShortcutAction.Copy:
+                if (SelectedItem is { } record)
+                    _ = HandleCopyButtonAsync(record, action == HistoryShortcutAction.CopyAndPaste, hotkey);
+                break;
             case HistoryShortcutAction.ExecuteRecommendedAction:
                 if (SelectedItem is { } selectedItem)
                     _ = HandleRecommendedActionAsync(selectedItem);
@@ -981,6 +1023,7 @@ public partial class HistoryViewModel : ObservableObject
         if (IsMultiSelecting || SelectedItem is null || SelectedFilter == HistoryFilterType.Transferring)
             return;
 
+        OnPopupOpened();
         if (action == HistoryShortcutAction.EditTitle)
             window?.ShowTitleEditor();
         else
@@ -1019,16 +1062,6 @@ public partial class HistoryViewModel : ObservableObject
         await DeleteItem(selectedItem);
     }
 
-    private async void HandleEnterKey(bool isAltPressed)
-    {
-        if (SelectedItem is not { } selectedItem)
-            return;
-
-        // Alt键表示不粘贴到剪贴板，只是复制操作
-        var paste = !isAltPressed;
-        await HandleCopyButtonAsync(selectedItem, paste);
-    }
-
     public void ViewImage(HistoryRecordVM record)
     {
         if (record.FilePath.Length == 0 || !File.Exists(record.FilePath[0]))
@@ -1058,7 +1091,7 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
-    public async Task Init(IWindow window)
+    public async Task Init(IHistoryWindow window)
     {
         this.window = window;
         HistoryItems.CollectionChanged -= OnHistoryItemsCollectionChanged;
@@ -1561,8 +1594,17 @@ public partial class HistoryViewModel : ObservableObject
 
     private bool _remainWindowForViewDetail = false;
 
+    public void OnPopupOpened() => ResetShortcutState();
+
+    private void ResetShortcutState()
+    {
+        pressedModifiers = null;
+        ClearQuickActionHints();
+    }
+
     public void OnLostFocus()
     {
+        ResetShortcutState();
         if (!_remainWindowForFolderPicker && !_remainWindowForViewDetail && !IsTopmost && CloseWhenLostFocus)
         {
             window.Hide();

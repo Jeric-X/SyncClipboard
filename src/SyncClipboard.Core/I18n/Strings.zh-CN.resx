@@ -1823,4 +1823,37 @@ Shift + 左键：选中连续范围</value>
   <data name="HistoryTitleInvalidCharacter" xml:space="preserve">
     <value>包含无效字符</value>
   </data>
+  <data name="HistoryQuickActionSetting" xml:space="preserve">
+    <value>快速操作动作</value>
+  </data>
+  <data name="HistoryQuickActionPaste" xml:space="preserve">
+    <value>粘贴</value>
+  </data>
+  <data name="QuickActionPrefix" xml:space="preserve">
+    <value>快速操作前缀</value>
+  </data>
+  <data name="HistoryQuickActionDescription" xml:space="preserve">
+    <value>按住 {1}，再按 1–9 即可{0}。也可以为具体记录独立设置快速操作快捷键。</value>
+  </data>
+  <data name="HistoryQuickActionWithoutPrefixDescription" xml:space="preserve">
+    <value>可以为具体记录独立设置快速操作快捷键。</value>
+  </data>
+  <data name="QuickActionVisibleRecord" xml:space="preserve">
+    <value>{0}当前可见的历史记录</value>
+  </data>
+  <data name="RecordPasteShortcut" xml:space="preserve">
+    <value>设置快捷键</value>
+  </data>
+  <data name="QuickActionModifiersOnly" xml:space="preserve">
+    <value>请使用一个或多个修饰键作为快速操作前缀。</value>
+  </data>
+  <data name="HistoryRecordPasteBinding" xml:space="preserve">
+    <value>指定记录的快捷键</value>
+  </data>
+  <data name="HistoryShortcutReassignTitle" xml:space="preserve">
+    <value>覆盖记录快捷键？</value>
+  </data>
+  <data name="HistoryShortcutReassignMessage" xml:space="preserve">
+    <value>{0} 已绑定到以下记录：&#xA;&#xA;{1}&#xA;&#xA;是否将这个快捷键改绑到当前记录？</value>
+  </data>
 </root>

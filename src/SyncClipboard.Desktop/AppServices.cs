@@ -40,7 +40,7 @@ public class AppServices
         services.AddSingleton<IHistoryImportDialog, HistoryImportDialogPresenter>();
         services.AddKeyedSingleton<IMainWindowDialog>("HistoryWindow", (sp, key) =>
         {
-            var historyWindow = sp.GetRequiredKeyedService<IWindow>("HistoryWindow") as HistoryWindow;
+            var historyWindow = sp.GetRequiredService<IHistoryWindow>() as HistoryWindow;
             return new Services.AvaloniaDialog(historyWindow!);
         });
         services.AddSingleton<IContextMenu, TrayIconContextMenu>();
@@ -107,7 +107,7 @@ public class AppServices
             services.AddSingleton<IMainWindow, MainWindow>();
             services.AddSingleton<INativeHotkeyRegistry, SharpHookHotkeyRegistry>();
             services.AddSingleton<IClipboardOwnerProvider, ClipboardOwnerProvider>();
-            services.AddKeyedSingleton<IWindow, HistoryWindow>("HistoryWindow");
+            services.AddSingleton<IHistoryWindow, HistoryWindow>();
         }
     }
 

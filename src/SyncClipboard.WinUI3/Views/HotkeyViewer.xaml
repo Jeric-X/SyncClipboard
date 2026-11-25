@@ -30,11 +30,13 @@
         </ItemsControl.ItemsPanel>
         <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="mk:Key">
-                <ToggleButton VerticalAlignment="Stretch"
+                <ToggleButton Style="{StaticResource DefaultToggleButtonStyle}"
+                              VerticalAlignment="Stretch"
                               Background="{ThemeResource KeybordButtonBackgoundColor}"
                               BorderBrush="{ThemeResource KeybordButtonBorderColor}"
                               BorderThickness="2"
                               Content="{Binding Converter={StaticResource KeyToJsonStringConverter}}"
+                              IsTabStop="False"
                               IsHitTestVisible="False"
                               Loaded="ToggleButton_Loaded" />
             </DataTemplate>

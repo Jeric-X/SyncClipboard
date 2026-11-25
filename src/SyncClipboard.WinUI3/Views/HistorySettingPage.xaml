@@ -29,6 +29,12 @@
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.EnableSyncHistory}" Description="{x:Bind i18n:Strings.EnableSyncHistoryDescription}" Visibility="{x:Bind vc:ConvertMethod.BoolToVisibility(_viewModel.ServerSyncSupported), Mode=OneWay}">
                     <ToggleSwitch OnContent="{x:Bind i18n:Strings.On}" OffContent="{x:Bind i18n:Strings.Off}" IsOn="{x:Bind _viewModel.EnableSyncHistory, Mode=TwoWay}" />
                 </ui:SettingsCard>
+                <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryQuickActionSetting}" Description="{x:Bind _viewModel.QuickActionDescription, Mode=OneWay}">
+                    <ComboBox ItemsSource="{x:Bind _viewModel.QuickActions}"
+                              SelectedItem="{x:Bind _viewModel.QuickAction, Mode=TwoWay}"
+                              DisplayMemberPath="ShownString"
+                              HorizontalAlignment="Right" />
+                </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryBackup}">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button Content="{x:Bind i18n:Strings.Import}" Command="{x:Bind _viewModel.ImportHistoryCommand}" />
@@ -118,13 +124,13 @@
                     <ComboBox ItemsSource="{x:Bind _viewModel.MouseActions}"
                               SelectedItem="{x:Bind _viewModel.DoubleClickAction, Mode=TwoWay}"
                               DisplayMemberPath="ShownString"
-                              MinWidth="180" />
+                              HorizontalAlignment="Right" />
                 </ui:SettingsCard>
                 <ui:SettingsCard Header="{x:Bind i18n:Strings.HistoryMiddleClick}">
                     <ComboBox ItemsSource="{x:Bind _viewModel.MouseActions}"
                               SelectedItem="{x:Bind _viewModel.MiddleClickAction, Mode=TwoWay}"
                               DisplayMemberPath="ShownString"
-                              MinWidth="180" />
+                              HorizontalAlignment="Right" />
                 </ui:SettingsCard>
             </ui:SettingsExpander.Items>
         </ui:SettingsExpander>

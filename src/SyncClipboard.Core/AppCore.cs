@@ -192,7 +192,7 @@ namespace SyncClipboard.Core
 
             var contextMenu = Services.GetRequiredService<IContextMenu>();
             var mainWindow = Services.GetRequiredService<IMainWindow>();
-            _ = Services.GetRequiredKeyedService<IWindow>("HistoryWindow");
+            _ = Services.GetRequiredService<IHistoryWindow>();
             var historyViewModel = Services.GetRequiredService<HistoryViewModel>();
 
             AddSystemContextMenu(contextMenu, mainWindow, historyViewModel);

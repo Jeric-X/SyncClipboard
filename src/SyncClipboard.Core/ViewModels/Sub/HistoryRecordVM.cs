@@ -88,6 +88,12 @@ public partial class HistoryRecordVM : ObservableObject
     [ObservableProperty]
     private string relativeTime = string.Empty;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasQuickActionKeys), nameof(QuickActionShortcutName))]
+    private HistoryKeycap[] quickActionKeys = [];
+    public bool HasQuickActionKeys => QuickActionKeys.Length != 0;
+    public string QuickActionShortcutName => string.Join("+", QuickActionKeys.Select(key => key.Name));
+
     public string FullDateTime
     {
         get

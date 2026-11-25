@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.I18n;
 using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models.UserConfigs;
@@ -34,8 +33,7 @@ public partial class HistoryViewModel
     }
 
     [RelayCommand]
-    private Task ExportRecordAsync(HistoryRecordVM record) =>
-        _serviceProvider.GetRequiredService<IHistoryExportDialog>().ShowAsync([record.Key], fromHistoryWindow: true);
+    private Task ExportRecordAsync(HistoryRecordVM record) => ShowExportDialogAsync([record.Key]);
 
     public List<MenuItem> BuildDiagnosticActions(HistoryRecordVM record)
     {

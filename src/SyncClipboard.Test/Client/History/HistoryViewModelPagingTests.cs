@@ -618,7 +618,7 @@ public class HistoryViewModelPagingTests
             selection.SetValue(ViewModel, Activator.CreateInstance(selection.FieldType));
             SetField(ViewModel, "visibleSelectedItems", new ObservableCollection<HistoryRecordVM>());
             typeof(HistoryViewModel).GetMethod("InitializeSelection", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(ViewModel, null);
-            var window = new Mock<IWindow>();
+            var window = new Mock<IHistoryWindow>();
             window.Setup(value => value.GetScrollViewMetrics(out It.Ref<double>.IsAny, out It.Ref<double>.IsAny,
                 out It.Ref<double>.IsAny)).Returns((out double offset, out double viewport, out double extent) =>
                 {
