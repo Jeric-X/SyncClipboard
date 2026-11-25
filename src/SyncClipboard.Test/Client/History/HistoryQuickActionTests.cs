@@ -149,6 +149,22 @@ public class HistoryQuickActionTests
     }
 
     [TestMethod]
+    public void OpeningPopupRequiresANewPrefixPress()
+    {
+        Model.HandleKeyPress(Key.Ctrl, new Hotkey(Key.Ctrl));
+        Model.HandleKeyPress(Key.Shift, prefix);
+        Assert.AreEqual("1", visible[0].QuickActionKeys.Single().Label);
+
+        Model.OnPopupOpened();
+
+        Assert.IsFalse(Model.HandleKeyPress(Key._1, prefix));
+        Assert.IsFalse(visible.Any(row => row.HasQuickActionKeys));
+        Model.HandleKeyPress(Key.Ctrl, new Hotkey(Key.Ctrl));
+        Model.HandleKeyPress(Key.Shift, prefix);
+        Assert.AreEqual("1", visible[0].QuickActionKeys.Single().Label);
+    }
+
+    [TestMethod]
     public async Task CopyQuickActionCopiesNumberedRecordWithoutSimulatingKeys()
     {
         var ctrl = new Hotkey(Key.Ctrl);

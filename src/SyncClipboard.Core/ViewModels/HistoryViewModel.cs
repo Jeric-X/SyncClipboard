@@ -1023,6 +1023,7 @@ public partial class HistoryViewModel : ObservableObject
         if (IsMultiSelecting || SelectedItem is null || SelectedFilter == HistoryFilterType.Transferring)
             return;
 
+        OnPopupOpened();
         if (action == HistoryShortcutAction.EditTitle)
             window?.ShowTitleEditor();
         else
@@ -1593,10 +1594,17 @@ public partial class HistoryViewModel : ObservableObject
 
     private bool _remainWindowForViewDetail = false;
 
-    public void OnLostFocus()
+    public void OnPopupOpened() => ResetShortcutState();
+
+    private void ResetShortcutState()
     {
         pressedModifiers = null;
         ClearQuickActionHints();
+    }
+
+    public void OnLostFocus()
+    {
+        ResetShortcutState();
         if (!_remainWindowForFolderPicker && !_remainWindowForViewDetail && !IsTopmost && CloseWhenLostFocus)
         {
             window.Hide();

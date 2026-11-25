@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.DependencyInjection;
 using SyncClipboard.Core.Interfaces;
+using SyncClipboard.Core.Models;
 
 namespace SyncClipboard.Core.ViewModels;
 
@@ -15,8 +16,13 @@ public partial class HistoryViewModel
     {
         if (!HasSelectedRecords)
             return Task.CompletedTask;
-        return _serviceProvider.GetRequiredService<IHistoryExportDialog>()
-            .ShowAsync(selectedHistoryRecords.Keys.ToArray(), fromHistoryWindow: true);
+        return ShowExportDialogAsync(selectedHistoryRecords.Keys.ToArray());
+    }
+
+    private Task ShowExportDialogAsync(IReadOnlyList<HistoryRecordKey> records)
+    {
+        OnPopupOpened();
+        return _serviceProvider.GetRequiredService<IHistoryExportDialog>().ShowAsync(records, fromHistoryWindow: true);
     }
 
     public IDisposable HoldForNativeFolderPicker()
@@ -27,8 +33,6 @@ public partial class HistoryViewModel
 
     public IDisposable HoldForModalOperation()
     {
-        pressedModifiers = null;
-        ClearQuickActionHints();
         _modalOperations++;
         return new ScopeGuard(() => _modalOperations--);
     }
