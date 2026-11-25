@@ -78,6 +78,7 @@ public class HistoryQuickActionTests
         var editor = Model.CreateRecordShortcutEditor(custom.Key);
         editor.EditingShortcut = new(Key.Meta, Key.Alt, Key.K);
         Assert.IsTrue(await editor.TrySaveAsync(dialog.Object));
+        Model.HandleKeyPress(Key.Ctrl, new Hotkey(Key.Ctrl));
         Model.HandleKeyPress(Key.Shift, prefix);
         CollectionAssert.AreEqual(Enumerable.Range(1, 9).Select(i => i.ToString()).ToArray(),
             visible.Take(9).Select(r => r.QuickActionKeys.Single().Label).ToArray());
@@ -91,10 +92,11 @@ public class HistoryQuickActionTests
         var oldFirst = visible[0];
         var target = visible[1].Text;
         Model.HandleKeyPress(Key.Alt, new Hotkey(Key.Ctrl, Key.Shift, Key.Alt));
+        Model.HandleKeyRelease(Key.Alt, prefix);
         visible = fixture.Records.Skip(6).Take(12).ToArray();
         Model.RefreshQuickActionHints();
         Assert.IsFalse(oldFirst.HasQuickActionKeys);
-        Model.UpdateQuickActionModifiers(prefix);
+        Assert.IsFalse(Model.HandleKeyPress(Key._2, new Hotkey(Key.Ctrl, Key.Shift, Key.Alt)));
         Assert.AreEqual("3", visible[0].QuickActionKeys.Single().Label);
         Assert.IsFalse(visible[^1].HasQuickActionKeys);
         CollectionAssert.AreEqual(expectedLabels, visible[8].QuickActionKeys.Select(key => key.Label).ToArray());
@@ -112,10 +114,11 @@ public class HistoryQuickActionTests
         }
         CollectionAssert.AreEqual(new[] { target }, copied);
         simulator.Verify(s => s.SimulateKeyPress(KeyCode.VcV), Times.Once);
-        Model.UpdateQuickActionModifiers(Hotkey.Nothing);
+        Model.HandleKeyRelease(Key.Ctrl, prefix);
+        Assert.IsFalse(Model.HandleKeyPress(Key.NumPad2, prefix));
         Assert.IsTrue(visible.All(row => !row.HasQuickActionKeys));
 
-        Model.HandleKeyPress(Key.Shift, prefix);
+        Model.HandleKeyPress(Key.Ctrl, prefix);
         Assert.AreEqual("1", visible[0].QuickActionKeys.Single().Label);
     }
 
@@ -146,10 +149,40 @@ public class HistoryQuickActionTests
     }
 
     [TestMethod]
+    public void OpeningPopupRequiresANewPrefixPress()
+    {
+        Model.HandleKeyPress(Key.Ctrl, new Hotkey(Key.Ctrl));
+        Model.HandleKeyPress(Key.Shift, prefix);
+        Assert.AreEqual("1", visible[0].QuickActionKeys.Single().Label);
+
+        Model.OnPopupOpened();
+
+        Assert.IsFalse(Model.HandleKeyPress(Key._1, prefix));
+        Assert.IsFalse(visible.Any(row => row.HasQuickActionKeys));
+        Model.HandleKeyPress(Key.Ctrl, new Hotkey(Key.Ctrl));
+        Model.HandleKeyPress(Key.Shift, prefix);
+        Assert.AreEqual("1", visible[0].QuickActionKeys.Single().Label);
+    }
+
+    [TestMethod]
     public async Task CopyQuickActionCopiesNumberedRecordWithoutSimulatingKeys()
     {
-        config.SetConfig(config.GetConfig<HistoryShortcutConfig>() with { QuickAction = HistoryQuickAction.Copy });
-        Assert.IsTrue(Model.HandleKeyPress(Key._2, prefix));
+        var ctrl = new Hotkey(Key.Ctrl);
+        config.SetConfig(new HistoryShortcutConfig
+        {
+            QuickAction = HistoryQuickAction.Copy,
+            Shortcuts = { [HistoryShortcutAction.QuickActionPrefix] = ctrl }
+        });
+        Assert.IsFalse(Model.HandleKeyPress(Key._1, ctrl));
+        Model.HandleKeyPress(Key.Ctrl, ctrl);
+        Model.OnLostFocus();
+        Model.OnGotFocus();
+        Assert.IsFalse(Model.HandleKeyPress(Key.Ctrl, ctrl, isRepeat: true));
+        Assert.IsFalse(Model.HandleKeyPress(Key._1, ctrl));
+        Assert.IsTrue(visible.All(row => !row.HasQuickActionKeys));
+        Assert.IsEmpty(copied);
+        Model.HandleKeyPress(Key.Ctrl, ctrl);
+        Assert.IsTrue(Model.HandleKeyPress(Key._2, ctrl));
         await Model.ActiveQuickAction!;
         CollectionAssert.AreEqual(new[] { visible[1].Text }, copied);
         simulator.VerifyNoOtherCalls();
@@ -178,7 +211,7 @@ public class HistoryQuickActionTests
         Assert.IsFalse(shortcuts.CanAssign(HistoryShortcutAction.QuickActionPrefix, new(Key.Alt, Key.F)));
         Assert.IsTrue(shortcuts.CanAssign(HistoryShortcutAction.QuickActionPrefix, modifiers));
 
-        Model.UpdateQuickActionModifiers(modifiers);
+        Model.HandleKeyPress(modifiers.Keys.Single(), modifiers);
         Assert.IsFalse(visible[0].HasQuickActionKeys);
         Assert.AreEqual("2", visible[1].QuickActionKeys.Single().Label);
         Assert.AreEqual("NumPad3", visible[2].QuickActionKeys.Single().Label);
