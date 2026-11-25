@@ -195,13 +195,16 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
         // Snapshot the WinRT collection before awaiting: the source can disconnect during image conversion.
         var formats = ClipboardData.AvailableFormats.ToHashSet(StringComparer.Ordinal);
         var formatWaitStart = Stopwatch.GetTimestamp();
-        for (int i = 0; formats.Count == 0 && Stopwatch.GetElapsedTime(formatWaitStart) < TimeSpan.FromSeconds(2); i++)
+        int formatRetryCount = 0;
+        while (formats.Count == 0 && Stopwatch.GetElapsedTime(formatWaitStart) < TimeSpan.FromSeconds(2))
         {
             await Task.Delay(20, ctk);
             ClipboardData = Clipboard.GetContent();
             formats = ClipboardData.AvailableFormats.ToHashSet(StringComparer.Ordinal);
-            await Logger.WriteAsync(LOG_TAG, "retry times: " + (i + 1));
+            formatRetryCount++;
         }
+        if (formatRetryCount > 0)
+            await Logger.WriteAsync(LOG_TAG, "retry times: " + formatRetryCount);
 
         if (formats.Count == 0)
         {
@@ -242,13 +245,16 @@ internal partial class ClipboardFactory : ClipboardFactoryBase
             }
             catch (Exception ex) when (!token.IsCancellationRequested)
             {
-                if (ex is COMException { HResult: rpcServerUnavailable or rpcCallFailed or rpcDisconnected }
-                    && changeToken.IsSuperseded)
+                bool rpcFailure = ex is COMException { HResult: rpcServerUnavailable or rpcCallFailed or rpcDisconnected };
+                if (rpcFailure && changeToken.IsSuperseded)
                     return false;
 
                 await Logger.WriteAsync(LOG_TAG, ex.ToString());
                 if (i < maxAttempts - 1)
                     await Task.Delay(100, token);
+
+                if (rpcFailure && changeToken.IsSuperseded)
+                    return false;
             }
         }
         return true;
