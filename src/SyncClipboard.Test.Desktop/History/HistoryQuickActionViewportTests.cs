@@ -53,7 +53,7 @@ public class HistoryQuickActionViewportTests
                 window.UpdateLayout();
                 Assert.AreSame(records[0], HistoryWindow.GetVisibleHistoryRecords(list)[0]);
                 var scroll = (ScrollViewer)list.Scroll!;
-                scroll.Offset = new Vector(0, 7 * 50 + clippedPixels);
+                scroll.Offset = new Vector(0, (7 * 50) + clippedPixels);
                 Dispatcher.UIThread.RunJobs();
                 window.UpdateLayout();
 
