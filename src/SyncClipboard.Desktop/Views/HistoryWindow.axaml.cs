@@ -165,11 +165,6 @@ public partial class HistoryWindow : Window, IHistoryWindow
         _TagFilterScroll.AddHandler(PointerWheelChangedEvent, TagFilterScroll_PointerWheelChanged, RoutingStrategies.Tunnel);
         _TagFilterScroll.ScrollChanged += (_, _) => _tagNavigation.SnapToRow(_TagFilterItems, _TagFilterScroll);
         // Handle configured keys before the search box, without intercepting modal dialog input.
-        _HistoryContent.PropertyChanged += (_, e) =>
-        {
-            if (e.Property == IsKeyboardFocusWithinProperty && !_HistoryContent.IsKeyboardFocusWithin)
-                _viewModel.OnPopupOpened();
-        };
         _HistoryContent.AddHandler(KeyDownEvent, HistoryWindow_KeyDown, RoutingStrategies.Tunnel);
         _HistoryContent.AddHandler(KeyUpEvent, HistoryWindow_KeyUp, RoutingStrategies.Tunnel);
         _ListBox.LayoutUpdated += (_, _) => _viewModel.RefreshQuickActionHints();
