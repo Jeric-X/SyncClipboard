@@ -47,6 +47,14 @@
                         <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding EnableSyncHistory, Mode=TwoWay}" />
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
+                <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.HistoryQuickActionSetting}" Description="{Binding QuickActionDescription}">
+                    <ui:FASettingsExpanderItem.Footer>
+                        <ComboBox ItemsSource="{Binding QuickActions}"
+                                  SelectedItem="{Binding QuickAction, Mode=TwoWay}"
+                                  DisplayMemberBinding="{Binding ShownString}"
+                                  HorizontalAlignment="Right" />
+                    </ui:FASettingsExpanderItem.Footer>
+                </ui:FASettingsExpanderItem>
                 <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.HistoryBackup}">
                     <ui:FASettingsExpanderItem.Footer>
                         <StackPanel Orientation="Horizontal" Spacing="8">
@@ -103,7 +111,7 @@
                 </ui:FASettingsExpanderItem>
             </ui:FASettingsExpander.Items>
         </ui:FASettingsExpander>
-        <ui:FASettingsExpander Header="{x:Static i18n:Strings.HistoryShortcutSettings}" IsExpanded="True" ItemsSource="{Binding ShortcutSettings}">
+        <ui:FASettingsExpander Header="{x:Static i18n:Strings.HistoryShortcutSettings}" IsExpanded="False" ItemsSource="{Binding ShortcutSettings}">
             <ui:FASettingsExpander.IconSource>
                 <ui:FAFontIconSource Glyph="&#xE765;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
             </ui:FASettingsExpander.IconSource>
@@ -141,7 +149,7 @@
                         <ComboBox ItemsSource="{Binding MouseActions}"
                                   SelectedItem="{Binding DoubleClickAction, Mode=TwoWay}"
                                   DisplayMemberBinding="{Binding ShownString}"
-                                  MinWidth="180" />
+                                  HorizontalAlignment="Right" />
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
                 <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.HistoryMiddleClick}">
@@ -149,7 +157,7 @@
                         <ComboBox ItemsSource="{Binding MouseActions}"
                                   SelectedItem="{Binding MiddleClickAction, Mode=TwoWay}"
                                   DisplayMemberBinding="{Binding ShownString}"
-                                  MinWidth="180" />
+                                  HorizontalAlignment="Right" />
                     </ui:FASettingsExpanderItem.Footer>
                 </ui:FASettingsExpanderItem>
             </ui:FASettingsExpander.Items>

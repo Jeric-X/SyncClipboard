@@ -1832,6 +1832,12 @@ Choose whether to use the default location or select another folder.</value>
   <data name="QuickActionPrefix" xml:space="preserve">
     <value>Quick action prefix</value>
   </data>
+  <data name="HistoryQuickActionDescription" xml:space="preserve">
+    <value>{0} by holding {1} and pressing 1–9. You can also assign a separate quick action shortcut to an individual record.</value>
+  </data>
+  <data name="HistoryQuickActionWithoutPrefixDescription" xml:space="preserve">
+    <value>You can assign a separate quick action shortcut to an individual record.</value>
+  </data>
   <data name="QuickActionVisibleRecord" xml:space="preserve">
     <value>{0} a visible history record</value>
   </data>

@@ -1832,6 +1832,12 @@ Shift + 左键：选中连续范围</value>
   <data name="QuickActionPrefix" xml:space="preserve">
     <value>快速操作前缀</value>
   </data>
+  <data name="HistoryQuickActionDescription" xml:space="preserve">
+    <value>按住 {1}，再按 1–9 即可{0}。也可以为具体记录独立设置快速操作快捷键。</value>
+  </data>
+  <data name="HistoryQuickActionWithoutPrefixDescription" xml:space="preserve">
+    <value>可以为具体记录独立设置快速操作快捷键。</value>
+  </data>
   <data name="QuickActionVisibleRecord" xml:space="preserve">
     <value>{0}当前可见的历史记录</value>
   </data>
