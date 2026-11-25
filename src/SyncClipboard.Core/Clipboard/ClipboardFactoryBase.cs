@@ -26,6 +26,9 @@ public abstract class ClipboardFactoryBase : IClipboardFactory
     }
 
     public abstract Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk);
+    public virtual async Task<ClipboardMetaInfomation?> GetMetaInfomation(ClipboardChangeToken changeToken, CancellationToken ctk)
+        => await GetMetaInfomation(ctk);
+
     public Task<Profile> CreateProfileFromMeta(ClipboardMetaInfomation metaInfomation, CancellationToken ctk)
     {
         return CreateProfileFromMeta(metaInfomation, true, ctk);

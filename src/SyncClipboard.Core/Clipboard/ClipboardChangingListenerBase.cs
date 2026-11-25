@@ -9,6 +9,7 @@ public abstract class ClipboardChangingListenerBase : IClipboardChangingListener
     private static readonly TimeSpan ClipboardReadTimeout = TimeSpan.FromSeconds(10);
 
     private bool _registed = false;
+    private readonly ClipboardChangeTokenSource _clipboardChanges = new();
 
     protected delegate void MetaChanged(ClipboardMetaInfomation? meta);
     protected abstract void RegistSystemEvent(MetaChanged action);
@@ -80,13 +81,18 @@ public abstract class ClipboardChangingListenerBase : IClipboardChangingListener
 
     private async void NotifyAll(ClipboardMetaInfomation? meta)
     {
+        // Record arrival before the platform factory waits for native clipboard access.
+        var changeToken = _clipboardChanges.NotifyChange();
         using var cancellationSource = new CancellationTokenSource(ClipboardReadTimeout);
         var token = cancellationSource.Token;
 
         try
         {
             ClipboardChangedImpl?.GetInvocationList()?.ForEach(delegt => delegt.InvokeNoExcept());
-            meta ??= await ClipboardFactory.GetMetaInfomation(token);
+            meta ??= await ClipboardFactory.GetMetaInfomation(changeToken, token);
+            if (meta is null)
+                return;
+
             var profile = await ClipboardFactory.CreateProfileFromMeta(meta, token);
             ChangedImpl?.GetInvocationList()?.ForEach(delegt => delegt.InvokeNoExcept(meta, profile));
         }

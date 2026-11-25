@@ -3,7 +3,7 @@ using SyncClipboard.Core.Interfaces;
 using SyncClipboard.Core.Models;
 using SyncClipboard.Shared.Profiles;
 
-namespace SyncClipboard.Test;
+namespace SyncClipboard.Test.Client.Clipboard;
 
 [TestClass]
 public class ClipboardChangingListenerBaseTest
@@ -93,6 +93,9 @@ public class ClipboardChangingListenerBaseTest
 
         public int GetMetaInfomationCallCount => Volatile.Read(ref _getMetaInfomationCallCount);
         public Profile? ProfileToReturn { get; init; }
+
+        public async Task<ClipboardMetaInfomation?> GetMetaInfomation(ClipboardChangeToken changeToken, CancellationToken ctk)
+            => await GetMetaInfomation(ctk);
 
         public Task<ClipboardMetaInfomation> GetMetaInfomation(CancellationToken ctk)
         {
