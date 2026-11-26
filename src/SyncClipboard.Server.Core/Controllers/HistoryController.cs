@@ -19,8 +19,7 @@ namespace SyncClipboard.Server.Core.Controllers;
 public class HistoryController(HistoryService historyService) : ControllerBase
 {
     private readonly HistoryService _historyService = historyService;
-    // TODO: replace this hardcoded user id with actual user identification from authentication/claims
-    private const string HARD_CODED_USER_ID = HistoryService.HARD_CODED_USER_ID;
+    private string UserId => User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value;
 
     // GET api/history/{profileId}
     // Returns the metadata of a specific history record by profileId (format: "Type-Hash")
@@ -37,7 +36,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             return BadRequest("Invalid profileId format. Expected format: 'Type-Hash'");
         }
 
-        var rec = await _historyService.GetByTypeAndHashAsync(HARD_CODED_USER_ID, type, hash, token);
+        var rec = await _historyService.GetByTypeAndHashAsync(UserId, type, hash, token);
         if (rec == null)
         {
             return NotFound();
@@ -59,7 +58,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
         string? path;
         try
         {
-            var transferData = await _historyService.GetTransferDataByProfileId(HARD_CODED_USER_ID, profileId, token);
+            var transferData = await _historyService.GetTransferDataByProfileId(UserId, profileId, token);
             if (transferData is null)
             {
                 return NotFound();
@@ -90,7 +89,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     // [HttpGet("{type}")]
     // public async Task<IActionResult> GetList(ProfileType type)
     // {
-    //     var list = await _historyService.GetListAsync(HARD_CODED_USER_ID, type);
+    //     var list = await _historyService.GetListAsync(UserId, type);
     //     return Ok(list);
     // }
 
@@ -127,7 +126,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
         DateTime? modifiedAfterDt = query.ModifiedAfter?.UtcDateTime;
 
         var list = await _historyService.GetListAsync(
-            HARD_CODED_USER_ID,
+            UserId,
             query.Page,
             PAGE_SIZE,
             beforeDt,
@@ -196,7 +195,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
             }
 
             var serverDto = await _historyService.AddRecordDto(
-                HARD_CODED_USER_ID, dto, declaredTransferDataHash, fileStream, token);
+                UserId, dto, declaredTransferDataHash, fileStream, token);
             return Ok(serverDto);
         }
         catch (ArgumentException ex)
@@ -357,7 +356,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
         }
 
         var (updated, server) = await _historyService.Update(
-            HARD_CODED_USER_ID, type, hash, dto, token);
+            UserId, type, hash, dto, token);
 
         if (updated is null)
         {
@@ -379,7 +378,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     [HttpGet("statistics")]
     public async Task<ActionResult<HistoryStatisticsDto>> GetStatistics(CancellationToken token)
     {
-        var statistics = await _historyService.GetStatisticsAsync(HARD_CODED_USER_ID, token);
+        var statistics = await _historyService.GetStatisticsAsync(UserId, token);
         return Ok(statistics);
     }
 
@@ -388,7 +387,7 @@ public class HistoryController(HistoryService historyService) : ControllerBase
     [HttpDelete("clear")]
     public async Task<IActionResult> ClearAll(CancellationToken token)
     {
-        var deleted = await _historyService.ClearAllAsync(HARD_CODED_USER_ID, token);
+        var deleted = await _historyService.ClearAllAsync(UserId, token);
         return Ok(new { deleted });
     }
 }

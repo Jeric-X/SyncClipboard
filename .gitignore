@@ -460,6 +460,8 @@ osx-*/
 .DS_Store
 build/featuretemp.txt
 /src/SyncClipboard.Server/server/
+server-settings.json
+server-settings.json.*.tmp
 /src/SyncClipboard.Core/I18n/Strings.Designer.cs
 .VSCodeCounter/
 /src/NewReport1.upgrade.json

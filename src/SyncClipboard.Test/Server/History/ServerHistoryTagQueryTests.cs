@@ -206,7 +206,7 @@ public class ServerHistoryTagQueryTests
             var query = new HistoryQueryDto { Tags = [name] };
             Assert.IsInstanceOfType<BadRequestObjectResult>((await f.Controller.QueryHistory(query)).Result);
             await Assert.ThrowsExactlyAsync<ArgumentException>(() => f.Service.GetListAsync(
-                HistoryService.HARD_CODED_USER_ID, 1, 50,
+                "default_user", 1, 50,
                 tags: [name], token: Token));
         }
         Assert.IsInstanceOfType<BadRequestObjectResult>(
@@ -220,7 +220,7 @@ public class ServerHistoryTagQueryTests
         var query = new HistoryQueryDto { OnlyUntagged = true, Tags = ["A"] };
         Assert.IsInstanceOfType<BadRequestObjectResult>((await f.Controller.QueryHistory(query)).Result);
         await Assert.ThrowsExactlyAsync<ArgumentException>(() => f.Service.GetListAsync(
-            HistoryService.HARD_CODED_USER_ID, 1, 50,
+            "default_user", 1, 50,
             onlyUntagged: true, tags: query.Tags, token: Token));
     }
 
@@ -337,12 +337,12 @@ public class ServerHistoryTagQueryTests
             f.Service = new HistoryService(f.Db, env.Object, hub.Object);
             f.Controller = new HistoryController(f.Service)
             {
-                ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext { RequestAborted = token } }
+                ControllerContext = new ControllerContext { HttpContext = TestUserContext.Create(token: token) }
             };
             return f;
         }
 
-        public HistoryRecordEntity Add(string hash, string[]? tags, string userId = HistoryService.HARD_CODED_USER_ID)
+        public HistoryRecordEntity Add(string hash, string[]? tags, string userId = "default_user")
         {
             var record = new HistoryRecordEntity { Hash = hash, Tags = tags, UserId = userId, Type = ProfileType.Text };
             Db.Add(record);

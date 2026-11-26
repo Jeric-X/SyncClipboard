@@ -28,3 +28,6 @@ README.md
 !.git/config
 !.git/packed-refs
 !.git/refs/heads/**
+**/server-settings.json
+**/server-settings.json.*.tmp
+SyncClipboard.Server/server/

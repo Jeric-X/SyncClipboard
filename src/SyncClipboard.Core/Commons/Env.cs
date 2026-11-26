@@ -19,7 +19,7 @@ namespace SyncClipboard.Core.Commons
         public const string UpdateUrl = "https://github.com/Jeric-X/SyncClipboard/releases";
 
         public const string RuntimeConfigName = "RuntimeConfig.json";
-        public const int SyncClipboardConfigVersion = 3;
+        public const int SyncClipboardConfigVersion = 4;
         public const string UpdateInfoFile = "update_info.json";
         public const string PortableAppDataFolderName = "appdata";
         public static readonly string ProgramDirectory = AppDomain.CurrentDomain.BaseDirectory;
@@ -53,7 +53,7 @@ namespace SyncClipboard.Core.Commons
         public static readonly string UpdateInfoPath = GetUpdateInfoPath();
 
         public static readonly string[] AppDataCopyWhitelistFolders = ["config_backup", "data", "file", "log", "server", "update", "update_info"];
-        public static readonly string[] AppDataCopyWhitelistFiles = [RuntimeConfigName, "SyncClipboard.json"];
+        public static readonly string[] AppDataCopyWhitelistFiles = [RuntimeConfigName, "SyncClipboard.json", SyncClipboard.Server.Core.Services.ServerSettingsStore.FileName];
 
         public static bool IsUsingCustomAppDataDirectory =>
             !IsSamePath(AppDataDirectory, Path.Combine(UserAppDataDirectory, SoftName));

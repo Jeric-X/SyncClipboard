@@ -83,19 +83,12 @@ public class ServerService : Service
                     new ServerPara(
                         _serverConfig.Port,
                         Env.AppDataDirectory,
-                        _serverConfig.UserName,
-                        _serverConfig.Password,
                         _serverConfig.EnableHttps,
                         _serverConfig.CertificatePemPath,
                         _serverConfig.CertificatePemKeyPath,
                         _serverConfig.EnableCustomConfigurationFile,
                         _serverConfig.CustomConfigurationFilePath,
-                        _programConfig.DiagnoseMode,
-                        _serverConfig.MaxHistoryCount,
-                        _serverConfig.HistoryRetentionMinutes,
-                        _serviceProvider,
-                        _serverConfig.ProtectTaggedRecords,
-                        _serverConfig.ProtectTitledRecords
+                        _programConfig.DiagnoseMode
                     )
                 );
                 _trayIcon.SetStatusString(SERVICE_NAME, "Running.", false);

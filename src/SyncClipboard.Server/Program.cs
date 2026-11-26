@@ -1,5 +1,5 @@
 using SyncClipboard.Server.Core;
-using SyncClipboard.Server.Core.CredentialChecker;
+using SyncClipboard.Server.Core.Services;
 using SyncClipboard.Server.Core.Models;
 
 namespace SyncClipboard.Server;
@@ -28,21 +28,25 @@ public class Program
 
         EnsureAppSettingsExists(builder.Environment.ContentRootPath, builder.Configuration);
 
-        var envUsername = Environment.GetEnvironmentVariable(ENV_VAR_USERNAME);
-        var envPassword = Environment.GetEnvironmentVariable(ENV_VAR_PASSWORD);
-        if (!string.IsNullOrEmpty(envUsername) && !string.IsNullOrEmpty(envPassword))
-        {
-            builder.Services.AddSingleton<ICredentialChecker, StaticCredentialChecker>(_ =>
-                new StaticCredentialChecker(envUsername, envPassword)
-            );
-        }
-        else
-        {
-            builder.Services.AddSingleton<ICredentialChecker, FileCredentialChecker>();
-        }
-        builder.Services.Configure<AppSettings>(builder.Configuration.GetSection(nameof(AppSettings)));
-        var app = Web.Configure(builder);
+        var settings = LoadSettings(builder.Environment.ContentRootPath, builder.Configuration);
+        var app = Web.Configure(builder, settings);
         app.Run();
+    }
+
+    private static ServerSettingsStore LoadSettings(string root, ConfigurationManager configuration)
+    {
+        var name = Environment.GetEnvironmentVariable(ENV_VAR_USERNAME);
+        var password = Environment.GetEnvironmentVariable(ENV_VAR_PASSWORD);
+        AccountUpdate? bootstrap = !string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(password) ? new(name, password) : null;
+        if (File.Exists(Path.Combine(root, ServerSettingsStore.FileName)))
+            return new ServerSettingsStore(root, new(), bootstrap);
+
+        var legacy = configuration.GetSection("AppSettings");
+        if (bootstrap is null && !Directory.Exists(Path.Combine(root, "server", "users"))
+            && (legacy.Exists() || File.Exists(Path.Combine(root, "server", "data", "history.db"))))
+            bootstrap = new(legacy["UserName"] ?? "admin", legacy["Password"] ?? "admin");
+
+        return new ServerSettingsStore(root, legacy.Get<AppSettings>() ?? new(), bootstrap);
     }
 
     private static void EnsureAppSettingsExists(string contentRootPath, ConfigurationManager configurationManager)

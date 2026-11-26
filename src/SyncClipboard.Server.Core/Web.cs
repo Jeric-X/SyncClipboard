@@ -1,7 +1,8 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using SyncClipboard.Server.Core.Controllers;
-using SyncClipboard.Server.Core.CredentialChecker;
+using System.Security.Claims;
+using Microsoft.Extensions.Options;
 using SyncClipboard.Server.Core.Hubs;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Server.Core.Services;
@@ -9,7 +10,6 @@ using SyncClipboard.Server.Core.Services.History;
 using SyncClipboard.Server.Core.Swagger;
 using SyncClipboard.Server.Core.Utilities;
 using SyncClipboard.Server.Core.Utilities.History;
-using System.Net;
 using System.Text.Encodings.Web;
 using System.Text.Json.Serialization;
 using System.Text.Unicode;
@@ -18,15 +18,18 @@ namespace SyncClipboard.Server.Core;
 
 public class Web
 {
-    public static WebApplication Configure(WebApplicationBuilder builder, bool useSwagger = false)
+    public static WebApplication Configure(WebApplicationBuilder builder, ServerSettingsStore settings, bool useSwagger = false)
     {
         var services = builder.Services;
 
+        services.AddSingleton(settings);
+        services.AddSingleton<IOptions<AppSettings>>(settings);
         services.Configure<KestrelServerOptions>(options => options.Limits.MaxRequestBodySize = int.MaxValue);
 
         services.AddAuthentication("BasicAuthentication")
             .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
-        services.AddAuthorizationBuilder().AddDefaultPolicy("DefaultPolicy", policy => policy.RequireAuthenticatedUser());
+        services.AddAuthorizationBuilder().AddDefaultPolicy("DefaultPolicy", policy => policy.RequireAuthenticatedUser())
+            .AddPolicy("ServerAdministrator", policy => policy.RequireClaim(ClaimTypes.NameIdentifier, ServerSettingsStore.AdministratorId));
 
         services.AddControllers()
             .AddJsonOptions(o =>
@@ -34,7 +37,6 @@ public class Web
                 o.JsonSerializerOptions.Encoder = JavaScriptEncoder.Create(UnicodeRanges.All);
             })
             .AddApplicationPart(typeof(SyncClipboardController).Assembly);
-        services.AddMemoryCache();
         services.AddSignalR();
 
         services.AddDbContext<HistoryDbContext>();
@@ -59,6 +61,7 @@ public class Web
         });
         var app = builder.Build();
 
+        app.Services.GetRequiredService<ServerEnvProvider>().MigrateLegacyClipboard();
         MigrationHelper.EnsureDBMigrations(app.Services, app.Lifetime);
 
         if (app.Environment.IsDevelopment() || useSwagger)
@@ -117,15 +120,8 @@ public class Web
                 serverOptions.ListenAnyIP(serverConfig.Port, OptionAction);
             });
         }
-        builder.Services.Configure<AppSettings>(option =>
-        {
-            option.MaxSavedHistoryCount = serverConfig.MaxSavedHistoryCount;
-            option.HistoryRetentionMinutes = serverConfig.HistoryRetentionMinutes;
-            option.ProtectTaggedRecords = serverConfig.ProtectTaggedRecords;
-            option.ProtectTitledRecords = serverConfig.ProtectTitledRecords;
-        });
-        builder.Services.AddSingleton<ICredentialChecker, StaticCredentialChecker>(_ => new StaticCredentialChecker(serverConfig.UserName, serverConfig.Password));
-        var app = Configure(builder, serverConfig.DiagnoseMode);
+        var settings = new ServerSettingsStore(serverConfig.Path, new(), null);
+        var app = Configure(builder, settings, serverConfig.DiagnoseMode);
         await app.StartAsync();
         return app;
     }

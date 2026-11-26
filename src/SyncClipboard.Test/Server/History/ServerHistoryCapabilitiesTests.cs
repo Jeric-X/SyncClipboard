@@ -10,7 +10,7 @@ public class ServerHistoryCapabilitiesTests
     [TestMethod]
     public void GetCapabilities_AdvertisesHistorySyncTagsAndTitle()
     {
-        var controller = new SyncClipboardController(null!, null!, null!, null!);
+        var controller = new SyncClipboardController(null!, null!, null!);
         var ok = controller.GetCapabilities().Result as OkObjectResult;
         Assert.IsNotNull(ok);
         var json = JsonSerializer.SerializeToElement(ok.Value, JsonSerializerOptions.Web);

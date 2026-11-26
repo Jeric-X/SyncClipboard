@@ -395,6 +395,7 @@ namespace SyncClipboard.Core
             services.AddSingleton<ISyncClipboardConfigMigration, SyncClipboardConfigMigrationV0ToV1>();
             services.AddSingleton<ISyncClipboardConfigMigration, SyncClipboardConfigMigrationV1ToV2>();
             services.AddSingleton<ISyncClipboardConfigMigration, SyncClipboardConfigMigrationV2ToV3>();
+            services.AddSingleton<ISyncClipboardConfigMigration>(_ => new SyncClipboardConfigMigrationV3ToV4(Env.AppDataDirectory));
             services.AddSingleton<SyncClipboardConfigUpgrader>();
             services.AddSingleton<ConfigRecoveryService>();
             services.AddSingleton<AccountManager>();

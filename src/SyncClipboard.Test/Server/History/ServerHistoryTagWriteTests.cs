@@ -159,7 +159,7 @@ public class ServerHistoryTagWriteTests
         Assert.AreEqual(saved.Version, returned.Version);
         Assert.AreEqual(saved.Stared, returned.Starred);
         Assert.AreEqual(saved.LastModified, f.Notifications.Single().LastModified.UtcDateTime);
-        var fullHistory = await f.Service.GetListAsync(HistoryService.HARD_CODED_USER_ID, 1, 50, token: Token);
+        var fullHistory = await f.Service.GetListAsync("default_user", 1, 50, token: Token);
         Assert.HasCount(1, fullHistory);
         CollectionAssert.AreEqual(expectedTags, fullHistory.Single().Tags);
     }
@@ -236,7 +236,7 @@ public class ServerHistoryTagWriteTests
         var transfer = new Mock<Stream>(MockBehavior.Strict);
 
         await Assert.ThrowsExactlyAsync<ArgumentException>(() => f.Service.AddRecordDto(
-            HistoryService.HARD_CODED_USER_ID, incoming, null, transfer.Object, Token));
+            "default_user", incoming, null, transfer.Object, Token));
 
         transfer.VerifyNoOtherCalls();
         var saved = await f.Db.HistoryRecords.AsNoTracking().SingleAsync(Token);
@@ -354,7 +354,7 @@ public class ServerHistoryTagWriteTests
         }
         else
             await f.PostAsync(null, Token, 1, null, entity.LastModified);
-        var changes = await f.Service.GetListAsync(HistoryService.HARD_CODED_USER_ID, 1, 50, modifiedAfter: since, token: Token);
+        var changes = await f.Service.GetListAsync("default_user", 1, 50, modifiedAfter: since, token: Token);
         var restored = changes.Single();
         Assert.IsFalse(restored.IsDeleted);
         Assert.AreEqual("current", restored.Title);
@@ -418,11 +418,11 @@ public class ServerHistoryTagWriteTests
             client.Setup(x => x.RemoteHistoryChanged(It.IsAny<HistoryRecordDto>()))
                 .Callback<HistoryRecordDto>(f.Notifications.Add).Returns(Task.CompletedTask);
             var hub = new Mock<IHubContext<SyncClipboardHub, ISyncClipboardClient>>();
-            hub.Setup(x => x.Clients.All).Returns(client.Object);
+            hub.Setup(x => x.Clients.User("default_user")).Returns(client.Object);
             f.Service = new HistoryService(f.Db, env.Object, hub.Object);
             f.Controller = new HistoryController(f.Service)
             {
-                ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+                ControllerContext = new ControllerContext { HttpContext = TestUserContext.Create(token: token) }
             };
             return f;
         }
@@ -431,7 +431,7 @@ public class ServerHistoryTagWriteTests
         {
             var entity = new HistoryRecordEntity
             {
-                UserId = HistoryService.HARD_CODED_USER_ID,
+                UserId = "default_user",
                 Type = ProfileType.Text,
                 Hash = Hash,
                 Text = Text,

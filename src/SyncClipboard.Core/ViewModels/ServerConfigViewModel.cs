@@ -36,21 +36,15 @@ public partial class ServerConfigViewModel : ObservableObject
     private string customConfigurationFilePath = string.Empty;
     partial void OnCustomConfigurationFilePathChanged(string value) => ServerConfig = ServerConfig with { CustomConfigurationFilePath = value };
 
-    [ObservableProperty]
-    private uint maxHistoryCount;
-    partial void OnMaxHistoryCountChanged(uint value) => ServerConfig = ServerConfig with { MaxHistoryCount = value };
-
-    [ObservableProperty]
-    private uint historyRetentionMinutes;
-    partial void OnHistoryRetentionMinutesChanged(uint value) => ServerConfig = ServerConfig with { HistoryRetentionMinutes = value };
-
-    [ObservableProperty]
-    private bool protectTaggedRecords;
-    partial void OnProtectTaggedRecordsChanged(bool value) => ServerConfig = ServerConfig with { ProtectTaggedRecords = value };
-
-    [ObservableProperty]
-    private bool protectTitledRecords;
-    partial void OnProtectTitledRecordsChanged(bool value) => ServerConfig = ServerConfig with { ProtectTitledRecords = value };
+    public double Port
+    {
+        get => ServerConfig.Port;
+        set
+        {
+            if (value is >= 1 and <= ushort.MaxValue && value == Math.Truncate(value))
+                ServerConfig = ServerConfig with { Port = (ushort)value };
+        }
+    }
 
     [RelayCommand]
     private static void OpenCustomConfigDescLink()
@@ -59,7 +53,7 @@ public partial class ServerConfigViewModel : ObservableObject
     }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ServerConfigDescription))]
+    [NotifyPropertyChangedFor(nameof(Port))]
     private ServerConfig serverConfig = new();
     partial void OnServerConfigChanged(ServerConfig value)
     {
@@ -69,10 +63,6 @@ public partial class ServerConfigViewModel : ObservableObject
         CertificatePemKeyPath = value.CertificatePemKeyPath;
         EnableCustomConfigurationFile = value.EnableCustomConfigurationFile;
         CustomConfigurationFilePath = value.CustomConfigurationFilePath;
-        MaxHistoryCount = value.MaxHistoryCount;
-        HistoryRetentionMinutes = value.HistoryRetentionMinutes;
-        ProtectTaggedRecords = value.ProtectTaggedRecords;
-        ProtectTitledRecords = value.ProtectTitledRecords;
         _configManager.SetConfig(value);
 
         OnPropertyChanged(nameof(ShowHttpsConfig));
@@ -84,20 +74,6 @@ public partial class ServerConfigViewModel : ObservableObject
     #region view properties
     public bool ShowHttpsConfig => !EnableCustomConfigurationFile;
     public bool ShowHttpsCertConfig => EnableHttps && !EnableCustomConfigurationFile;
-
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(ServerConfigDescription))]
-    public bool showServerPassword = false;
-
-    public string ServerConfigDescription =>
-@$"{I18n.Strings.Port}{new string('\t', int.Parse(I18n.Strings.PortTabRepeat))}: {ServerConfig.Port}
-{I18n.Strings.UserName}{new string('\t', int.Parse(I18n.Strings.UserNameTabRepeat))}: {ServerConfig.UserName}
-{I18n.Strings.Password}{new string('\t', int.Parse(I18n.Strings.PasswordTabRepeat))}: {GetPasswordString(ServerConfig.Password, ShowServerPassword)}";
-
-    private static string GetPasswordString(string origin, bool? show)
-    {
-        return show ?? false ? origin : "*********";
-    }
 
     #endregion
 
@@ -114,25 +90,5 @@ public partial class ServerConfigViewModel : ObservableObject
         certificatePemKeyPath = serverConfig.CertificatePemKeyPath;
         enableCustomConfigurationFile = serverConfig.EnableCustomConfigurationFile;
         customConfigurationFilePath = serverConfig.CustomConfigurationFilePath;
-        maxHistoryCount = serverConfig.MaxHistoryCount;
-        historyRetentionMinutes = serverConfig.HistoryRetentionMinutes;
-        protectTaggedRecords = serverConfig.ProtectTaggedRecords;
-        protectTitledRecords = serverConfig.ProtectTitledRecords;
-    }
-
-    public string? SetServerConfig(string portString, string username, string password)
-    {
-        if (!ushort.TryParse(portString, out var port))
-        {
-            return I18n.Strings.PortRangeIs;
-        }
-        if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
-        {
-            return I18n.Strings.UsernameOrPasswordBlank;
-        }
-
-        ServerConfig = ServerConfig with { Password = password, Port = port, UserName = username };
-
-        return null;
     }
 }
