@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml.Controls;
 using SyncClipboard.Core.Utilities;
 using SyncClipboard.Core.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Windows.Storage.Pickers;
