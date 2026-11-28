@@ -284,6 +284,7 @@ public partial class HistoryViewModel : ObservableObject
     private const int MorePageSize = 20;
     private DateTime? _timeCursor = null;
     private readonly SingletonTask _loader = new SingletonTask();
+    private int pendingReloads;
 
     public int Width
     {
@@ -668,6 +669,9 @@ public partial class HistoryViewModel : ObservableObject
 
     private async Task Reload()
     {
+        Interlocked.Increment(ref pendingReloads);
+        numberedQuickActionRecords = null;
+        ClearVisibleHints();
         try
         {
             await _loader.Run(async token =>
@@ -707,6 +711,11 @@ public partial class HistoryViewModel : ObservableObject
         catch (Exception ex)
         {
             await logger.WriteAsync("Failed to reload history:", ex.ToString()).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (Interlocked.Decrement(ref pendingReloads) == 0 && ShowingQuickActionHints)
+                await _threadDispatcher.RunOnMainThreadAsync(RefreshQuickActionHints).ConfigureAwait(false);
         }
     }
 
@@ -970,12 +979,12 @@ public partial class HistoryViewModel : ObservableObject
         if (isModifier)
         {
             UpdateQuickActionPrefix(config, hotkey);
-            return hintConfig is not null;
+            return ShowingQuickActionHints;
         }
         UpdateQuickActionPrefix(config, modifiers);
         if (config.Match(hotkey) is { } action)
             return HandleShortcut(action, hotkey);
-        return !IsMultiSelecting && TryStartQuickAction(config, hotkey);
+        return !IsMultiSelecting && SelectedFilter != HistoryFilterType.Transferring && TryStartQuickAction(config, hotkey);
     }
 
     private bool HandleShortcut(HistoryShortcutAction? action, Hotkey hotkey)

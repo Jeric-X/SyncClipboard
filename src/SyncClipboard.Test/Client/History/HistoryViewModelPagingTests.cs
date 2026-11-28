@@ -595,6 +595,7 @@ public class HistoryViewModelPagingTests
             SetField(Manager, "_runtimeHistoryConfig", new RuntimeHistoryConfig());
             var queue = (HistoryTransferQueue)RuntimeHelpers.GetUninitializedObject(typeof(HistoryTransferQueue));
             SetField(queue, "_activeTasks", new ConcurrentDictionary<string, TransferTask>());
+            typeof(HistoryTransferQueue).GetField(nameof(queue.ActiveTaskAddMutex))!.SetValue(queue, new SemaphoreSlim(1, 1));
             SetField(ViewModel, "historyManager", Manager);
             SetField(ViewModel, "_serviceProvider", services);
             SetField(ViewModel, "runtimeConfig", RuntimeConfig);
