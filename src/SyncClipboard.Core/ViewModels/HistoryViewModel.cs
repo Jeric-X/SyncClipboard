@@ -968,7 +968,11 @@ public partial class HistoryViewModel : ObservableObject
             return false;
         }
 
-        var hotkey = new Hotkey([.. modifiers.Keys, key]);
+        return DispatchHistoryHotkey(new Hotkey([.. modifiers.Keys, key]), modifiers, isModifier);
+    }
+
+    private bool DispatchHistoryHotkey(Hotkey hotkey, Hotkey modifiers, bool isModifier)
+    {
         if (HistoryShortcutConfig.IsReserved(hotkey))
         {
             Close();
