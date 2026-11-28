@@ -67,7 +67,8 @@ internal sealed class UploadDirectory : IDisposable
             }
             catch (IOException ex)
             {
-                logger?.LogDebug(ex, "Upload {Path} is active or unavailable for cleanup", path);
+                if (logger?.IsEnabled(LogLevel.Debug) == true)
+                    logger.LogDebug(ex, "Upload {Path} is active or unavailable for cleanup", path);
             }
             catch (UnauthorizedAccessException ex)
             {
