@@ -47,6 +47,7 @@ public class HistoryRecordEntity : IHistorySearchable
     // Null means tags have never been supplied; an empty array means they were explicitly cleared.
     public string[]? Tags { get; set; }
     public string? Title { get; set; }
+    // Account-scoped filename used by WebDAV clients when they uploaded this profile.
     public string? ExtraData { get; set; }
     public int Version { get; set; } = 0;
     public bool IsDeleted { get; set; } = false;

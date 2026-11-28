@@ -8,6 +8,7 @@ using SyncClipboard.Server.Core.Attributes;
 using SyncClipboard.Server.Core.Exceptions;
 using SyncClipboard.Server.Core.Models;
 using SyncClipboard.Server.Core.Services.History;
+using SyncClipboard.Server.Core.Services;
 using SyncClipboard.Shared.Utilities;
 
 namespace SyncClipboard.Server.Core.Controllers;
@@ -81,7 +82,9 @@ public class HistoryController(HistoryService historyService) : ControllerBase
 
         new FileExtensionContentTypeProvider().TryGetContentType(path, out string? contentType);
         var stream = System.IO.File.OpenRead(path);
-        var fileName = Path.GetFileName(path);
+        Profile.ParseProfileId(profileId, out var type, out _);
+        var fileName = ServerEnvProvider.DownloadName(UserId, type, Response.Headers[HistoryTransferDataHeaders.TransferDataHash],
+            Path.GetFileName(path));
         return File(stream, contentType ?? "application/octet-stream", fileName);
     }
 
@@ -194,8 +197,14 @@ public class HistoryController(HistoryService historyService) : ControllerBase
                 return BadRequest($"{HistoryTransferDataHeaders.TransferDataHash} cannot be set without transfer data");
             }
 
+            await using var buffered = fileStream is null ? null : new FileBufferingReadStream(fileStream, 65536);
+            if (buffered is not null)
+            {
+                await buffered.CopyToAsync(Stream.Null, token);
+                buffered.Position = 0;
+            }
             var serverDto = await _historyService.AddRecordDto(
-                UserId, dto, declaredTransferDataHash, fileStream, token);
+                UserId, dto, declaredTransferDataHash, buffered, token);
             return Ok(serverDto);
         }
         catch (ArgumentException ex)

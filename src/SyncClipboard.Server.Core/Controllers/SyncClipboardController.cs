@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Authorization;
 using SyncClipboard.Server.Core.Services.History;
 using SyncClipboard.Server.Core.Services;
 using SyncClipboard.Shared.Utilities;
-using System.Text.Json;
 
 namespace SyncClipboard.Server.Core.Controllers;
 
@@ -22,11 +21,6 @@ public class SyncClipboardController(
     private string UserId => User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value;
 
     private string ClipboardDir => _serverEnv.GetClipboardDir(UserId);
-
-    private static bool InvalidFileName(string name)
-    {
-        return name is "." or ".." || Path.IsPathRooted(name) || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || name.Contains('\\') || name.Contains('/');
-    }
 
     private static void EnsureFolder(string path)
     {
@@ -85,8 +79,9 @@ public class SyncClipboardController(
     }
 
     [HttpDelete("file")]
-    public IActionResult DeleteFileFolder()
+    public async Task<IActionResult> DeleteFileFolder(CancellationToken token)
     {
+        using var guard = await _serverEnv.LockClipboard(UserId, token);
         var path = Path.Combine(ClipboardDir, "file");
         SafeDeleteFolder(path);
         return Ok();
@@ -96,16 +91,17 @@ public class SyncClipboardController(
     [HttpGet("file/{fileName}")]
     public async Task<IActionResult> GetFileFromFolder(string fileName, CancellationToken token)
     {
-        if (InvalidFileName(fileName))
+        if (ServerEnvProvider.InvalidFileName(fileName))
         {
             return BadRequest();
         }
 
         try
         {
-            var current = _serverEnv.ReadClipboard(UserId);
-            if (current is { HasData: true } && current.DataName == fileName)
-                return await GetFileInternal(Profile.GetFullPath(_serverEnv.GetPersistentDir(), current.Type, current.Hash, fileName));
+            var current = _serverEnv.ReadUsableClipboard(UserId, out var uploadedAs);
+            if (current is { HasData: true, DataName: not null } && !ServerEnvProvider.InvalidFileName(current.DataName)
+                && (fileName == uploadedAs || ServerEnvProvider.PublicClipboard(UserId, current).DataName == fileName))
+                return await GetFileInternal(Profile.GetFullPath(_serverEnv.GetPersistentDir(), current.Type, current.Hash, current.DataName));
 
             var path = await _historyService.GetRecentTransferFile(UserId, fileName, token);
             return await GetFileInternal(path);
@@ -119,36 +115,28 @@ public class SyncClipboardController(
     [HttpPut("file/{fileName}")]
     public async Task<IActionResult> PutFileToFolder(string fileName)
     {
-        if (InvalidFileName(fileName))
+        if (ServerEnvProvider.InvalidFileName(fileName))
         {
             return BadRequest();
         }
+        Directory.CreateDirectory(ClipboardDir);
         var folder = Path.Combine(ClipboardDir, "file");
-        EnsureFolder(folder);
         var path = Path.Combine(folder, fileName);
-        var temp = Path.Combine(ClipboardDir, Guid.NewGuid().ToString("N") + ".tmp");
-        try
-        {
-            await using (var fs = System.IO.File.Create(temp))
-                await Request.Body.CopyToAsync(fs, HttpContext.RequestAborted);
-            await _historyService.CommitClipboardUpload(temp, path, HttpContext.RequestAborted);
-        }
-        finally
-        {
-            System.IO.File.Delete(temp);
-        }
+        using var staging = new UploadDirectory(_serverEnv.GetPersistentDir());
+        var temp = Path.Combine(staging.DirectoryPath, "upload");
+        await using (var fs = System.IO.File.Create(temp))
+            await Request.Body.CopyToAsync(fs, HttpContext.RequestAborted);
+        using var guard = await _serverEnv.LockClipboard(UserId, HttpContext.RequestAborted);
+        EnsureFolder(folder);
+        System.IO.File.Move(temp, path, true);
         return Ok();
     }
 
     [HttpGet("SyncClipboard.json")]
     public async Task<ActionResult<ProfileDto>> GetSyncProfile(CancellationToken token)
     {
-        try
-        {
-            if (_serverEnv.ReadClipboard(UserId) is { } profile)
-                return Ok(profile);
-        }
-        catch (JsonException) { }
+        if (_serverEnv.ReadUsableClipboard(UserId) is { } profile)
+            return Ok(ServerEnvProvider.PublicClipboard(UserId, profile));
         return Ok(await new TextProfile(string.Empty).ToProfileDto(token));
     }
 
@@ -177,10 +165,9 @@ public class SyncClipboardController(
             return BadRequest("TransferDataHash cannot be set when HasData is false");
         }
 
-        if (dto.HasData && (string.IsNullOrEmpty(dto.DataName) || InvalidFileName(dto.DataName)))
-            return BadRequest("Invalid attachment name.");
         try
         {
+            using var guard = await _serverEnv.LockClipboard(UserId, token);
             var saved = await _historyService.SaveCurrentClipboard(UserId, dto, ClipboardDir, token);
             await _hubContext.Clients.User(UserId).RemoteProfileChanged(saved);
             return Ok();

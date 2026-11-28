@@ -15,7 +15,11 @@ public sealed class ServerSettingsStore : IOptions<AppSettings>
     // The original single account owns pre-upgrade records and administers the instance.
     public const string AdministratorId = "default_user";
 
-    private sealed record Account(string? Id, string UserName, string? PasswordHash, string? Password = null);
+    private sealed record Account(string? Id, string UserName, string? PasswordHash, string? Password = null)
+    {
+        [JsonIgnore] public string SessionId { get; } = Guid.NewGuid().ToString("N");
+        [JsonIgnore] public CancellationTokenSource Revoked { get; } = new();
+    }
     private sealed record Settings(AppSettings History, Account[] Users);
     private static readonly JsonSerializerOptions Json = new()
     {
@@ -32,6 +36,12 @@ public sealed class ServerSettingsStore : IOptions<AppSettings>
     public AppSettings Value => _settings.History;
 
     public ServerSettingsStore(string directory, AppSettings history, AccountUpdate? bootstrap)
+        : this(directory, history, bootstrap, requireLogin: true) { }
+
+    public static void Migrate(string directory, AppSettings history, AccountUpdate? account) =>
+        _ = new ServerSettingsStore(directory, history, account, requireLogin: false);
+
+    private ServerSettingsStore(string directory, AppSettings history, AccountUpdate? bootstrap, bool requireLogin)
     {
         _path = Path.Combine(directory, FileName);
         var exists = File.Exists(_path);
@@ -59,7 +69,7 @@ public sealed class ServerSettingsStore : IOptions<AppSettings>
             if (string.IsNullOrEmpty(hash))
                 throw new InvalidDataException("Each account requires a password.");
             accounts[i] = new(id, account.UserName, hash);
-            rewrite |= accounts[i] != account;
+            rewrite |= account.Id is null || account.Password is not null;
         }
         if (accounts.DistinctBy(a => a.Id).Count() != accounts.Length
             || accounts.DistinctBy(a => a.UserName).Count() != accounts.Length)
@@ -69,16 +79,19 @@ public sealed class ServerSettingsStore : IOptions<AppSettings>
         _settings = new(_settings.History ?? new(), accounts);
         if (rewrite)
             Save(_settings, exists);
-        if (accounts.Length == 0)
+        if (requireLogin && accounts.Length == 0)
             throw new InvalidDataException($"Add an initial account with UserName and Password to Users in {_path}.");
     }
 
-    public string? Authenticate(string name, string password)
+    public (string Id, string SessionId)? Authenticate(string name, string password)
     {
         var account = _settings.Users.FirstOrDefault(a => a.UserName == name);
         return account is not null && _hasher.VerifyHashedPassword(account.Id!, account.PasswordHash!, password)
-            != PasswordVerificationResult.Failed ? account.Id : null;
+            != PasswordVerificationResult.Failed ? (account.Id!, account.SessionId) : null;
     }
+
+    public CancellationToken GetSessionRevocation(string? sessionId) =>
+        _settings.Users.FirstOrDefault(a => a.SessionId == sessionId)?.Revoked.Token ?? new CancellationToken(true);
 
     public IEnumerable<AccountSummary> ListAccounts() => _settings.Users.Select(a => new AccountSummary(a.Id!, a.UserName));
 
@@ -93,15 +106,19 @@ public sealed class ServerSettingsStore : IOptions<AppSettings>
                 throw new KeyNotFoundException();
             if (users.Any(a => a.Id != id && a.UserName == update.UserName))
                 throw new ArgumentException("Username is already in use.");
+            if (index >= 0 && update.Password is null && users[index].UserName == update.UserName)
+                return users[index].Id!;
             id ??= Guid.NewGuid().ToString("N");
             var hash = index >= 0 && update.Password is null
                 ? users[index].PasswordHash : HashPassword(id, update.Password);
             var account = new Account(id, update.UserName, hash);
+            var previous = index >= 0 ? users[index] : null;
             if (index >= 0)
                 users[index] = account;
             else
                 users.Add(account);
             Save(_settings with { Users = [.. users] });
+            previous?.Revoked.Cancel();
             return id;
         }
     }
@@ -112,10 +129,12 @@ public sealed class ServerSettingsStore : IOptions<AppSettings>
             throw new ArgumentException("The administrator account cannot be removed.");
         lock (_gate)
         {
+            var previous = _settings.Users.FirstOrDefault(a => a.Id == id);
             var remaining = _settings.Users.Where(a => a.Id != id).ToArray();
             if (remaining.Length == _settings.Users.Length)
                 return false;
             Save(_settings with { Users = remaining });
+            previous!.Revoked.Cancel();
             return true;
         }
     }

@@ -22,9 +22,9 @@ public class BasicAuthenticationHandler(
             try
             {
                 var credentials = Encoding.UTF8.GetString(Convert.FromBase64String(header[6..])).Split(':', 2);
-                if (credentials.Length == 2 && checker.Authenticate(credentials[0], credentials[1]) is string id)
+                if (credentials.Length == 2 && checker.Authenticate(credentials[0], credentials[1]) is { } account)
                 {
-                    Claim[] claims = [new(ClaimTypes.NameIdentifier, id), new(ClaimTypes.Name, credentials[0])];
+                    Claim[] claims = [new(ClaimTypes.NameIdentifier, account.Id), new(ClaimTypes.Sid, account.SessionId), new(ClaimTypes.Name, credentials[0])];
                     var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, Scheme.Name));
                     return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(principal, Scheme.Name)));
                 }

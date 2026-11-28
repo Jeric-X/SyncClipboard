@@ -43,8 +43,8 @@ public class Program
 
         var legacy = configuration.GetSection("AppSettings");
         if (bootstrap is null && !Directory.Exists(Path.Combine(root, "server", "users"))
-            && (legacy.Exists() || File.Exists(Path.Combine(root, "server", "data", "history.db"))))
-            bootstrap = new(legacy["UserName"] ?? "admin", legacy["Password"] ?? "admin");
+            && legacy["UserName"] is { Length: > 0 } legacyName && legacy["Password"] is { Length: > 0 } legacyPassword)
+            bootstrap = new(legacyName, legacyPassword);
 
         return new ServerSettingsStore(root, legacy.Get<AppSettings>() ?? new(), bootstrap);
     }

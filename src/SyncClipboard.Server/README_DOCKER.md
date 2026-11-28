@@ -36,9 +36,9 @@ On startup the server assigns each new account a stable ID and replaces its pass
 
 ## 从旧版本升级 | Upgrading
 
-首次启动会把旧版 AppSettings 业务配置导入新文件。原账号沿用 default_user，保留原有历史、当前剪贴板和待同步文件。首次创建配置时，两个登录环境变量可提供初始管理员凭据。验证升级成功后，请从旧配置及其备份中移除明文密码。端口、日志和 TLS 继续在 appsettings.json 配置。
+首次启动会把旧版 AppSettings 业务配置导入新文件。如果旧配置缺少用户名或密码，首次启动需要设置管理员凭据。原账号沿用 default_user，保留原有历史、当前剪贴板和待同步文件。首次创建配置时，两个登录环境变量可提供初始管理员凭据。验证升级成功后，请从旧配置及其备份中移除明文密码。端口、日志和 TLS 继续在 appsettings.json 配置。
 
-The first startup imports legacy AppSettings. The original account retains its history and clipboard under the ID default_user. Both login environment variables can supply the initial administrator credentials when the configuration is created. Remove the plaintext password from the legacy configuration and its backups after verifying the migration. Configure Kestrel, logging and TLS in appsettings.json.
+The first startup imports legacy AppSettings. Set initial administrator credentials if the old configuration omits the username or password. The original account retains its history and clipboard under the ID default_user. Both login environment variables can supply the initial administrator credentials when the configuration is created. Remove the plaintext password from the legacy configuration and its backups after verifying the migration. Configure Kestrel, logging and TLS in appsettings.json.
 
 ## 管理 API | Management API
 
@@ -55,6 +55,6 @@ Both hosts expose the same administrator-only endpoints. Authenticate with HTTP 
 | PUT | /api/admin/users/{id} | Send UserName and optionally Password to rename or reset |
 | DELETE | /api/admin/users/{id} | Revoke login for a non-administrator account |
 
-删除账号会撤销后续登录，已存的历史按原 ID 保留。重新创建同名账号会分配新的 ID。迁移后的桌面配置备份可能仍包含原密码。
+改密或删除账号会断开该账号的实时同步连接。删除账号后，已存的历史按原 ID 保留。重新创建同名账号会分配新的 ID。迁移后的桌面配置备份可能仍包含原密码。
 
-Deleting an account revokes new logins and retains the history under its original ID. Recreating the username assigns a new ID. Desktop configuration backups made during migration can still contain the old password.
+Resetting a password or deleting an account disconnects its active SignalR clients. Deleting an account retains its history under the original ID. Recreating the username assigns a new ID. Desktop configuration backups made during migration can still contain the old password.

@@ -67,7 +67,10 @@ public class HistoryManagerHelper<TEntity, TDeleteOrderKey>(IHistoryEntityReposi
         if (retentionMinutes == 0)
             return 0;
 
-        var cutoff = DateTime.UtcNow.AddMinutes(-retentionMinutes);
+        var now = DateTime.UtcNow;
+        if (retentionMinutes >= now.Ticks / (double)TimeSpan.TicksPerMinute)
+            return 0;
+        var cutoff = now.AddMinutes(-retentionMinutes);
         Expression<Func<DateTime>> cutoffExpression = () => cutoff;
         var lastActivityTime = repository.QueryLastActivityTime;
         var expiredPredicate = Expression.Lambda<Func<TEntity, bool>>(

@@ -24,9 +24,10 @@ public sealed class SyncClipboardConfigMigrationV3ToV4(string serverRoot) : ISyn
                 ProtectTaggedRecords = section["ProtectTaggedRecords"]?.GetValue<bool>() ?? true,
                 ProtectTitledRecords = section["ProtectTitledRecords"]?.GetValue<bool>() ?? true
             };
-            var account = new AccountUpdate(section["UserName"]?.GetValue<string>() ?? "admin",
-                section["Password"]?.GetValue<string>() ?? "admin");
-            _ = new ServerSettingsStore(serverRoot, history, account);
+            var account = section["UserName"]?.GetValue<string>() is { Length: > 0 } name
+                && section["Password"]?.GetValue<string>() is { Length: > 0 } password ? new AccountUpdate(name, password) : null;
+            ConfigManager.ValidateConfig(root);
+            ServerSettingsStore.Migrate(serverRoot, history, account);
         }
         foreach (var key in new[] { "UserName", "Password", "MaxHistoryCount", "HistoryRetentionMinutes", "ProtectTaggedRecords", "ProtectTitledRecords" })
             section.Remove(key);

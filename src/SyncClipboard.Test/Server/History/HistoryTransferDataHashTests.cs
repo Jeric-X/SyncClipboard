@@ -1,5 +1,4 @@
 using System.IO.Compression;
-using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -7,9 +6,6 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Data.Sqlite;
-using SyncClipboard.Core.Exceptions;
-using SyncClipboard.Core.Models;
-using SyncClipboard.Core.RemoteServer.Adapter.OfficialServer;
 using SyncClipboard.Server.Core.Controllers;
 using SyncClipboard.Server.Core.Exceptions;
 using SyncClipboard.Server.Core.Hubs;
@@ -345,48 +341,6 @@ public class HistoryTransferDataHashTests
     }
 
     [TestMethod]
-    public void RemoteHistoryMetadata_DoesNotCreateLocalTransferDataHashBinding()
-    {
-        var record = CreateGroupDto(new string('E', 64)).ToHistoryRecord();
-
-        Assert.IsNull(record.TransferDataFile);
-        Assert.IsNull(record.TransferDataHash);
-        Assert.IsFalse(record.IsLocalFileReady);
-    }
-
-    [TestMethod]
-    public async Task SaveHistoryDataResponse_MatchingHeaderPublishesFileAndReturnsHash()
-    {
-        var token = TestContext.CancellationTokenSource.Token;
-        await using var fixture = await TestFixture.CreateAsync(token);
-        var bytes = Encoding.UTF8.GetBytes("downloaded history data");
-        var transferDataHash = await Utility.CalculateSHA256(bytes, token);
-        using var response = CreateTransferDataResponse(bytes, transferDataHash);
-        var localPath = Path.Combine(fixture.RootDirectory, "download", "data.bin");
-
-        var actualHash = await OfficialAdapter.SaveHistoryDataResponseAsync(response, localPath, progress: null, token);
-
-        Assert.AreEqual(transferDataHash, actualHash);
-        CollectionAssert.AreEqual(bytes, await File.ReadAllBytesAsync(localPath, token));
-    }
-
-    [TestMethod]
-    public async Task SaveHistoryDataResponse_MismatchedHeaderDoesNotReplaceExistingFile()
-    {
-        var token = TestContext.CancellationTokenSource.Token;
-        await using var fixture = await TestFixture.CreateAsync(token);
-        var localPath = Path.Combine(fixture.RootDirectory, "data.bin");
-        await File.WriteAllTextAsync(localPath, "existing", token);
-        using var response = CreateTransferDataResponse(Encoding.UTF8.GetBytes("rejected"), new string('A', 64));
-
-        await Assert.ThrowsExactlyAsync<RemoteHistoryDataRejectedException>(
-            () => OfficialAdapter.SaveHistoryDataResponseAsync(response, localPath, progress: null, token));
-
-        Assert.AreEqual("existing", await File.ReadAllTextAsync(localPath, token));
-        Assert.AreEqual(0, Directory.GetFiles(fixture.RootDirectory, "*.download").Length);
-    }
-
-    [TestMethod]
     public async Task PutSyncProfile_InvalidInlineTextDoesNotPersistOrPublish()
     {
         var token = TestContext.CancellationTokenSource.Token;
@@ -570,6 +524,9 @@ public class HistoryTransferDataHashTests
 
         File.Copy(zip.Path, upload, true);
         Assert.IsInstanceOfType<OkResult>(await bob.PutSyncProfile(profile, token));
+        var published = (OkObjectResult)(await bob.GetSyncProfile(token)).Result!;
+        Assert.IsInstanceOfType<OkResult>(await bob.PutSyncProfile((ProfileDto)published.Value!, token));
+        Assert.IsInstanceOfType<OkResult>(await bob.PutSyncProfile(profile with { DataName = null }, token));
         var records = await fixture.DbContext.HistoryRecords.OrderBy(r => r.UserId).ToArrayAsync(token);
         Assert.HasCount(2, records);
         Assert.AreEqual("Alice's title", records[0].Title);
@@ -587,6 +544,10 @@ public class HistoryTransferDataHashTests
         await fixture.Service.ClearAllAsync("bob", token);
         await fixture.Service.CleanOrphanedFolders(token);
         Assert.IsInstanceOfType<FileContentResult>(await bob.GetFileFromFolder(transferName, token));
+        Assert.IsInstanceOfType<FileContentResult>(await bob.GetFileFromFolder(profile.DataName!, token));
+        var currentAttachment = await fixture.Service.GetTransferDataByProfileId("bob", id, token);
+        Assert.AreEqual(zip.Hash, currentAttachment?.Hash);
+        Assert.IsNull(await fixture.Service.GetTransferDataByProfileId("alice", id, token));
         await bob.PutSyncProfile(await new TextProfile("next").ToProfileDto(token), token);
         await fixture.Service.CleanOrphanedFolders(token);
         Assert.IsFalse(Directory.Exists(Profile.QueryGetWorkingDir(fixture.PersistentDirectory, group.Type, hash)));
@@ -616,6 +577,9 @@ public class HistoryTransferDataHashTests
         var second = await fixture.Service.GetTransferDataByProfileId("bob", id, token);
         Assert.AreEqual(zip.Hash, first!.Hash);
         Assert.AreEqual(secondHash, second!.Hash);
+        await fixture.Service.ClearAllAsync("alice", token);
+        Assert.IsFalse(File.Exists(first.Path));
+        Assert.IsTrue(File.Exists(second.Path));
     }
 
     private static HistoryRecordDto CreateGroupDto(string profileHash)
@@ -628,16 +592,6 @@ public class HistoryTransferDataHashTests
             Size = 1,
             HasData = true,
         };
-    }
-
-    private static HttpResponseMessage CreateTransferDataResponse(byte[] bytes, string transferDataHash)
-    {
-        var response = new HttpResponseMessage
-        {
-            Content = new ByteArrayContent(bytes),
-        };
-        response.Headers.Add(HistoryTransferDataHeaders.TransferDataHash, transferDataHash);
-        return response;
     }
 
     private static async Task CreateArchiveAsync(

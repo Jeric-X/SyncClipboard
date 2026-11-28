@@ -1,4 +1,6 @@
 using Microsoft.Data.Sqlite;
+using Microsoft.AspNetCore.SignalR.Client;
+using SyncClipboard.Server.Core.Constants;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -44,9 +46,25 @@ public class ServerManagementApiTests
                 change.EnsureSuccessStatusCode();
                 var saved = await client.GetFromJsonAsync<AppSettings>("api/admin/settings", token);
                 Assert.AreEqual(17u, saved!.MaxSavedHistoryCount);
+                var closed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                await using var hub = new HubConnectionBuilder().WithUrl(new Uri(client.BaseAddress, SignalRConstants.HubPath),
+                    options => options.Headers["Authorization"] = Login("bob", "second").ToString()).Build();
+                hub.Closed += _ =>
+                {
+                    closed.TrySetResult();
+                    return Task.CompletedTask;
+                };
+                await hub.StartAsync(token);
+                using var reset = await client.PutAsJsonAsync($"api/admin/users/{bob.Id}", new AccountUpdate("bob", "third"), token);
+                reset.EnsureSuccessStatusCode();
+                await closed.Task.WaitAsync(TimeSpan.FromSeconds(10), token);
+                client.DefaultRequestHeaders.Authorization = Login("bob", "third");
+                using var accepted = await client.GetAsync("api/time", token);
+                accepted.EnsureSuccessStatusCode();
+                client.DefaultRequestHeaders.Authorization = Login("alice", "original");
                 using var remove = await client.DeleteAsync($"api/admin/users/{bob.Id}", token);
                 remove.EnsureSuccessStatusCode();
-                client.DefaultRequestHeaders.Authorization = Login("bob", "second");
+                client.DefaultRequestHeaders.Authorization = Login("bob", "third");
                 using var revoked = await client.GetAsync("api/time", token);
                 Assert.AreEqual(HttpStatusCode.Unauthorized, revoked.StatusCode);
             }
@@ -57,7 +75,7 @@ public class ServerManagementApiTests
 
             var restarted = new ServerSettingsStore(root.FullName, new(), null);
             Assert.AreEqual(17u, restarted.Value.MaxSavedHistoryCount);
-            Assert.IsNull(restarted.Authenticate("bob", "second"));
+            Assert.IsNull(restarted.Authenticate("bob", "third"));
         }
         finally
         {

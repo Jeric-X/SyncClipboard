@@ -15,6 +15,7 @@ namespace SyncClipboard.Server.Core.Services.History;
 public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, DateTime>
 {
     private string? _cleanupUserId;
+    private ClipboardAttachmentReferences? _batchClipboardReferences;
     private readonly ServerEnvProvider? _serverEnv;
 
     private readonly IOptions<AppSettings> _options;
@@ -236,9 +237,10 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         await StoreProfile(userId, profile, token);
     }
 
-    private async Task StoreProfile(string userId, Profile profile, CancellationToken token)
+    private async Task StoreProfile(string userId, Profile profile, CancellationToken token, string? uploadedAs = null)
     {
         var entity = await profile.ToHistoryEntity(_persistentDir, userId, token);
+        entity.ExtraData = uploadedAs;
         var type = profile.Type;
         var hash = await profile.GetHash(token);
 
@@ -248,6 +250,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             existing.LastAccessed = DateTime.UtcNow;
             existing.IsDeleted = false;
             existing.LastModified = DateTime.UtcNow;
+            existing.ExtraData = uploadedAs ?? existing.ExtraData;
             existing.TransferDataFile = entity.TransferDataFile;
             existing.TransferDataHash = entity.TransferDataHash;
             existing.FilePaths = entity.FilePaths;
@@ -276,7 +279,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             .Where(r => r.UserId == userId && !r.IsDeleted)
             .OrderByDescending(r => r.LastAccessed)
             .AsEnumerable()
-            .Where(r => Path.GetFileName(r.TransferDataFile) == fileName && File.Exists(Profile.GetFullPath(_persistentDir, r.Type, r.Hash, r.TransferDataFile)))
+            .Where(r => (r.ExtraData == fileName || ServerEnvProvider.DownloadName(userId, r.Type, r.TransferDataHash, Path.GetFileName(r.TransferDataFile)) == fileName) && File.Exists(Profile.GetFullPath(_persistentDir, r.Type, r.Hash, r.TransferDataFile)))
             .Select(r => Profile.GetFullPath(_persistentDir, r.Type, r.Hash, r.TransferDataFile))
             .FirstOrDefault();
 
@@ -297,7 +300,48 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         var entity = await Query(userId, type, hash, token);
         if (entity is null || entity.IsDeleted)
         {
-            return null;
+            if (_serverEnv is null)
+                return null;
+            var current = _serverEnv.ReadUsableClipboard(userId, out var uploadedAs);
+            if (current is not { HasData: true, DataName: not null } || current.Type != type
+                || !Utility.SHA256Same(hash, current.Hash) || ServerEnvProvider.InvalidFileName(current.DataName))
+                return null;
+            var path = Profile.GetFullPath(_persistentDir, current.Type, current.Hash, current.DataName);
+            var files = entity is not null && Path.GetFileName(entity.TransferDataFile) == current.DataName ? entity.FilePaths : [];
+            if (!File.Exists(path) && files.Length == 0)
+                return null;
+            var info = new ProfilePersistentInfo
+            {
+                Type = current.Type,
+                Hash = current.Hash,
+                Text = current.Text,
+                Size = current.Size ?? 0,
+                TransferDataFile = current.DataName,
+                TransferDataHash = current.TransferDataHash,
+                FilePaths = files
+            };
+            try
+            {
+                var profile = Profile.Create(_persistentDir, info);
+                var transfer = await profile.PrepareTransferData(_persistentDir, token);
+                if (transfer is not null && (Path.GetFileName(transfer.Path) != current.DataName || current.TransferDataHash != transfer.Hash))
+                {
+                    var refreshed = current with { DataName = Path.GetFileName(transfer.Path), TransferDataHash = transfer.Hash };
+                    await WriteCurrentManifest(_serverEnv.GetClipboardDir(userId), refreshed, uploadedAs, token);
+                    if (entity is not null)
+                    {
+                        UpdateEntityLocalData(entity, await profile.Persist(_persistentDir, token), transfer.Hash);
+                        await _dbContext.SaveChangesAsync(token);
+                    }
+                    if (_hubContext is not null)
+                        await _hubContext.Clients.User(userId).RemoteProfileChanged(ServerEnvProvider.PublicClipboard(userId, refreshed));
+                }
+                return transfer;
+            }
+            catch (LocalProfileDataUnavailableException ex)
+            {
+                throw new HistoryTransferDataException("Current clipboard attachment is invalid.", ex);
+            }
         }
 
         try
@@ -351,21 +395,23 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         using var guard = new ScopeGuard(() => _sem.Release());
         var existing = string.IsNullOrEmpty(dto.Hash) ? null : await Query(userId, dto.Type, dto.Hash, token);
         Profile profile;
-        string? uploadPath = null;
-        if (existing is { IsDeleted: false })
+        var candidate = dto.HasData && !string.IsNullOrEmpty(dto.DataName) && !ServerEnvProvider.InvalidFileName(dto.DataName)
+            ? Path.Combine(clipboardDir, "file", dto.DataName) : null;
+        var uploadPath = File.Exists(candidate) ? candidate : null;
+        if (uploadPath is null && existing is { IsDeleted: false })
         {
             profile = existing.ToProfile(_persistentDir);
         }
         else
         {
+            if (dto.HasData && (string.IsNullOrEmpty(dto.DataName) || ServerEnvProvider.InvalidFileName(dto.DataName)))
+                throw new ArgumentException("Invalid attachment name.");
             profile = Profile.Create(dto with { Hash = dto.Hash?.ToUpperInvariant() ?? "", TransferDataHash = null });
             if (dto.HasData)
             {
-                uploadPath = Path.Combine(clipboardDir, "file", dto.DataName!);
-                if (!File.Exists(uploadPath))
+                if (uploadPath is null)
                     throw new FileNotFoundException();
-                await using var upload = File.OpenRead(uploadPath);
-                profile = await StoreVerifiedAttachment(profile, dto.DataName!, upload, dto.TransferDataHash, token);
+                profile = await ValidateClipboardUpload(uploadPath, profile, dto.TransferDataHash, token);
             }
             else if (!await profile.IsLocalDataValid(false, token))
             {
@@ -373,31 +419,54 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             }
         }
 
-        await StoreProfile(userId, profile, token);
+        var uploadedAs = uploadPath is not null ? dto.DataName : existing?.ExtraData;
+        await StoreProfile(userId, profile, token, uploadedAs);
         var saved = await profile.ToProfileDto(token);
         saved.SyncedAt = DateTimeOffset.Now;
+        await WriteCurrentManifest(clipboardDir, saved, uploadedAs, token);
+        if (uploadPath is not null)
+            File.Delete(uploadPath);
+        return ServerEnvProvider.PublicClipboard(userId, saved);
+    }
+
+    private static async Task WriteCurrentManifest(string clipboardDir, ProfileDto saved, string? uploadedAs, CancellationToken token)
+    {
         Directory.CreateDirectory(clipboardDir);
         var target = Path.Combine(clipboardDir, "SyncClipboard.json");
         var temp = target + ".tmp";
         try
         {
-            await File.WriteAllTextAsync(temp, JsonSerializer.Serialize(saved), token);
+            var manifest = JsonSerializer.SerializeToNode(saved)!.AsObject();
+            if (uploadedAs is not null)
+                manifest["UploadedAs"] = uploadedAs;
+            await File.WriteAllTextAsync(temp, manifest.ToJsonString(), token);
             File.Move(temp, target, true);
         }
         finally
         {
             File.Delete(temp);
         }
-        if (uploadPath is not null)
-            File.Delete(uploadPath);
-        return saved;
     }
 
-    public async Task CommitClipboardUpload(string temp, string target, CancellationToken token)
+    private async Task<Profile> ValidateClipboardUpload(string uploadPath, Profile profile, string? declaredHash, CancellationToken token)
     {
-        await _sem.WaitAsync(token);
-        using var guard = new ScopeGuard(() => _sem.Release());
-        File.Move(temp, target, true);
+        using var staging = new UploadDirectory(_persistentDir);
+        var stage = staging.DirectoryPath;
+        var stagedRoot = Path.Combine(stage, Path.GetRandomFileName());
+        ProfilePersistentInfo info;
+        // The controller holds this account's clipboard lock throughout publication.
+        _sem.Release();
+        try
+        {
+            await using var upload = File.OpenRead(uploadPath);
+            info = await ValidateAttachment(stage, stagedRoot, profile, Path.GetFileName(uploadPath), upload, declaredHash, token);
+        }
+        finally
+        {
+            await _sem.WaitAsync(CancellationToken.None);
+            _dbContext.ChangeTracker.Clear();
+        }
+        return await PublishAttachment(stagedRoot, info, token);
     }
 
     public async Task<HistoryRecordDto> AddRecordDto(
@@ -552,58 +621,77 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
     private async Task<Profile> StoreVerifiedAttachment(Profile profile, string fileName, Stream upload, string? declaredHash, CancellationToken token)
     {
-        // Validate in a private directory before touching any file used by another account.
-        var stage = Path.Combine(_persistentDir, ".upload-" + Guid.NewGuid().ToString("N"));
-        Directory.CreateDirectory(stage);
-        try
-        {
-            if (string.IsNullOrEmpty(fileName) || fileName is "." or ".." || Path.GetFileName(fileName) != fileName)
-                throw new InvalidDataException("Invalid attachment name.");
-            if (profile.Type is ProfileType.Group or ProfileType.Text)
-            {
-                var expectedHash = await profile.GetHash(token);
-                if (string.IsNullOrEmpty(expectedHash) || File.Exists(Profile.GetFullPath(_persistentDir, profile.Type, expectedHash, fileName)))
-                    fileName = Guid.NewGuid().ToString("N") + Path.GetExtension(fileName);
-            }
-            var path = Path.Combine(stage, fileName);
-            await using (var output = File.Create(path))
-                await upload.CopyToAsync(output, token);
-            var sha256 = await Utility.VerifyFileSHA256(path, declaredHash, token);
-            var stagedRoot = Path.Combine(stage, Path.GetRandomFileName());
-            await profile.SetAndMoveTransferData(stagedRoot, new FileHashInfo(path, sha256), token);
-            var hash = await profile.GetHash(token);
-            var info = await profile.Persist(stagedRoot, token);
-            var shared = await _dbContext.HistoryRecords.AsNoTracking()
-                .Where(r => r.Type == profile.Type && r.Hash == hash && !r.IsDeleted && r.TransferDataFile != "")
-                .OrderByDescending(r => r.TransferDataHash == sha256)
-                .FirstOrDefaultAsync(token);
-            bool reuseFiles = shared is not null && await shared.ToProfile(_persistentDir).IsLocalDataValid(false, token);
-            if (reuseFiles)
-            {
-                var archive = Profile.GetFullPath(_persistentDir, shared!.Type, shared.Hash, shared.TransferDataFile);
-                if (File.Exists(archive) && await Utility.FileMatchesSHA256(archive, sha256, token))
-                    return Profile.Create(_persistentDir, info with { FilePaths = shared.FilePaths, TransferDataFile = shared.TransferDataFile });
+        using var staging = new UploadDirectory(_persistentDir);
+        var stage = staging.DirectoryPath;
+        var stagedRoot = Path.Combine(stage, Path.GetRandomFileName());
+        var info = await ValidateAttachment(stage, stagedRoot, profile, fileName, upload, declaredHash, token);
+        return await PublishAttachment(stagedRoot, info, token);
+    }
 
-                // Equivalent groups may have different ZIP metadata. Keep the verified wire bytes
-                // for each representation while sharing the extracted content.
-                if (profile.Type == ProfileType.Group)
-                    info = info with { FilePaths = shared.FilePaths };
-            }
-            var source = Profile.QueryGetWorkingDir(stagedRoot, profile.Type, hash);
-            var dest = Profile.CreateWorkingDir(_persistentDir, profile.Type, hash);
-            if (!reuseFiles || profile.Type != ProfileType.Group)
-            {
-                foreach (var dir in Directory.EnumerateDirectories(source))
-                    Directory.Move(dir, Path.Combine(dest, Path.GetFileName(dir)));
-            }
-            foreach (var file in Directory.EnumerateFiles(source))
-                File.Move(file, Path.Combine(dest, Path.GetFileName(file)), true);
-            return Profile.Create(_persistentDir, info);
-        }
-        finally
+    private static async Task<ProfilePersistentInfo> ValidateAttachment(string stage, string stagedRoot, Profile profile,
+        string fileName, Stream upload, string? declaredHash, CancellationToken token)
+    {
+        if (string.IsNullOrEmpty(fileName) || fileName is "." or ".." || Path.GetFileName(fileName) != fileName)
+            throw new InvalidDataException("Invalid attachment name.");
+        var path = Path.Combine(stage, fileName);
+        await using (var output = File.Create(path))
+            await upload.CopyToAsync(output, token);
+        var sha256 = await Utility.VerifyFileSHA256(path, declaredHash, token);
+        if (profile.Type is ProfileType.Group or ProfileType.Text)
         {
-            Directory.Delete(stage, true);
+            fileName = sha256 + (profile.Type == ProfileType.Group ? ".zip" : ".txt");
+            var canonicalPath = Path.Combine(stage, fileName);
+            if (!string.Equals(path, canonicalPath, StringComparison.Ordinal))
+                File.Move(path, canonicalPath);
+            path = canonicalPath;
         }
+
+        await profile.SetAndMoveTransferData(stagedRoot, new FileHashInfo(path, sha256), token);
+        return await profile.Persist(stagedRoot, token);
+    }
+
+    private async Task<Profile> PublishAttachment(string stagedRoot, ProfilePersistentInfo info, CancellationToken token)
+    {
+        var hash = info.Hash;
+        var sha256 = info.TransferDataHash!;
+        var shared = await _dbContext.HistoryRecords.AsNoTracking()
+            .Where(r => r.Type == info.Type && r.Hash == hash && !r.IsDeleted && r.TransferDataFile != "")
+            .OrderByDescending(r => r.TransferDataHash == sha256)
+            .FirstOrDefaultAsync(token);
+        bool reuseFiles = shared is not null && await shared.ToProfile(_persistentDir).IsLocalDataValid(false, token);
+        if (reuseFiles)
+        {
+            var archive = Profile.GetFullPath(_persistentDir, shared!.Type, shared.Hash, shared.TransferDataFile);
+            if (File.Exists(archive) && await Utility.FileMatchesSHA256(archive, sha256, token))
+                return Profile.Create(_persistentDir, info with { FilePaths = shared.FilePaths, TransferDataFile = shared.TransferDataFile });
+
+            // Equivalent groups may have different ZIP metadata. Keep the verified wire bytes
+            // for each representation while sharing the extracted content.
+            if (info.Type == ProfileType.Group)
+                info = info with { FilePaths = shared.FilePaths };
+        }
+        var source = Profile.QueryGetWorkingDir(stagedRoot, info.Type, hash);
+        var dest = Profile.CreateWorkingDir(_persistentDir, info.Type, hash);
+        if (!reuseFiles || info.Type != ProfileType.Group)
+        {
+            foreach (var dir in Directory.EnumerateDirectories(source))
+                Directory.Move(dir, Path.Combine(dest, Path.GetFileName(dir)));
+        }
+        foreach (var file in Directory.EnumerateFiles(source))
+        {
+            var target = Path.Combine(dest, Path.GetFileName(file));
+            if (info.Type is ProfileType.Group or ProfileType.Text && File.Exists(target))
+            {
+                if (await Utility.FileMatchesSHA256(target, sha256, token))
+                    continue;
+                // A legacy client could have supplied this name for different archive bytes.
+                var name = Guid.NewGuid().ToString("N") + Path.GetExtension(file);
+                target = Path.Combine(dest, name);
+                info = info with { TransferDataFile = name, FilePaths = info.Type == ProfileType.Text ? [name] : info.FilePaths };
+            }
+            File.Move(file, target, true);
+        }
+        return Profile.Create(_persistentDir, info);
     }
 
     private Task DeleteProfileDataIfNeed(HistoryRecordEntity entity, CancellationToken token)
@@ -611,7 +699,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         return DeleteProfileData(entity, false, token);
     }
 
-    private async Task DeleteProfileData(HistoryRecordEntity entity, bool force, CancellationToken token)
+    private async Task DeleteProfileData(HistoryRecordEntity entity, bool force, CancellationToken token, ClipboardAttachmentReferences? current = null)
     {
         if (!force && entity.IsDeleted == false)
         {
@@ -619,20 +707,69 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         }
 
         var workingDir = Profile.QueryGetWorkingDir(_persistentDir, entity.Type, entity.Hash);
-        if (Directory.Exists(workingDir) && !await HasActiveReference(entity.Type, entity.Hash, token)
-            && _serverEnv?.CurrentAttachmentDirectories().Contains(Path.GetFileName(workingDir)) != true)
+        if (Directory.Exists(workingDir))
         {
             try
             {
-                Directory.Delete(workingDir, true);
+                await CleanAttachmentDirectory(workingDir, entity.Type, entity.Hash, current ?? _serverEnv?.ReadCurrentAttachments(), token);
             }
             catch (IOException) { }
             catch (UnauthorizedAccessException) { }
         }
     }
 
-    private Task<bool> HasActiveReference(ProfileType type, string hash, CancellationToken token) =>
-        _dbContext.HistoryRecords.AnyAsync(r => r.Type == type && EF.Functions.Collate(r.Hash, "NOCASE") == hash && !r.IsDeleted, token);
+    private async Task CleanAttachmentDirectory(string directory, ProfileType type, string hash,
+        ClipboardAttachmentReferences? current, CancellationToken token)
+    {
+        // An unreadable manifest may own the only remaining reference, even after its history was cleared.
+        if (current is { Complete: false })
+            return;
+        var directoryName = Path.GetFileName(directory);
+        var hasCurrent = current?.Files.ContainsKey(directoryName) == true;
+        var records = _dbContext.HistoryRecords.Where(r => r.Type == type && EF.Functions.Collate(r.Hash, "NOCASE") == hash);
+        if (!hasCurrent && !await records.AnyAsync(r => !r.IsDeleted, token))
+        {
+            Directory.Delete(directory, true);
+            return;
+        }
+        if (type is not (ProfileType.Group or ProfileType.Text))
+            return;
+
+        var retained = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (hasCurrent)
+        {
+            var currentFiles = current!.Files[directoryName];
+            if (currentFiles is null)
+                return;
+            retained.UnionWith(currentFiles);
+        }
+        var entries = await records.Where(r => hasCurrent || !r.IsDeleted)
+            .Select(r => new { r.IsDeleted, r.TransferDataFile, r.FilePaths }).ToListAsync(token);
+        foreach (var record in entries)
+        {
+            if (record.IsDeleted && !current!.Files[directoryName]!.Contains(Path.GetFileName(record.TransferDataFile)))
+                continue;
+            retained.Add(Path.GetFileName(record.TransferDataFile));
+            foreach (var path in record.FilePaths)
+            {
+                var relative = Path.GetRelativePath(directory, Profile.GetFullPath(directory, path));
+                retained.Add(relative.Split(Path.DirectorySeparatorChar, 2)[0]);
+            }
+        }
+        if (type == ProfileType.Group)
+        {
+            foreach (var extracted in Directory.EnumerateDirectories(directory))
+            {
+                if (!retained.Contains(Path.GetFileName(extracted)))
+                    Directory.Delete(extracted, true);
+            }
+        }
+        foreach (var archive in Directory.EnumerateFiles(directory))
+        {
+            if (!retained.Contains(Path.GetFileName(archive)))
+                File.Delete(archive);
+        }
+    }
 
     public async Task RemoveOutOfDateDeletedRecords(CancellationToken token = default)
     {
@@ -650,9 +787,10 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         _dbContext.HistoryRecords.RemoveRange(toDeletes);
         await _dbContext.SaveChangesAsync(token);
 
+        var current = _serverEnv?.ReadCurrentAttachments();
         foreach (var rec in toDeletes)
         {
-            await DeleteProfileDataIfNeed(rec, token);
+            await DeleteProfileData(rec, false, token, current);
         }
     }
 
@@ -674,9 +812,10 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         var count = records.Count;
         await _dbContext.SaveChangesAsync(token);
 
+        var current = _serverEnv?.ReadCurrentAttachments();
         foreach (var rec in records)
         {
-            await DeleteProfileData(rec, true, token);
+            await DeleteProfileData(rec, true, token, current);
         }
 
         return count;
@@ -733,7 +872,8 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
     public async Task OnRecordDeletedAsync(HistoryRecordEntity entity, CancellationToken token)
     {
         await NotifyProfileChangeAsync(entity);
-        await DeleteProfileDataIfNeed(entity, token);
+        _batchClipboardReferences ??= _serverEnv?.ReadCurrentAttachments();
+        await DeleteProfileData(entity, false, token, _batchClipboardReferences);
     }
 
     public async Task OnBatchStartAsync(CancellationToken token)
@@ -743,6 +883,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
 
     public async Task OnBatchEndAsync(CancellationToken token)
     {
+        _batchClipboardReferences = null;
         _dbContext.ChangeTracker.Clear();
         _sem.Release();
         await Task.Delay(TimeSpan.FromSeconds(10), token);
@@ -829,18 +970,13 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
         await _sem.WaitAsync(token);
         using var guard = new ScopeGuard(() => _sem.Release());
 
-        var current = _serverEnv?.CurrentAttachmentDirectories();
+        var current = _serverEnv?.ReadCurrentAttachments();
         var directories = Directory.GetDirectories(_persistentDir);
         foreach (var directory in directories)
         {
             token.ThrowIfCancellationRequested();
 
             var dirName = Path.GetFileName(directory);
-            if (dirName.StartsWith(".upload-", StringComparison.Ordinal) && Guid.TryParseExact(dirName[8..], "N", out _))
-            {
-                Directory.Delete(directory, true);
-                continue;
-            }
             var parts = dirName.Split('_', 2);
             if (parts.Length != 2)
             {
@@ -853,10 +989,7 @@ public class HistoryService : IHistoryEntityRepository<HistoryRecordEntity, Date
             }
 
             var hash = parts[1];
-            if (current?.Contains(dirName) != true && !await HasActiveReference(type, hash, token))
-            {
-                Directory.Delete(directory, true);
-            }
+            await CleanAttachmentDirectory(directory, type, hash, current, token);
         }
     }
 }

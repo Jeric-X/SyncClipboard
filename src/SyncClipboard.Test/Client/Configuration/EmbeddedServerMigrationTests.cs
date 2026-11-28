@@ -25,7 +25,7 @@ public class EmbeddedServerMigrationTests
             Assert.AreEqual(5999, host["Port"]!.GetValue<int>());
             Assert.IsTrue(host["SwitchOn"]!.GetValue<bool>());
             var store = new ServerSettingsStore(dir.FullName, new(), null);
-            Assert.AreEqual(ServerSettingsStore.AdministratorId, store.Authenticate("alice", "old-password"));
+            Assert.AreEqual(ServerSettingsStore.AdministratorId, store.Authenticate("alice", "old-password")?.Id);
             Assert.AreEqual(77u, store.Value.MaxSavedHistoryCount);
             Assert.AreEqual(222u, store.Value.HistoryRetentionMinutes);
             Assert.IsFalse(store.Value.ProtectTaggedRecords);
@@ -34,7 +34,7 @@ public class EmbeddedServerMigrationTests
             migration.Migrate(JsonNode.Parse(old)!.AsObject());
             var restarted = new ServerSettingsStore(dir.FullName, new(), null);
             Assert.IsNull(restarted.Authenticate("alice", "old-password"));
-            Assert.AreEqual(ServerSettingsStore.AdministratorId, restarted.Authenticate("renamed", "new-password"));
+            Assert.AreEqual(ServerSettingsStore.AdministratorId, restarted.Authenticate("renamed", "new-password")?.Id);
             var saved = File.ReadAllText(Path.Combine(dir.FullName, ServerSettingsStore.FileName));
             Assert.DoesNotContain("old-password", saved);
             Assert.DoesNotContain("new-password", saved);
