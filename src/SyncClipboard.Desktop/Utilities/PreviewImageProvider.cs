@@ -52,6 +52,24 @@ internal static class PreviewImageProvider
         CancellationToken token = default)
     {
         using var stream = File.OpenRead(path);
+        var (size, animated) = ReadMetadata(stream, options, readHeader);
+        var (displaySize, pixelSize) = GetSizes(size, options);
+        if (options.SizeOnly)
+            return new DecodedImage(null, displaySize, size);
+
+        stream.Position = 0;
+        if (animated)
+            return new DecodedImage(LoadAnimation(stream, token), displaySize, size);
+
+        var bitmap = (double)size.Width * pixelSize.Height >= (double)size.Height * pixelSize.Width
+            ? Bitmap.DecodeToWidth(stream, pixelSize.Width)
+            : Bitmap.DecodeToHeight(stream, pixelSize.Height);
+        return new DecodedImage(IAnimatedBitmap.Load([bitmap], [0]), displaySize, size);
+    }
+
+    private static (PixelSize Size, bool Animated) ReadMetadata(Stream stream, DecodeOptions options,
+        Func<Stream, PixelSize?>? readHeader)
+    {
         var dimensions = options.Dimensions ?? readHeader?.Invoke(stream);
         var animated = false;
         if (dimensions is null || !options.SizeOnly)
@@ -69,35 +87,27 @@ internal static class PreviewImageProvider
         if (dimensions is not { Width: > 0, Height: > 0 } size)
             throw new InvalidDataException("Image dimensions are unavailable.");
 
-        var (displaySize, pixelSize) = GetSizes(size, options);
-        if (options.SizeOnly)
-            return new DecodedImage(null, displaySize, size);
+        return (size, animated);
+    }
 
-        stream.Position = 0;
-        if (animated)
+    private static IAnimatedBitmap LoadAnimation(Stream stream, CancellationToken token)
+    {
+        var animation = IAnimatedBitmap.Load(stream, disposeStream: false);
+        try
         {
-            var animation = IAnimatedBitmap.Load(stream, disposeStream: false);
-            try
-            {
-                using var cancellation = token.Register(animation.Dispose);
-                animation.Init();
-                token.ThrowIfCancellationRequested();
-                if (!animation.IsInitialized)
-                    throw new InvalidDataException("Could not load animated preview.");
+            using var cancellation = token.Register(animation.Dispose);
+            animation.Init();
+            token.ThrowIfCancellationRequested();
+            if (!animation.IsInitialized)
+                throw new InvalidDataException("Could not load animated preview.");
 
-                return new DecodedImage(animation, displaySize, size);
-            }
-            catch
-            {
-                animation.Dispose();
-                throw;
-            }
+            return animation;
         }
-
-        var bitmap = (double)size.Width * pixelSize.Height >= (double)size.Height * pixelSize.Width
-            ? Bitmap.DecodeToWidth(stream, pixelSize.Width)
-            : Bitmap.DecodeToHeight(stream, pixelSize.Height);
-        return new DecodedImage(IAnimatedBitmap.Load([bitmap], [0]), displaySize, size);
+        catch
+        {
+            animation.Dispose();
+            throw;
+        }
     }
 
     internal static (Size DisplaySize, PixelSize PixelSize) GetSizes(PixelSize size, DecodeOptions options)

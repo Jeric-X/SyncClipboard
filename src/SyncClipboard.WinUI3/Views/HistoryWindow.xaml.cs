@@ -906,6 +906,16 @@ public sealed partial class HistoryWindow : Window, IHistoryWindow, IDisposable
         if (isMultiSelecting != _viewModel.IsMultiSelecting || !ReferenceEquals(container.Content, record))
             return;
 
+        var flyout = BuildRecordContextFlyout(record, actions, isMultiSelecting);
+        if (hasPosition)
+            flyout.ShowAt(container, new FlyoutShowOptions { Position = position });
+        else
+            flyout.ShowAt(container);
+    }
+
+    private MenuFlyout BuildRecordContextFlyout(HistoryRecordVM record, List<SyncClipboard.Core.Interfaces.MenuItem> actions,
+        bool isMultiSelecting)
+    {
         var flyout = new MenuFlyout();
         flyout.Opening += HistoryFlyout_Opening;
         AddContextActions(flyout, actions);
@@ -936,11 +946,7 @@ public sealed partial class HistoryWindow : Window, IHistoryWindow, IDisposable
         foreach (var (text, command, parameter) in _viewModel.BuildHistoryMenuCommands(record))
             flyout.Items.Add(new MenuFlyoutItem { Text = text, Command = command, CommandParameter = parameter });
         AddContextActions(flyout, _viewModel.BuildDiagnosticActions(record));
-
-        if (hasPosition)
-            flyout.ShowAt(container, new FlyoutShowOptions { Position = position });
-        else
-            flyout.ShowAt(container);
+        return flyout;
     }
 
     private static void AddContextActions(MenuFlyout flyout, List<SyncClipboard.Core.Interfaces.MenuItem> actions)
