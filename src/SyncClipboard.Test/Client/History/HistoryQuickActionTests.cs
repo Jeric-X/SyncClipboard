@@ -11,6 +11,7 @@ using SyncClipboard.Core.Models.Keyboard;
 using SyncClipboard.Core.Models.Permissions;
 using SyncClipboard.Core.Models.UserConfigs;
 using SyncClipboard.Core.Utilities.Keyboard;
+using SyncClipboard.Core.Utilities.Runner;
 using SyncClipboard.Core.ViewModels;
 using SyncClipboard.Core.ViewModels.Sub;
 using SyncClipboard.Shared.Profiles;
@@ -72,7 +73,7 @@ public class HistoryQuickActionTests
     }
 
     [TestMethod]
-    public async Task NumberedTargetsStayFixedUntilThePrefixIsReleased()
+    public async Task ScrollingKeepsNumberedTargetsUntilThePrefixIsReleased()
     {
         var custom = visible[10];
         var editor = Model.CreateRecordShortcutEditor(custom.Key);
@@ -120,6 +121,88 @@ public class HistoryQuickActionTests
 
         Model.HandleKeyPress(Key.Ctrl, prefix);
         Assert.AreEqual("1", visible[0].QuickActionKeys.Single().Label);
+    }
+
+    [TestMethod]
+    [DataRow(true)]
+    [DataRow(false)]
+    public async Task SwitchingCategoryOrTagRenumbersVisibleRecordsWithPrefixHeld(bool switchTag)
+    {
+        await fixture.AddTagsAsync();
+        Model.HandleKeyPress(Key.Ctrl, new Hotkey(Key.Ctrl));
+        Model.HandleKeyPress(Key.Shift, prefix);
+        var oldFirst = visible[0];
+        Assert.AreEqual("1", oldFirst.QuickActionKeys.Single().Label);
+
+        window.Setup(w => w.GetVisibleHistoryRecords()).Returns(() => fixture.Records.Take(10).ToArray());
+        if (switchTag)
+            Model.SelectedTags = ["Blue"];
+        else
+            Model.SelectedFilter = HistoryFilterType.Starred;
+        visible = await WaitForNumberedViewportAsync();
+        Assert.IsFalse(oldFirst.HasQuickActionKeys);
+
+        CollectionAssert.AreEqual(Enumerable.Range(1, 9).Select(i => i.ToString()).ToArray(),
+            visible.Take(9).Select(row => row.QuickActionKeys.Single().Label).ToArray());
+        Assert.IsFalse(visible[9].HasQuickActionKeys);
+        Assert.IsTrue(Model.HandleKeyPress(Key._2, prefix));
+        await Model.ActiveQuickAction!;
+        CollectionAssert.AreEqual(new[] { switchTag ? "record 3" : "record 4" }, copied);
+    }
+
+    [TestMethod]
+    public async Task ReloadWaitsForNewVisibleRowsBeforeBindingDigits()
+    {
+        Model.HandleKeyPress(Key.Ctrl, new Hotkey(Key.Ctrl));
+        Model.HandleKeyPress(Key.Shift, prefix);
+        Assert.AreEqual("1", visible[0].QuickActionKeys.Single().Label);
+
+        await fixture.ReloadAsync();
+        Assert.IsFalse(visible.Any(row => row.HasQuickActionKeys));
+        Assert.IsFalse(Model.HandleKeyPress(Key._1, prefix));
+        visible = [];
+        Model.RefreshQuickActionHints();
+        visible = fixture.Records.Take(9).ToArray();
+        Model.RefreshQuickActionHints();
+        Assert.AreEqual("1", visible[0].QuickActionKeys.Single().Label);
+        Assert.IsTrue(Model.HandleKeyPress(Key._1, prefix));
+        await Model.ActiveQuickAction!;
+        Assert.AreEqual("record 0", copied.Single());
+    }
+
+    [TestMethod]
+    public async Task TransfersDisableQuickActionsAndLeavingRenumbersWithThePrefixHeld()
+    {
+        var shortcut = new Hotkey(Key.Ctrl, Key.Shift, Key.K);
+        config.SetConfig(config.GetConfig<HistoryShortcutConfig>().SetRecordShortcut(visible[0].Key, shortcut));
+        Model.HandleKeyPress(Key.Ctrl, new Hotkey(Key.Ctrl));
+        Model.HandleKeyPress(Key.Shift, prefix);
+        Assert.AreEqual("2", visible[1].QuickActionKeys.Single().Label);
+        Model.SelectedFilter = HistoryFilterType.Transferring;
+        Assert.IsFalse(Model.HandleKeyPress(Key._2, prefix));
+        Assert.IsFalse(Model.HandleKeyPress(Key.K, prefix));
+        Assert.IsFalse(visible.Any(row => row.HasQuickActionKeys));
+        Assert.IsEmpty(copied);
+
+        window.Setup(w => w.GetVisibleHistoryRecords()).Returns(() => fixture.Records.ToArray());
+        Model.SelectedFilter = HistoryFilterType.All;
+        await WaitForNumberedViewportAsync();
+        Assert.AreEqual("2", fixture.Records[1].QuickActionKeys.Single().Label);
+        Assert.IsTrue(Model.HandleKeyPress(Key._2, prefix));
+        await Model.ActiveQuickAction!;
+        Assert.AreEqual("record 1", copied.Single());
+    }
+
+    private async Task<HistoryRecordVM[]> WaitForNumberedViewportAsync()
+    {
+        HistoryRecordVM[] rows = [];
+        var ready = await AsyncRunner.WaitForConditionAsync(() =>
+        {
+            rows = fixture.Records.Take(10).ToArray();
+            return rows.Length == 10 && rows[8].QuickActionKeys is [{ Label: "9" }];
+        }, TimeSpan.FromSeconds(5), TimeSpan.FromMilliseconds(10), TestContext.CancellationTokenSource.Token);
+        Assert.IsTrue(ready, "The refreshed ninth row should show its quick action number.");
+        return rows;
     }
 
     [TestMethod]

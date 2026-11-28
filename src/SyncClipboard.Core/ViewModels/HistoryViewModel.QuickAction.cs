@@ -12,7 +12,7 @@ public partial class HistoryViewModel
     private HistoryRecordKey[]? numberedQuickActionRecords;
     internal Task? ActiveQuickAction { get; private set; }
 
-    public bool ShowingQuickActionHints => hintConfig is not null;
+    public bool ShowingQuickActionHints => hintConfig is not null && SelectedFilter != HistoryFilterType.Transferring;
 
     private void UpdateQuickActionPrefix(HistoryShortcutConfig config, Hotkey modifiers)
     {
@@ -32,7 +32,7 @@ public partial class HistoryViewModel
 
     public void RefreshQuickActionHints()
     {
-        if (hintConfig is null)
+        if (hintConfig is null || SelectedFilter == HistoryFilterType.Transferring || Volatile.Read(ref pendingReloads) > 0)
             return;
         if (IsMultiSelecting || HasModalOperation)
         {
@@ -41,7 +41,13 @@ public partial class HistoryViewModel
         }
 
         var visible = window.GetVisibleHistoryRecords();
-        numberedQuickActionRecords ??= visible.Take(9).Select(row => row.Key).ToArray();
+        if (numberedQuickActionRecords is null)
+        {
+            // Layout can still expose containers from before a reload.
+            if (visible.Count == 0 || visible.Take(9).Any(row => !allHistoryItems.Contains(row, ReferenceEqualityComparer.Instance)))
+                return;
+            numberedQuickActionRecords = visible.Take(9).Select(row => row.Key).ToArray();
+        }
         if (visibleQuickActionRecords is not null && visible.SequenceEqual(visibleQuickActionRecords, ReferenceEqualityComparer.Instance))
             return;
 
