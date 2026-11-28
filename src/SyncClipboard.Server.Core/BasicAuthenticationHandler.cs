@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
-using SyncClipboard.Server.Core.CredentialChecker;
+using SyncClipboard.Server.Core.Services;
 
 namespace SyncClipboard.Server.Core;
 
@@ -11,34 +11,28 @@ public class BasicAuthenticationHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
     UrlEncoder encoder,
-    ICredentialChecker checker
+    ServerSettingsStore checker
         ) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        var authHeader = Request.Headers.Authorization.ToString();
-        if (authHeader?.StartsWith("basic", StringComparison.OrdinalIgnoreCase) == true)
+        var header = Request.Headers.Authorization.ToString();
+        if (header.StartsWith("Basic ", StringComparison.OrdinalIgnoreCase))
         {
-            var token = authHeader["Basic ".Length..].Trim();
-            var credentialstring = Encoding.UTF8.GetString(Convert.FromBase64String(token));
-            var credentials = credentialstring.Split(':');
-            if (checker.Check(credentials[0], credentials[1]))
+            try
             {
-                var claims = new[] { new Claim("name", credentials[0]), new Claim(ClaimTypes.Role, "Admin") };
-                var identity = new ClaimsIdentity(claims, "Basic");
-                var claimsPrincipal = new ClaimsPrincipal(identity);
-                return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(claimsPrincipal, Scheme.Name)));
+                var credentials = Encoding.UTF8.GetString(Convert.FromBase64String(header[6..])).Split(':', 2);
+                if (credentials.Length == 2 && checker.Authenticate(credentials[0], credentials[1]) is { } account)
+                {
+                    Claim[] claims = [new(ClaimTypes.NameIdentifier, account.Id), new(ClaimTypes.Sid, account.SessionId), new(ClaimTypes.Name, credentials[0])];
+                    var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, Scheme.Name));
+                    return Task.FromResult(AuthenticateResult.Success(new AuthenticationTicket(principal, Scheme.Name)));
+                }
             }
+            catch (FormatException) { }
+        }
 
-            Response.StatusCode = 401;
-            Response.Headers.WWWAuthenticate = "Basic realm=\"SyncClipboard\"";
-            return Task.FromResult(AuthenticateResult.Fail("Invalid Authorization Header"));
-        }
-        else
-        {
-            Response.StatusCode = 401;
-            Response.Headers.WWWAuthenticate = "Basic realm=\"SyncClipboard\"";
-            return Task.FromResult(AuthenticateResult.Fail("Invalid Authorization Header"));
-        }
+        Response.Headers.WWWAuthenticate = "Basic realm=\"SyncClipboard\"";
+        return Task.FromResult(AuthenticateResult.Fail("Invalid credentials"));
     }
 }

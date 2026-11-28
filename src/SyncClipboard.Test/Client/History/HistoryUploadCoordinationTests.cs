@@ -169,7 +169,7 @@ public class HistoryUploadCoordinationTests
         serverDb.Database.SetConnectionString("Data Source=:memory:");
         await serverDb.Database.OpenConnectionAsync(Token);
         await serverDb.Database.EnsureCreatedAsync(Token);
-        serverDb.Add(a.RemoteRecord.ToEntity(ServerHistoryService.HARD_CODED_USER_ID));
+        serverDb.Add(a.RemoteRecord.ToEntity("default_user"));
         await serverDb.SaveChangesAsync(Token);
         var server = new ServerHistoryService(serverDb, a, null!);
         a.Server.Setup(x => x.SupportsHistoryTitleAsync(It.IsAny<CancellationToken>())).ReturnsAsync(true);
@@ -178,7 +178,7 @@ public class HistoryUploadCoordinationTests
             .Returns<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>(async (type, hash, dto, ct) =>
             {
                 Interlocked.Increment(ref a.Updates);
-                var (updated, saved) = await server.Update(ServerHistoryService.HARD_CODED_USER_ID, type, hash, dto, ct);
+                var (updated, saved) = await server.Update("default_user", type, hash, dto, ct);
                 a.RemoteRecord = saved!;
                 if (updated is false)
                     throw new RemoteHistoryConflictException("server metadata retained", saved!.ToUpdateDto());
@@ -193,10 +193,10 @@ public class HistoryUploadCoordinationTests
         Assert.AreEqual("应用图标", second.Title);
         await b.Manager.SetTitleAsync(HistoryRecordKey.From(second), "", Token);
         await b.Db.Entry(second).ReloadAsync(Token);
-        var (_, cleared) = await server.Update(ServerHistoryService.HARD_CODED_USER_ID, second.Type, second.Hash,
+        var (_, cleared) = await server.Update("default_user", second.Type, second.Hash,
             new HistoryRecordUpdateDto { Title = second.Title, Version = second.Version, LastModified = second.LastModified }, Token);
         Assert.AreEqual("", cleared!.Title);
-        var (_, starred) = await server.Update(ServerHistoryService.HARD_CODED_USER_ID, second.Type, second.Hash,
+        var (_, starred) = await server.Update("default_user", second.Type, second.Hash,
             new HistoryRecordUpdateDto { Starred = true, Version = cleared.Version + 1, LastModified = DateTimeOffset.Now }, Token);
         a.RemoteRecord = starred!;
         await syncer.SyncAllAsync(null, Token);
@@ -314,7 +314,7 @@ public class HistoryUploadCoordinationTests
         serverDb.Database.SetConnectionString("Data Source=:memory:");
         await serverDb.Database.OpenConnectionAsync(Token);
         await serverDb.Database.EnsureCreatedAsync(Token);
-        serverDb.Add(f.RemoteRecord.ToEntity(ServerHistoryService.HARD_CODED_USER_ID));
+        serverDb.Add(f.RemoteRecord.ToEntity("default_user"));
         await serverDb.SaveChangesAsync(Token);
         var serverService = new ServerHistoryService(serverDb, f, null!);
         f.Server.Setup(x => x.UpdateHistoryAsync(It.IsAny<ProfileType>(), It.IsAny<string>(),
@@ -322,7 +322,7 @@ public class HistoryUploadCoordinationTests
             .Returns<ProfileType, string, HistoryRecordUpdateDto, CancellationToken>(async (type, hash, dto, ct) =>
             {
                 Interlocked.Increment(ref f.Updates);
-                var (updated, saved) = await serverService.Update(ServerHistoryService.HARD_CODED_USER_ID, type, hash, dto, ct);
+                var (updated, saved) = await serverService.Update("default_user", type, hash, dto, ct);
                 f.RemoteRecord = saved!;
                 if (updated is false)
                     throw new RemoteHistoryConflictException("server metadata retained", saved!.ToUpdateDto());

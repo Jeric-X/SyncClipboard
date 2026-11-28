@@ -2,8 +2,6 @@ namespace SyncClipboard.Server.Core.Models;
 
 public sealed class AppSettings
 {
-    public string UserName { get; set; } = "admin";
-    public string Password { get; set; } = "admin";
     public bool ProtectTaggedRecords { get; set; } = true;
     public bool ProtectTitledRecords { get; set; } = true;
     public uint MaxSavedHistoryCount { get; set; } = 1000;

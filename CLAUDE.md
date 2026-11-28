@@ -144,7 +144,7 @@ SyncClipboard.Server           — Standalone server executable (wraps SyncClipb
 
 **Server Adapters (`SyncClipboard.Core/RemoteServer/`):** `RemoteClipboardServerFactory` creates the appropriate `IServerAdapter` based on the active account config. Three adapters exist: `WebDavAdapter` (HTTP/WebDAV), `OfficialAdapter` (SignalR-based real-time sync), and `S3Adapter` (S3-compatible object storage). Register adapters with the `AddServerAdapter<TConfig, TAdapter>()` extension.
 
-**Server Side (`SyncClipboard.Server.Core`):** `SyncClipboardController` handles the WebDAV-compatible API (`GET/PUT SyncClipboard.json` and `file/{name}`) plus dedicated endpoints. `SyncClipboardHub` (SignalR) pushes real-time profile changes to connected clients. History is stored in SQLite via EF Core (`HistoryDbContext`), managed by `HistoryService`. Authentication uses a custom `BasicAuthenticationHandler` with either `FileCredentialChecker` (reads from appsettings.json) or `StaticCredentialChecker` (env vars).
+**Server Side (`SyncClipboard.Server.Core`):** `SyncClipboardController` handles the WebDAV-compatible API (`GET/PUT SyncClipboard.json` and `file/{name}`) plus dedicated endpoints. `SyncClipboardHub` (SignalR) pushes real-time profile changes to connected clients. History is stored in SQLite via EF Core (`HistoryDbContext`), managed by `HistoryService`. Both hosts use Basic authentication and the same administrator-only API for account and retention settings in `server-settings.json`. History attachments are shared across accounts, with per-account records, clipboard state and SignalR notifications.
 
 ### DI Wiring
 

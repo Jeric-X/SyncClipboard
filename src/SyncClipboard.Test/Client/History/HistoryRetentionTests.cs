@@ -52,27 +52,6 @@ public class HistoryRetentionTests
     }
 
     [TestMethod]
-    public async Task ServerProtectionSettings_PersistIndependently()
-    {
-        await using var f = await Fixture.CreateAsync(Token);
-        using var configurationServices = new ConfigurationTestServices();
-        var config = new ConfigManager(Path.Combine(f.GetPersistentDir(), "server-config.json"), configurationServices.Upgrader);
-        var viewModel = new ServerConfigViewModel(config);
-        Assert.IsTrue(viewModel.ProtectTitledRecords);
-        viewModel.ProtectTitledRecords = false;
-        viewModel.MaxHistoryCount = 250;
-        config.Reload();
-        Assert.IsFalse(config.GetConfig<ServerConfig>().ProtectTitledRecords);
-        Assert.IsTrue(config.GetConfig<ServerConfig>().ProtectTaggedRecords);
-        Assert.IsFalse(viewModel.ProtectTitledRecords);
-        viewModel.ProtectTitledRecords = true;
-        viewModel.ProtectTaggedRecords = false;
-        config.Reload();
-        Assert.IsTrue(config.GetConfig<ServerConfig>().ProtectTitledRecords);
-        Assert.IsFalse(config.GetConfig<ServerConfig>().ProtectTaggedRecords);
-    }
-
-    [TestMethod]
     [DataRow(false, false)]
     [DataRow(false, true)]
     [DataRow(true, false)]

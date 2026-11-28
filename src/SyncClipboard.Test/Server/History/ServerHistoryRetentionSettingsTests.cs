@@ -45,7 +45,7 @@ public class ServerHistoryRetentionSettingsTests
             client.Setup(x => x.RemoteHistoryChanged(It.IsAny<HistoryRecordDto>()))
                 .Callback<HistoryRecordDto>(notifications.Add).Returns(Task.CompletedTask);
             var hub = new Mock<IHubContext<SyncClipboardHub, ISyncClipboardClient>>();
-            hub.Setup(x => x.Clients.All).Returns(client.Object);
+            hub.Setup(x => x.Clients.User("default_user")).Returns(client.Object);
             var settings = new AppSettings { HistoryRetentionMinutes = 60 };
             if (protectTagged.HasValue)
                 settings.ProtectTaggedRecords = protectTagged.Value;
@@ -103,7 +103,7 @@ public class ServerHistoryRetentionSettingsTests
         var old = DateTime.UtcNow.AddDays(-10);
         var records = RecordHashes.Select(hash => new HistoryRecordEntity
         {
-            UserId = HistoryService.HARD_CODED_USER_ID,
+            UserId = "default_user",
             Type = ProfileType.Text,
             Hash = hash,
             Tags = hash == "UNKNOWN" ? null : hash is "UNTAGGED" or "TITLED" or "EMPTY-TITLE" ? [] : ["work"],
@@ -118,7 +118,7 @@ public class ServerHistoryRetentionSettingsTests
         {
             records.Add(new HistoryRecordEntity
             {
-                UserId = HistoryService.HARD_CODED_USER_ID,
+                UserId = "default_user",
                 Type = ProfileType.Text,
                 Hash = "RECENT-ACCESS",
                 Tags = ["work"],
@@ -127,7 +127,7 @@ public class ServerHistoryRetentionSettingsTests
             });
             records.Add(new HistoryRecordEntity
             {
-                UserId = HistoryService.HARD_CODED_USER_ID,
+                UserId = "default_user",
                 Type = ProfileType.Text,
                 Hash = "RECENT-MODIFIED",
                 Tags = ["work"],

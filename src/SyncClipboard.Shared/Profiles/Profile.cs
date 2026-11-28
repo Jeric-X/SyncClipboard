@@ -216,8 +216,7 @@ public abstract class Profile
 
         var relativePath = Path.GetRelativePath(workingDir, fullPath);
 
-        // 如果相对路径以..开头，说明fullPath不在workingDir的子目录中，返回完整路径
-        if (relativePath.StartsWith(".."))
+        if (relativePath == ".." || relativePath.StartsWith(".." + Path.DirectorySeparatorChar, StringComparison.Ordinal))
         {
             return fullPath;
         }

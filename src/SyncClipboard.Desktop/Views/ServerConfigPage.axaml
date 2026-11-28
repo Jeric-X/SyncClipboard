@@ -5,15 +5,11 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:i18n="using:SyncClipboard.Core.I18n"
              xmlns:ui="using:FluentAvalonia.UI.Controls"
-             xmlns:vc="using:SyncClipboard.Desktop.ValueConverters"
              xmlns:vm="using:SyncClipboard.Core.ViewModels"
              d:DesignWidth="800"
              d:DesignHeight="450"
              x:DataType="vm:ServerConfigViewModel"
              mc:Ignorable="d">
-    <UserControl.Resources>
-        <vc:BoolToPasswordIconConverter x:Key="BoolToPasswordFontIcon" />
-    </UserControl.Resources>
     <UserControl.Styles>
         <Style Selector="Button">
             <Setter Property="Theme" Value="{StaticResource DateTimeFlyoutButtonStyle}" />
@@ -30,19 +26,13 @@
             <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding ServerEnable, Mode=TwoWay}" />
         </ui:FASettingsExpander.Footer>
         <ui:FASettingsExpander.Items>
-            <ui:FASettingsExpanderItem Description="{Binding ServerConfigDescription}">
+            <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.Port}">
                 <ui:FASettingsExpanderItem.Footer>
-                    <StackPanel Orientation="Horizontal" Spacing="5">
-                        <ToggleButton Width="32"
-                                      Height="32"
-                                      Classes="FontIcon"
-                                      IsChecked="{Binding ShowServerPassword, Mode=TwoWay}">
-                            <ui:FAFontIcon FontSize="24" Glyph="{Binding $parent.IsChecked, Converter={StaticResource BoolToPasswordFontIcon}, Mode=OneWay}" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                        </ToggleButton>
-                        <Button Click="SetServerConfig">
-                            <ui:FAFontIcon Glyph="&#xE115;" FontSize="24" FontFamily="{StaticResource SymbolThemeFontFamily}" />
-                        </Button>
-                    </StackPanel>
+                    <NumericUpDown Minimum="1"
+                                   Maximum="65535"
+                                   Increment="1"
+                                   FormatString="F0"
+                                   Value="{Binding Port, Mode=TwoWay}" />
                 </ui:FASettingsExpanderItem.Footer>
             </ui:FASettingsExpanderItem>
             <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.EnableCustomConfigurationFile}" Description="{x:Static i18n:Strings.CustomConfigFileDescription}">
@@ -79,36 +69,6 @@
                     <Button Click="SetCertificatePemKeyPath">
                         <ui:FAFontIcon Glyph="&#xE838;" FontFamily="{StaticResource SymbolThemeFontFamily}" />
                     </Button>
-                </ui:FASettingsExpanderItem.Footer>
-            </ui:FASettingsExpanderItem>
-            <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.MaxHistoryCount}" Description="{x:Static i18n:Strings.MaxHistoryCountDescription}">
-                <ui:FASettingsExpanderItem.Footer>
-                    <NumericUpDown Value="{Binding MaxHistoryCount, Mode=TwoWay}"
-                                   Minimum="0"
-                                   Maximum="10000"
-                                   Increment="100"
-                                   ButtonSpinnerLocation="Right"
-                                   FormatString="F0" />
-                </ui:FASettingsExpanderItem.Footer>
-            </ui:FASettingsExpanderItem>
-            <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ServerHistoryRetentionMinutes}" Description="{x:Static i18n:Strings.ServerHistoryRetentionDescription}">
-                <ui:FASettingsExpanderItem.Footer>
-                    <NumericUpDown Value="{Binding HistoryRetentionMinutes, Mode=TwoWay}"
-                                   Minimum="0"
-                                   Maximum="525600"
-                                   Increment="1440"
-                                   ButtonSpinnerLocation="Right"
-                                   FormatString="F0" />
-                </ui:FASettingsExpanderItem.Footer>
-            </ui:FASettingsExpanderItem>
-            <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ProtectTaggedRecords}" Description="{x:Static i18n:Strings.ServerProtectTaggedRecordsDescription}">
-                <ui:FASettingsExpanderItem.Footer>
-                    <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding ProtectTaggedRecords, Mode=TwoWay}" />
-                </ui:FASettingsExpanderItem.Footer>
-            </ui:FASettingsExpanderItem>
-            <ui:FASettingsExpanderItem Content="{x:Static i18n:Strings.ProtectTitledRecords}" Description="{x:Static i18n:Strings.ProtectTitledRecordsDescription}">
-                <ui:FASettingsExpanderItem.Footer>
-                    <ToggleSwitch OnContent="{x:Static i18n:Strings.On}" OffContent="{x:Static i18n:Strings.Off}" IsChecked="{Binding ProtectTitledRecords, Mode=TwoWay}" />
                 </ui:FASettingsExpanderItem.Footer>
             </ui:FASettingsExpanderItem>
         </ui:FASettingsExpander.Items>
